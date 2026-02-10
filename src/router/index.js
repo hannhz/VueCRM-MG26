@@ -4,6 +4,10 @@ import Contacts from '@/components/contacts.vue'
 
 const routes = [
     {
+        path: '/',
+        redirect: '/dashboard'
+    },
+    {
         path: '/dashboard',
         name: 'Dashboard',
         component: Dashboard

@@ -3,9 +3,9 @@ import { LayoutDashboard, Users, Settings, LogOut, Building2, Briefcase, CheckSq
 </script>
 
 <template>
-  <aside class="w-64 bg-slate-900 text-slate-300 hidden md:flex flex-col">
+  <aside class="w-64 bg-slate-900 text-slate-300 hidden md:flex flex-col h-screen overflow-hidden">
     <div
-      class="p-6 text-white text-2xl font-bold flex items-center gap-2 border-b border-slate-800"
+      class="p-6 text-white text-2xl font-bold flex items-center gap-2 border-b border-slate-800 flex-shrink-0"
     >
       <div
         class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"
@@ -98,7 +98,7 @@ import { LayoutDashboard, Users, Settings, LogOut, Building2, Briefcase, CheckSq
       </router-link>
     </nav>
 
-    <div class="p-4 border-t border-slate-800">
+    <div class="p-4 border-t border-slate-800 flex-shrink-0">
       <button
         class="flex items-center gap-3 p-3 w-full hover:bg-red-500/10 hover:text-red-500 rounded-xl transition text-left"
       >

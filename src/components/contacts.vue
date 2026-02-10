@@ -12,47 +12,56 @@ const itemsPerPage = ref(10);
 </script>
 
 <template>
-  <div class="flex h-screen">
+  <div class="flex h-screen overflow-hidden">
     <!-- Sidebar -->
     <Sidebar />
 
     <!-- Main -->
-    <div class="flex-1">
+    <div class="flex-1 flex flex-col overflow-hidden">
       <Kepala />
       
-      <main class="p-6 bg-gray-50 min-h-screen overflow-y-auto">
-        <!-- Header -->
-        <div class="mb-6 space-y-2">
-          <h1 class="text-3xl font-bold text-gray-800">Contacts</h1>
-          <p class="text-gray-500">{{ totalContacts.toLocaleString() }} Total Contacts</p>
+      <main class="flex-1 p-8 bg-gray-50 overflow-y-auto">
+        <!-- Header with Title and Total -->
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-baseline gap-3">
+            <h1 class="text-2xl font-bold text-gray-800">Contacts</h1>
+            <span class="text-sm text-gray-500">{{ totalContacts.toLocaleString() }} Total Contacts</span>
+          </div>
+          
+          <!-- Connect Facebook Button -->
+          <button class="flex items-center gap-2 px-4 py-2 border border-blue-500 text-blue-500 rounded-lg hover:bg-blue-50 transition">
+            <Facebook :size="18" />
+            <span class="text-sm font-medium">Connect Facebook</span>
+            <ChevronDown :size="16" />
+          </button>
         </div>
 
         <!-- Action Bar -->
         <div class="bg-white rounded-lg shadow-sm mb-6 p-4">
-          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <!-- Left Section: Filter + Search -->
-            <div class="flex items-center gap-3 flex-1">
+          <div class="flex items-center justify-between gap-4">
+            <!-- Left Section: Filter + Search + Show -->
+            <div class="flex items-center gap-3">
               <!-- Filter Icon -->
-              <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+              <button class="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                 <Filter :size="20" class="text-gray-600" />
               </button>
 
               <!-- Search Input -->
-              <div class="relative flex-1 max-w-xs">
+              <div class="relative">
                 <Search class="absolute left-3 top-2.5 text-gray-400" :size="18" />
                 <input 
                   type="text" 
                   placeholder="Search by Name" 
-                  class="pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  class="pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
 
-              <!-- Search Button -->
+              <!-- Search Icon Button -->
               <button class="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition">
                 <Search :size="20" class="text-gray-600" />
               </button>
 
-              <!-- Items Per Page Dropdown -->
+              <!-- Show Dropdown -->
               <div class="flex items-center gap-2">
                 <span class="text-sm text-gray-600">Show</span>
                 <select 
@@ -68,14 +77,7 @@ const itemsPerPage = ref(10);
             </div>
 
             <!-- Right Section: Action Buttons -->
-            <div class="flex items-center gap-3">
-              <!-- Connect Facebook -->
-              <button class="flex items-center gap-2 px-4 py-2 border border-blue-500 text-blue-500 rounded-lg hover:bg-blue-50 transition">
-                <Facebook :size="18" />
-                <span class="text-sm font-medium">Connect Facebook</span>
-                <ChevronDown :size="16" />
-              </button>
-
+            <div class="flex items-center gap-2">
               <!-- Add New -->
               <button class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                 <span class="text-lg font-semibold">+</span>
@@ -84,20 +86,20 @@ const itemsPerPage = ref(10);
               </button>
 
               <!-- Download -->
-              <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+              <button class="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                 <Download :size="18" class="text-gray-600" />
                 <span class="text-sm font-medium text-gray-700">Download</span>
                 <ChevronDown :size="16" class="text-gray-600" />
               </button>
 
               <!-- Bulk Edit -->
-              <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+              <button class="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                 <Edit :size="18" class="text-gray-600" />
                 <span class="text-sm font-medium text-gray-700">Bulk Edit</span>
               </button>
 
               <!-- Delete -->
-              <button class="p-2 bg-red-50 border border-red-200 text-red-500 rounded-lg hover:bg-red-100 transition">
+              <button class="p-2 bg-white border border-gray-300 text-red-500 rounded-lg hover:bg-red-50 transition">
                 <Trash2 :size="18" />
               </button>
             </div>
