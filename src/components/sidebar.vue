@@ -85,7 +85,7 @@ import {
 }
 
 .logout-btn {
-  @apply flex items-center gap-3 p-3 w-full rounded-xl transition text-left
-         hover:bg-red-500/10 hover:text-red-500;
+  @apply flex items-center gap-3 p-3 w-full rounded-xl transition text-left hover:bg-red-500/10 hover:text-red-500;
 }
+
 </style>
