@@ -1,6 +1,6 @@
 <script setup>
-import Sidebar from "components/sidebar.vue";
-import Header from "components/header.vue";
+import Sidebar from "../components/sidebar.vue";
+import Header from "../components/header.vue";
 </script>
 
 <template>
