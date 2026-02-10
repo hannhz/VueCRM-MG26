@@ -1,12 +1,19 @@
 <script setup>
-import DashboardLayout from "@/layouts/DashboardLayout.vue";
+import Sidebar from "./layouts/sidebar.vue";
+import Kepala from "./layouts/kepala.vue";
 </script>
 
 <template>
-  <DashboardLayout>
-    <div class="p-8">
-      <h1 class="text-2xl font-semibold text-gray-800">Dashboard</h1>
-      <p class="text-gray-500">Welcome to your dashboard</p>
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <Sidebar />
+
+    <!-- Main -->
+
+    <div class="flex-1">
+      <Kepala />
+
+      <main class="p-6 bg-gray-100">...</main>
     </div>
-  </DashboardLayout>
+  </div>
 </template>
