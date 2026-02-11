@@ -1,1 +1,32 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Montserrat", sans-serif;
+
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-red: #d34053;
+  --color-dark-red: #330405;
+  --color-green: #219653;
+  --color-good-green: #10b981;
+  --color-yellow: #ffa70b;
+  --color-orange: #b93510;
+  --color-fecbuk: #3b5998;
+
+  --color-dark-base: #1c2434;
+  --color-light-base: #eff1f6;
+  --color-dark-hover: #333848;
+  --color-sub-text: #64728b;
+  --color-outline: #d6dae5;
+  --color-baris-genap: #f9f9fd;
+  --color-cool-grey-bg: #e5e7eb;
+  --color-deffered-color: #2e334a;
+  --color-progress-color: #525e75;
+  --color-waiting-color: #404460;
+  --color-pipeline: #f4f5fb;
+  --color-points: #64788b;
+}
+
+.ccard {
+  @apply bg-white h-28 relative rounded-2xl p-6 flex items-center justify-between;
+}
