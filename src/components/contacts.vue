@@ -13,12 +13,23 @@ import {
   ChevronRight,
 } from "lucide-vue-next";
 import { ref } from "vue";
+import AddContactForm from "./AddContactForm.vue";
+
 
 // Sample data - replace with actual data from API
 const contacts = ref([]);
 const currentPage = ref(1);
 const totalContacts = ref(18600);
 const itemsPerPage = ref(10);
+const showAddContactForm = ref(false);
+
+const handleAddContact = (contactData) => {
+  // Logic untuk save contact data ke API atau state
+  console.log('New contact:', contactData);
+  // TODO: Implement API call
+};
+
+
 </script>
 
 <template>
@@ -94,6 +105,17 @@ const itemsPerPage = ref(10);
           <span class="text-sm font-medium">Add New</span>
           <ChevronDown :size="16" />
         </button>
+            <!-- Right Section: Action Buttons -->
+            <div class="flex items-center gap-2">
+              <!-- Add New -->
+              <button
+                @click="showAddContactForm = true"
+                class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+              >
+                <span class="text-lg font-semibold">+</span>
+                <span class="text-sm font-medium">Add New</span>
+                <ChevronDown :size="16" />
+              </button>
 
         <!-- Download -->
         <button
@@ -281,6 +303,59 @@ const itemsPerPage = ref(10);
           </tbody>
         </table>
       </div>
+                  <!-- Sample rows - will be populated with actual data -->
+                  <tr
+                    v-for="contact in contacts"
+                    :key="contact.id"
+                    class="border-b border-gray-100 hover:bg-gray-50 transition"
+                  >
+                    <td class="px-6 py-4">
+                      <input
+                        type="checkbox"
+                        class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
+                      />
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-800 font-medium">
+                      {{ contact.name }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-dark-base">
+                      {{ contact.email }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-dark-base">
+                      {{ contact.company }}
+                    </td>
+                    <td class="px-6 py-4">
+                      <span
+                        class="px-3 py-1 rounded-full text-xs font-medium"
+                        :class="{
+                          'bg-green-100 text-green-700':
+                            contact.status === 'Active',
+                          'bg-gray-100 text-gray-700':
+                            contact.status === 'Inactive',
+                        }"
+                      >
+                        {{ contact.status }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-dark-base">
+                      {{ contact.updatedAt }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-dark-base">
+                      {{ contact.owner }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <!-- Add Contact Form -->
+              <AddContactForm
+                :isOpen="showAddContactForm"
+                @close="showAddContactForm = false"
+                @submit="handleAddContact"
+              />
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   </div>
 </template>
