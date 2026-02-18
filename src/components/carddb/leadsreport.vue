@@ -50,8 +50,7 @@ const statusClass = (status) => {
 </script>
 
 <template>
-  <div class="bg-white rounded-xl shadow-sm border border-outline p-6">
-    
+  <div class="bg-white rounded-xl shadow-sm border border-outline p-6 mb-5">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-xl font-bold text-gray-800">Leads Report</h2>
@@ -60,13 +59,13 @@ const statusClass = (status) => {
 
     <!-- Table Head -->
     <div
-      class="hidden md:grid grid-cols-6 text-sm text-slate-500 font-medium border-b pb-3"
+      class="hidden md:grid md:grid-cols-[1.2fr_2fr_2fr_1fr_1fr_0.8fr] text-sm text-slate-500 font-medium border-b pb-3 items-center"
     >
       <span>Name</span>
       <span>Company</span>
       <span>Email</span>
       <span>Projects</span>
-      <span>Duration</span>
+      <span class="text-center">Duration</span>
       <span class="text-center">Status</span>
     </div>
 
@@ -77,7 +76,7 @@ const statusClass = (status) => {
         :key="i"
         :class="[
           'grid md:grid-cols-[1.5fr_2.5fr_2.5fr_1.5fr_1fr_0.8fr] items-center py-3 px-3 rounded-xl text-sm',
-          i % 2 ? 'bg-slate-100/60' : ''
+          i % 2 ? 'bg-slate-100/60' : '',
         ]"
       >
         <div class="font-medium text-gray-800">{{ lead.name }}</div>
@@ -90,7 +89,7 @@ const statusClass = (status) => {
           <span
             :class="[
               'px-4 py-1 rounded-full text-xs font-semibold',
-              statusClass(lead.status)
+              statusClass(lead.status),
             ]"
           >
             {{ lead.status }}

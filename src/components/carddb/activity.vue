@@ -82,5 +82,17 @@ const activities = [
     user: "Hanan",
     note: " -",
   },
+  {
+    date: "06 Feb 2026 - 10.39 AM",
+    action: "Added in TeamFeature",
+    user: "Hanan",
+    note: " -",
+  },
+  {
+    date: "06 Feb 2026 - 10.39 AM",
+    action: "Edited Task",
+    user: "Hanan",
+    note: " - changed task crm task status",
+  },
 ];
 </script>
