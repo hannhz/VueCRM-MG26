@@ -28,7 +28,7 @@ import { RefreshCcw, Ellipsis } from "lucide-vue-next";
   <Summary></Summary>
 
   <!-- Deals and Activity -->
-  <div class="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5">
+  <div class="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 mb-5">
     <Deals />
     <Activity />
   </div>

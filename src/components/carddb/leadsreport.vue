@@ -51,7 +51,6 @@ const statusClass = (status) => {
 
 <template>
   <div class="bg-white rounded-xl shadow-sm border border-outline p-6">
-    
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-xl font-bold text-gray-800">Leads Report</h2>
@@ -60,14 +59,14 @@ const statusClass = (status) => {
 
     <!-- Table Head -->
     <div
-      class="hidden md:grid grid-cols-6 text-sm text-slate-500 font-medium border-b pb-3"
+      class="hidden md:grid md:grid-cols-[1.3fr_2fr_2.5fr_1.4fr_0.8fr_1fr] text-sm text-slate-500 font-medium border-b pb-3 items-center"
     >
-      <span>Name</span>
-      <span>Company</span>
-      <span>Email</span>
-      <span>Projects</span>
-      <span>Duration</span>
-      <span class="text-center">Status</span>
+      <div>Name</div>
+      <div>Company</div>
+      <div>Email</div>
+      <div>Projects</div>
+      <div class="text-center">Duration</div>
+      <div class="text-center">Status</div>
     </div>
 
     <!-- Rows -->
@@ -76,21 +75,41 @@ const statusClass = (status) => {
         v-for="(lead, i) in leads"
         :key="i"
         :class="[
-          'grid md:grid-cols-[1.5fr_2.5fr_2.5fr_1.5fr_1fr_0.8fr] items-center py-3 px-3 rounded-xl text-sm',
-          i % 2 ? 'bg-slate-100/60' : ''
+          'grid md:grid-cols-[1.2fr_2fr_2.2fr_1.6fr_1fr_0.8fr] items-center py-3 px-3 rounded-xl text-sm',
+          i % 2 ? 'bg-slate-100/60' : '',
         ]"
       >
-        <div class="font-medium text-gray-800">{{ lead.name }}</div>
-        <div class="text-gray-700">{{ lead.company }}</div>
-        <div class="truncate">{{ lead.email }}</div>
-        <div>{{ lead.duration }}</div>
-        <div>{{ lead.days }}</div>
+        <!-- Name -->
+        <div class="font-medium text-gray-800 whitespace-nowrap">
+          {{ lead.name }}
+        </div>
 
+        <!-- Company -->
+        <div class="text-gray-700 truncate">
+          {{ lead.company }}
+        </div>
+
+        <!-- Email -->
+        <div class="truncate text-gray-700">
+          {{ lead.email }}
+        </div>
+
+        <!-- Projects -->
+        <div class="text-center whitespace-nowrap text-gray-700">
+          {{ lead.duration }}
+        </div>
+
+        <!-- Duration -->
+        <div class="text-center whitespace-nowrap text-gray-700">
+          {{ lead.days }}
+        </div>
+
+        <!-- Status -->
         <div class="flex justify-center">
           <span
             :class="[
               'px-4 py-1 rounded-full text-xs font-semibold',
-              statusClass(lead.status)
+              statusClass(lead.status),
             ]"
           >
             {{ lead.status }}
