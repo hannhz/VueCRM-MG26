@@ -28,5 +28,5 @@
 }
 
 .ccard {
-  @apply bg-white h-28 relative rounded-2xl p-6 flex items-center justify-between;
+  @apply bg-white h-28 relative rounded-2xl p-6 flex items-center justify-between shadow-sm;
 }
