@@ -4,6 +4,7 @@ import Contacts from "@/components/contacts.vue";
 import LoginPage from "@/components/loginpage.vue";
 import MainDashboard from "@/components/maindashboard.vue";
 import Companies from "@/components/companies.vue";
+import Deals from "@/components/dealscard.vue";
 
 const routes = [
   {
@@ -21,7 +22,7 @@ const routes = [
         name: "Dashboard",
         component: Dashboard,
       },
-      
+
       {
         path: "/contacts",
         name: "Contacts",
@@ -31,7 +32,12 @@ const routes = [
         path: "/companies",
         name: "Companies",
         component: Companies,
-      }
+      },
+      {
+        path: "/deals",
+        name: "Deals",
+        component: Deals,
+      },
     ],
   },
 ];

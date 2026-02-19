@@ -4,7 +4,7 @@ const salespeople = [
   { name: "Nur", deals: "1.5K", won: "1.1K" },
   { name: "Fuady", deals: "550", won: "500" },
   { name: "Hanan", deals: "196", won: "176" },
-    { name: "Hafizhah", deals: "230", won: "210" },
+  { name: "Hafizhah", deals: "230", won: "210" },
   { name: "Zarkasi", deals: "180", won: "160" },
 ];
 </script>

@@ -7,14 +7,61 @@ import {
   Trash2,
   Filter,
   ChevronLeft,
-  ChevronRight, RefreshCcw,
+  ChevronRight,
+  RefreshCcw,
 } from "lucide-vue-next";
 import { ref } from "vue";
 
 // Sample data - replace with actual data from API
-const contacts = ref([]);
+const companies = ref([
+  {
+    id: 1,
+    name: "TechFlow Solutions",
+    email: "contact@techflow.io",
+    company: "Main Enterprise",
+    status: "Active",
+    updatedAt: "2023-10-24",
+    owner: "Alex Graham",
+  },
+  {
+    id: 2,
+    name: "Nexus Digital",
+    email: "support@nexus.com",
+    company: "Sub-Agency",
+    status: "Inactive",
+    updatedAt: "2023-10-22",
+    owner: "Sarah Jenkins",
+  },
+  {
+    id: 3,
+    name: "Green Horizon Inc",
+    email: "info@greenhorizon.com",
+    company: "Eco Group",
+    status: "Active",
+    updatedAt: "2023-10-20",
+    owner: "Michael Chen",
+  },
+  {
+    id: 4,
+    name: "Quantum Leap Ltd",
+    email: "hello@quantum.co",
+    company: "Research Division",
+    status: "Active",
+    updatedAt: "2023-10-18",
+    owner: "Alex Graham",
+  },
+  {
+    id: 5,
+    name: "Stellar Softwares",
+    email: "admin@stellar.net",
+    company: "Global Tech",
+    status: "Inactive",
+    updatedAt: "2023-10-15",
+    owner: "Jessica Alba",
+  },
+]);
 const currentPage = ref(1);
-const totalContacts = ref(18600);
+const totalCompanies = ref(18600);
 const itemsPerPage = ref(10);
 </script>
 
@@ -24,11 +71,11 @@ const itemsPerPage = ref(10);
     <div class="flex items-baseline gap-3">
       <h1 class="text-2xl font-bold text-dark-base">Companies</h1>
       <span class="text-sm text-sub-text"
-        >{{ totalContacts.toLocaleString() }} Total Companies</span
+        >{{ totalCompanies.toLocaleString() }} Total Companies</span
       >
     </div>
 
-    <!-- Connect Facebook Button -->
+    <!-- Update Button -->
     <button
       class="flex items-center gap-2 px-4 py-2 border border-outline bg-white text-sub-text rounded-lg hover:bg-sub-text hover:text-white transition shadow-sm"
     >
@@ -144,7 +191,7 @@ const itemsPerPage = ref(10);
           class="w-12 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-sub-text"
         />
 
-        <span>of {{ Math.ceil(totalContacts / itemsPerPage) }}</span>
+        <span>of {{ Math.ceil(totalcompanies / itemsPerPage) }}</span>
 
         <button
           class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
@@ -219,7 +266,7 @@ const itemsPerPage = ref(10);
           </thead>
           <tbody>
             <!-- Empty State -->
-            <tr v-if="contacts.length === 0">
+            <tr v-if="companies.length === 0">
               <td colspan="7" class="px-6 py-20 text-center text-sub-text">
                 <div class="flex flex-col items-center gap-3">
                   <div
@@ -227,9 +274,9 @@ const itemsPerPage = ref(10);
                   >
                     <Search :size="32" class="text-gray-400" />
                   </div>
-                  <p class="text-lg font-medium">No contacts found</p>
+                  <p class="text-lg font-medium">No companies found</p>
                   <p class="text-sm text-gray-400">
-                    Start adding contacts to see them here
+                    Start adding companies to see them here
                   </p>
                 </div>
               </td>
@@ -237,7 +284,7 @@ const itemsPerPage = ref(10);
 
             <!-- Sample rows - will be populated with actual data -->
             <tr
-              v-for="contact in contacts"
+              v-for="contact in companies"
               :key="contact.id"
               class="border-b border-gray-100 hover:bg-gray-50 transition"
             >
