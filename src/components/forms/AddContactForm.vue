@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { X, Plus, ChevronDown } from 'lucide-vue-next';
 import AddCompanyForm from './AddCompanyForm.vue';
 import AddDealForm from './AddDealForm.vue';
-import ContactDetailForm from './ContactDetailForm.vue';
+import ContactDetailForm from './DetailForm.vue';
 
 const props = defineProps({
   isOpen: {
@@ -428,7 +428,7 @@ const handleReset = () => {
   transform: translateX(100%);
 }
 
-/* Remove Browser Autofill Blue Background biru */
+/* Remove Browser Autofill Blue Background */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:active,

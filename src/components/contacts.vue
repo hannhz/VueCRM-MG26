@@ -15,9 +15,6 @@ import {
   FolderPlus,
   FilePlus,
 } from "lucide-vue-next";
-import { ref } from "vue";
-import AddContactForm from "./AddContactForm.vue";
-
 
 // Sample data - replace with actual data from API
 const contacts = ref([
@@ -52,6 +49,27 @@ const handleAddContact = (contactData) => {
   // TODO: Implement API call
 };
 
+const showDropdown = ref(false);
+
+const toggleDropdown = () => {
+  showDropdown.value = !showDropdown.value;
+};
+
+// auto close saat klik luar
+const handleClickOutside = (e) => {
+  if (!e.target.closest(".add-dropdown")) {
+    showDropdown.value = false;
+  }
+};
+
+onMounted(() => document.addEventListener("click", handleClickOutside));
+onBeforeUnmount(() =>
+  document.removeEventListener("click", handleClickOutside),
+);
+
+const handleBulkAdd = () => {
+  console.log("Bulk add clicked");
+};
 
 </script>
 
@@ -121,14 +139,44 @@ const handleAddContact = (contactData) => {
       <!-- Right Section: Action Buttons -->
       <div class="flex items-center gap-2">
         <!-- Add New -->
+         <div class="relative inline-block add-dropdown">
         <button
-          @click="showAddContactForm = true"
+        type="button"
+          @click="toggleDropdown"
           class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
         >
           <span class="text-lg font-semibold">+</span>
           <span class="text-sm font-medium">Add New</span>
-          <ChevronDown :size="16" />
+          <ChevronDown :size="16" class="transition-transform duration-200" :class="{'rotate-180': showDropdown}"/>
         </button>
+        <!-- Dropdown Menu -->
+        <div
+            v-show="showDropdown"
+            class="absolute right-0 text-sub-text mt-2 w-44 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95"
+          >
+            <button
+              @click="
+                showAddContactForm = true;
+                showDropdown = false;
+              "
+              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+            >
+              <FilePlus :size="18" />
+              <span class="font-medium"> Single Contact </span>
+            </button>
+
+            <button
+              @click="
+                handleBulkAdd();
+                showDropdown = false;
+              "
+              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+            >
+              <FolderPlus :size="18" />
+              <span class="font-medium"> Bulk Contact </span>
+            </button>
+          </div>
+        </div>
 
         <!-- Download -->
         <button

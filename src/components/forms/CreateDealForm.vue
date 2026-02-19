@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { X, Plus, ChevronDown, Paperclip } from 'lucide-vue-next';
-import ContactDetailForm from './ContactDetailForm.vue';
+import ContactDetailForm from './DetailForm.vue';
 import AddCompanyForm from './AddCompanyForm.vue';
 import AddContactQuickForm from './AddContactQuickForm.vue';
 

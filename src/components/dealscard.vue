@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import draggable from "vuedraggable";
-import CreateDealForm from './CreateDealForm.vue';
+import CreateDealForm from './forms/CreateDealForm.vue';
 
 import {
   ChevronDown,
