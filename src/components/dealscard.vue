@@ -328,7 +328,7 @@ const density = ref("comfy"); // comfy | compact
       >
         <!-- gradient -->
         <div
-          class="absolute inset-0 bg-gradient-to-t from-red-600/80 via-red-500/40 to-transparent"
+          class="absolute inset-0 bg-linear-to-t from-red-600/80 via-red-500/40 to-transparent"
         ></div>
 
         <!-- center content -->
