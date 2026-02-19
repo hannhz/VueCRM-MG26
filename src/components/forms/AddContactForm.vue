@@ -1,50 +1,50 @@
 <script setup>
-import { ref } from 'vue';
-import { X, Plus, ChevronDown } from 'lucide-vue-next';
-import AddCompanyForm from './AddCompanyForm.vue';
-import AddDealForm from './AddDealForm.vue';
-import ContactDetailForm from './DetailForm.vue';
+import { ref } from "vue";
+import { X, Plus, ChevronDown } from "lucide-vue-next";
+import AddCompanyForm from "./AddCompanyForm.vue";
+import AddDealForm from "./AddDealForm.vue";
+import ContactDetailForm from "./DetailForm.vue";
 
 const props = defineProps({
   isOpen: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 
-const emit = defineEmits(['close', 'submit']);
+const emit = defineEmits(["close", "submit"]);
 
 // Source options
 const sourceOptions = [
-  { value: '', label: 'Select Source' },
-  { value: 'website', label: 'Website' },
-  { value: 'referral', label: 'Referral' },
-  { value: 'social_media', label: 'Social Media' },
-  { value: 'email_campaign', label: 'Email Campaign' },
-  { value: 'cold_call', label: 'Cold Call' },
-  { value: 'trade_show', label: 'Trade Show' },
-  { value: 'partner', label: 'Partner' },
-  { value: 'advertisement', label: 'Advertisement' },
-  { value: 'other', label: 'Other' }
+  { value: "", label: "Select Source" },
+  { value: "website", label: "Website" },
+  { value: "referral", label: "Referral" },
+  { value: "social_media", label: "Social Media" },
+  { value: "email_campaign", label: "Email Campaign" },
+  { value: "cold_call", label: "Cold Call" },
+  { value: "trade_show", label: "Trade Show" },
+  { value: "partner", label: "Partner" },
+  { value: "advertisement", label: "Advertisement" },
+  { value: "other", label: "Other" },
 ];
 
 // Form data
 const formData = ref({
-  firstName: '',
-  lastName: '',
-  jobTitle: '',
-  owner: '',
-  email: '',
-  telephone: '',
-  status: '',
-  address: '',
-  country: '',
-  province: '',
-  city: '',
-  posCode: '',
-  source: '',
-  companiesAssociation: '',
-  dealsAssociation: ''
+  firstName: "",
+  lastName: "",
+  jobTitle: "",
+  owner: "",
+  email: "",
+  telephone: "",
+  status: "",
+  address: "",
+  country: "",
+  province: "",
+  city: "",
+  posCode: "",
+  source: "",
+  companiesAssociation: "",
+  dealsAssociation: "",
 });
 
 const showAddCompanyForm = ref(false);
@@ -52,32 +52,32 @@ const showAddDealForm = ref(false);
 const showDetailForm = ref(false);
 
 const handleClose = () => {
-  emit('close');
+  emit("close");
 };
 
 const handleSubmit = () => {
   // Validate and submit
-  emit('submit', formData.value);
+  emit("submit", formData.value);
   handleClose();
 };
 
 const handleReset = () => {
   formData.value = {
-    firstName: '',
-    lastName: '',
-    jobTitle: '',
-    owner: '',
-    email: '',
-    telephone: '',
-    status: '',
-    address: '',
-    country: '',
-    province: '',
-    city: '',
-    posCode: '',
-    source: '',
-    companiesAssociation: '',
-    dealsAssociation: ''
+    firstName: "",
+    lastName: "",
+    jobTitle: "",
+    owner: "",
+    email: "",
+    telephone: "",
+    status: "",
+    address: "",
+    country: "",
+    province: "",
+    city: "",
+    posCode: "",
+    source: "",
+    companiesAssociation: "",
+    dealsAssociation: "",
   };
 };
 </script>
@@ -100,7 +100,9 @@ const handleReset = () => {
       @click.stop
     >
       <!-- Header -->
-      <div class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div
+        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
+      >
         <h2 class="text-xl font-bold text-dark-base">Add Contact</h2>
         <button
           @click="handleClose"
@@ -294,12 +296,16 @@ const handleReset = () => {
                   v-model="formData.source"
                   class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
-                  <option v-for="option in sourceOptions" :key="option.value" :value="option.value">
+                  <option
+                    v-for="option in sourceOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
                     {{ option.label }}
                   </option>
                 </select>
-                <ChevronDown 
-                  :size="16" 
+                <ChevronDown
+                  :size="16"
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
                 />
               </div>
@@ -351,7 +357,9 @@ const handleReset = () => {
       </div>
 
       <!-- Footer Actions (Sticky) -->
-      <div class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div
+        class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+      >
         <button
           type="button"
           @click="handleReset"
@@ -398,7 +406,10 @@ const handleReset = () => {
     :isOpen="showDetailForm"
     @close="showDetailForm = false"
     @back="showDetailForm = false"
-    @submit="showDetailForm = false; handleClose()"
+    @submit="
+      showDetailForm = false;
+      handleClose();
+    "
   />
 </template>
 
@@ -443,10 +454,9 @@ select:-webkit-autofill:active {
 /* Preserve focus ring on autofilled inputs */
 input:-webkit-autofill:focus,
 select:-webkit-autofill:focus {
-  -webkit-box-shadow: 
+  -webkit-box-shadow:
     0 0 0 30px white inset,
     0 0 0 1px #64728b !important;
   -webkit-text-fill-color: #1c2434 !important;
 }
-
 </style>

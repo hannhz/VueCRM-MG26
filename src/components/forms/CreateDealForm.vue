@@ -1,58 +1,58 @@
 <script setup>
-import { ref } from 'vue';
-import { X, Plus, ChevronDown, Paperclip } from 'lucide-vue-next';
-import ContactDetailForm from './DetailForm.vue';
-import AddCompanyForm from './AddCompanyForm.vue';
-import AddContactQuickForm from './AddContactQuickForm.vue';
+import { ref } from "vue";
+import { X, Plus, ChevronDown, Paperclip } from "lucide-vue-next";
+import ContactDetailForm from "./DetailForm.vue";
+import AddCompanyForm from "./AddCompanyForm.vue";
+import AddContactQuickForm from "./AddContactQuickForm.vue";
 
 const props = defineProps({
   isOpen: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 
-const emit = defineEmits(['close', 'submit']);
+const emit = defineEmits(["close", "submit"]);
 
 const pipelineOptions = [
-  { value: '', label: 'Select Data' },
-  { value: 'new', label: 'New' },
-  { value: 'qualified', label: 'Qualified' },
-  { value: 'proposal', label: 'Proposal' },
-  { value: 'negotiation', label: 'Negotiation' },
-  { value: 'closed_won', label: 'Closed Won' },
-  { value: 'closed_lost', label: 'Closed Lost' },
+  { value: "", label: "Select Data" },
+  { value: "new", label: "New" },
+  { value: "qualified", label: "Qualified" },
+  { value: "proposal", label: "Proposal" },
+  { value: "negotiation", label: "Negotiation" },
+  { value: "closed_won", label: "Closed Won" },
+  { value: "closed_lost", label: "Closed Lost" },
 ];
 
 const currencyOptions = [
-  { value: 'IDR', label: 'IDR' },
-  { value: 'USD', label: 'USD' },
-  { value: 'SGD', label: 'SGD' },
-  { value: 'EUR', label: 'EUR' },
+  { value: "IDR", label: "IDR" },
+  { value: "USD", label: "USD" },
+  { value: "SGD", label: "SGD" },
+  { value: "EUR", label: "EUR" },
 ];
 
 const ownerOptions = [
-  { value: '', label: 'Select Owner' },
-  { value: 'thomas', label: 'Thomas Anree' },
-  { value: 'alex', label: 'Alex Graham' },
-  { value: 'sarah', label: 'Sarah Jenkins' },
+  { value: "", label: "Select Owner" },
+  { value: "thomas", label: "Thomas Anree" },
+  { value: "alex", label: "Alex Graham" },
+  { value: "sarah", label: "Sarah Jenkins" },
 ];
 
 const priorityOptions = [
-  { value: '', label: 'Select Data' },
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
+  { value: "", label: "Select Data" },
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
 ];
 
 const sourceOptions = [
-  { value: '', label: 'Select Data' },
-  { value: 'website', label: 'Website' },
-  { value: 'referral', label: 'Referral' },
-  { value: 'social_media', label: 'Social Media' },
-  { value: 'email_campaign', label: 'Email Campaign' },
-  { value: 'cold_call', label: 'Cold Call' },
-  { value: 'other', label: 'Other' },
+  { value: "", label: "Select Data" },
+  { value: "website", label: "Website" },
+  { value: "referral", label: "Referral" },
+  { value: "social_media", label: "Social Media" },
+  { value: "email_campaign", label: "Email Campaign" },
+  { value: "cold_call", label: "Cold Call" },
+  { value: "other", label: "Other" },
 ];
 
 const showOptional = ref(false);
@@ -62,63 +62,63 @@ const showAddContactQuickForm = ref(false);
 
 // Documents dropdown
 const docSourceOptions = [
-  { value: '', label: 'Select File Source' },
-  { value: 'local', label: 'Local File' },
-  { value: 'google_drive', label: 'Google Drive' },
-  { value: 'dropbox', label: 'Dropbox' },
-  { value: 'onedrive', label: 'OneDrive' },
+  { value: "", label: "Select File Source" },
+  { value: "local", label: "Local File" },
+  { value: "google_drive", label: "Google Drive" },
+  { value: "dropbox", label: "Dropbox" },
+  { value: "onedrive", label: "OneDrive" },
 ];
-const selectedDocSource = ref('');
+const selectedDocSource = ref("");
 const isDocDropdownOpen = ref(false);
 
 const selectDocSource = (value) => {
   selectedDocSource.value = value;
   isDocDropdownOpen.value = false;
-  if (value !== 'local') {
+  if (value !== "local") {
     formData.value.documents = null;
   }
 };
 
 const formData = ref({
-  dealName: '',
-  pipeline: '',
-  currency: 'IDR',
-  amount: '',
-  expectedCloseDate: '',
-  owner: '',
-  priority: '',
-  source: '',
-  description: '',
+  dealName: "",
+  pipeline: "",
+  currency: "IDR",
+  amount: "",
+  expectedCloseDate: "",
+  owner: "",
+  priority: "",
+  source: "",
+  description: "",
   documents: null,
-  contactAssociation: '',
-  companiesAssociation: '',
+  contactAssociation: "",
+  companiesAssociation: "",
 });
 
 const handleFileChange = (e) => {
   formData.value.documents = e.target.files[0] ?? null;
 };
 
-const handleClose = () => emit('close');
+const handleClose = () => emit("close");
 
 const handleSubmit = () => {
-  emit('submit', formData.value);
+  emit("submit", formData.value);
   handleClose();
 };
 
 const handleReset = () => {
   formData.value = {
-    dealName: '',
-    pipeline: '',
-    currency: 'IDR',
-    amount: '',
-    expectedCloseDate: '',
-    owner: '',
-    priority: '',
-    source: '',
-    description: '',
+    dealName: "",
+    pipeline: "",
+    currency: "IDR",
+    amount: "",
+    expectedCloseDate: "",
+    owner: "",
+    priority: "",
+    source: "",
+    description: "",
     documents: null,
-    contactAssociation: '',
-    companiesAssociation: '',
+    contactAssociation: "",
+    companiesAssociation: "",
   };
   showOptional.value = false;
 };
@@ -142,7 +142,9 @@ const handleReset = () => {
       @click.stop
     >
       <!-- Header -->
-      <div class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div
+        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
+      >
         <h2 class="text-xl font-bold text-dark-base">Create Deal</h2>
         <button
           @click="handleClose"
@@ -155,11 +157,12 @@ const handleReset = () => {
       <!-- Form Content (Scrollable) -->
       <div class="flex-1 overflow-y-auto min-h-0">
         <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
-
           <!-- Deal Name & Pipeline -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">Deal Name</label>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Deal Name</label
+              >
               <input
                 v-model="formData.dealName"
                 type="text"
@@ -169,15 +172,26 @@ const handleReset = () => {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">Pipeline</label>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Pipeline</label
+              >
               <div class="relative">
                 <select
                   v-model="formData.pipeline"
                   class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
-                  <option v-for="opt in pipelineOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                  <option
+                    v-for="opt in pipelineOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
                 </select>
-                <ChevronDown :size="16" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
               </div>
             </div>
           </div>
@@ -185,19 +199,32 @@ const handleReset = () => {
           <!-- Currency & Amount/Value -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">Currency</label>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Currency</label
+              >
               <div class="relative">
                 <select
                   v-model="formData.currency"
                   class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
-                  <option v-for="opt in currencyOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                  <option
+                    v-for="opt in currencyOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
                 </select>
-                <ChevronDown :size="16" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">Amount / Value</label>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Amount / Value</label
+              >
               <input
                 v-model="formData.amount"
                 type="number"
@@ -210,7 +237,9 @@ const handleReset = () => {
           <!-- Expected Close Date & Owner -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">Expected Close Date</label>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Expected Close Date</label
+              >
               <input
                 v-model="formData.expectedCloseDate"
                 type="date"
@@ -219,15 +248,26 @@ const handleReset = () => {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">Owner</label>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Owner</label
+              >
               <div class="relative">
                 <select
                   v-model="formData.owner"
                   class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
-                  <option v-for="opt in ownerOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                  <option
+                    v-for="opt in ownerOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
                 </select>
-                <ChevronDown :size="16" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
               </div>
             </div>
           </div>
@@ -235,47 +275,79 @@ const handleReset = () => {
           <!-- Priority & Source -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">Priority</label>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Priority</label
+              >
               <div class="relative">
                 <select
                   v-model="formData.priority"
                   class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
-                  <option v-for="opt in priorityOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                  <option
+                    v-for="opt in priorityOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
                 </select>
-                <ChevronDown :size="16" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">Source</label>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Source</label
+              >
               <div class="relative">
                 <select
                   v-model="formData.source"
                   class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
-                  <option v-for="opt in sourceOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                  <option
+                    v-for="opt in sourceOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
                 </select>
-                <ChevronDown :size="16" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
               </div>
             </div>
           </div>
 
           <!-- Description & Document (Optional) - collapsible -->
           <div class="border border-outline rounded-lg">
-            <label class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-light-base transition-colors">
+            <label
+              class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-light-base transition-colors"
+            >
               <input
                 type="checkbox"
                 v-model="showOptional"
                 class="w-4 h-4 rounded border-outline accent-dark-base cursor-pointer"
               />
-              <span class="text-sm font-medium text-sub-text">Description &amp; Document <span class="text-sub-text/60">(Opsional)</span></span>
+              <span class="text-sm font-medium text-sub-text"
+                >Description &amp; Document
+                <span class="text-sub-text/60">(Opsional)</span></span
+              >
             </label>
 
             <Transition name="expand">
-              <div v-if="showOptional" class="border-t border-outline px-4 py-4 space-y-4">
+              <div
+                v-if="showOptional"
+                class="border-t border-outline px-4 py-4 space-y-4"
+              >
                 <!-- Description -->
                 <div>
-                  <label class="block text-sm font-medium text-dark-base mb-2">Description</label>
+                  <label class="block text-sm font-medium text-dark-base mb-2"
+                    >Description</label
+                  >
                   <textarea
                     v-model="formData.description"
                     placeholder="Ex Lorem ipsum dolor sit"
@@ -286,7 +358,9 @@ const handleReset = () => {
 
                 <!-- Documents -->
                 <div>
-                  <label class="block text-sm font-medium text-dark-base mb-2">Documents</label>
+                  <label class="block text-sm font-medium text-dark-base mb-2"
+                    >Documents</label
+                  >
 
                   <!-- Source Dropdown -->
                   <div class="relative">
@@ -294,9 +368,15 @@ const handleReset = () => {
                       type="button"
                       @click="isDocDropdownOpen = !isDocDropdownOpen"
                       class="w-full flex items-center justify-between px-3 py-2 border border-outline rounded-lg text-sm bg-white cursor-pointer"
-                      :class="selectedDocSource ? 'text-dark-base' : 'text-sub-text'"
+                      :class="
+                        selectedDocSource ? 'text-dark-base' : 'text-sub-text'
+                      "
                     >
-                      <span>{{ docSourceOptions.find(o => o.value === selectedDocSource)?.label || 'Select File Source' }}</span>
+                      <span>{{
+                        docSourceOptions.find(
+                          (o) => o.value === selectedDocSource,
+                        )?.label || "Select File Source"
+                      }}</span>
                       <ChevronDown
                         :size="16"
                         class="text-sub-text transition-transform"
@@ -311,11 +391,17 @@ const handleReset = () => {
                     >
                       <ul class="py-1">
                         <li
-                          v-for="opt in docSourceOptions.filter(o => o.value !== '')"
+                          v-for="opt in docSourceOptions.filter(
+                            (o) => o.value !== '',
+                          )"
                           :key="opt.value"
                           @click="selectDocSource(opt.value)"
                           class="px-4 py-2 text-sm hover:bg-light-base cursor-pointer"
-                          :class="selectedDocSource === opt.value ? 'text-dark-base font-medium' : 'text-sub-text'"
+                          :class="
+                            selectedDocSource === opt.value
+                              ? 'text-dark-base font-medium'
+                              : 'text-sub-text'
+                          "
                         >
                           {{ opt.label }}
                         </li>
@@ -337,12 +423,31 @@ const handleReset = () => {
                           class="w-full flex flex-col items-center justify-center gap-2 px-4 py-6 border-2 border-dashed border-outline rounded-lg text-sm bg-light-base hover:bg-outline/10 transition-colors"
                         >
                           <!-- Upload Icon -->
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-sub-text" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12V4m0 0L8 8m4-4l4 4" />
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="w-7 h-7 text-sub-text"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12V4m0 0L8 8m4-4l4 4"
+                            />
                           </svg>
-                          <span v-if="!formData.documents" class="text-sub-text font-medium">Klik untuk pilih file</span>
-                          <span v-else class="text-dark-base font-medium">{{ formData.documents.name }}</span>
-                          <span class="text-xs text-sub-text/70">PDF, DOC, XLS, JPG, PNG</span>
+                          <span
+                            v-if="!formData.documents"
+                            class="text-sub-text font-medium"
+                            >Klik untuk pilih file</span
+                          >
+                          <span v-else class="text-dark-base font-medium">{{
+                            formData.documents.name
+                          }}</span>
+                          <span class="text-xs text-sub-text/70"
+                            >PDF, DOC, XLS, JPG, PNG</span
+                          >
                         </div>
                       </label>
                     </div>
@@ -354,7 +459,9 @@ const handleReset = () => {
 
           <!-- Contact Association -->
           <div>
-            <label class="block text-sm font-medium text-dark-base mb-2">Contact Association</label>
+            <label class="block text-sm font-medium text-dark-base mb-2"
+              >Contact Association</label
+            >
             <div class="relative">
               <input
                 v-model="formData.contactAssociation"
@@ -362,7 +469,10 @@ const handleReset = () => {
                 placeholder="Search by Name"
                 class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
               />
-              <ChevronDown :size="16" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
+              <ChevronDown
+                :size="16"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+              />
             </div>
             <button
               type="button"
@@ -376,7 +486,9 @@ const handleReset = () => {
 
           <!-- Companies Association -->
           <div>
-            <label class="block text-sm font-medium text-dark-base mb-2">Companies Association</label>
+            <label class="block text-sm font-medium text-dark-base mb-2"
+              >Companies Association</label
+            >
             <div class="relative">
               <input
                 v-model="formData.companiesAssociation"
@@ -384,7 +496,10 @@ const handleReset = () => {
                 placeholder="Search by Name"
                 class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
               />
-              <ChevronDown :size="16" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
+              <ChevronDown
+                :size="16"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+              />
             </div>
             <button
               type="button"
@@ -395,12 +510,13 @@ const handleReset = () => {
               Create Company
             </button>
           </div>
-
         </form>
       </div>
 
       <!-- Footer Actions (Sticky) -->
-      <div class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div
+        class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+      >
         <button
           type="button"
           @click="handleReset"
@@ -433,7 +549,10 @@ const handleReset = () => {
     :isOpen="showDetailForm"
     @close="showDetailForm = false"
     @back="showDetailForm = false"
-    @submit="showDetailForm = false; handleClose()"
+    @submit="
+      showDetailForm = false;
+      handleClose();
+    "
   />
 
   <!-- Add Company Form -->

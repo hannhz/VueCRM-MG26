@@ -5,6 +5,7 @@ import LoginPage from "@/components/loginpage.vue";
 import MainDashboard from "@/components/maindashboard.vue";
 import Companies from "@/components/companies.vue";
 import Deals from "@/components/dealscard.vue";
+import DealsList from "@/components/dealslist.vue";
 
 const routes = [
   {
@@ -37,6 +38,11 @@ const routes = [
         path: "/deals",
         name: "Deals",
         component: Deals,
+      },
+      {
+        path: "/dealslist",
+        name: "DealsList",
+        component: DealsList,
       },
     ],
   },

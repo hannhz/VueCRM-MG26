@@ -63,7 +63,6 @@ const companies = ref([
 const currentPage = ref(1);
 const totalCompanies = ref(18600);
 const itemsPerPage = ref(10);
-
 </script>
 
 <template>

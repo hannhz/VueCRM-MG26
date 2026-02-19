@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import draggable from "vuedraggable";
-import CreateDealForm from './forms/CreateDealForm.vue';
+import CreateDealForm from "./forms/CreateDealForm.vue";
 
 import {
   ChevronDown,
@@ -12,6 +12,8 @@ import {
   Search,
   Filter,
 } from "lucide-vue-next";
+
+const viewMode = ref("grid"); // defaultnya grid
 
 const totalDeals = ref(18600);
 const itemsPerPage = ref(10);
@@ -75,7 +77,7 @@ const showCreateDealForm = ref(false);
     </div>
 
     <!-- Action Button -->
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2 ml-auto">
       <!-- Add New -->
       <button
         @click="showCreateDealForm = true"
@@ -105,16 +107,28 @@ const showCreateDealForm = ref(false);
 
       <!-- Grid Mode -->
       <button
+        @click="$router.push({ name: 'Deals' })"
         title="Pipeline Mode"
-        class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+        class="flex items-center gap-2 px-4 py-2 h-10 rounded-lg border transition"
+        :class="[
+          viewMode === 'grid'
+            ? 'bg-sub-text text-white border-sub' /* Warna saat AKTIF */
+            : 'bg-white text-sub-text border-outline hover:bg-slate-50' /* Warna saat NORMAL */,
+        ]"
       >
         <LayoutGrid :size="18" />
       </button>
 
       <!-- List Mode -->
       <button
+        @click="$router.push({ name: 'DealsList' })"
         title="List Mode"
         class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+        :class="[
+          $route.name === 'DealsList'
+            ? 'bg-blue-600 text-white'
+            : 'bg-white text-sub-text',
+        ]"
       >
         <List :size="18" :stroke-width="3" />
       </button>
@@ -123,51 +137,47 @@ const showCreateDealForm = ref(false);
 
   <!-- Placeholder for Deals Card -->
   <div
-    class="bg-white rounded-lg shadow-sm max-w-7xl h-147 border border-outline flex flex-col overflow-hidden"
+    class="bg-white rounded-lg shadow-sm max-w-311.25 h-147 border border-outline flex flex-col overflow-hidden"
   >
     <!-- Action Bar -->
     <div class="p-4 border-b border-outline">
-      <div class="flex items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <!-- Filter Button -->
+      <div class="flex items-center gap-4 w-full">
+        <!-- LEFT -->
+        <div class="flex items-center gap-3 flex-1 min-w-0">
+          <!-- Filter -->
           <button
             class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
           >
             <Filter :size="20" class="text-dark-base" />
           </button>
 
-          <!-- Search Input -->
-          <div class="relative">
-            <input
-              type="text"
-              placeholder="Search by Name"
-              class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-            />
-          </div>
+          <!-- Search -->
+          <input
+            type="text"
+            placeholder="Search by Name"
+            class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+          />
 
-          <!-- Search Button -->
+          <!-- Search Btn -->
           <button
             class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition"
           >
             <Search :size="20" class="text-dark-base" />
           </button>
 
-          <!-- Items Per Page -->
+          <!-- Show -->
           <div class="flex items-center gap-2">
             <span class="text-sm text-dark-base">Show</span>
-            <select
-              v-model="itemsPerPage"
-              class="px-3 py-2 border border-outline rounded-lg text-sm focus:outline-none"
-            >
-              <option :value="10">10</option>
-              <option :value="25">25</option>
-              <option :value="50">50</option>
-              <option :value="100">100</option>
+            <select class="px-3 py-2 border border-outline rounded-lg text-sm">
+              <option>10</option>
+              <option>25</option>
+              <option>50</option>
+              <option>100</option>
             </select>
           </div>
         </div>
 
-        <!-- Currency & Pipeline Filters -->
+        <!-- Currency n pipeline -->
         <div class="flex items-center gap-4 text-sm font-medium text-slate-600">
           <!-- Currency Dropdown -->
           <div class="relative">
@@ -253,76 +263,84 @@ const showCreateDealForm = ref(false);
       </div>
     </div>
 
+    <div></div>
+
     <!-- Pipeline Boards -->
-    <div class="relative h-full w-full">
+    <div class="relative h-full w-full overflow-hidden">
       <!-- Scrollable Container with Gradient Edges -->
-      <div class="overflow-x-auto bg-white p-6 custom-scrollbar">
+      <div class="overflow-x-auto bg-white pt-6 custom-scrollbar w-full">
         <!-- Boards Container -->
-        <div class="flex h-118 flex-nowrap gap-4">
-          <!-- Individual Board -->
-          <div
-            v-for="board in boards"
-            :key="board.id"
-            class="w-72 shrink-0 flex flex-col bg-slate-100/60 rounded-sm border-2 border-gray-300 relative"
-          >
-            <!-- Board Header -->
+        <div class="pr-6">
+          <div class="flex h-118 flex-nowrap gap-4 overflow-x-auto pl-6">
+            <!-- Individual Board -->
             <div
-              class="h-14 bg-white border-b-2 border-gray-300 flex items-center justify-between px-4 rounded-t-sm"
+              v-for="board in boards"
+              :key="board.id"
+              class="w-72 shrink-0 flex flex-col bg-slate-100/60 rounded-sm border-2 border-gray-300 relative"
             >
-              <span
-                class="text-gray-800 text-sm font-bold font-['Montserrat']"
-                >{{ board.title }}</span
+              <!-- Board Header -->
+              <div
+                class="h-14 bg-white border-b-2 border-gray-300 flex items-center justify-between px-4 rounded-t-sm"
               >
-              <div class="bg-gray-800 px-2 py-0.5 rounded-sm">
-                <span class="text-white text-[10px] font-bold"
-                  >{{ board.items.length }}
+                <span
+                  class="text-gray-800 text-sm font-bold font-['Montserrat']"
+                  >{{ board.title }}</span
+                >
+                <div class="bg-gray-800 px-2 py-0.5 rounded-sm">
+                  <span class="text-white text-[10px] font-bold"
+                    >{{ board.items.length }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Draggable Items -->
+              <draggable
+                v-model="board.items"
+                group="deals"
+                item-key="id"
+                class="flex-1 p-3 space-y-3 overflow-y-auto"
+                @start="isDragging = true"
+                @end="isDragging = false"
+              >
+                <template #item="{ element }">
+                  <div
+                    class="bg-white p-4 rounded shadow-sm border border-gray-200 cursor-move hover:border-blue-500 transition"
+                  >
+                    <p class="text-sm font-medium text-gray-700">
+                      {{ element.name }}
+                    </p>
+                    <p class="text-xs text-gray-400 mt-1">
+                      ID: #{{ element.id }}
+                    </p>
+                  </div>
+                </template>
+              </draggable>
+
+              <!-- Board Footer with Total -->
+              <div
+                class="h-14 bg-white border-t-2 border-gray-300 flex items-center justify-center rounded-b-sm"
+              >
+                <span
+                  class="text-gray-800 text-sm font-bold font-['Montserrat']"
+                >
+                  TOTAL: Rp
+                  {{
+                    board.items
+                      .reduce((t, i) => t + i.value, 0)
+                      .toLocaleString()
+                  }}
                 </span>
               </div>
             </div>
-
-            <!-- Draggable Items -->
-            <draggable
-              v-model="board.items"
-              group="deals"
-              item-key="id"
-              class="flex-1 p-3 space-y-3 overflow-y-auto"
-              @start="isDragging = true"
-              @end="isDragging = false"
-            >
-              <template #item="{ element }">
-                <div
-                  class="bg-white p-4 rounded shadow-sm border border-gray-200 cursor-move hover:border-blue-500 transition"
-                >
-                  <p class="text-sm font-medium text-gray-700">
-                    {{ element.name }}
-                  </p>
-                  <p class="text-xs text-gray-400 mt-1">
-                    ID: #{{ element.id }}
-                  </p>
-                </div>
-              </template>
-            </draggable>
-
-            <!-- Board Footer with Total -->
+            <!-- LEFT GRADIENT -->
             <div
-              class="h-14 bg-white border-t-2 border-gray-300 flex items-center justify-center rounded-b-sm"
-            >
-              <span class="text-gray-800 text-sm font-bold font-['Montserrat']">
-                TOTAL: Rp
-                {{
-                  board.items.reduce((t, i) => t + i.value, 0).toLocaleString()
-                }}
-              </span>
-            </div>
+              class="pointer-events-none absolute top-0 left-0 h-full w-9 bg-linear-to-r from-white to-transparent"
+            ></div>
+            <!-- RIGHT GRADIENT -->
+            <div
+              class="pointer-events-none absolute top-0 right-0 h-full w-9 bg-linear-to-l from-white to-transparent"
+            ></div>
           </div>
-          <!-- LEFT GRADIENT -->
-          <div
-            class="pointer-events-none absolute top-0 left-0 h-full w-9 bg-linear-to-r from-white to-transparent"
-          ></div>
-          <!-- RIGHT GRADIENT -->
-          <div
-            class="pointer-events-none absolute top-0 right-0 h-full w-9 bg-linear-to-l from-white to-transparent"
-          ></div>
         </div>
       </div>
       <!-- DANGER DELETE ZONE -->
