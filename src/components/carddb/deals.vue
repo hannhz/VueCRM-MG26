@@ -4,11 +4,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-lg font-bold text-dark-base">Deals Overview</h2>
-
-      <!-- More Icon -->
-      <button class="p-2 rounded-lg hover:bg-outline/40 transition">
-        <ellipsis :size="18" class="text-sub-text" />
-      </button>
+      <button class="text-slate-400 hover:text-gray-700">•••</button>
     </div>
 
     <!-- Sub Header -->
