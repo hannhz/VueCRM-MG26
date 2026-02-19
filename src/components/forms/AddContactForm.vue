@@ -428,7 +428,7 @@ const handleReset = () => {
   transform: translateX(100%);
 }
 
-/* Remove Browser Autofill Blue Background */
+/* Remove Browser Autofill Blue Background biru */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:active,
