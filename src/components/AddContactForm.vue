@@ -1,6 +1,9 @@
 <script setup>
 import { ref } from 'vue';
 import { X, Plus, ChevronDown } from 'lucide-vue-next';
+import AddCompanyForm from './AddCompanyForm.vue';
+import AddDealForm from './AddDealForm.vue';
+import ContactDetailForm from './ContactDetailForm.vue';
 
 const props = defineProps({
   isOpen: {
@@ -43,6 +46,10 @@ const formData = ref({
   companiesAssociation: '',
   dealsAssociation: ''
 });
+
+const showAddCompanyForm = ref(false);
+const showAddDealForm = ref(false);
+const showDetailForm = ref(false);
 
 const handleClose = () => {
   emit('close');
@@ -89,7 +96,7 @@ const handleReset = () => {
   <Transition name="slide">
     <div
       v-if="isOpen"
-      class="fixed top-0 right-0 h-screen w-full max-w-md bg-white shadow-2xl z-50 flex flex-col"
+      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-50 flex flex-col"
       @click.stop
     >
       <!-- Header -->
@@ -312,6 +319,7 @@ const handleReset = () => {
             />
             <button
               type="button"
+              @click="showAddCompanyForm = true"
               class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
             >
               <Plus :size="16" />
@@ -332,6 +340,7 @@ const handleReset = () => {
             />
             <button
               type="button"
+              @click="showAddDealForm = true"
               class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
             >
               <Plus :size="16" />
@@ -360,7 +369,7 @@ const handleReset = () => {
           </button>
           <button
             type="submit"
-            @click="handleSubmit"
+            @click="showDetailForm = true"
             class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
           >
             Next
@@ -369,6 +378,28 @@ const handleReset = () => {
       </div>
     </div>
   </Transition>
+
+  <!-- Add Company Form (stacked on top) -->
+  <AddCompanyForm
+    :isOpen="showAddCompanyForm"
+    @close="showAddCompanyForm = false"
+    @submit="showAddCompanyForm = false"
+  />
+
+  <!-- Add Deal Form (stacked on top) -->
+  <AddDealForm
+    :isOpen="showAddDealForm"
+    @close="showAddDealForm = false"
+    @submit="showAddDealForm = false"
+  />
+
+  <!-- Contact Detail Form (Next step) -->
+  <ContactDetailForm
+    :isOpen="showDetailForm"
+    @close="showDetailForm = false"
+    @back="showDetailForm = false"
+    @submit="showDetailForm = false; handleClose()"
+  />
 </template>
 
 <style scoped>

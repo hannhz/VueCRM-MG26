@@ -57,7 +57,7 @@ watch(collapsed, (val) => {
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
     :class="[
-      'bg-dark-base text-slate-300 h-screen transition-all duration-300',
+      'flex flex-col bg-dark-base text-slate-300 h-screen transition-all duration-300',
 
       // 🔥 kalau collapsed + hover → overlay
       collapsed && isHovered
@@ -87,7 +87,7 @@ watch(collapsed, (val) => {
       </button>
     </div>
 
-    <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+    <nav class="flex-1 min-h-0 p-4 space-y-1 overflow-y-auto">
       <router-link
         to="/dashboard"
         :class="[
@@ -248,7 +248,7 @@ watch(collapsed, (val) => {
     <div class="p-4 border-t border-slate-800 shrink-0">
       <button
         :class="[
-          'flex items-center p-3 w-full rounded-xl transition bg-dark-red text-white hover:bg-red-500/10 hover:text-red-500',
+          'flex items-center p-3 w-full rounded-xl transition bg-dark-red text-white hover:bg-red-700',
           isExpanded ? 'gap-3 justify-start text-left' : 'justify-center',
         ]"
       >
