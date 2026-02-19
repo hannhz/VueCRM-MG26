@@ -4,7 +4,8 @@ const salespeople = [
   { name: "Nur", deals: "1.5K", won: "1.1K" },
   { name: "Fuady", deals: "550", won: "500" },
   { name: "Hanan", deals: "196", won: "176" },
-  { name: "Hafizhah", deals: "230", won: "210" },
+    { name: "Hafizhah", deals: "230", won: "210" },
+  { name: "Zarkasi", deals: "180", won: "160" },
 ];
 </script>
 
@@ -31,7 +32,7 @@ const salespeople = [
       <div
         v-for="(person, i) in salespeople"
         :key="i"
-        class="grid grid-cols-3 items-center px-3 py-2 rounded-lg transition hover:bg-gray-50"
+        class="grid text-sm grid-cols-3 items-center px-3 py-2 rounded-lg transition hover:bg-gray-50"
       >
         <!-- Name -->
         <span class="font-medium text-gray-700">
