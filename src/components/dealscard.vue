@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import draggable from "vuedraggable";
+import CreateDealForm from './CreateDealForm.vue';
 
 import {
   ChevronDown,
@@ -60,6 +61,8 @@ const deleteDeal = (item) => {
 };
 
 const density = ref("comfy"); // comfy | compact
+
+const showCreateDealForm = ref(false);
 </script>
 
 <template>
@@ -75,6 +78,7 @@ const density = ref("comfy"); // comfy | compact
     <div class="flex items-center gap-2">
       <!-- Add New -->
       <button
+        @click="showCreateDealForm = true"
         class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
       >
         <span class="text-lg font-semibold">+</span>
@@ -360,6 +364,13 @@ const density = ref("comfy"); // comfy | compact
       </div>
     </div>
   </div>
+
+  <!-- Create Deal Form -->
+  <CreateDealForm
+    :isOpen="showCreateDealForm"
+    @close="showCreateDealForm = false"
+    @submit="showCreateDealForm = false"
+  />
 </template>
 
 <style scoped>
