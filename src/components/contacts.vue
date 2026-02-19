@@ -1,6 +1,7 @@
 <script setup>
-import Sidebar from "./layouts/sidebar.vue";
-import Kepala from "./layouts/kepala.vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import AddContactForm from "./forms/AddContactForm.vue";
+
 import {
   Search,
   ChevronDown,
@@ -11,8 +12,17 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  FolderPlus,
+  FilePlus,
 } from "lucide-vue-next";
-import { ref } from "vue";
+
+const showAddContactForm = ref(false);
+
+const handleAddContact = (contactData) => {
+  // Logic untuk save contact data ke API atau state
+  console.log("New contact:", contactData);
+  // TODO: Implement API call
+};
 
 // Sample data - replace with actual data from API
 const contacts = ref([
@@ -35,9 +45,32 @@ const contacts = ref([
     owner: "hanan",
   },
 ]);
+
 const currentPage = ref(1);
 const totalContacts = ref(18600);
 const itemsPerPage = ref(10);
+
+const showDropdown = ref(false);
+
+const toggleDropdown = () => {
+  showDropdown.value = !showDropdown.value;
+};
+
+// auto close saat klik luar
+const handleClickOutside = (e) => {
+  if (!e.target.closest(".add-dropdown")) {
+    showDropdown.value = false;
+  }
+};
+
+onMounted(() => document.addEventListener("click", handleClickOutside));
+onBeforeUnmount(() =>
+  document.removeEventListener("click", handleClickOutside),
+);
+
+const handleBulkAdd = () => {
+  console.log("Bulk add clicked");
+};
 </script>
 
 <template>
@@ -106,13 +139,50 @@ const itemsPerPage = ref(10);
       <!-- Right Section: Action Buttons -->
       <div class="flex items-center gap-2">
         <!-- Add New -->
-        <button
-          class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
-        >
-          <span class="text-lg font-semibold">+</span>
-          <span class="text-sm font-medium">Add New</span>
-          <ChevronDown :size="16" />
-        </button>
+        <div class="relative inline-block add-dropdown">
+          <!-- MAIN BUTTON -->
+          <button
+            type="button"
+            @click="toggleDropdown"
+            class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+          >
+            <span class="text-lg font-semibold">+</span>
+            <span class="text-sm font-medium">Add New</span>
+            <ChevronDown
+              :size="16"
+              class="transition-transform duration-200"
+              :class="{ 'rotate-180': showDropdown }"
+            />
+          </button>
+
+          <!-- DROPDOWN -->
+          <div
+            v-show="showDropdown"
+            class="absolute right-0 text-sub-text mt-2 w-44 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95"
+          >
+            <button
+              @click="
+                showAddContactForm = true;
+                showDropdown = false;
+              "
+              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+            >
+              <FilePlus :size="18" />
+              <span class="font-medium"> Single Contact </span>
+            </button>
+
+            <button
+              @click="
+                handleBulkAdd();
+                showDropdown = false;
+              "
+              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+            >
+              <FolderPlus :size="18" />
+              <span class="font-medium"> Bulk Contact </span>
+            </button>
+          </div>
+        </div>
 
         <!-- Download -->
         <button
@@ -300,6 +370,26 @@ const itemsPerPage = ref(10);
           </tbody>
         </table>
       </div>
+    </div>
+  </div>
+  <!-- Overlay + Modal -->
+  <div
+    v-if="showAddContactForm"
+    class="fixed inset-0 z-50 flex items-center justify-center"
+  >
+    <!-- overlay background -->
+    <div
+      class="absolute inset-0 bg-dark-base/10"
+      @click="showAddContactForm = false"
+    ></div>
+
+    <!-- modal content -->
+    <div class="relative z-10 w-full max-w-3xl">
+      <AddContactForm
+        :isOpen="showAddContactForm"
+        @close="showAddContactForm = false"
+        @submit="handleAddContact"
+      />
     </div>
   </div>
 </template>

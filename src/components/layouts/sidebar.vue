@@ -94,7 +94,7 @@ watch(collapsed, (val) => {
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
         ]"
-        active-class="bg-dark-hover text-white"
+        exact-active-class="bg-dark-hover text-white"
       >
         <div class="w-6 flex justify-center">
           <LayoutDashboard :size="20" class="group-hover:text-blue-400" />
@@ -116,7 +116,7 @@ watch(collapsed, (val) => {
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
         ]"
-        active-class="bg-dark-hover text-white"
+        exact-active-class="bg-dark-hover text-white"
       >
         <div class="w-6 flex justify-center">
           <Users :size="20" class="group-hover:text-blue-400" />
@@ -130,7 +130,7 @@ watch(collapsed, (val) => {
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
         ]"
-        active-class="bg-dark-hover text-white"
+        exact-active-class="bg-dark-hover text-white"
       >
         <div class="w-6 flex justify-center">
           <Building2 :size="20" class="group-hover:text-blue-400" />
@@ -151,7 +151,7 @@ watch(collapsed, (val) => {
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
         ]"
-        active-class="bg-dark-hover text-white"
+        exact-active-class="bg-dark-hover text-white"
         ><div class="w-6 flex justify-center">
           <Briefcase :size="20" class="group-hover:text-blue-400" />
         </div>
@@ -171,7 +171,7 @@ watch(collapsed, (val) => {
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
         ]"
-        active-class="bg-dark-hover text-white"
+        exact-active-class="bg-dark-hover text-white"
         ><div class="w-6 flex justify-center">
           <CheckSquare :size="20" class="group-hover:text-blue-400" />
         </div>
@@ -184,7 +184,7 @@ watch(collapsed, (val) => {
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
         ]"
-        active-class="bg-dark-hover text-white"
+        exact-active-class="bg-dark-hover text-white"
         ><div class="w-6 flex justify-center">
           <Mail :size="20" class="group-hover:text-blue-400" />
         </div>
@@ -204,7 +204,7 @@ watch(collapsed, (val) => {
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
         ]"
-        active-class="bg-dark-hover text-white"
+        exact-active-class="bg-dark-hover text-white"
         ><div class="w-6 flex justify-center">
           <FileText :size="20" class="group-hover:text-blue-400" />
         </div>
@@ -224,7 +224,7 @@ watch(collapsed, (val) => {
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
         ]"
-        active-class="bg-dark-hover text-white"
+        exact-active-class="bg-dark-hover text-white"
         ><div class="w-6 flex justify-center">
           <UserCircle :size="20" class="group-hover:text-blue-400" />
         </div>
@@ -237,7 +237,7 @@ watch(collapsed, (val) => {
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
         ]"
-        active-class="bg-dark-hover text-white"
+        exact-active-class="bg-dark-hover text-white"
         ><div class="w-6 flex justify-center">
           <Settings :size="20" class="group-hover:text-blue-400" />
         </div>
