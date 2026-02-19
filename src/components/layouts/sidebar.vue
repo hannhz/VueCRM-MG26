@@ -89,7 +89,7 @@ watch(collapsed, (val) => {
 
     <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
       <router-link
-        to="/dashboard"
+        to="/maindashboard"
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
