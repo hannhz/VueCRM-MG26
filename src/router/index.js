@@ -7,6 +7,10 @@ import Companies from "@/components/companies.vue";
 import Deals from "@/components/deals.vue";
 import DealsList from "@/components/dealslist.vue";
 import DealsCard from "@/components/dealscard.vue";
+import Task from "@/components/task.vue";
+import TaskList from "@/components/tasklist.vue";
+import TaskCard from "@/components/taskcard.vue";
+import TaskCalender from "@/components/taskcalender.vue";
 
 const routes = [
   {
@@ -55,6 +59,31 @@ const routes = [
           },
         ],
       },
+      {
+        path: "task",
+        component: Task,
+        children: [
+          { 
+            path: "tasklist",
+            name: "TaskList",
+            component: TaskList,
+          },
+          { 
+            path: "taskcard",
+            name: "TaskCard",
+            component: TaskCard,
+          },
+          { 
+            path: "taskcalender",
+            name: "TaskCalender",
+            component: TaskCalender,
+          },
+          {
+            path: "",
+            redirect: { name: "TaskList" }, // Default ke list jika akses /task
+          },
+        ],
+      }
     ],
   },
 ];

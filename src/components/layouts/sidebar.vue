@@ -171,7 +171,7 @@ watch(collapsed, (val) => {
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
         ]"
-        exact-active-class="bg-dark-hover text-white"
+        active-class="bg-dark-hover text-white"
         ><div class="w-6 flex justify-center">
           <CheckSquare :size="20" class="group-hover:text-blue-400" />
         </div>

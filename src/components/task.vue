@@ -1,54 +1,38 @@
 <script setup>
 import { ref } from "vue";
-const showCreateDealForm = ref(false);
+import { ChevronDown, Download, Trash, FolderDown, FileDown, FilePlus, FolderPlus, Edit, LayoutGrid,List, CalendarDays } from "lucide-vue-next";
 
-import {
-  ChevronDown,
-  FileDown,
-  FolderDown,
-  Download,
-  Edit,
-  LayoutGrid,FolderPlus,
-  FilePlus,
-  List,
-} from "lucide-vue-next";
-
-const density = ref("comfy"); // comfy | compact
-
-const viewMode = ref("grid"); // defaultnya grid
-
-const totalDeals = ref(18600);
 const showDropdown = ref(false);
-const showAddContactForm = ref(false);
-const toggleDropdown = () => {
-  showDropdown.value = !showDropdown.value;
-};
-const handleBulkAdd = () => {
-  console.log("Bulk add deals");
-};
-
 const showDownloadDropdown = ref(false);
-const toggleDownloadDropdown = () => {
+const totalTask = ref(12);
+
+function toggleDropdown() {
+  showDropdown.value = !showDropdown.value;
+}
+
+function toggleDownloadDropdown() {
   showDownloadDropdown.value = !showDownloadDropdown.value;
-};
+}
 
-const downloadAll = () => {
-  console.log("Download all data");
-  showDownloadDropdown.value = false;
-};
+function handleBulkAdd() {
+  console.log("Bulk Add Task");
+}
 
-const handleDownload = () => {
-  console.log("Download selected data:", selectedIds.value);
-  showDownloadDropdown.value = false;
-};
+function downloadAll() {
+  console.log("Download All Tasks");
+}
+
+function handleDownload() {
+  console.log("Download Selected Tasks");
+}
 </script>
 
 <template>
   <div class="flex items-center justify-between mb-4">
     <div class="flex items-baseline gap-3">
-      <h1 class="text-2xl font-bold text-dark-base">Deals</h1>
+      <h1 class="text-2xl font-bold text-dark-base">Task</h1>
       <span class="text-sm text-sub-text"
-        >{{ totalDeals.toLocaleString() }} Total Deals</span
+        >{{ totalTask.toLocaleString() }} Total Task</span
       >
     </div>
 
@@ -82,7 +66,7 @@ const handleDownload = () => {
             class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
           >
             <FilePlus :size="18" />
-            <span class="font-medium"> Single Deals </span>
+            <span class="font-medium"> Single Task </span>
           </button>
 
           <button
@@ -93,7 +77,7 @@ const handleDownload = () => {
             class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
           >
             <FolderPlus :size="18" />
-            <span class="font-medium"> Bulk Deals </span>
+            <span class="font-medium"> Bulk Task </span>
           </button>
         </div>
       </div>
@@ -146,9 +130,57 @@ const handleDownload = () => {
         <span class="text-sm font-medium">Bulk Edit</span>
       </button>
 
-      <!-- Grid Mode -->
+      <!--- Delete Mode -->
+      <button
+  @click="handleDelete"
+  class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition
+         bg-white text-sub-text border-outline
+         hover:bg-red hover:text-white hover:border-red-200"
+>
+  <Trash :size="18" :stroke-width="2" />
+</button>
+
+      <!-- List Mode -->
       <router-link
-        :to="{ name: 'DealsCard' }"
+        :to="{ name: 'TaskList' }"
+        custom
+        v-slot="{ navigate, isActive }"
+      >
+        <button
+          @click="navigate"
+          :class="[
+            isActive
+              ? 'bg-sub-text text-white border-sub-text'
+              : 'bg-white text-sub-text border-outline hover:bg-slate-50',
+          ]"
+          class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition"
+        >
+          <List :size="18" :stroke-width="3" />
+        </button>
+      </router-link>
+
+      <!-- calender Mode -->
+      <router-link
+        :to="{ name: 'TaskCalender' }"
+        custom
+        v-slot="{ navigate, isActive }"
+      >
+        <button
+          @click="navigate"
+          :class="[
+            isActive
+              ? 'bg-sub-text text-white border-sub-text'
+              : 'bg-white text-sub-text border-outline hover:bg-slate-50',
+          ]"
+          class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition"
+        >
+          <CalendarDays :size="18" :stroke-width="2" />
+        </button>
+      </router-link>
+
+<!-- Grid Mode -->
+      <router-link
+        :to="{ name: 'TaskCard' }"
         custom
         v-slot="{ navigate, isActive }"
       >
@@ -165,25 +197,7 @@ const handleDownload = () => {
         </button>
       </router-link>
 
-      <!-- List Mode -->
-      <router-link
-        :to="{ name: 'DealsList' }"
-        custom
-        v-slot="{ navigate, isActive }"
-      >
-        <button
-          @click="navigate"
-          :class="[
-            isActive
-              ? 'bg-sub-text text-white border-sub-text'
-              : 'bg-white text-sub-text border-outline hover:bg-slate-50',
-          ]"
-          class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition"
-        >
-          <List :size="18" :stroke-width="3" />
-        </button>
-      </router-link>
     </div>
   </div>
   <router-view />
-</template>
+  </template>
