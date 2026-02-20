@@ -64,7 +64,6 @@ const deleteDeal = (item) => {
 
 const density = ref("comfy"); // comfy | compact
 
-const showCreateDealForm = ref(false);
 </script>
 
 <template>
