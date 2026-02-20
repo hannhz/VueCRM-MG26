@@ -8,7 +8,6 @@ import {
   Edit,
   LayoutGrid,
   List,
-  Briefcase,
 } from "lucide-vue-next";
 
 const density = ref("comfy"); // comfy | compact
@@ -16,7 +15,6 @@ const density = ref("comfy"); // comfy | compact
 const viewMode = ref("grid"); // defaultnya grid
 
 const totalDeals = ref(18600);
-const itemsPerPage = ref(10);
 </script>
 
 <template>
@@ -97,10 +95,4 @@ const itemsPerPage = ref(10);
     </div>
   </div>
   <router-view />
-
-  <router-view v-slot="{ Component }">
-    <keep-alive>
-      <component :is="Component" />
-    </keep-alive>
-  </router-view>
 </template>

@@ -309,9 +309,8 @@ onBeforeUnmount(() => {
           </p>
         </div>
       </div>
-      </div>
     </div>
-
+  </div>
 
   <!-- Create Deal Form -->
   <CreateDealForm
