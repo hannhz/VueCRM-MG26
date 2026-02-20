@@ -1,17 +1,8 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onBeforeUnmount } from "vue"; // 1. Pastikan onBeforeUnmount sudah di-import
 import draggable from "vuedraggable";
 import CreateDealForm from "./forms/CreateDealForm.vue";
-
-import {
-  ChevronDown,
-  Download,
-  Edit,
-  LayoutGrid,
-  List,
-  Search,
-  Filter,
-} from "lucide-vue-next";
+import { ChevronDown, Search, Filter } from "lucide-vue-next";
 
 const viewMode = ref("grid"); // defaultnya grid
 
@@ -30,6 +21,7 @@ const pipelines = ["Sales Pipeline", "Marketing Pipeline", "Dev Pipeline"];
 const selectedPipeline = ref("Sales Pipeline");
 const isPipelineOpen = ref(false);
 const isDragging = ref(false);
+const showCreateDealForm = ref(false);
 
 const pipeline = ref({
   new: [
@@ -61,81 +53,20 @@ const deleteDeal = (item) => {
     b.items = b.items.filter((i) => i.id !== item.id);
   });
 };
+onBeforeUnmount(() => {
+  isDragging.value = false;
+  isCurrencyOpen.value = false;
+  isPipelineOpen.value = false;
+  showCreateDealForm.value = false;
 
-const density = ref("comfy"); // comfy | compact
-const showCreateDealForm = ref(false);
-
+  console.log("State dibersihkan, overlay dimatikan!");
+});
 </script>
 
 <template>
-  <div class="flex items-center justify-between mb-4">
-    <div class="flex items-baseline gap-3">
-      <h1 class="text-2xl font-bold text-dark-base">Deals</h1>
-      <span class="text-sm text-sub-text"
-        >{{ totalDeals.toLocaleString() }} Total Deals</span
-      >
-    </div>
-
-    <!-- Action Button -->
-    <div class="flex items-center gap-2 ml-auto">
-      <!-- Add New -->
-      <button
-        @click="showCreateDealForm = true"
-        class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
-      >
-        <span class="text-lg font-semibold">+</span>
-        <span class="text-sm font-medium">Add New</span>
-        <ChevronDown :size="16" />
-      </button>
-
-      <!-- Download -->
-      <button
-        class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
-      >
-        <Download :size="18" />
-        <span class="text-sm font-medium">Download</span>
-        <ChevronDown :size="16" />
-      </button>
-
-      <!-- Bulk Edit -->
-      <button
-        class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
-      >
-        <Edit :size="18" />
-        <span class="text-sm font-medium">Bulk Edit</span>
-      </button>
-
-      <!-- Grid Mode -->
-      <button
-        @click="$router.push({ name: 'Deals' })"
-        title="Pipeline Mode"
-        class="flex items-center gap-2 px-4 py-2 h-10 rounded-lg border transition"
-        :class="[
-          viewMode === 'grid'
-            ? 'bg-sub-text text-white border-sub' /* Warna saat AKTIF */
-            : 'bg-white text-sub-text border-outline hover:bg-slate-50' /* Warna saat NORMAL */,
-        ]"
-      >
-        <LayoutGrid :size="18" />
-      </button>
-
-      <!-- List Mode -->
-      <button
-        @click="$router.push({ name: 'DealsList' })"
-        title="List Mode"
-        class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
-        :class="[
-          $route.name === 'DealsList'
-            ? 'bg-blue-600 text-white'
-            : 'bg-white text-sub-text',
-        ]"
-      >
-        <List :size="18" :stroke-width="3" />
-      </button>
-    </div>
-  </div>
-
-ounded-lg shadow-sm max-w-311.25 h-147 border border-outline flex flex-col overflow-hidden"
+  <!-- Placeholder for Deals Card -->
+  <div
+    class="bg-white rounded-lg shadow-sm max-w-311.25 h-147 border border-outline flex flex-col overflow-hidden"
   >
     <!-- Action Bar -->
     <div class="p-4 border-b border-outline">
@@ -377,6 +308,7 @@ ounded-lg shadow-sm max-w-311.25 h-147 border border-outline flex flex-col overf
             Drop to <span class="font-bold">DELETE</span>
           </p>
         </div>
+      </div>
       </div>
     </div>
 

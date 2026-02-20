@@ -89,7 +89,7 @@ watch(collapsed, (val) => {
 
     <nav class="flex-1 min-h-0 p-4 space-y-1 overflow-y-auto">
       <router-link
-        to="/maindashboard"
+        to="/crmAdmin"
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
@@ -111,7 +111,7 @@ watch(collapsed, (val) => {
       ></div>
 
       <router-link
-        to="/contacts"
+        to="/crmAdmin/contacts"
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
@@ -125,7 +125,7 @@ watch(collapsed, (val) => {
       </router-link>
 
       <router-link
-        to="/companies"
+        to="/crmAdmin/companies"
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
@@ -146,12 +146,12 @@ watch(collapsed, (val) => {
       ></div>
 
       <router-link
-        to="/deals"
+        :to="{ name: 'DealsCard' }"
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
         ]"
-        exact-active-class="bg-dark-hover text-white"
+        active-class="bg-dark-hover text-white"
         ><div class="w-6 flex justify-center">
           <Briefcase :size="20" class="group-hover:text-blue-400" />
         </div>
@@ -166,7 +166,7 @@ watch(collapsed, (val) => {
       ></div>
 
       <router-link
-        to="/task"
+        to="/crmAdmin/task"
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
@@ -179,7 +179,7 @@ watch(collapsed, (val) => {
       </router-link>
 
       <router-link
-        to="/email-broadcast"
+        to="/crmAdmin/email-broadcast"
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
@@ -199,7 +199,7 @@ watch(collapsed, (val) => {
       ></div>
 
       <router-link
-        to="/documents"
+        to="/crmAdmin/documents"
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
@@ -219,7 +219,7 @@ watch(collapsed, (val) => {
       ></div>
 
       <router-link
-        to="/users"
+        to="/crmAdmin/users"
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
@@ -232,7 +232,7 @@ watch(collapsed, (val) => {
       </router-link>
 
       <router-link
-        to="/settings"
+        to="/crmAdmin/settings"
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
