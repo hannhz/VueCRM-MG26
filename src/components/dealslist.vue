@@ -13,6 +13,20 @@ const currentPage = ref(1);
 const totalDeals = ref(18600);
 const itemsPerPage = ref(10);
 
+//data
+const deals = ref([
+  {
+    id: 1,
+    name: "TechFlow Solutions",
+    stage: "qualified",
+    jumlah: "Main Enterprise",
+    tertanggal: "2023-10-20",
+    contact: "John Doe",
+    company: "meta tech",
+    updatedAt: "2023-10-24",
+    owner: "Alex Graham",
+  },
+]);
 
 // Data Mata Uang
 const currencies = ["IDR", "USD", "SGD", "EUR"];
@@ -38,7 +52,7 @@ const handleAddDeal = (dealData) => {
     class="bg-white rounded-lg shadow-sm max-w-311.25 h-147 border border-outline flex flex-col overflow-hidden"
   >
     <!-- Action Bar -->
-    <div class="p-4 border-b border-outline">
+    <div class="pt-4 pr-4 pl-4">
       <div class="flex items-center gap-4 w-full">
         <!-- LEFT -->
         <div class="flex items-center gap-3 flex-1 min-w-0">
@@ -217,7 +231,7 @@ const handleAddDeal = (dealData) => {
                 class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
               >
                 <div class="flex items-center gap-2">
-                  Company Name
+                  Deal Name
                   <ChevronDown :size="16" class="text-gray-400" />
                 </div>
               </th>
@@ -225,7 +239,15 @@ const handleAddDeal = (dealData) => {
                 class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
               >
                 <div class="flex items-center gap-2">
-                  Info Company
+                  Stage
+                  <ChevronDown :size="16" class="text-gray-400" />
+                </div>
+              </th>
+              <th
+                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
+              >
+                <div class="flex items-center gap-2">
+                  Jumlah/Tertanggal
                   <ChevronDown :size="16" class="text-gray-400" />
                 </div>
               </th>
@@ -237,14 +259,7 @@ const handleAddDeal = (dealData) => {
                   <ChevronDown :size="16" class="text-gray-400" />
                 </div>
               </th>
-              <th
-                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
-              >
-                <div class="flex items-center gap-2">
-                  Type
-                  <ChevronDown :size="16" class="text-gray-400" />
-                </div>
-              </th>
+
               <th
                 class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
               >
@@ -263,7 +278,73 @@ const handleAddDeal = (dealData) => {
               </th>
             </tr>
           </thead>
-          
+
+          <!-- Table Body -->
+          <tbody>
+            <!-- Empty State -->
+            <tr v-if="deals.length === 0">
+              <td colspan="7" class="px-6 py-20 text-center text-sub-text">
+                <div class="flex flex-col items-center gap-3">
+                  <div
+                    class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center"
+                  >
+                    <Search :size="32" class="text-gray-400" />
+                  </div>
+                  <p class="text-lg font-medium">No deals found</p>
+                  <p class="text-sm text-gray-400">
+                    Start adding deals to see them here
+                  </p>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Data Rows -->
+            <tr
+              v-for="deal in deals"
+              :key="deal.id"
+              class="border-b border-gray-100 hover:bg-gray-50 transition"
+            >
+              <td class="px-6 py-4">
+                <input
+                  type="checkbox"
+                  class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
+                />
+              </td>
+
+              <td class="px-6 py-4 text-sm text-gray-800 font-medium">
+                {{ deal.name }}
+              </td>
+
+              <td class="px-6 py-4 text-sm text-dark-base">
+                <span
+                  class="px-3 py-1 rounded-full text-xs font-medium"
+                  :class="{
+                    'bg-green-100 text-green-700': deal.stage === 'qualified',
+                    'bg-yellow-100 text-yellow-700': deal.stage === 'proposal',
+                    'bg-red-100 text-red-700': deal.stage === 'lost',
+                  }"
+                >
+                  {{ deal.stage }}
+                </span>
+              </td>
+
+              <td class="px-6 py-4 text-sm text-dark-base">
+                {{ deal.jumlah }} / {{ deal.tertanggal }}
+              </td>
+
+              <td class="px-6 py-4 text-sm text-dark-base">
+                {{ deal.contact }} — {{ deal.company }}
+              </td>
+
+              <td class="px-6 py-4 text-sm text-dark-base">
+                {{ deal.updatedAt }}
+              </td>
+
+              <td class="px-6 py-4 text-sm text-dark-base">
+                {{ deal.owner }}
+              </td>
+            </tr>
+          </tbody>
         </table>
       </div>
     </div>

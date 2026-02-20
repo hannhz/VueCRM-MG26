@@ -2,13 +2,7 @@
 import { ref } from "vue";
 const showCreateDealForm = ref(false);
 
-import {
-  ChevronDown,
-  Download,
-  Edit,
-  LayoutGrid,
-  List,
-} from "lucide-vue-next";
+import { ChevronDown, Download, Edit, LayoutGrid, List } from "lucide-vue-next";
 
 const density = ref("comfy"); // comfy | compact
 
@@ -53,6 +47,13 @@ const totalDeals = ref(18600);
       >
         <Edit :size="18" />
         <span class="text-sm font-medium">Bulk Edit</span>
+      </button>
+
+      <button
+        v-if="viewMode === 'list'"
+        class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition"
+      >
+        Delete
       </button>
 
       <!-- Grid Mode -->
