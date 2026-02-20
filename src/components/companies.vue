@@ -6,11 +6,14 @@ import {
   Edit,
   Trash2,
   Filter,
-  ChevronLeft,
+  ChevronLeft,FolderPlus,
+  FilePlus,
   ChevronRight,
   RefreshCcw,
+  FolderDown,
+  FileDown,
 } from "lucide-vue-next";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 
 // Sample data - replace with actual data from API
 const companies = ref([
@@ -63,6 +66,47 @@ const companies = ref([
 const currentPage = ref(1);
 const totalCompanies = ref(18600);
 const itemsPerPage = ref(10);
+
+const showAddContactForm = ref(false);
+const showDropdown = ref(false);
+
+const toggleDropdown = () => {
+  showDropdown.value = !showDropdown.value;
+};
+
+const handleBulkAdd = () => {
+  // Logic untuk bulk add contacts
+  console.log("Bulk add contacts");
+};
+
+//download dropdown
+const showDownloadDropdown = ref(false);
+
+const toggleDownloadDropdown = () => {
+  showDownloadDropdown.value = !showDownloadDropdown.value;
+};
+
+const downloadAll = () => {
+  console.log("Download All");
+  showDownloadDropdown.value = false;
+};
+
+const handleDownload = () => {
+  if (selectedIds.value.length) {
+    console.log("Download selected:", selectedIds.value);
+  } else {
+    console.log("Download all data");
+  }
+};
+
+//selected state
+const selectedIds = ref([]);
+
+const downloadLabel = computed(() => {
+  return selectedIds.value.length
+    ? `Download (${selectedIds.value.length})`
+    : "Download";
+});
 </script>
 
 <template>
@@ -130,22 +174,88 @@ const itemsPerPage = ref(10);
       <!-- Right Section: Action Buttons -->
       <div class="flex items-center gap-2">
         <!-- Add New -->
-        <button
-          class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
-        >
-          <span class="text-lg font-semibold">+</span>
-          <span class="text-sm font-medium">Add New</span>
-          <ChevronDown :size="16" />
-        </button>
+        <div class="relative inline-block add-dropdown">
+          <button
+            type="button"
+            @click="toggleDropdown"
+            class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+          >
+            <span class="text-lg font-semibold">+</span>
+            <span class="text-sm font-medium">Add New</span>
+            <ChevronDown
+              :size="16"
+              class="transition-transform duration-200"
+              :class="{ 'rotate-180': showDropdown }"
+            />
+          </button>
+          <!-- Dropdown Menu -->
+          <div
+            v-show="showDropdown"
+            class="absolute right-0 text-sub-text mt-2 w-44 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95"
+          >
+            <button
+              @click="
+                showAddContactForm = true;
+                showDropdown = false;
+              "
+              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+            >
+              <FilePlus :size="18" />
+              <span class="font-medium"> Single Company </span>
+            </button>
+
+            <button
+              @click="
+                handleBulkAdd();
+                showDropdown = false;
+              "
+              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+            >
+              <FolderPlus :size="18" />
+              <span class="font-medium"> Bulk Company </span>
+            </button>
+          </div>
+        </div>
 
         <!-- Download -->
-        <button
-          class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
-        >
-          <Download :size="18" />
-          <span class="text-sm font-medium">Download</span>
-          <ChevronDown :size="16" />
-        </button>
+        <div class="relative inline-block">
+          <!-- Button -->
+          <button
+            type="button"
+            @click="toggleDownloadDropdown"
+            class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+          >
+            <Download :size="18" />
+            <span class="text-sm font-medium">Download</span>
+            <ChevronDown
+              :size="16"
+              class="transition-transform duration-200"
+              :class="{ 'rotate-180': showDownloadDropdown }"
+            />
+          </button>
+
+          <!-- Dropdown -->
+          <div
+            v-show="showDownloadDropdown"
+            class="absolute text-sub-text right-0 mt-2 w-48 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95"
+          >
+            <button
+              @click="downloadAll"
+              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+            >
+              <FolderDown :size="16" />
+              <span class="font-medium">Download All</span>
+            </button>
+
+            <button
+              @click="handleDownload"
+              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+            >
+              <FileDown :size="16" />
+              <span class="font-medium">{{ downloadLabel }}</span>
+            </button>
+          </div>
+        </div>
 
         <!-- Bulk Edit -->
         <button
@@ -293,6 +403,8 @@ const itemsPerPage = ref(10);
               <td class="px-6 py-4">
                 <input
                   type="checkbox"
+                  :value="contact.id"
+                  v-model="selectedIds"
                   class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
                 />
               </td>

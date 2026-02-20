@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import AddContactForm from "./forms/AddContactForm.vue";
 
 import {
@@ -14,6 +14,8 @@ import {
   ChevronRight,
   FolderPlus,
   FilePlus,
+  FileDown,
+  FolderDown,
 } from "lucide-vue-next";
 
 // Sample data - replace with actual data from API
@@ -70,6 +72,31 @@ onBeforeUnmount(() =>
 const handleBulkAdd = () => {
   console.log("Bulk add clicked");
 };
+
+const showDownloadDropdown = ref(false);
+const toggleDownloadDropdown = () => {
+  showDownloadDropdown.value = !showDownloadDropdown.value;
+};
+
+const selectedIds = ref([]);
+const downloadAll = () => {
+  console.log("Download all data");
+  showDownloadDropdown.value = false;
+};
+const handleDownload = () => {
+  if (selectedIds.value.length) {
+    console.log("Download selected:", selectedIds.value);
+  } else {
+    console.log("Download all data");
+  }
+  showDownloadDropdown.value = false;
+};
+
+const downloadLabel = computed(() => {
+  return selectedIds.value.length
+    ? `Download (${selectedIds.value.length})`
+    : "Download";
+});
 </script>
 
 <template>
@@ -182,13 +209,44 @@ const handleBulkAdd = () => {
         </div>
 
         <!-- Download -->
-        <button
-          class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
-        >
-          <Download :size="18" />
-          <span class="text-sm font-medium">Download</span>
-          <ChevronDown :size="16" />
-        </button>
+        <div class="relative inline-block">
+          <!-- Button -->
+          <button
+            type="button"
+            @click="toggleDownloadDropdown"
+            class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+          >
+            <Download :size="18" />
+            <span class="text-sm font-medium">Download</span>
+            <ChevronDown
+              :size="16"
+              class="transition-transform duration-200"
+              :class="{ 'rotate-180': showDownloadDropdown }"
+            />
+          </button>
+
+          <!-- Dropdown -->
+          <div
+            v-show="showDownloadDropdown"
+            class="absolute text-sub-text right-0 mt-2 w-48 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95"
+          >
+            <button
+              @click="downloadAll"
+              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+            >
+              <FolderDown :size="16" />
+              <span class="font-medium">Download All</span>
+            </button>
+
+            <button
+              @click="handleDownload"
+              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+            >
+              <FileDown :size="16" />
+              <span class="font-medium">{{ downloadLabel }}</span>
+            </button>
+          </div>
+        </div>
 
         <!-- Bulk Edit -->
         <button

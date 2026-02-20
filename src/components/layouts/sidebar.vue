@@ -146,7 +146,7 @@ watch(collapsed, (val) => {
       ></div>
 
       <router-link
-        :to="{ name: 'DealsCard' }"
+        to="/crmAdmin/deals"
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',

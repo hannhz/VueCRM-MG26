@@ -7,6 +7,7 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  Trash2,
 } from "lucide-vue-next";
 
 const currentPage = ref(1);
@@ -27,6 +28,8 @@ const deals = ref([
     owner: "Alex Graham",
   },
 ]);
+
+const selectedDeals = ref([]);
 
 // Data Mata Uang
 const currencies = ["IDR", "USD", "SGD", "EUR"];
@@ -91,6 +94,21 @@ const handleAddDeal = (dealData) => {
 
         <!-- Currency n pipeline -->
         <div class="flex items-center gap-4 text-sm font-medium text-slate-600">
+          <!-- DELETE BUTTON (muncul saat ada selection) -->
+          <button
+            v-if="selectedDeals.length"
+            @click="deleteSelected"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-md border border-red-400 bg-red-50 text-red-700 font-semibold hover:bg-red-100 hover:border-red-500 transition"
+          >
+            <Trash2 :size="16" />
+            DELETE ({{ selectedDeals.length }})
+          </button>
+
+          <!-- Divider -->
+          <div
+            v-if="selectedDeals.length"
+            class="hidden sm:block w-px h-5 bg-outline"
+          ></div>
           <!-- Currency Dropdown -->
           <div class="relative">
             <button
@@ -224,6 +242,16 @@ const handleAddDeal = (dealData) => {
               <th class="px-6 py-4 text-left">
                 <input
                   type="checkbox"
+                  @change="
+                    (e) => {
+                      selectedDeals = e.target.checked
+                        ? deals.map((d) => d.id)
+                        : [];
+                    }
+                  "
+                  :checked="
+                    selectedDeals.length === deals.length && deals.length > 0
+                  "
                   class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
                 />
               </th>
@@ -307,6 +335,8 @@ const handleAddDeal = (dealData) => {
               <td class="px-6 py-4">
                 <input
                   type="checkbox"
+                  :value="deal.id"
+                  v-model="selectedDeals"
                   class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
                 />
               </td>
