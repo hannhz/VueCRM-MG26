@@ -164,6 +164,8 @@ const itemsPerPage = ref(10);
         </button>
       </div>
     </div>
+
+    <!--- filter select n page -->
     <div class="px-6 py-4 flex items-center">
       <!-- KIRI -->
       <label class="flex items-center gap-2 text-sm text-sub-text">
@@ -192,7 +194,7 @@ const itemsPerPage = ref(10);
           class="w-12 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-sub-text"
         />
 
-        <span>of {{ Math.ceil(totalcompanies / itemsPerPage) }}</span>
+        <span>of {{ Math.ceil(totalCompanies / itemsPerPage) }}</span>
 
         <button
           class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"

@@ -13,7 +13,7 @@ const errorMsg = ref("");
 const handleLogin = () => {
   // contoh validasi sederhana
   if (email.value === "admin@mail.com" && password.value === "123456") {
-    router.push("/maindashboard");
+    router.push("/crmAdmin");
   } else {
     errorMsg.value = "Email atau password salah";
   }

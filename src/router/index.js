@@ -4,7 +4,9 @@ import Contacts from "@/components/contacts.vue";
 import LoginPage from "@/components/loginpage.vue";
 import MainDashboard from "@/components/maindashboard.vue";
 import Companies from "@/components/companies.vue";
-import Deals from "@/components/dealscard.vue";
+import Deals from "@/components/deals.vue";
+import DealsList from "@/components/dealslist.vue";
+import DealsCard from "@/components/dealscard.vue";
 
 const routes = [
   {
@@ -13,7 +15,7 @@ const routes = [
     component: LoginPage,
   },
   {
-    path: "/maindashboard",
+    path: "/crmAdmin",
     name: "MainDashboard",
     component: MainDashboard,
     children: [
@@ -24,19 +26,34 @@ const routes = [
       },
 
       {
-        path: "/contacts",
+        path: "contacts",
         name: "Contacts",
         component: Contacts,
       },
       {
-        path: "/companies",
+        path: "companies",
         name: "Companies",
         component: Companies,
       },
       {
-        path: "/deals",
-        name: "Deals",
-        component: Deals,
+        path: "deals",
+        component: Deals, // File yang barusan kamu kirim
+        children: [
+          {
+            path: "dealscard",
+            name: "DealsCard", // Gunakan nama unik
+            component: DealsCard,
+          },
+          {
+            path: "dealslist",
+            name: "DealsList", // Gunakan nama unik
+            component: DealsList,
+          },
+          {
+            path: "",
+            redirect: { name: "DealsCard" }, // Default ke card jika akses /deals
+          },
+        ],
       },
     ],
   },
