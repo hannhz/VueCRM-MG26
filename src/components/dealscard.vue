@@ -63,6 +63,7 @@ const deleteDeal = (item) => {
 };
 
 const density = ref("comfy"); // comfy | compact
+const showCreateDealForm = ref(false);
 
 </script>
 
@@ -134,9 +135,7 @@ const density = ref("comfy"); // comfy | compact
     </div>
   </div>
 
-  <!-- Placeholder for Deals Card -->
-  <div
-    class="bg-white rounded-lg shadow-sm max-w-311.25 h-147 border border-outline flex flex-col overflow-hidden"
+ounded-lg shadow-sm max-w-311.25 h-147 border border-outline flex flex-col overflow-hidden"
   >
     <!-- Action Bar -->
     <div class="p-4 border-b border-outline">
@@ -380,7 +379,7 @@ const density = ref("comfy"); // comfy | compact
         </div>
       </div>
     </div>
-  </div>
+
 
   <!-- Create Deal Form -->
   <CreateDealForm
