@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import AddContactForm from "./forms/AddContactForm.vue";
+import BulkAddContactForm from "./forms/BulkAddContactForm.vue";
 
 import {
   Search,
@@ -43,6 +44,7 @@ const currentPage = ref(1);
 const totalContacts = ref(18600);
 const itemsPerPage = ref(10);
 const showAddContactForm = ref(false);
+const showBulkAddForm = ref(false);
 
 const handleAddContact = (contactData) => {
   // Logic untuk save contact data ke API atau state
@@ -70,6 +72,7 @@ onBeforeUnmount(() =>
 
 const handleBulkAdd = () => {
   console.log("Bulk add clicked");
+  showBulkAddForm.value = true;
 };
 </script>
 
@@ -375,6 +378,13 @@ const handleBulkAdd = () => {
       :isOpen="showAddContactForm"
       @close="showAddContactForm = false"
       @submit="handleAddContact"
+    />
+
+    <!-- Bulk Add Contact Form -->
+    <BulkAddContactForm
+      :isOpen="showBulkAddForm"
+      @close="showBulkAddForm = false"
+      @submit="(file) => { console.log('File uploaded:', file); showBulkAddForm = false; }"
     />
   </div>
 </template>

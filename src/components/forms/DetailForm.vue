@@ -131,7 +131,7 @@ const handleReset = () => {
   <Transition name="overlay">
     <div
       v-if="isOpen"
-      class="fixed inset-0 bg-black/30 z-40"
+      class="fixed inset-0 bg-sub-text/80 z-40 transition-all duration-300"
       @click="handleClose"
     ></div>
   </Transition>

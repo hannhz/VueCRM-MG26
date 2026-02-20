@@ -458,7 +458,7 @@ const handleReset = () => {
             @click="handleSubmit"
             class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
           >
-            Save
+            Next
           </button>
         </div>
       </div>
