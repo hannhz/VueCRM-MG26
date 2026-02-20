@@ -63,17 +63,17 @@ const routes = [
         path: "task",
         component: Task,
         children: [
-          { 
+          {
             path: "tasklist",
             name: "TaskList",
             component: TaskList,
           },
-          { 
+          {
             path: "taskcard",
             name: "TaskCard",
             component: TaskCard,
           },
-          { 
+          {
             path: "taskcalender",
             name: "TaskCalender",
             component: TaskCalender,
@@ -83,7 +83,7 @@ const routes = [
             redirect: { name: "TaskList" }, // Default ke list jika akses /task
           },
         ],
-      }
+      },
     ],
   },
 ];

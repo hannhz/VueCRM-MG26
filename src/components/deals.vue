@@ -8,7 +8,8 @@ import {
   FolderDown,
   Download,
   Edit,
-  LayoutGrid,FolderPlus,
+  LayoutGrid,
+  FolderPlus,
   FilePlus,
   List,
 } from "lucide-vue-next";
@@ -157,7 +158,7 @@ const handleDownload = () => {
           :class="[
             isActive
               ? 'bg-sub-text text-white border-sub-text'
-              : 'bg-white text-sub-text border-outline hover:bg-slate-50',
+              : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
           ]"
           class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition"
         >
@@ -176,7 +177,7 @@ const handleDownload = () => {
           :class="[
             isActive
               ? 'bg-sub-text text-white border-sub-text'
-              : 'bg-white text-sub-text border-outline hover:bg-slate-50',
+              : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
           ]"
           class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition"
         >

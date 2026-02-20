@@ -1,6 +1,18 @@
 <script setup>
 import { ref } from "vue";
-import { ChevronDown, Download, Trash, FolderDown, FileDown, FilePlus, FolderPlus, Edit, LayoutGrid,List, CalendarDays } from "lucide-vue-next";
+import {
+  ChevronDown,
+  Download,
+  Trash,
+  FolderDown,
+  FileDown,
+  FilePlus,
+  FolderPlus,
+  Edit,
+  LayoutGrid,
+  List,
+  CalendarDays,
+} from "lucide-vue-next";
 
 const showDropdown = ref(false);
 const showDownloadDropdown = ref(false);
@@ -132,13 +144,11 @@ function handleDownload() {
 
       <!--- Delete Mode -->
       <button
-  @click="handleDelete"
-  class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition
-         bg-white text-sub-text border-outline
-         hover:bg-red hover:text-white hover:border-red-200"
->
-  <Trash :size="18" :stroke-width="2" />
-</button>
+        @click="handleDelete"
+        class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition bg-white text-sub-text border-outline hover:bg-red hover:text-white hover:border-red"
+      >
+        <Trash :size="18" :stroke-width="2" />
+      </button>
 
       <!-- List Mode -->
       <router-link
@@ -151,7 +161,7 @@ function handleDownload() {
           :class="[
             isActive
               ? 'bg-sub-text text-white border-sub-text'
-              : 'bg-white text-sub-text border-outline hover:bg-slate-50',
+              : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
           ]"
           class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition"
         >
@@ -170,7 +180,7 @@ function handleDownload() {
           :class="[
             isActive
               ? 'bg-sub-text text-white border-sub-text'
-              : 'bg-white text-sub-text border-outline hover:bg-slate-50',
+              : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
           ]"
           class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition"
         >
@@ -178,7 +188,7 @@ function handleDownload() {
         </button>
       </router-link>
 
-<!-- Grid Mode -->
+      <!-- Grid Mode -->
       <router-link
         :to="{ name: 'TaskCard' }"
         custom
@@ -189,15 +199,14 @@ function handleDownload() {
           :class="[
             isActive
               ? 'bg-sub-text text-white border-sub-text'
-              : 'bg-white text-sub-text border-outline hover:bg-slate-50',
+              : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
           ]"
           class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition"
         >
           <LayoutGrid :size="18" :stroke-width="2" />
         </button>
       </router-link>
-
     </div>
   </div>
   <router-view />
-  </template>
+</template>
