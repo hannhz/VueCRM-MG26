@@ -1,0 +1,142 @@
+﻿
+> vuecrmmg26@0.0.0 build
+> vite build
+
+[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+node.exe : [33msrc/c
+omponents/usersetings
+.vue (17:28): Error w
+hen using sourcemap f
+or reporting an error
+: Can't resolve origi
+nal location of error
+.[39m
+At line:1 char:1
++ & "C:\Program Files
+\nodejs/node.exe" "C:
+\Program Files\nodejs
+/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: ([33msr   
+ c/compon... of e    
+rror.[39m:Strin    g
+) [], RemoteExc    ep
+tion
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+[32mÔ£ô[39m 1771 modules transformed.
+[31mÔ£ù[39m Build f
+ailed in 2.60s
+[31merror during bui
+ld:
+[31msrc/components/u
+sersetings.vue (17:28
+): "UserRoundKey" is 
+not exported by "node
+_modules/lucide-vue-n
+ext/dist/esm/lucide-v
+ue-next.js", imported
+ by "src/components/u
+sersetings.vue".[31m
+file: [36mD:/KerjaPr
+aktek/Projek Web App 
+CRM/VueCRM-MG26/src/c
+omponents/usersetings
+.vue:17:28[31m
+[33m
+15: const _hoisted_13
+ = { class: "font-med
+ium" }
+16: 
+17: import { RefreshC
+cw, User2, UserRoundK
+ey } from "lucide-vue
+-next";
+                     
+           ^
+[31m
+    at getRollupError
+ (file:///D:/KerjaPra
+ktek/Projek%20Web%20A
+pp%20CRM/VueCRM-MG26/
+node_modules/rollup/d
+ist/es/shared/parseAs
+t.js:402:41)
+    at error (file://
+/D:/KerjaPraktek/Proj
+ek%20Web%20App%20CRM/
+VueCRM-MG26/node_modu
+les/rollup/dist/es/sh
+ared/parseAst.js:398:
+42)
+    at Module.error (
+file:///D:/KerjaPrakt
+ek/Projek%20Web%20App
+%20CRM/VueCRM-MG26/no
+de_modules/rollup/dis
+t/es/shared/node-entr
+y.js:17040:16)
+    at Module.traceVa
+riable (file:///D:/Ke
+rjaPraktek/Projek%20W
+eb%20App%20CRM/VueCRM
+-MG26/node_modules/ro
+llup/dist/es/shared/n
+ode-entry.js:17452:29
+)
+    at ModuleScope.fi
+ndVariable (file:///D
+:/KerjaPraktek/Projek
+%20Web%20App%20CRM/Vu
+eCRM-MG26/node_module
+s/rollup/dist/es/shar
+ed/node-entry.js:1507
+0:39)
+    at ChildScope.fin
+dVariable (file:///D:
+/KerjaPraktek/Projek%
+20Web%20App%20CRM/Vue
+CRM-MG26/node_modules
+/rollup/dist/es/share
+d/node-entry.js:5673:
+38)
+    at FunctionScope.
+findVariable (file://
+/D:/KerjaPraktek/Proj
+ek%20Web%20App%20CRM/
+VueCRM-MG26/node_modu
+les/rollup/dist/es/sh
+ared/node-entry.js:56
+73:38)
+    at FunctionBodySc
+ope.findVariable (fil
+e:///D:/KerjaPraktek/
+Projek%20Web%20App%20
+CRM/VueCRM-MG26/node_
+modules/rollup/dist/e
+s/shared/node-entry.j
+s:5673:38)
+    at ReturnValueSco
+pe.findVariable (file
+:///D:/KerjaPraktek/P
+rojek%20Web%20App%20C
+RM/VueCRM-MG26/node_m
+odules/rollup/dist/es
+/shared/node-entry.js
+:5673:38)
+    at FunctionBodySc
+ope.findVariable (fil
+e:///D:/KerjaPraktek/
+Projek%20Web%20App%20
+CRM/VueCRM-MG26/node_
+modules/rollup/dist/e
+s/shared/node-entry.j
+s:5673:38)[39m

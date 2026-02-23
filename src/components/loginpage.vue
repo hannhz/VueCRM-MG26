@@ -1,5 +1,5 @@
 <script setup>
-import { Eye, EyeClosedIcon, Mail } from "lucide-vue-next";
+import { Eye, EyeOff, Mail } from "lucide-vue-next";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 
@@ -81,7 +81,7 @@ const handleLogin = () => {
             class="absolute right-4 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100"
           >
             <Eye v-if="showPassword" class="w-5 h-5 text-blue-950" />
-            <EyeClosedIcon v-else class="w-5 h-5 text-blue-950" />
+            <EyeOff v-else class="w-5 h-5 text-blue-950" />
           </button>
         </div>
 

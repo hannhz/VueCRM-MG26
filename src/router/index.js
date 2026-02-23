@@ -11,9 +11,9 @@ import Task from "@/components/task.vue";
 import TaskList from "@/components/tasklist.vue";
 import TaskCard from "@/components/taskcard.vue";
 import TaskCalender from "@/components/taskcalender.vue";
-import EmailBroadcast from "@/components/emailbroadcast.vue";
+import EmailBroadcast from "@/components/EmailBroadcast.vue";
 import Documents from "@/components/documents.vue";
-import UserSetings from "../components/usersetings.vue";
+import UserSetings from "@/components/usersetings.vue";
 
 const routes = [
   {

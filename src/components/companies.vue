@@ -72,6 +72,7 @@ const showCreateCompanyForm = ref(false);
 const showBulkAddForm = ref(false);
 const showDetailForm = ref(false);
 const showDropdown = ref(false);
+const selectedIds = ref([]);
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value;

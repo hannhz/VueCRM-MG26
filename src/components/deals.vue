@@ -20,6 +20,7 @@ const viewMode = ref("grid"); // defaultnya grid
 
 const totalDeals = ref(18600);
 const showDropdown = ref(false);
+const selectedIds = ref([]);
 const showAddContactForm = ref(false);
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value;
