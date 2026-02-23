@@ -1,5 +1,5 @@
 <script setup>
-import { RefreshCcw, User2, KeyRound } from "lucide-vue-next";
+import { RefreshCcw, User, UserCog, Users } from "lucide-vue-next";
 
 const users = [{}];
 
@@ -37,14 +37,17 @@ const users = [{}];
 
           <ul class="divide-y divide-outline text-sm text-sub-text">
             <li class="p-3 hover:bg-gray-50 cursor-pointer flex items-center gap-2">
-  <User2 :size="16" class="text-sub-text" />
+  <User :size="16" class="text-sub-text" />
   <span>Users</span>
 </li>
             <li class="p-3 hover:bg-gray-50 cursor-pointer flex items-center gap-2">
-  <KeyRound :size="16" class="text-sub-text" /> 
+  <UserCog :size="16" class="text-sub-text" /> 
   <span>Users Permission</span>
 </li>
-            <li class="p-3 hover:bg-gray-50 cursor-pointer">Teams</li>
+            <li class="p-3 hover:bg-gray-50 cursor-pointer flex items-center gap-2">
+  <Users :size="16" class="text-sub-text" /> 
+  <span>Team</span>
+</li>
           </ul>
         </div>
 
