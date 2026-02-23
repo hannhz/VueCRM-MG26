@@ -7,6 +7,13 @@ import Companies from "@/components/companies.vue";
 import Deals from "@/components/deals.vue";
 import DealsList from "@/components/dealslist.vue";
 import DealsCard from "@/components/dealscard.vue";
+import Task from "@/components/task.vue";
+import TaskList from "@/components/tasklist.vue";
+import TaskCard from "@/components/taskcard.vue";
+import TaskCalender from "@/components/taskcalender.vue";
+import EmailBroadcast from "@/components/emailbroadcast.vue";
+import Documents from "@/components/documents.vue";
+import UserSetings from "../components/usersetings.vue";
 
 const routes = [
   {
@@ -84,6 +91,16 @@ const routes = [
         path: "email-broadcast",
         name: "EmailBroadcast",
         component: EmailBroadcast,
+      },
+      {
+        path: "documents",
+        name: "Documents",
+        component: Documents,
+      },
+      {
+        path: "users",
+        name: "UserSettings",
+        component: UserSetings,
       },
     ],
   },

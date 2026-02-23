@@ -87,7 +87,7 @@ const triggerFileInput = () => {
           <!-- Step 1 -->
           <div class="flex gap-4">
             <div
-              class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm"
+              class="shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm"
             >
               1
             </div>
@@ -102,7 +102,7 @@ const triggerFileInput = () => {
           <!-- Step 2 -->
           <div class="flex gap-4">
             <div
-              class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm"
+              class="shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm"
             >
               2
             </div>
@@ -116,7 +116,7 @@ const triggerFileInput = () => {
           <!-- Step 3 -->
           <div class="flex gap-4">
              <div
-              class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm"
+              class="shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm"
             >
               3
             </div>

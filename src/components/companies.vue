@@ -7,12 +7,10 @@ import {
   Trash2,
   Filter,
   ChevronLeft,
-  FolderPlus,
   FilePlus,
   ChevronRight,
   RefreshCcw,
   FolderPlus,
-  FilePlus,
 } from "lucide-vue-next";
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import CreateCompanyForm from "./forms/CreateCompanyForm.vue";

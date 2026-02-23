@@ -86,15 +86,15 @@ import { Mail } from "lucide-vue-next";
 
     <!-- Business Notification -->
     <div
-      class="mt-8 p-4 bg-blue-50 border border-blue-100 rounded-lg flex items-start gap-3"
+      class="mt-8 p-4 bg-white border border-outline rounded-lg flex items-start gap-3"
     >
-      <div class="p-1 bg-blue-100 rounded-full">
+      <div class="p-1 bg-outline rounded-full">
         <svg
           width="16"
           height="16"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#0078D4"
+          stroke="#1c2434"
           stroke-width="2.5"
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -104,7 +104,7 @@ import { Mail } from "lucide-vue-next";
           <line x1="12" y1="8" x2="12.01" y2="8"></line>
         </svg>
       </div>
-      <p class="text-sm text-[#006abc] font-medium leading-relaxed">
+      <p class="text-sm text-dark-base font-medium leading-relaxed">
         <strong>Note:</strong> Fitur email broadcast ini dikhususkan untuk akun
         email bisnis guna memastikan deliverability rate yang optimal.
       </p>
