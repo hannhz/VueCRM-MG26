@@ -7,6 +7,7 @@ import Companies from "@/components/companies.vue";
 import Deals from "@/components/deals.vue";
 import DealsList from "@/components/dealslist.vue";
 import DealsCard from "@/components/dealscard.vue";
+import EmailBroadcast from "@/components/EmailBroadcast.vue";
 
 const routes = [
   {
@@ -54,6 +55,11 @@ const routes = [
             redirect: { name: "DealsCard" }, // Default ke card jika akses /deals
           },
         ],
+      },
+      {
+        path: "email-broadcast",
+        name: "EmailBroadcast",
+        component: EmailBroadcast,
       },
     ],
   },
