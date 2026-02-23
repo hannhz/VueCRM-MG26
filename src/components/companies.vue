@@ -11,10 +11,13 @@ import {
   FilePlus,
   ChevronRight,
   RefreshCcw,
-  FolderDown,
-  FileDown,
+  FolderPlus,
+  FilePlus,
 } from "lucide-vue-next";
-import { ref, computed } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import CreateCompanyForm from "./forms/CreateCompanyForm.vue";
+import BulkAddCompanyForm from "./forms/BulkAddCompanyForm.vue";
+import DetailForm from "./forms/DetailForm.vue";
 
 // Sample data - replace with actual data from API
 const companies = ref([
@@ -67,47 +70,32 @@ const companies = ref([
 const currentPage = ref(1);
 const totalCompanies = ref(18600);
 const itemsPerPage = ref(10);
-
-const showAddContactForm = ref(false);
+const showCreateCompanyForm = ref(false);
+const showBulkAddForm = ref(false);
+const showDetailForm = ref(false);
 const showDropdown = ref(false);
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value;
 };
 
-const handleBulkAdd = () => {
-  // Logic untuk bulk add contacts
-  console.log("Bulk add contacts");
-};
-
-//download dropdown
-const showDownloadDropdown = ref(false);
-
-const toggleDownloadDropdown = () => {
-  showDownloadDropdown.value = !showDownloadDropdown.value;
-};
-
-const downloadAll = () => {
-  console.log("Download All");
-  showDownloadDropdown.value = false;
-};
-
-const handleDownload = () => {
-  if (selectedIds.value.length) {
-    console.log("Download selected:", selectedIds.value);
-  } else {
-    console.log("Download all data");
+// auto close saat klik luar
+const handleClickOutside = (e) => {
+  if (!e.target.closest(".add-dropdown")) {
+    showDropdown.value = false;
   }
 };
 
-//selected state
-const selectedIds = ref([]);
+onMounted(() => document.addEventListener("click", handleClickOutside));
+onBeforeUnmount(() =>
+  document.removeEventListener("click", handleClickOutside),
+);
 
-const downloadLabel = computed(() => {
-  return selectedIds.value.length
-    ? `Download (${selectedIds.value.length})`
-    : "Download";
-});
+const handleBulkAdd = () => {
+  console.log("Bulk add clicked");
+  showBulkAddForm.value = true;
+};
+
 </script>
 
 <template>
@@ -196,7 +184,7 @@ const downloadLabel = computed(() => {
           >
             <button
               @click="
-                showAddContactForm = true;
+                showCreateCompanyForm = true;
                 showDropdown = false;
               "
               class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
@@ -441,6 +429,28 @@ const downloadLabel = computed(() => {
       </div>
     </div>
   </div>
+
+  <!-- Add Company Form -->
+  <CreateCompanyForm
+    :isOpen="showCreateCompanyForm"
+    @close="showCreateCompanyForm = false"
+    @submit="(data) => { console.log('Company added:', data); showCreateCompanyForm = false; showDetailForm = true; }"
+  />
+
+  <!-- Bulk Add Company Form -->
+  <BulkAddCompanyForm
+    :isOpen="showBulkAddForm"
+    @close="showBulkAddForm = false"
+    @submit="(file) => { console.log('File uploaded:', file); showBulkAddForm = false; }"
+  />
+
+  <!-- Detail Form -->
+  <DetailForm
+    :isOpen="showDetailForm"
+    @close="showDetailForm = false"
+    @back="showDetailForm = false; showCreateCompanyForm = true;"
+    @submit="(data) => { console.log('Detail submitted:', data); showDetailForm = false; }"
+  />
 </template>
 
 <style scoped>

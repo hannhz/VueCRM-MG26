@@ -1,103 +1,103 @@
 <script setup>
-import { ref } from "vue";
-import { X, Plus, ChevronDown } from "lucide-vue-next";
-import AddDealForm from "./AddDealForm.vue";
+import { ref } from 'vue';
+import { X, Plus, ChevronDown } from 'lucide-vue-next';
+import AddDealForm from './AddDealForm.vue';
 
 const props = defineProps({
   isOpen: {
     type: Boolean,
-    default: false,
-  },
+    default: false
+  }
 });
 
-const emit = defineEmits(["close", "submit"]);
+const emit = defineEmits(['close', 'submit']);
 
 const industryOptions = [
-  { value: "", label: "Select Industry" },
-  { value: "technology", label: "Technology" },
-  { value: "finance", label: "Finance" },
-  { value: "healthcare", label: "Healthcare" },
-  { value: "education", label: "Education" },
-  { value: "retail", label: "Retail" },
-  { value: "manufacturing", label: "Manufacturing" },
-  { value: "consulting", label: "Consulting" },
-  { value: "other", label: "Other" },
+  { value: '', label: 'Select Industry' },
+  { value: 'technology', label: 'Technology' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'healthcare', label: 'Healthcare' },
+  { value: 'education', label: 'Education' },
+  { value: 'retail', label: 'Retail' },
+  { value: 'manufacturing', label: 'Manufacturing' },
+  { value: 'consulting', label: 'Consulting' },
+  { value: 'other', label: 'Other' },
 ];
 
 const sourceOptions = [
-  { value: "", label: "Select Source" },
-  { value: "website", label: "Website" },
-  { value: "referral", label: "Referral" },
-  { value: "social_media", label: "Social Media" },
-  { value: "email_campaign", label: "Email Campaign" },
-  { value: "cold_call", label: "Cold Call" },
-  { value: "trade_show", label: "Trade Show" },
-  { value: "partner", label: "Partner" },
-  { value: "other", label: "Other" },
+  { value: '', label: 'Select Source' },
+  { value: 'website', label: 'Website' },
+  { value: 'referral', label: 'Referral' },
+  { value: 'social_media', label: 'Social Media' },
+  { value: 'email_campaign', label: 'Email Campaign' },
+  { value: 'cold_call', label: 'Cold Call' },
+  { value: 'trade_show', label: 'Trade Show' },
+  { value: 'partner', label: 'Partner' },
+  { value: 'other', label: 'Other' },
 ];
 
 const typeOptions = [
-  { value: "", label: "Select Type" },
-  { value: "prospect", label: "Prospect" },
-  { value: "customer", label: "Customer" },
-  { value: "partner", label: "Partner" },
-  { value: "vendor", label: "Vendor" },
+  { value: '', label: 'Select Type' },
+  { value: 'prospect', label: 'Prospect' },
+  { value: 'customer', label: 'Customer' },
+  { value: 'partner', label: 'Partner' },
+  { value: 'vendor', label: 'Vendor' },
 ];
 
 const dealsOptions = [
-  { value: "", label: "Select Deals" },
-  { value: "deal_1", label: "Deal 1" },
-  { value: "deal_2", label: "Deal 2" },
+  { value: '', label: 'Select Deals' },
+  { value: 'deal_1', label: 'Deal 1' },
+  { value: 'deal_2', label: 'Deal 2' },
 ];
 
 const formData = ref({
-  companyName: "",
-  companyOwner: "",
-  description: "",
-  email: "",
-  telephone: "",
-  website: "",
-  industry: "",
-  address: "",
-  country: "",
-  province: "",
-  city: "",
-  posCode: "",
-  source: "",
-  type: "",
-  deals: "",
-  contactAssociation: "",
-  dealsAssociation: "",
+  companyName: '',
+  companyOwner: '',
+  description: '',
+  email: '',
+  telephone: '',
+  website: '',
+  industry: '',
+  address: '',
+  country: '',
+  province: '',
+  city: '',
+  posCode: '',
+  source: '',
+  type: '',
+  deals: '',
+  contactAssociation: '',
+  dealsAssociation: '',
 });
 
 const showAddDealForm = ref(false);
 
-const handleClose = () => emit("close");
+const handleClose = () => emit('close');
 
 const handleSubmit = () => {
-  emit("submit", formData.value);
+  emit('submit', formData.value);
   handleClose();
 };
 
 const handleReset = () => {
   formData.value = {
-    companyName: "",
-    companyOwner: "",
-    description: "",
-    email: "",
-    telephone: "",
-    website: "",
-    industry: "",
-    address: "",
-    country: "",
-    province: "",
-    city: "",
-    posCode: "",
-    source: "",
-    type: "",
-    deals: "",
-    contactAssociation: "",
-    dealsAssociation: "",
+    companyName: '',
+    companyOwner: '',
+    description: '',
+    email: '',
+    telephone: '',
+    website: '',
+    industry: '',
+    address: '',
+    country: '',
+    province: '',
+    city: '',
+    posCode: '',
+    source: '',
+    type: '',
+    deals: '',
+    contactAssociation: '',
+    dealsAssociation: '',
   };
 };
 </script>
@@ -120,9 +120,7 @@ const handleReset = () => {
       @click.stop
     >
       <!-- Header -->
-      <div
-        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
-      >
+      <div class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]">
         <h2 class="text-xl font-bold text-dark-base">Create Company</h2>
         <button
           @click="handleClose"
@@ -135,12 +133,11 @@ const handleReset = () => {
       <!-- Form Content (Scrollable) - halaman utama TIDAK ikut scroll -->
       <div class="flex-1 overflow-y-auto min-h-0">
         <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
+
           <!-- Company Name & Owner -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Company Name</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">Company Name</label>
               <input
                 v-model="formData.companyName"
                 type="text"
@@ -150,9 +147,7 @@ const handleReset = () => {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Company Owner</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">Company Owner</label>
               <input
                 v-model="formData.companyOwner"
                 type="text"
@@ -164,9 +159,7 @@ const handleReset = () => {
 
           <!-- Description -->
           <div>
-            <label class="block text-sm font-medium text-dark-base mb-2"
-              >Description</label
-            >
+            <label class="block text-sm font-medium text-dark-base mb-2">Description</label>
             <textarea
               v-model="formData.description"
               placeholder="Ex Lorem ipsum dolor sit"
@@ -178,9 +171,7 @@ const handleReset = () => {
           <!-- Email & Telephone -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Email</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">Email</label>
               <input
                 v-model="formData.email"
                 type="email"
@@ -189,9 +180,7 @@ const handleReset = () => {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Telephone</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">Telephone</label>
               <input
                 v-model="formData.telephone"
                 type="text"
@@ -204,9 +193,7 @@ const handleReset = () => {
           <!-- Website & Industry -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Website</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">Website</label>
               <input
                 v-model="formData.website"
                 type="text"
@@ -215,26 +202,15 @@ const handleReset = () => {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Industry</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">Industry</label>
               <div class="relative">
                 <select
                   v-model="formData.industry"
                   class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
-                  <option
-                    v-for="opt in industryOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
+                  <option v-for="opt in industryOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                 </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                />
+                <ChevronDown :size="16" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
               </div>
             </div>
           </div>
@@ -242,9 +218,7 @@ const handleReset = () => {
           <!-- Address & Country -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Address</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">Address</label>
               <input
                 v-model="formData.address"
                 type="text"
@@ -253,9 +227,7 @@ const handleReset = () => {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Country</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">Country</label>
               <input
                 v-model="formData.country"
                 type="text"
@@ -268,9 +240,7 @@ const handleReset = () => {
           <!-- Province & City -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Province</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">Province</label>
               <input
                 v-model="formData.province"
                 type="text"
@@ -279,9 +249,7 @@ const handleReset = () => {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >City</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">City</label>
               <input
                 v-model="formData.city"
                 type="text"
@@ -294,9 +262,7 @@ const handleReset = () => {
           <!-- Pos Code & Source -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Pos Code</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">Pos Code</label>
               <input
                 v-model="formData.posCode"
                 type="text"
@@ -305,26 +271,15 @@ const handleReset = () => {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Source</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">Source</label>
               <div class="relative">
                 <select
                   v-model="formData.source"
                   class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
-                  <option
-                    v-for="opt in sourceOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
+                  <option v-for="opt in sourceOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                 </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                />
+                <ChevronDown :size="16" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
               </div>
             </div>
           </div>
@@ -332,58 +287,34 @@ const handleReset = () => {
           <!-- Type & Deals -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Type</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">Type</label>
               <div class="relative">
                 <select
                   v-model="formData.type"
                   class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
-                  <option
-                    v-for="opt in typeOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
+                  <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                 </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                />
+                <ChevronDown :size="16" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Deals</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">Deals</label>
               <div class="relative">
                 <select
                   v-model="formData.deals"
                   class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
-                  <option
-                    v-for="opt in dealsOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
+                  <option v-for="opt in dealsOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                 </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                />
+                <ChevronDown :size="16" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
               </div>
             </div>
           </div>
 
           <!-- Contact Association -->
           <div>
-            <label class="block text-sm font-medium text-dark-base mb-2"
-              >Contact Association</label
-            >
+            <label class="block text-sm font-medium text-dark-base mb-2">Contact Association</label>
             <div class="relative">
               <input
                 v-model="formData.contactAssociation"
@@ -391,10 +322,7 @@ const handleReset = () => {
                 placeholder="Search by Name"
                 class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
               />
-              <ChevronDown
-                :size="16"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-              />
+              <ChevronDown :size="16" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
             </div>
             <button
               type="button"
@@ -407,9 +335,7 @@ const handleReset = () => {
 
           <!-- Deals Association -->
           <div>
-            <label class="block text-sm font-medium text-dark-base mb-2"
-              >Deals Association</label
-            >
+            <label class="block text-sm font-medium text-dark-base mb-2">Deals Association</label>
             <div class="relative">
               <input
                 v-model="formData.dealsAssociation"
@@ -417,10 +343,7 @@ const handleReset = () => {
                 placeholder="Search by Name"
                 class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
               />
-              <ChevronDown
-                :size="16"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-              />
+              <ChevronDown :size="16" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
             </div>
             <button
               type="button"
@@ -431,13 +354,12 @@ const handleReset = () => {
               Add Another Deal
             </button>
           </div>
+
         </form>
       </div>
 
       <!-- Footer Actions (Sticky) -->
-      <div
-        class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
-      >
+      <div class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <button
           type="button"
           @click="handleReset"
@@ -458,7 +380,7 @@ const handleReset = () => {
             @click="handleSubmit"
             class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
           >
-            Next
+            Save
           </button>
         </div>
       </div>
