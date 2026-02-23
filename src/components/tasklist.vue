@@ -1,28 +1,100 @@
 <script setup>
-import { ref } from "vue";
-import { Filter, Search } from "lucide-vue-next";
-const taskText = ref("");
+import { ref, computed } from "vue";
+import {
+  Filter,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+} from "lucide-vue-next";
 
+/* =========================
+   QUICK ADD
+========================= */
+const taskText = ref("");
 const emit = defineEmits(["add"]);
 
 function quickAdd() {
   if (!taskText.value.trim()) return;
-
   emit("add", taskText.value);
   taskText.value = "";
 }
 
-const currentPage = ref(1);
-const totalTask = ref(18600);
-const itemsPerPage = ref(25);
+/* =========================
+   DATA TASK (DUMMY)
+   nanti bisa dari API
+========================= */
+const tasks = ref([
+  {
+    id: 1,
+    name: "Follow up client",
+    stage: "Lead",
+    amount: "$1200",
+    owner: "Nan",
+  },
+  {
+    id: 2,
+    name: "Prepare proposal",
+    stage: "Negotiation",
+    amount: "$800",
+    owner: "Nan",
+  },
+  {
+    id: 3,
+    name: "Meeting vendor",
+    stage: "Closed",
+    amount: "$500",
+    owner: "Nan",
+  },
+]);
 
+/* =========================
+   PAGINATION
+========================= */
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+
+const totalTask = computed(() => tasks.value.length);
+const totalPages = computed(() =>
+  Math.ceil(totalTask.value / itemsPerPage.value),
+);
+
+function nextPage() {
+  if (currentPage.value < totalPages.value) currentPage.value++;
+}
+
+function prevPage() {
+  if (currentPage.value > 1) currentPage.value--;
+}
+
+/* =========================
+   SELECT TASK
+========================= */
+
+const task = ref([]);
 const selectedTask = ref([]);
 
+const allSelected = computed(
+  () =>
+    selectedTask.value.length === tasks.value.length && tasks.value.length > 0,
+);
+
+function toggleSelectAll(e) {
+  selectedTask.value = e.target.checked ? tasks.value.map((t) => t.id) : [];
+}
+
+function toggleSelect(id) {
+  if (selectedTask.value.includes(id)) {
+    selectedTask.value = selectedTask.value.filter((i) => i !== id);
+  } else {
+    selectedTask.value.push(id);
+  }
+}
 </script>
 
 <template>
   <div
-    class="bg-white rounded-lg shadow-sm max-w-311.25 h-147 border border-outline flex flex-col overflow-hidden"
+    class="bg-white rounded-lg shadow-sm max-w-[1245px] h-147 border border-outline flex flex-col overflow-hidden"
   >
     <!-- Action Bar -->
     <div class="pt-4 pr-4 pl-4">
@@ -79,7 +151,7 @@ const selectedTask = ref([]);
             <!-- Button -->
             <button
               @click="quickAdd"
-              class="h-9 px-6 bg-gray-800 text-white text-sm font-semibold hover:bg-gray-700 transition flex items-center justify-center"
+              class="h-9 px-6 bg-sub-text text-white text-sm font-semibold hover:bg-gray-700 transition flex items-center justify-center"
             >
               Quick Add
             </button>
@@ -137,24 +209,16 @@ const selectedTask = ref([]);
               <th class="px-6 py-4 text-left">
                 <input
                   type="checkbox"
-                  @change="
-                    (e) => {
-                      selectedTask = e.target.checked
-                        ? deals.map((d) => d.id)
-                        : [];
-                    }
-                  "
-                  :checked="
-                    selectedTask.length === deals.length && deals.length > 0
-                  "
-                  class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
+                  @change="toggleSelectAll"
+                  :checked="allSelected"
+                  class="w-4 h-4 rounded border-gray-300"
                 />
               </th>
               <th
                 class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
               >
                 <div class="flex items-center gap-2">
-                  Deal Name
+                  tasks Name
                   <ChevronDown :size="16" class="text-gray-400" />
                 </div>
               </th>
@@ -201,6 +265,37 @@ const selectedTask = ref([]);
               </th>
             </tr>
           </thead>
+          <tbody>
+            <!-- Empty State -->
+            <tr v-if="tasks.length === 0">
+              <td colspan="7" class="px-6 py-20 text-center text-sub-text">
+                No tasks found
+              </td>
+            </tr>
+
+            <!-- Data Rows -->
+            <tr
+              v-for="task in tasks"
+              :key="task.id"
+              class="border-b border-gray-100 hover:bg-gray-50 transition"
+            >
+              <td class="px-6 py-4">
+                <input
+                  type="checkbox"
+                  :value="task.id"
+                  v-model="selectedTask"
+                  class="w-4 h-4"
+                />
+              </td>
+
+              <td class="px-6 py-4">{{ task.name }}</td>
+              <td class="px-6 py-4">{{ task.stage }}</td>
+              <td class="px-6 py-4">{{ task.amount }}</td>
+              <td class="px-6 py-4">—</td>
+              <td class="px-6 py-4">—</td>
+              <td class="px-6 py-4">{{ task.owner }}</td>
+            </tr>
+          </tbody>
         </table>
       </div>
     </div>

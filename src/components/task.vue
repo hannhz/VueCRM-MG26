@@ -37,14 +37,18 @@ function downloadAll() {
 function handleDownload() {
   console.log("Download Selected Tasks");
 }
+
+function handleDelete() {
+  console.log("Delete selected tasks");
+}
 </script>
 
 <template>
   <div class="flex items-center justify-between mb-4">
     <div class="flex items-baseline gap-3">
-      <h1 class="text-2xl font-bold text-dark-base">Task</h1>
+      <h1 class="text-2xl font-bold text-dark-base">Tasks</h1>
       <span class="text-sm text-sub-text"
-        >{{ totalTask.toLocaleString() }} Total Task</span
+        >{{ totalTask.toLocaleString() }} Total Tasks</span
       >
     </div>
 
@@ -71,10 +75,7 @@ function handleDownload() {
           class="absolute right-0 text-sub-text mt-2 w-44 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95"
         >
           <button
-            @click="
-              showAddContactForm = true;
-              showDropdown = false;
-            "
+            @click="showDropdown = false"
             class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
           >
             <FilePlus :size="18" />
