@@ -94,7 +94,7 @@ function toggleSelect(id) {
 
 <template>
   <div
-    class="bg-white rounded-lg shadow-sm max-w-[1245px] h-147 border border-outline flex flex-col overflow-hidden"
+    class="bg-white rounded-lg shadow-sm max-w-311.25 h-147 border border-outline flex flex-col overflow-hidden"
   >
     <!-- Action Bar -->
     <div class="pt-4 pr-4 pl-4">

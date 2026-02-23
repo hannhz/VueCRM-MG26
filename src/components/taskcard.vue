@@ -85,7 +85,7 @@ const isDragging = ref(false);
             item-key="id"
             animation="200"
             ghost-class="ghost"
-            class="p-3 h-108 flex flex-col gap-3 min-h-[200px]"
+            class="p-3 h-108 flex flex-col gap-3 min-h-50"
           >
             <template #item="{ element }">
               <div
