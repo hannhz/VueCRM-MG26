@@ -18,7 +18,6 @@ const columns = ref([
 ]);
 
 const isDragging = ref(false);
-
 </script>
 
 <template>

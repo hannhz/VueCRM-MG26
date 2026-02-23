@@ -12,12 +12,48 @@ import {
 
 //data
 const documents = ref([
-  { id: 1, name: "Company Profile 2026", owner: "Hanan Hafizhah", created: "12 Feb 2026", update: "15 Feb 2026" },
-  { id: 2, name: "Marketing Strategy", owner: "Aulia Rahman", created: "10 Feb 2026", update: "18 Feb 2026" },
-  { id: 3, name: "UI Design Guidelines", owner: "Rizky Pratama", created: "02 Feb 2026", update: "14 Feb 2026" },
-  { id: 4, name: "Project Timeline", owner: "Siti Lestari", created: "01 Feb 2026", update: "16 Feb 2026" },
-  { id: 5, name: "Financial Report", owner: "Budi Santoso", created: "22 Jan 2026", update: "12 Feb 2026" },
-  { id: 6, name: "Product Roadmap", owner: "Kevin Wijaya", created: "18 Jan 2026", update: "11 Feb 2026" },
+  {
+    id: 1,
+    name: "Company Profile 2026",
+    owner: "Hanan Hafizhah",
+    created: "12 Feb 2026",
+    update: "15 Feb 2026",
+  },
+  {
+    id: 2,
+    name: "Marketing Strategy",
+    owner: "Aulia Rahman",
+    created: "10 Feb 2026",
+    update: "18 Feb 2026",
+  },
+  {
+    id: 3,
+    name: "UI Design Guidelines",
+    owner: "Rizky Pratama",
+    created: "02 Feb 2026",
+    update: "14 Feb 2026",
+  },
+  {
+    id: 4,
+    name: "Project Timeline",
+    owner: "Siti Lestari",
+    created: "01 Feb 2026",
+    update: "16 Feb 2026",
+  },
+  {
+    id: 5,
+    name: "Financial Report",
+    owner: "Budi Santoso",
+    created: "22 Jan 2026",
+    update: "12 Feb 2026",
+  },
+  {
+    id: 6,
+    name: "Product Roadmap",
+    owner: "Kevin Wijaya",
+    created: "18 Jan 2026",
+    update: "11 Feb 2026",
+  },
 ]);
 
 //pagination
@@ -28,7 +64,7 @@ const currentPage = ref(1);
 const totalDocuments = computed(() => documents.value.length);
 
 const totalPages = computed(() =>
-  Math.max(1, Math.ceil(totalDocuments.value / itemsPerPage.value))
+  Math.max(1, Math.ceil(totalDocuments.value / itemsPerPage.value)),
 );
 
 /* pastikan page valid */
@@ -98,7 +134,7 @@ function prevPage() {
   </div>
 
   <!-- Document List -->
-   <div class="bg-white rounded-lg shadow-sm h-147 p-4 border border-outline">
+  <div class="bg-white rounded-lg shadow-sm h-147 p-4 border border-outline">
     <div class="flex items-center justify-between gap-4">
       <!-- Left Section: Filter + Search + Show -->
       <div class="flex items-center gap-3">
@@ -151,7 +187,6 @@ function prevPage() {
             <span class="text-lg font-semibold">+</span>
             <span class="text-sm font-medium">Add Documents</span>
           </button>
-
         </div>
 
         <!-- Delete -->
@@ -178,7 +213,7 @@ function prevPage() {
       <!-- PUSH KANAN -->
       <div class="ml-auto flex items-center gap-3 text-sm text-sub-text">
         <button
-        @click="prevPage"
+          @click="prevPage"
           class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
           :disabled="currentPage === 1"
         >
@@ -197,7 +232,7 @@ function prevPage() {
         <span>of {{ Math.ceil(totalDocuments / itemsPerPage) }}</span>
 
         <button
-        @click="nextPage"
+          @click="nextPage"
           :disabled="currentPage === totalPages"
           class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
         >
@@ -206,7 +241,7 @@ function prevPage() {
       </div>
     </div>
 
-        <!-- Table -->
+    <!-- Table -->
     <div class="overflow-hidden">
       <!-- Table -->
       <div class="overflow-x-auto">
@@ -300,11 +335,8 @@ function prevPage() {
               </td>
             </tr>
           </tbody>
-
-          </table>
-          </div>
-          </div>
-
+        </table>
+      </div>
     </div>
-  
-  </template>
+  </div>
+</template>

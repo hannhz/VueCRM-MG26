@@ -94,7 +94,6 @@ const handleBulkAdd = () => {
   console.log("Bulk add clicked");
   showBulkAddForm.value = true;
 };
-
 </script>
 
 <template>
@@ -433,22 +432,41 @@ const handleBulkAdd = () => {
   <CreateCompanyForm
     :isOpen="showCreateCompanyForm"
     @close="showCreateCompanyForm = false"
-    @submit="(data) => { console.log('Company added:', data); showCreateCompanyForm = false; showDetailForm = true; }"
+    @submit="
+      (data) => {
+        console.log('Company added:', data);
+        showCreateCompanyForm = false;
+        showDetailForm = true;
+      }
+    "
   />
 
   <!-- Bulk Add Company Form -->
   <BulkAddCompanyForm
     :isOpen="showBulkAddForm"
     @close="showBulkAddForm = false"
-    @submit="(file) => { console.log('File uploaded:', file); showBulkAddForm = false; }"
+    @submit="
+      (file) => {
+        console.log('File uploaded:', file);
+        showBulkAddForm = false;
+      }
+    "
   />
 
   <!-- Detail Form -->
   <DetailForm
     :isOpen="showDetailForm"
     @close="showDetailForm = false"
-    @back="showDetailForm = false; showCreateCompanyForm = true;"
-    @submit="(data) => { console.log('Detail submitted:', data); showDetailForm = false; }"
+    @back="
+      showDetailForm = false;
+      showCreateCompanyForm = true;
+    "
+    @submit="
+      (data) => {
+        console.log('Detail submitted:', data);
+        showDetailForm = false;
+      }
+    "
   />
 </template>
 

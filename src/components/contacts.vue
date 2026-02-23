@@ -19,7 +19,6 @@ import {
   FolderDown,
 } from "lucide-vue-next";
 
-
 // Sample data - replace with actual data from API
 const contacts = ref([
   {
@@ -442,7 +441,12 @@ const downloadLabel = computed(() => {
     <BulkAddContactForm
       :isOpen="showBulkAddForm"
       @close="showBulkAddForm = false"
-      @submit="(file) => { console.log('File uploaded:', file); showBulkAddForm = false; }"
+      @submit="
+        (file) => {
+          console.log('File uploaded:', file);
+          showBulkAddForm = false;
+        }
+      "
     />
   </div>
 </template>

@@ -2,7 +2,6 @@
 import { RefreshCcw, User, UserCog, Users } from "lucide-vue-next";
 
 const users = [{}];
-
 </script>
 
 <template>
@@ -22,13 +21,10 @@ const users = [{}];
   </div>
 
   <div class="p-4 md:p-6 space-y-6">
-
     <!-- TOP GRID -->
     <div class="grid lg:grid-cols-[260px_1fr] gap-6">
-
       <!-- LEFT SIDEBAR -->
       <div class="space-y-6">
-
         <!-- USER SETTINGS -->
         <div class="bg-white rounded-lg shadow-sm border border-outline">
           <div class="bg-outline/40 px-4 py-2 font-semibold text-sub-text">
@@ -36,18 +32,24 @@ const users = [{}];
           </div>
 
           <ul class="divide-y divide-outline text-sm text-sub-text">
-            <li class="p-3 hover:bg-gray-50 cursor-pointer flex items-center gap-2">
-  <User :size="16" class="text-sub-text" />
-  <span>Users</span>
-</li>
-            <li class="p-3 hover:bg-gray-50 cursor-pointer flex items-center gap-2">
-  <UserCog :size="16" class="text-sub-text" /> 
-  <span>Users Permission</span>
-</li>
-            <li class="p-3 hover:bg-gray-50 cursor-pointer flex items-center gap-2">
-  <Users :size="16" class="text-sub-text" /> 
-  <span>Team</span>
-</li>
+            <li
+              class="p-3 hover:bg-gray-50 cursor-pointer flex items-center gap-2"
+            >
+              <User :size="16" class="text-sub-text" />
+              <span>Users</span>
+            </li>
+            <li
+              class="p-3 hover:bg-gray-50 cursor-pointer flex items-center gap-2"
+            >
+              <UserCog :size="16" class="text-sub-text" />
+              <span>Users Permission</span>
+            </li>
+            <li
+              class="p-3 hover:bg-gray-50 cursor-pointer flex items-center gap-2"
+            >
+              <Users :size="16" class="text-sub-text" />
+              <span>Team</span>
+            </li>
           </ul>
         </div>
 
@@ -68,9 +70,7 @@ const users = [{}];
             </div>
           </div>
         </div>
-
       </div>
-      </div>
-      </div>
-  
+    </div>
+  </div>
 </template>

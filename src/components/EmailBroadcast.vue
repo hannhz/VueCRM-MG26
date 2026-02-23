@@ -5,7 +5,9 @@ import { Mail } from "lucide-vue-next";
 <template>
   <div class="">
     <div class="mb-5">
-      <h1 class="text-2xl font-bold text-dark-base mb-1 font-['Montserrat']">Email Sync</h1>
+      <h1 class="text-2xl font-bold text-dark-base mb-1 font-['Montserrat']">
+        Email Sync
+      </h1>
       <p class="text-sm text-sub-text">
         Email sync settings are shared between lead flows and collected forms.
       </p>
@@ -115,6 +117,6 @@ import { Mail } from "lucide-vue-next";
 <style scoped>
 /* Matching satoshi/montserrat fonts usage from welcome.css */
 h1 {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
 }
 </style>

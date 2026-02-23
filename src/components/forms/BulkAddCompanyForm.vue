@@ -92,10 +92,15 @@ const triggerFileInput = () => {
               1
             </div>
             <p class="text-sm text-dark-base leading-relaxed">
-              The maximum row for uploading multiple companies is 1000 rows. Prepare a file of your companies using our template in '.csv', '.xls', or '.xlsx'.
-              <a href="#" class="text-blue-600 hover:underline">csv template</a>,
-              <a href="#" class="text-blue-600 hover:underline">xls template</a>,
-              <a href="#" class="text-blue-600 hover:underline">xlsx template</a>.
+              The maximum row for uploading multiple companies is 1000 rows.
+              Prepare a file of your companies using our template in '.csv',
+              '.xls', or '.xlsx'.
+              <a href="#" class="text-blue-600 hover:underline">csv template</a
+              >,
+              <a href="#" class="text-blue-600 hover:underline">xls template</a
+              >,
+              <a href="#" class="text-blue-600 hover:underline">xlsx template</a
+              >.
             </p>
           </div>
 
@@ -108,14 +113,15 @@ const triggerFileInput = () => {
             </div>
             <div class="flex-1 space-y-4">
               <p class="text-sm text-dark-base leading-relaxed">
-                Fill the companies you want based on our template and upload the file from step 1 you've filled to add multiple companies.
+                Fill the companies you want based on our template and upload the
+                file from step 1 you've filled to add multiple companies.
               </p>
             </div>
           </div>
 
           <!-- Step 3 -->
           <div class="flex gap-4">
-             <div
+            <div
               class="shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm"
             >
               3
@@ -141,19 +147,28 @@ const triggerFileInput = () => {
               accept=".csv,.xls,.xlsx,.jpg,.png,.pdf,.doc"
               @change="handleFileSelect"
             />
-            
+
             <div v-if="!selectedFile" class="flex flex-col items-center">
-                <Upload :size="24" class="text-blue-500 mb-2" stroke-width="2.5" />
-                <p class="text-sm font-medium text-slate-600 mb-0.5">
-                  Klik untuk pilih file
-                </p>
-                <p class="text-xs text-slate-400 font-medium">
-                  PDF, DOC, XLS, JPG, PNG
-                </p>
+              <Upload
+                :size="24"
+                class="text-blue-500 mb-2"
+                stroke-width="2.5"
+              />
+              <p class="text-sm font-medium text-slate-600 mb-0.5">
+                Klik untuk pilih file
+              </p>
+              <p class="text-xs text-slate-400 font-medium">
+                PDF, DOC, XLS, JPG, PNG
+              </p>
             </div>
             <div v-else class="flex items-center gap-2 text-dark-base">
-                <span class="font-medium text-sm">{{ selectedFile.name }}</span>
-                <button @click.stop="selectedFile = null" class="text-red hover:underline text-xs ml-2">Change</button>
+              <span class="font-medium text-sm">{{ selectedFile.name }}</span>
+              <button
+                @click.stop="selectedFile = null"
+                class="text-red hover:underline text-xs ml-2"
+              >
+                Change
+              </button>
             </div>
           </div>
         </div>
