@@ -1,36 +1,32 @@
 <script setup>
-import { 
-  User, 
-  UserCog, 
-  Code2, 
-  RefreshCcw 
-} from "lucide-vue-next";
+import { User, UserCog, Users, RefreshCcw } from "lucide-vue-next";
 import { useRoute } from "vue-router";
 
 const route = useRoute();
 
 // Mock total for the header
-const totalUser = 6;
+const totalUser = 10;
+const users = [];
 
 const menuItems = [
   {
     name: "User Settings",
     icon: User,
-    path: "/crmAdmin/user",
-    exact: true
+    path: "/crmAdmin/users",
+    exact: true,
   },
   {
     name: "User Permission",
     icon: UserCog,
-    path: "/crmAdmin/user/template",
-    exact: false
+    path: "/crmAdmin/users/user-permission",
+    exact: false,
   },
   {
-    name: "Short Code",
-    icon: Code2,
-    path: "/crmAdmin/user/short-code",
-    exact: false
-  }
+    name: "Team",
+    icon: Users,
+    path: "/crmAdmin/users/user-team",
+    exact: false,
+  },
 ];
 
 const isActive = (item) => {
@@ -46,7 +42,10 @@ const isActive = (item) => {
   <div class="flex items-center justify-between mb-6">
     <div class="flex items-baseline gap-3">
       <h1 class="text-2xl font-bold text-dark-base">User</h1>
-      <span class="text-sm text-sub-text" v-if="route.name === 'userList'">
+      <span
+        class="text-sm text-sub-text"
+        v-if="route.path.startsWith('/crmAdmin/user')"
+      >
         {{ totalUser }} Total User
       </span>
     </div>
@@ -62,13 +61,16 @@ const isActive = (item) => {
 
   <!-- Main Layout Grid -->
   <div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 items-start">
-    
     <!-- Secondary Sidebar -->
-    <div class="bg-white rounded-xl shadow-sm border border-outline overflow-hidden sticky top-4">
+    <div
+      class="bg-white rounded-xl shadow-sm border border-outline overflow-hidden sticky top-4"
+    >
       <div class="bg-light-base/50 px-5 py-3 border-b border-outline">
-        <h3 class="font-bold text-dark-base uppercase tracking-wider text-xs">User Menu</h3>
+        <h3 class="font-bold text-dark-base uppercase tracking-wider text-xs">
+          User Menu
+        </h3>
       </div>
-      
+
       <nav class="p-2 space-y-1">
         <router-link
           v-for="item in menuItems"
@@ -78,20 +80,33 @@ const isActive = (item) => {
           active-class="text-dark-base"
           exact-active-class="bg-gray-50/80 text-dark-base border-outline/50 shadow-sm font-semibold"
         >
-          <component 
-            :is="item.icon" 
-            :size="18" 
+          <component
+            :is="item.icon"
+            :size="18"
             class="text-sub-text group-hover:text-dark-base group-[.router-link-exact-active]:text-dark-base"
           />
-          <span class="font-medium text-sm group-hover:text-dark-base group-[.router-link-exact-active]:text-dark-base">{{ item.name }}</span>
+          <span
+            class="font-medium text-sm group-hover:text-dark-base group-[.router-link-exact-active]:text-dark-base"
+            >{{ item.name }}</span
+          >
         </router-link>
       </nav>
 
       <div class="p-4 bg-light-base/30 border-t border-outline">
-        <div class="text-[11px] text-gray-400 font-medium uppercase mb-2">Internal Note</div>
-        <p class="text-xs text-sub-text leading-relaxed">
-          Manage your document templates and shortcodes here for faster workflow.
-        </p>
+        <div class="text-[11px] text-gray-400 font-medium uppercase mb-2">
+          User Total
+        </div>
+        <div class="space-y-2 text-sm text-sub-text">
+          <div class="flex justify-between">
+            <span>Number of Users</span>
+            <span class="font-medium">{{ users.length }}</span>
+          </div>
+
+          <div class="flex justify-between">
+            <span>Maximum Users</span>
+            <span class="font-medium">10</span>
+          </div>
+        </div>
       </div>
     </div>
 

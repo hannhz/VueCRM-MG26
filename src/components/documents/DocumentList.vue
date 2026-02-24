@@ -12,12 +12,48 @@ import {
 
 //data
 const documents = ref([
-  { id: 1, name: "Company Profile 2026", owner: "Hanan Hafizhah", created: "12 Feb 2026", update: "15 Feb 2026" },
-  { id: 2, name: "Marketing Strategy", owner: "Aulia Rahman", created: "10 Feb 2026", update: "18 Feb 2026" },
-  { id: 3, name: "UI Design Guidelines", owner: "Rizky Pratama", created: "02 Feb 2026", update: "14 Feb 2026" },
-  { id: 4, name: "Project Timeline", owner: "Siti Lestari", created: "01 Feb 2026", update: "16 Feb 2026" },
-  { id: 5, name: "Financial Report", owner: "Budi Santoso", created: "22 Jan 2026", update: "12 Feb 2026" },
-  { id: 6, name: "Product Roadmap", owner: "Kevin Wijaya", created: "18 Jan 2026", update: "11 Feb 2026" },
+  {
+    id: 1,
+    name: "Company Profile 2026",
+    owner: "Hanan Hafizhah",
+    created: "12 Feb 2026",
+    update: "15 Feb 2026",
+  },
+  {
+    id: 2,
+    name: "Marketing Strategy",
+    owner: "Aulia Rahman",
+    created: "10 Feb 2026",
+    update: "18 Feb 2026",
+  },
+  {
+    id: 3,
+    name: "UI Design Guidelines",
+    owner: "Rizky Pratama",
+    created: "02 Feb 2026",
+    update: "14 Feb 2026",
+  },
+  {
+    id: 4,
+    name: "Project Timeline",
+    owner: "Siti Lestari",
+    created: "01 Feb 2026",
+    update: "16 Feb 2026",
+  },
+  {
+    id: 5,
+    name: "Financial Report",
+    owner: "Budi Santoso",
+    created: "22 Jan 2026",
+    update: "12 Feb 2026",
+  },
+  {
+    id: 6,
+    name: "Product Roadmap",
+    owner: "Kevin Wijaya",
+    created: "18 Jan 2026",
+    update: "11 Feb 2026",
+  },
 ]);
 
 //pagination
@@ -28,7 +64,7 @@ const currentPage = ref(1);
 const totalDocuments = computed(() => documents.value.length);
 
 const totalPages = computed(() =>
-  Math.max(1, Math.ceil(totalDocuments.value / itemsPerPage.value))
+  Math.max(1, Math.ceil(totalDocuments.value / itemsPerPage.value)),
 );
 
 /* pastikan page valid */
