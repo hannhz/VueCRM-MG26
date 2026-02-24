@@ -1,9 +1,9 @@
 <script setup>
-import { 
-  FileText, 
-  LayoutTemplate, 
-  Code2, 
-  RefreshCcw 
+import {
+  FileText,
+  LayoutTemplate,
+  Code2,
+  RefreshCcw
 } from "lucide-vue-next";
 import { useRoute } from "vue-router";
 
@@ -51,7 +51,7 @@ const isActive = (item) => {
       </span>
     </div>
 
-    <!-- Update Button -->
+    <!-- Header Action Button -->
     <button
       class="flex items-center gap-2 px-4 py-2 border border-outline bg-white text-sub-text rounded-lg hover:bg-sub-text hover:text-white transition shadow-sm"
     >
@@ -64,7 +64,7 @@ const isActive = (item) => {
   <div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 items-start">
     
     <!-- Secondary Sidebar -->
-    <div class="bg-white rounded-xl shadow-sm border border-outline overflow-hidden sticky top-4">
+    <div class="bg-white rounded-xl shadow-sm border border-outline overflow-hidden h-fit">
       <div class="bg-light-base/50 px-5 py-3 border-b border-outline">
         <h3 class="font-bold text-dark-base uppercase tracking-wider text-xs">Documents Menu</h3>
       </div>

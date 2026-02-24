@@ -20,6 +20,7 @@ import UserSetings from "@/components/user/usersetings.vue";
 import UserPermission from "@/components/user/userpermission.vue";
 import UserTeam from "@/components/user/userteam.vue";
 import User from "@/components/user/user.vue";
+import SettingsPage from "@/components/Settings.vue";
 
 const routes = [
   {
@@ -139,6 +140,11 @@ const routes = [
             component: UserTeam,
           },
         ],
+      },
+      {
+        path: "settings",
+        name: "Settings",
+        component: SettingsPage,
       },
     ],
   },

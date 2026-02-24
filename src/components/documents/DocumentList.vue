@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  FileText,
+  Eye
 } from "lucide-vue-next";
 
 //data
@@ -82,34 +84,31 @@ function prevPage() {
   <!-- Document List -->
   <div class="bg-white rounded-lg shadow-sm border border-outline">
     <div class="p-4 border-b border-outline">
-      <div class="flex items-center justify-between gap-4 flex-wrap">
+      <div class="flex items-center justify-between gap-4 flex-nowrap overflow-x-auto pb-1 scrollbar-hide">
         <!-- Left Section: Filter + Search + Show -->
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 shrink-0">
           <!-- Filter Icon -->
           <button
-            class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
+            class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition shrink-0"
           >
             <Filter :size="20" class="text-dark-base" />
           </button>
 
           <!-- Search Input -->
-          <div class="relative">
+          <div class="relative shrink-0">
+            <Search 
+              :size="16" 
+              class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
             <input
               type="text"
               placeholder="Search by Name"
-              class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              class="pl-9 pr-4 py-2 bg-white border border-outline rounded-lg w-40 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm transition-all"
             />
           </div>
 
-          <!-- Search Icon Button -->
-          <button
-            class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition"
-          >
-            <Search :size="20" class="text-dark-base" />
-          </button>
-
           <!-- Show Dropdown -->
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 shrink-0">
             <span class="text-sm text-dark-base">Show</span>
             <select
               v-model="itemsPerPage"
@@ -124,21 +123,35 @@ function prevPage() {
         </div>
 
         <!-- Right Section: Action Buttons -->
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-3 shrink-0">
           <!-- Add New -->
-          <div class="relative inline-block add-dropdown">
+          <div class="relative inline-block add-dropdown shrink-0">
             <button
               type="button"
-              class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+              class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition shadow-sm"
             >
               <span class="text-lg font-semibold">+</span>
               <span class="text-sm font-medium">Add Documents</span>
             </button>
           </div>
 
+          <!-- Download PDF -->
+          <button
+            :disabled="selectedIds.length === 0"
+            class="flex items-center gap-2 px-4 py-2 h-10 border rounded-lg transition shadow-sm shrink-0"
+            :class="[
+              selectedIds.length === 0 
+                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' 
+                : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white'
+            ]"
+          >
+            <FileText :size="18" />
+            <span class="text-sm font-medium uppercase text-[10px]">PDF</span>
+          </button>
+
           <!-- Delete -->
           <button
-            class="p-2 bg-white border border-red text-red rounded-lg hover:bg-red hover:text-white transition"
+            class="p-2.5 bg-white border border-red text-red rounded-lg hover:bg-red hover:text-white transition shrink-0"
           >
             <Trash2 :size="18" />
           </button>
@@ -224,6 +237,9 @@ function prevPage() {
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
             </th>
+            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700 w-20">
+              Preview
+            </th>
           </tr>
         </thead>
 
@@ -270,6 +286,15 @@ function prevPage() {
             </td>
             <td class="px-6 py-4 text-sm text-dark-base">
               {{ doc.update }}
+            </td>
+            <td class="px-6 py-4 text-center">
+              <button class="p-1.5 border border-outline bg-white text-sub-text rounded-md shadow-sm hover:bg-sub-text hover:text-white transition group relative">
+                <Eye :size="18" />
+                <!-- Mini Tooltip -->
+                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-[10px] font-medium rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  Preview Item
+                </div>
+              </button>
             </td>
           </tr>
         </tbody>
