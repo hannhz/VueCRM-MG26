@@ -20,26 +20,7 @@ import {
 } from "lucide-vue-next";
 
 // Sample data - replace with actual data from API
-const contacts = ref([
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    company: "Meta Tech",
-    status: "Active",
-    updatedAt: "2/18/2026",
-    owner: "fuady",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane@work.com",
-    company: "Design Co",
-    status: "Inactive",
-    updatedAt: "2/17/2026",
-    owner: "hanan",
-  },
-]);
+const contacts = ref([]);
 
 const currentPage = ref(1);
 const totalContacts = ref(18600);

@@ -1,10 +1,5 @@
 <script setup>
-import {
-  FileText,
-  LayoutTemplate,
-  Code2,
-  RefreshCcw
-} from "lucide-vue-next";
+import { FileText, LayoutTemplate, Code2, RefreshCcw } from "lucide-vue-next";
 import { useRoute } from "vue-router";
 
 const route = useRoute();
@@ -17,20 +12,20 @@ const menuItems = [
     name: "Document List",
     icon: FileText,
     path: "/crmAdmin/documents",
-    exact: true
+    exact: true,
   },
   {
     name: "Template",
     icon: LayoutTemplate,
     path: "/crmAdmin/documents/template",
-    exact: false
+    exact: false,
   },
   {
     name: "Short Code",
     icon: Code2,
     path: "/crmAdmin/documents/short-code",
-    exact: false
-  }
+    exact: false,
+  },
 ];
 
 const isActive = (item) => {
@@ -62,13 +57,14 @@ const isActive = (item) => {
 
   <!-- Main Layout Grid -->
   <div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 items-start">
-    
     <!-- Secondary Sidebar -->
     <div class="bg-white rounded-xl shadow-sm border border-outline overflow-hidden h-fit">
       <div class="bg-light-base/50 px-5 py-3 border-b border-outline">
-        <h3 class="font-bold text-dark-base uppercase tracking-wider text-xs">Documents Menu</h3>
+        <h3 class="font-bold text-dark-base uppercase tracking-wider text-xs">
+          Documents Menu
+        </h3>
       </div>
-      
+
       <nav class="p-2 space-y-1">
         <router-link
           v-for="item in menuItems"
@@ -78,19 +74,25 @@ const isActive = (item) => {
           active-class="text-dark-base"
           exact-active-class="bg-gray-50/80 text-dark-base border-outline/50 shadow-sm font-semibold"
         >
-          <component 
-            :is="item.icon" 
-            :size="18" 
+          <component
+            :is="item.icon"
+            :size="18"
             class="text-sub-text group-hover:text-dark-base group-[.router-link-exact-active]:text-dark-base"
           />
-          <span class="font-medium text-sm group-hover:text-dark-base group-[.router-link-exact-active]:text-dark-base">{{ item.name }}</span>
+          <span
+            class="font-medium text-sm group-hover:text-dark-base group-[.router-link-exact-active]:text-dark-base"
+            >{{ item.name }}</span
+          >
         </router-link>
       </nav>
 
       <div class="p-4 bg-light-base/30 border-t border-outline">
-        <div class="text-[11px] text-gray-400 font-medium uppercase mb-2">Internal Note</div>
+        <div class="text-[11px] text-gray-400 font-medium uppercase mb-2">
+          Internal Note
+        </div>
         <p class="text-xs text-sub-text leading-relaxed">
-          Manage your document templates and shortcodes here for faster workflow.
+          Manage your document templates and shortcodes here for faster
+          workflow.
         </p>
       </div>
     </div>

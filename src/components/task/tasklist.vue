@@ -24,29 +24,7 @@ function quickAdd() {
    DATA TASK (DUMMY)
    nanti bisa dari API
 ========================= */
-const tasks = ref([
-  {
-    id: 1,
-    name: "Follow up client",
-    stage: "Lead",
-    amount: "$1200",
-    owner: "Nan",
-  },
-  {
-    id: 2,
-    name: "Prepare proposal",
-    stage: "Negotiation",
-    amount: "$800",
-    owner: "Nan",
-  },
-  {
-    id: 3,
-    name: "Meeting vendor",
-    stage: "Closed",
-    amount: "$500",
-    owner: "Nan",
-  },
-]);
+const tasks = ref([]);
 
 /* =========================
    PAGINATION
@@ -269,7 +247,17 @@ function toggleSelect(id) {
             <!-- Empty State -->
             <tr v-if="tasks.length === 0">
               <td colspan="7" class="px-6 py-20 text-center text-sub-text">
-                No tasks found
+                <div class="flex flex-col items-center gap-3">
+                  <div
+                    class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center"
+                  >
+                    <Search :size="32" class="text-gray-400" />
+                  </div>
+                  <p class="text-lg font-medium">No task found</p>
+                  <p class="text-sm text-gray-400">
+                    Start adding task to see them here
+                  </p>
+                </div>
               </td>
             </tr>
 
