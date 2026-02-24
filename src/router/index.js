@@ -17,6 +17,9 @@ import DocumentList from "@/components/documents/DocumentList.vue";
 import DocumentsTemplate from "@/components/documents/DocumentsTemplate.vue";
 import DocumentsShortCode from "@/components/documents/DocumentsShortCode.vue";
 import UserSetings from "@/components/user/usersetings.vue";
+import UserPermission from "@/components/user/userpermission.vue";
+import UserTeam from "@/components/user/userteam.vue";
+import User from "@/components/user/user.vue";
 
 const routes = [
   {
@@ -118,8 +121,24 @@ const routes = [
       },
       {
         path: "users",
-        name: "UserSettings",
-        component: UserSetings,
+        component: User,
+        children: [
+          {
+            path: "",
+            name: "UserSettings",
+            component: UserSetings,
+          },
+          {
+            path: "user-permission",
+            name: "UserPermission",
+            component: UserPermission,
+          },
+          {
+            path: "user-team",
+            name: "UserTeam",
+            component: UserTeam,
+          },
+        ],
       },
     ],
   },
