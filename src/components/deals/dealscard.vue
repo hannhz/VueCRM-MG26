@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onBeforeUnmount } from "vue"; // 1. Pastikan onBeforeUnmount sudah di-import
 import draggable from "vuedraggable";
-import CreateDealForm from "./forms/CreateDealForm.vue";
+import CreateDealForm from "@/components/forms/CreateDealForm.vue";
 import { ChevronDown, Search, Filter } from "lucide-vue-next";
 
 const viewMode = ref("grid"); // defaultnya grid

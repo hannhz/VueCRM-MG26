@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue"; // 1. Pastikan onBeforeUnmount sudah di-import
-import CreateDealForm from "./forms/CreateDealForm.vue";
+import CreateDealForm from "@/components/forms/CreateDealForm.vue";
 import {
   ChevronDown,
   Search,

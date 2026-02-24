@@ -4,19 +4,19 @@ import Contacts from "@/components/contacts.vue";
 import LoginPage from "@/components/loginpage.vue";
 import MainDashboard from "@/components/maindashboard.vue";
 import Companies from "@/components/companies.vue";
-import Deals from "@/components/deals.vue";
-import DealsList from "@/components/dealslist.vue";
-import DealsCard from "@/components/dealscard.vue";
-import Task from "@/components/task.vue";
-import TaskList from "@/components/tasklist.vue";
-import TaskCard from "@/components/taskcard.vue";
-import TaskCalender from "@/components/taskcalender.vue";
+import Deals from "@/components/deals/deals.vue";
+import DealsList from "@/components/deals/dealslist.vue";
+import DealsCard from "@/components/deals/dealscard.vue";
+import Task from "@/components/task/task.vue";
+import TaskList from "@/components/task/tasklist.vue";
+import TaskCard from "@/components/task/taskcard.vue";
+import TaskCalender from "@/components/task/taskcalender.vue";
 import EmailBroadcast from "@/components/EmailBroadcast.vue";
 import Documents from "@/components/documents/Documents.vue";
 import DocumentList from "@/components/documents/DocumentList.vue";
 import DocumentsTemplate from "@/components/documents/DocumentsTemplate.vue";
 import DocumentsShortCode from "@/components/documents/DocumentsShortCode.vue";
-import UserSetings from "@/components/usersetings.vue";
+import UserSetings from "@/components/user/usersetings.vue";
 
 const routes = [
   {
