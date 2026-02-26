@@ -61,7 +61,7 @@ const activeTab = ref("Contacts");
 
 const permissions = ref({
   contacts: {
-        add: true,
+    add: true,
     view: true,
     edit: true,
     delete: false,
@@ -153,8 +153,7 @@ onBeforeUnmount(() =>
         </div>
 
         <!-- Right Section: Action Buttons -->
-        <div class="flex items-center gap-2">
-        </div>
+        <div class="flex items-center gap-2"></div>
       </div>
     </div>
 
@@ -241,7 +240,6 @@ onBeforeUnmount(() =>
           v-model="permissions.deals.delete"
         />
       </div>
-
     </div>
   </div>
 </template>

@@ -58,7 +58,9 @@ const isActive = (item) => {
   <!-- Main Layout Grid -->
   <div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 items-start">
     <!-- Secondary Sidebar -->
-    <div class="bg-white rounded-xl shadow-sm border border-outline overflow-hidden h-fit">
+    <div
+      class="bg-white rounded-xl shadow-sm border border-outline overflow-hidden h-fit"
+    >
       <div class="bg-light-base/50 px-5 py-3 border-b border-outline">
         <h3 class="font-bold text-dark-base uppercase tracking-wider text-xs">
           Documents Menu

@@ -5,8 +5,8 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-    ChevronDown,
-  Trash2
+  ChevronDown,
+  Trash2,
 } from "lucide-vue-next";
 
 /* =========================
@@ -29,8 +29,8 @@ const searchQuery = ref("");
 const filteredTeams = computed(() => {
   if (!searchQuery.value) return teams.value;
 
-  return teams.value.filter(t =>
-    t.team.toLowerCase().includes(searchQuery.value.toLowerCase())
+  return teams.value.filter((t) =>
+    t.team.toLowerCase().includes(searchQuery.value.toLowerCase()),
   );
 });
 
@@ -41,7 +41,7 @@ const currentPage = ref(1);
 const itemsPerPage = ref(5);
 
 const totalPages = computed(() =>
-  Math.max(1, Math.ceil(filteredTeams.value.length / itemsPerPage.value))
+  Math.max(1, Math.ceil(filteredTeams.value.length / itemsPerPage.value)),
 );
 
 const paginatedTeams = computed(() => {
@@ -65,28 +65,29 @@ const selectedTeam = ref([]);
 const allSelected = computed(
   () =>
     paginatedTeams.value.length > 0 &&
-    paginatedTeams.value.every(t => selectedTeam.value.includes(t.id))
+    paginatedTeams.value.every((t) => selectedTeam.value.includes(t.id)),
 );
 
 function toggleSelectAll(e) {
   selectedTeam.value = e.target.checked
-    ? paginatedTeams.value.map(t => t.id)
+    ? paginatedTeams.value.map((t) => t.id)
     : [];
 }
 </script>
 
 <template>
-  <div class="bg-white rounded-lg shadow-sm border border-outline overflow-hidden">
-    
+  <div
+    class="bg-white rounded-lg shadow-sm border border-outline overflow-hidden"
+  >
     <!-- ACTION BAR -->
     <div class="p-4 border-b border-outline">
       <div class="flex items-center justify-between flex-wrap gap-3">
-        
         <!-- LEFT -->
         <div class="flex items-center gap-3">
-          
           <!-- Filter -->
-          <button class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition">
+          <button
+            class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
+          >
             <Filter :size="20" class="text-dark-base" />
           </button>
 
@@ -100,7 +101,9 @@ function toggleSelectAll(e) {
             />
           </div>
 
-          <button class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition">
+          <button
+            class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition"
+          >
             <Search :size="20" class="text-dark-base" />
           </button>
 
@@ -127,13 +130,11 @@ function toggleSelectAll(e) {
             <Trash2 :size="18" />
           </button>
         </div>
-
       </div>
     </div>
 
     <!-- SELECT & PAGINATION -->
     <div class="px-6 py-4 flex items-center border-b border-outline">
-      
       <label class="flex items-center gap-2 text-sm text-sub-text">
         <input
           type="checkbox"
@@ -177,12 +178,9 @@ function toggleSelectAll(e) {
     <!-- TABLE -->
     <div class="overflow-x-auto">
       <table class="w-full">
-        
         <thead>
           <tr class="border-b border-gray-200 bg-gray-50/50">
-            <th class="px-6 py-4">
-
-            </th>
+            <th class="px-6 py-4"></th>
 
             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
               <div class="flex items-center gap-2">
@@ -227,12 +225,9 @@ function toggleSelectAll(e) {
               {{ team.team }}
             </td>
 
-            <td class="px-6 py-4 text-dark-base">
-              {{ team.members }} members
-            </td>
+            <td class="px-6 py-4 text-dark-base">{{ team.members }} members</td>
           </tr>
         </tbody>
-
       </table>
     </div>
   </div>
