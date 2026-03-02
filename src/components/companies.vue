@@ -202,13 +202,13 @@ const handleBulkAdd = () => {
           <!-- DropdownMenu -->
           <div
             v-show="showDownloadDropdown"
-            class="absolute text-dark-base right-0 mt-2 w-48 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95"
+            class="absolute text-sub-text right-0 mt-2 w-48 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95"
           >
             <button
               @click="downloadAll"
               class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
             >
-              <FolderDown :size="18" class="text-dark-base" />
+              <FolderDown :size="18" class="text-sub-text" />
               <span class="font-medium">Download All</span>
             </button>
 
@@ -216,7 +216,7 @@ const handleBulkAdd = () => {
               @click="handleDownload"
               class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2 border-t border-gray-50"
             >
-              <FileDown :size="18" class="text-dark-base" />
+              <FileDown :size="18" class="text-sub-text" />
               <span class="font-medium">{{ downloadLabel }}</span>
             </button>
           </div>

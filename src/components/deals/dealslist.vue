@@ -1,6 +1,5 @@
 <script setup>
 import { ref } from "vue"; // 1. Pastikan onBeforeUnmount sudah di-import
-import CreateDealForm from "@/components/forms/CreateDealForm.vue";
 import {
   ChevronDown,
   Search,
@@ -40,7 +39,6 @@ const isCurrencyOpen = ref(false);
 const pipelines = ["Sales Pipeline", "Marketing Pipeline", "Dev Pipeline"];
 const selectedPipeline = ref("Sales Pipeline");
 const isPipelineOpen = ref(false);
-const showCreateDealForm = ref(false);
 
 //handled add deal form
 const handleAddDeal = (dealData) => {
@@ -379,11 +377,4 @@ const handleAddDeal = (dealData) => {
       </div>
     </div>
   </div>
-
-  <!-- Create Deal Form -->
-  <CreateDealForm
-    :isOpen="showCreateDealForm"
-    @close="showCreateDealForm = false"
-    @submit="showCreateDealForm = false"
-  />
 </template>

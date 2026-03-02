@@ -1,7 +1,6 @@
 <script setup>
 import { ref, onBeforeUnmount } from "vue"; // 1. Pastikan onBeforeUnmount sudah di-import
 import draggable from "vuedraggable";
-import CreateDealForm from "@/components/forms/CreateDealForm.vue";
 import { ChevronDown, Search, Filter } from "lucide-vue-next";
 
 const viewMode = ref("grid"); // defaultnya grid
@@ -21,7 +20,6 @@ const pipelines = ["Sales Pipeline", "Marketing Pipeline", "Dev Pipeline"];
 const selectedPipeline = ref("Sales Pipeline");
 const isPipelineOpen = ref(false);
 const isDragging = ref(false);
-const showCreateDealForm = ref(false);
 
 const pipeline = ref({
   new: [
@@ -57,14 +55,12 @@ onBeforeUnmount(() => {
   isDragging.value = false;
   isCurrencyOpen.value = false;
   isPipelineOpen.value = false;
-  showCreateDealForm.value = false;
 
   console.log("State dibersihkan, overlay dimatikan!");
 });
 </script>
 
 <template>
-  <main class="flex-1 min-w-0 overflow-hidden bg-red"></main>
   <!-- Placeholder for Deals Card -->
   <div
     class="bg-white rounded-lg shadow-sm max-w-311.25 h-147 border border-outline flex flex-col overflow-hidden"
@@ -312,13 +308,6 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </div>
-
-  <!-- Create Deal Form -->
-  <CreateDealForm
-    :isOpen="showCreateDealForm"
-    @close="showCreateDealForm = false"
-    @submit="showCreateDealForm = false"
-  />
 </template>
 
 <style scoped>

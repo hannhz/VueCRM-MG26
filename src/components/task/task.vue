@@ -16,10 +16,12 @@ import {
 import TaskList from "./tasklist.vue";
 import TaskCalender from "./taskcalender.vue";
 import TaskCard from "./taskcard.vue";
+import CreateTaskForm from "@/components/forms/CreateTaskForm.vue";
 
 const showDropdown = ref(false);
 const showDownloadDropdown = ref(false);
 const totalTask = ref(12);
+const showCreateTaskForm = ref(false);
 
 function toggleDropdown() {
   showDropdown.value = !showDropdown.value;
@@ -86,7 +88,10 @@ function setMode(mode) {
           class="absolute right-0 text-sub-text mt-2 w-44 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95"
         >
           <button
-            @click="showDropdown = false"
+            @click="
+              showCreateTaskForm = true;
+              showDropdown = false;
+            "
             class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
           >
             <FilePlus :size="18" />
@@ -213,4 +218,11 @@ function setMode(mode) {
     <TaskCalender v-else-if="activeMode === 'calendar'" />
     <TaskCard v-else-if="activeMode === 'grid'" />
   </div>
+
+  <!-- Create Task Form -->
+  <CreateTaskForm
+    :isOpen="showCreateTaskForm"
+    @close="showCreateTaskForm = false"
+    @submit="showCreateTaskForm = false"
+  />
 </template>
