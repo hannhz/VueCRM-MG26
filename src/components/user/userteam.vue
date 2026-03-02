@@ -123,6 +123,17 @@ function toggleSelectAll(e) {
 
         <!-- Right Section: Action Buttons -->
         <div class="flex items-center gap-2">
+          <!-- Add New -->
+          <div class="relative inline-block add-dropdown">
+            <button
+              type="button"
+              class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+            >
+              <span class="text-lg font-semibold">+</span>
+              <span class="text-sm font-medium">Add User</span>
+            </button>
+          </div>
+
           <!-- Delete -->
           <button
             class="p-2 bg-white border border-red text-red rounded-lg hover:bg-red hover:text-white transition"

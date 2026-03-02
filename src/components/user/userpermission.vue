@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from "vue";
-import PermissionToggle from "./PermissionToggle.vue";
+// import PermissionToggle from "./PermissionToggle.vue";
 
 //data
 const users = ref([
@@ -180,65 +180,129 @@ onBeforeUnmount(() =>
     <div class="p-4 space-y-4">
       <!-- CONTACT ACCESS -->
       <div v-if="activeTab === 'Contacts'">
-        <PermissionToggle
-          label="Add"
-          description="Add contacts"
-          v-model="permissions.contacts.add"
-        />
+        <div
+          class="flex items-center justify-between py-3 border-b border-gray-100"
+        >
+          <div>
+            <p class="font-medium text-sm">Add</p>
+            <p class="text-xs text-gray-500">Add contacts</p>
+          </div>
+          <input
+            type="checkbox"
+            v-model="permissions.contacts.add"
+            class="toggle text-primary focus:ring-primary"
+          />
+        </div>
 
-        <PermissionToggle
-          label="Edit"
-          description="Edit contacts"
-          v-model="permissions.contacts.edit"
-        />
+        <div
+          class="flex items-center justify-between py-3 border-b border-gray-100"
+        >
+          <div>
+            <p class="font-medium text-sm">Edit</p>
+            <p class="text-xs text-gray-500">Edit contacts</p>
+          </div>
+          <input
+            type="checkbox"
+            v-model="permissions.contacts.edit"
+            class="toggle text-primary focus:ring-primary"
+          />
+        </div>
 
-        <PermissionToggle
-          label="Delete"
-          description="Delete contacts"
-          v-model="permissions.contacts.delete"
-        />
+        <div
+          class="flex items-center justify-between py-3 border-b border-gray-100"
+        >
+          <div>
+            <p class="font-medium text-sm">Delete</p>
+            <p class="text-xs text-gray-500">Delete contacts</p>
+          </div>
+          <input
+            type="checkbox"
+            v-model="permissions.contacts.delete"
+            class="toggle text-primary focus:ring-primary"
+          />
+        </div>
       </div>
 
       <!-- COMPANY ACCESS -->
       <div v-if="activeTab === 'Companies'">
-        <PermissionToggle
-          label="Add"
-          description="Add companies"
-          v-model="permissions.companies.add"
-        />
+        <div
+          class="flex items-center justify-between py-3 border-b border-gray-100"
+        >
+          <div>
+            <p class="font-medium text-sm">Add</p>
+            <p class="text-xs text-gray-500">Add companies</p>
+          </div>
+          <input
+            type="checkbox"
+            v-model="permissions.companies.add"
+            class="toggle text-primary focus:ring-primary"
+          />
+        </div>
 
-        <PermissionToggle
-          label="Delete"
-          description="Delete companies"
-          v-model="permissions.companies.delete"
-        />
+        <div
+          class="flex items-center justify-between py-3 border-b border-gray-100"
+        >
+          <div>
+            <p class="font-medium text-sm">Delete</p>
+            <p class="text-xs text-gray-500">Delete companies</p>
+          </div>
+          <input
+            type="checkbox"
+            v-model="permissions.companies.delete"
+            class="toggle text-primary focus:ring-primary"
+          />
+        </div>
       </div>
 
       <!-- DEALS ACCESS -->
       <div v-if="activeTab === 'Deals'">
-        <PermissionToggle
-          label="Delete"
-          description="Delete deals"
-          v-model="permissions.deals.delete"
-        />
+        <div
+          class="flex items-center justify-between py-3 border-b border-gray-100"
+        >
+          <div>
+            <p class="font-medium text-sm">Delete</p>
+            <p class="text-xs text-gray-500">Delete deals</p>
+          </div>
+          <input
+            type="checkbox"
+            v-model="permissions.deals.delete"
+            class="toggle text-primary focus:ring-primary"
+          />
+        </div>
       </div>
 
       <!-- TASKS ACCESS -->
       <div v-if="activeTab === 'Tasks'">
-        <PermissionToggle
-          label="Delete"
-          description="Delete task"
-          v-model="permissions.deals.delete"
-        />
+        <div
+          class="flex items-center justify-between py-3 border-b border-gray-100"
+        >
+          <div>
+            <p class="font-medium text-sm">Delete</p>
+            <p class="text-xs text-gray-500">Delete task</p>
+          </div>
+          <input
+            type="checkbox"
+            v-model="permissions.deals.delete"
+            class="toggle text-primary focus:ring-primary"
+          />
+        </div>
       </div>
 
       <!-- ADMIN ACCESS -->
       <div v-if="activeTab === 'Admin'">
-        <PermissionToggle
-          label="Delete"
-          description="Delete admin"
-          v-model="permissions.deals.delete"
-        />
+        <div
+          class="flex items-center justify-between py-3 border-b border-gray-100"
+        >
+          <div>
+            <p class="font-medium text-sm">Delete</p>
+            <p class="text-xs text-gray-500">Delete admin</p>
+          </div>
+          <input
+            type="checkbox"
+            v-model="permissions.deals.delete"
+            class="toggle text-primary focus:ring-primary"
+          />
+        </div>
       </div>
     </div>
   </div>
