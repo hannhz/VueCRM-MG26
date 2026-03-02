@@ -97,65 +97,15 @@ const handleBulkAdd = () => {
 </script>
 
 <template>
-  <!-- Header with Title and Total -->
-  <div class="flex items-center justify-between mb-4">
-    <div class="flex items-baseline gap-3">
-      <h1 class="text-2xl font-bold text-dark-base">Companies</h1>
-      <span class="text-sm text-sub-text"
-        >{{ totalCompanies.toLocaleString() }} Total Companies</span
-      >
-    </div>
-
-    <!-- Update Button -->
-    <button
-      class="flex items-center gap-2 px-4 py-2 border border-outline bg-white text-sub-text rounded-lg hover:bg-sub-text hover:text-white transition shadow-sm"
-    >
-      <span class="text-sm font-medium">Update</span>
-      <RefreshCcw :size="18" />
-    </button>
-  </div>
-
   <!-- Action Bar -->
   <div class="bg-white rounded-lg shadow-sm h-147 p-4 border border-outline">
-    <div class="flex items-center justify-between gap-4">
-      <!-- Left Section: Filter + Search + Show -->
-      <div class="flex items-center gap-3">
-        <!-- Filter Icon -->
-        <button
-          class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
+    <!-- Header with Title and Total -->
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-baseline gap-3">
+        <h1 class="text-2xl font-bold text-dark-base">Companies</h1>
+        <span class="text-sm text-sub-text"
+          >{{ totalCompanies.toLocaleString() }} Total Companies</span
         >
-          <Filter :size="20" class="text-dark-base" />
-        </button>
-
-        <!-- Search Input -->
-        <div class="relative">
-          <input
-            type="text"
-            placeholder="Search by Name"
-            class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-          />
-        </div>
-
-        <!-- Search Icon Button -->
-        <button
-          class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition"
-        >
-          <Search :size="20" class="text-dark-base" />
-        </button>
-
-        <!-- Show Dropdown -->
-        <div class="flex items-center gap-2">
-          <span class="text-sm text-dark-base">Show</span>
-          <select
-            v-model="itemsPerPage"
-            class="px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-          >
-            <option :value="10">10</option>
-            <option :value="25">25</option>
-            <option :value="50">50</option>
-            <option :value="100">100</option>
-          </select>
-        </div>
       </div>
 
       <!-- Right Section: Action Buttons -->
@@ -260,18 +210,46 @@ const handleBulkAdd = () => {
         </button>
       </div>
     </div>
+    <div class="flex items-center justify-between gap-4">
+      <!-- Left Section: Filter + Search + Show -->
+      <div class="flex items-center gap-3">
+        <!-- Filter Icon -->
+        <button
+          class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
+        >
+          <Filter :size="20" class="text-dark-base" />
+        </button>
 
-    <!--- filter select n page -->
-    <div class="px-6 py-4 flex items-center">
-      <!-- KIRI -->
-      <label class="flex items-center gap-2 text-sm text-sub-text">
-        <input
-          type="checkbox"
-          class="h-4 w-4 rounded border-gray-300 text-sub-text focus:ring-sub-text"
-        />
-        Select all filtered result
-      </label>
+        <!-- Search Input -->
+        <div class="relative">
+          <input
+            type="text"
+            placeholder="Search by Name"
+            class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+          />
+        </div>
 
+        <!-- Search Icon Button -->
+        <button
+          class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition"
+        >
+          <Search :size="20" class="text-dark-base" />
+        </button>
+
+        <!-- Show Dropdown -->
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-dark-base">Show</span>
+          <select
+            v-model="itemsPerPage"
+            class="px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+          >
+            <option :value="10">10</option>
+            <option :value="25">25</option>
+            <option :value="50">50</option>
+            <option :value="100">100</option>
+          </select>
+        </div>
+      </div>
       <!-- PUSH KANAN -->
       <div class="ml-auto flex items-center gap-3 text-sm text-sub-text">
         <button

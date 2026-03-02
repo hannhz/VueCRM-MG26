@@ -19,16 +19,22 @@ import { RefreshCcw, Construction, Settings } from "lucide-vue-next";
   </div>
 
   <!-- Content Area -->
-  <div class="bg-white rounded-xl shadow-sm border border-outline p-12 flex flex-col items-center justify-center min-h-[400px] text-center">
+  <div
+    class="bg-white rounded-xl shadow-sm border border-outline p-12 flex flex-col items-center justify-center min-h-[400px] text-center"
+  >
     <!-- Warning Icon -->
-    <div class="w-16 h-16 bg-light-base rounded-full flex items-center justify-center mb-6">
+    <div
+      class="w-16 h-16 bg-light-base rounded-full flex items-center justify-center mb-6"
+    >
       <Construction :size="32" class="text-sub-text animate-pulse" />
     </div>
 
     <!-- Warning Text -->
-    <h2 class="text-2xl font-bold text-dark-base mb-2">Page Under Construction</h2>
+    <h2 class="text-2xl font-bold text-dark-base mb-2">
+      Page Under Construction
+    </h2>
     <p class="text-sub-text max-w-md mx-auto">
-      We are currently working hard to bring you the best settings experience. 
+      We are currently working hard to bring you the best settings experience.
       Please check back later for updates on this feature.
     </p>
 

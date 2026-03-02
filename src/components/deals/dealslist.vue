@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue"; // 1. Pastikan onBeforeUnmount sudah di-import
-import CreateDealForm from "@/components/forms/CreateDealForm.vue";
+// import CreateDealForm from "@/components/forms/CreateDealForm.vue";
 import {
   ChevronDown,
   Search,
@@ -48,11 +48,20 @@ const handleAddDeal = (dealData) => {
   console.log("New deal:", dealData);
   // TODO: Implement API call
 };
+
+const deleteSelected = () => {
+  if (confirm("Are you sure you want to delete selected deals?")) {
+    deals.value = deals.value.filter(
+      (d) => !selectedDeals.value.includes(d.id),
+    );
+    selectedDeals.value = [];
+  }
+};
 </script>
 
 <template>
   <div
-    class="bg-white rounded-lg shadow-sm max-w-311.25 h-147 border border-outline flex flex-col overflow-hidden"
+    class="bg-white rounded-lg shadow-sm max-w-full h-147 border border-outline flex flex-col overflow-hidden"
   >
     <!-- Action Bar -->
     <div class="pt-4 pr-4 pl-4">
@@ -381,9 +390,9 @@ const handleAddDeal = (dealData) => {
   </div>
 
   <!-- Create Deal Form -->
-  <CreateDealForm
+  <!-- <CreateDealForm
     :isOpen="showCreateDealForm"
     @close="showCreateDealForm = false"
     @submit="showCreateDealForm = false"
-  />
+  /> -->
 </template>

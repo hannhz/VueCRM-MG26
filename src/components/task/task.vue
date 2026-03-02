@@ -13,6 +13,9 @@ import {
   List,
   CalendarDays,
 } from "lucide-vue-next";
+import TaskList from "./tasklist.vue";
+import TaskCalender from "./taskcalender.vue";
+import TaskCard from "./taskcard.vue";
 
 const showDropdown = ref(false);
 const showDownloadDropdown = ref(false);
@@ -40,6 +43,14 @@ function handleDownload() {
 
 function handleDelete() {
   console.log("Delete selected tasks");
+}
+
+// State untuk mode tampilan
+const activeMode = ref("list"); // 'list', 'calendar', 'grid'
+
+// Fungsi untuk mengubah mode
+function setMode(mode) {
+  activeMode.value = mode;
 }
 </script>
 
@@ -152,62 +163,54 @@ function handleDelete() {
       </button>
 
       <!-- List Mode -->
-      <router-link
-        :to="{ name: 'TaskList' }"
-        custom
-        v-slot="{ navigate, isActive }"
+      <button
+        @click="setMode('list')"
+        :class="[
+          activeMode === 'list'
+            ? 'bg-sub-text text-white border-sub-text'
+            : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
+        ]"
+        class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition relative group"
+        title="List View"
       >
-        <button
-          @click="navigate"
-          :class="[
-            isActive
-              ? 'bg-sub-text text-white border-sub-text'
-              : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
-          ]"
-          class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition"
-        >
-          <List :size="18" :stroke-width="3" />
-        </button>
-      </router-link>
+        <List :size="18" :stroke-width="3" />
+        <!-- Tooltip -->
+      </button>
 
-      <!-- calender Mode -->
-      <router-link
-        :to="{ name: 'TaskCalender' }"
-        custom
-        v-slot="{ navigate, isActive }"
+      <!-- Calendar Mode -->
+      <button
+        @click="setMode('calendar')"
+        :class="[
+          activeMode === 'calendar'
+            ? 'bg-sub-text text-white border-sub-text'
+            : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
+        ]"
+        class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition relative group"
+        title="Calendar View"
       >
-        <button
-          @click="navigate"
-          :class="[
-            isActive
-              ? 'bg-sub-text text-white border-sub-text'
-              : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
-          ]"
-          class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition"
-        >
-          <CalendarDays :size="18" :stroke-width="2" />
-        </button>
-      </router-link>
+        <CalendarDays :size="18" :stroke-width="2" />
+      </button>
 
       <!-- Grid Mode -->
-      <router-link
-        :to="{ name: 'TaskCard' }"
-        custom
-        v-slot="{ navigate, isActive }"
+      <button
+        @click="setMode('grid')"
+        :class="[
+          activeMode === 'grid'
+            ? 'bg-sub-text text-white border-sub-text'
+            : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
+        ]"
+        class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition relative group"
+        title="Kanban View"
       >
-        <button
-          @click="navigate"
-          :class="[
-            isActive
-              ? 'bg-sub-text text-white border-sub-text'
-              : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
-          ]"
-          class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition"
-        >
-          <LayoutGrid :size="18" :stroke-width="2" />
-        </button>
-      </router-link>
+        <LayoutGrid :size="18" :stroke-width="2" />
+      </button>
     </div>
   </div>
-  <router-view />
+
+  <!-- Konten berdasarkan mode -->
+  <div class="mt-4">
+    <TaskList v-if="activeMode === 'list'" />
+    <TaskCalender v-else-if="activeMode === 'calendar'" />
+    <TaskCard v-else-if="activeMode === 'grid'" />
+  </div>
 </template>

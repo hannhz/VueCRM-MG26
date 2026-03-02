@@ -13,19 +13,19 @@ import { RefreshCcw } from "lucide-vue-next";
 
 <template>
   <!-- Header with Title and Total -->
-  <div class="flex items-center justify-between mb-5">
+  <!-- <div class="flex items-center justify-between mb-5">
     <div class="flex items-baseline gap-3">
       <h1 class="text-2xl font-bold text-dark-base">Dashboard</h1>
-    </div>
+    </div> -->
 
-    <!-- Connect Regfresh/update Button -->
-    <button
+  <!-- Connect Regfresh/update Button -->
+  <!-- <button
       class="flex items-center gap-2 px-4 py-2 border border-outline bg-white text-sub-text rounded-lg hover:bg-sub-text hover:text-white transition shadow-sm"
     >
       <span class="text-sm font-medium">Update</span>
       <RefreshCcw :size="18" />
     </button>
-  </div>
+  </div> -->
 
   <!-- Content Area -->
   <!-- Summary Cards -->

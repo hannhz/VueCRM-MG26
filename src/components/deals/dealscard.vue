@@ -64,6 +64,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <main class="flex-1 min-w-0 overflow-hidden bg-red"></main>
   <!-- Placeholder for Deals Card -->
   <div
     class="bg-white rounded-lg shadow-sm max-w-311.25 h-147 border border-outline flex flex-col overflow-hidden"

@@ -51,6 +51,7 @@ const routes = [
       },
       {
         path: "deals",
+        name: "Deals",
         component: Deals, // File yang barusan kamu kirim
         children: [
           {

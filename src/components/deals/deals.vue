@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from "vue";
-const showCreateDealForm = ref(false);
-
+import DealsCard from "./dealscard.vue";
+import DealsList from "./dealslist.vue";
 import {
   ChevronDown,
   FileDown,
@@ -14,22 +14,21 @@ import {
   List,
 } from "lucide-vue-next";
 
-const density = ref("comfy"); // comfy | compact
-
-const viewMode = ref("grid"); // defaultnya grid
+const activeMode = ref("card"); // 'card' atau 'list'
 
 const totalDeals = ref(18600);
 const showDropdown = ref(false);
 const selectedIds = ref([]);
-const showAddContactForm = ref(false);
+const showDownloadDropdown = ref(false);
+
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value;
 };
+
 const handleBulkAdd = () => {
   console.log("Bulk add deals");
 };
 
-const showDownloadDropdown = ref(false);
 const toggleDownloadDropdown = () => {
   showDownloadDropdown.value = !showDownloadDropdown.value;
 };
@@ -78,13 +77,13 @@ const handleDownload = () => {
         >
           <button
             @click="
-              showAddContactForm = true;
+              // showAddContactForm = true;
               showDropdown = false;
             "
             class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
           >
             <FilePlus :size="18" />
-            <span class="font-medium"> Single Deals </span>
+            <span class="font-medium"> Single Deal </span>
           </button>
 
           <button
@@ -148,44 +147,39 @@ const handleDownload = () => {
         <span class="text-sm font-medium">Bulk Edit</span>
       </button>
 
-      <!-- Grid Mode -->
-      <router-link
-        :to="{ name: 'DealsCard' }"
-        custom
-        v-slot="{ navigate, isActive }"
+      <!-- Grid Mode (Card) -->
+      <button
+        @click="activeMode = 'card'"
+        :class="[
+          'relative group flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition',
+          activeMode === 'card'
+            ? 'bg-sub-text text-white border-sub-text'
+            : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
+        ]"
+        title="Kanban View"
       >
-        <button
-          @click="navigate"
-          :class="[
-            isActive
-              ? 'bg-sub-text text-white border-sub-text'
-              : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
-          ]"
-          class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition"
-        >
-          <LayoutGrid :size="18" :stroke-width="2" />
-        </button>
-      </router-link>
+        <LayoutGrid :size="18" :stroke-width="2" />
+        <!-- Tooltip -->
+      </button>
 
       <!-- List Mode -->
-      <router-link
-        :to="{ name: 'DealsList' }"
-        custom
-        v-slot="{ navigate, isActive }"
+      <button
+        @click="activeMode = 'list'"
+        :class="[
+          'relative group flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition',
+          activeMode === 'list'
+            ? 'bg-sub-text text-white border-sub-text'
+            : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
+        ]"
+        title="List View"
       >
-        <button
-          @click="navigate"
-          :class="[
-            isActive
-              ? 'bg-sub-text text-white border-sub-text'
-              : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
-          ]"
-          class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition"
-        >
-          <List :size="18" :stroke-width="3" />
-        </button>
-      </router-link>
+        <List :size="18" :stroke-width="3" />
+        <!-- Tooltip -->
+      </button>
     </div>
   </div>
-  <router-view />
+
+  <!-- Render komponen berdasarkan mode -->
+  <DealsCard v-if="activeMode === 'card'" />
+  <DealsList v-else-if="activeMode === 'list'" />
 </template>

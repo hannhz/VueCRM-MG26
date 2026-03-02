@@ -1,117 +1,64 @@
 <script setup>
+import { ref } from "vue";
 import { FileText, LayoutTemplate, Code2, RefreshCcw } from "lucide-vue-next";
-import { useRoute } from "vue-router";
+import DocumentList from "./DocumentList.vue";
+import DocumentsTemplate from "./DocumentsTemplate.vue";
+import DocumentsShortCode from "./DocumentsShortCode.vue";
 
-const route = useRoute();
-
-// Mock total for the header
-const totalDocuments = 6;
+const activeTab = ref("list"); // 'list' | 'template' | 'shortcode'
 
 const menuItems = [
-  {
-    name: "Document List",
-    icon: FileText,
-    path: "/crmAdmin/documents",
-    exact: true,
-  },
-  {
-    name: "Template",
-    icon: LayoutTemplate,
-    path: "/crmAdmin/documents/template",
-    exact: false,
-  },
-  {
-    name: "Short Code",
-    icon: Code2,
-    path: "/crmAdmin/documents/short-code",
-    exact: false,
-  },
+  { key: "list", label: "Document List", icon: FileText },
+  { key: "template", label: "Template", icon: LayoutTemplate },
+  { key: "shortcode", label: "Short Code", icon: Code2 },
 ];
-
-const isActive = (item) => {
-  if (item.exact) {
-    return route.path === item.path;
-  }
-  return route.path.startsWith(item.path);
-};
 </script>
 
 <template>
-  <!-- Header with Title and Total -->
-  <div class="flex items-center justify-between mb-6">
-    <div class="flex items-baseline gap-3">
-      <h1 class="text-2xl font-bold text-dark-base">Documents</h1>
-      <span class="text-sm text-sub-text" v-if="route.name === 'DocumentsList'">
-        {{ totalDocuments }} Total Documents
-      </span>
-    </div>
-
-    <!-- Header Action Button -->
-    <button
-      class="flex items-center gap-2 px-4 py-2 border border-outline bg-white text-sub-text rounded-lg hover:bg-sub-text hover:text-white transition shadow-sm"
-    >
-      <span class="text-sm font-medium">Update</span>
-      <RefreshCcw :size="18" />
-    </button>
-  </div>
-
   <!-- Main Layout Grid -->
   <div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 items-start">
     <!-- Secondary Sidebar -->
-    <div class="bg-white rounded-xl shadow-sm border border-outline overflow-hidden h-fit">
+    <div class="bg-white rounded-xl shadow-sm border border-outline h-fit">
       <div class="bg-light-base/50 px-5 py-3 border-b border-outline">
-        <h3 class="font-bold text-dark-base uppercase tracking-wider text-xs">
+        <h3 class="font-bold text-dark-base uppercase text-xs">
           Documents Menu
         </h3>
       </div>
-
       <nav class="p-2 space-y-1">
-        <router-link
+        <button
           v-for="item in menuItems"
-          :key="item.name"
-          :to="item.path"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group border border-transparent hover:bg-gray-50/50"
-          active-class="text-dark-base"
-          exact-active-class="bg-gray-50/80 text-dark-base border-outline/50 shadow-sm font-semibold"
+          :key="item.key"
+          @click="activeTab = item.key"
+          class="flex items-center gap-3 px-4 py-3 rounded-lg w-full text-left transition"
+          :class="[
+            activeTab === item.key
+              ? 'bg-gray-50/80 text-dark-base border-outline/50 shadow-sm font-semibold'
+              : 'hover:bg-gray-50/50 text-sub-text',
+          ]"
         >
-          <component
-            :is="item.icon"
-            :size="18"
-            class="text-sub-text group-hover:text-dark-base group-[.router-link-exact-active]:text-dark-base"
-          />
-          <span
-            class="font-medium text-sm group-hover:text-dark-base group-[.router-link-exact-active]:text-dark-base"
-            >{{ item.name }}</span
-          >
-        </router-link>
+          <component :is="item.icon" :size="18" />
+          <span class="text-sm">{{ item.label }}</span>
+        </button>
       </nav>
-
       <div class="p-4 bg-light-base/30 border-t border-outline">
-        <div class="text-[11px] text-gray-400 font-medium uppercase mb-2">
-          Internal Note
-        </div>
-        <p class="text-xs text-sub-text leading-relaxed">
-          Manage your document templates and shortcodes here for faster
-          workflow.
-        </p>
+        <p class="text-xs text-sub-text">Internal note...</p>
+        <span class="text-sm text-sub-text" v-if="activeTab === 'list'">
+          6 Total Documents. Click on a document to view details, edit, or manage its settings.
+        </span>
+        <span class="text-sm text-sub-text" v-if="activeTab === 'template'">
+          Input the template for your document, you can use dynamic variables to populate data.
+        </span>
+        <span class="text-sm text-sub-text" v-if="activeTab === 'shortcode'">
+          Use the shortcode to embed the document form in your website or application.
+        </span>
       </div>
     </div>
 
     <!-- Content Area -->
     <div class="min-w-0">
-      <router-view />
+      <DocumentList v-if="activeTab === 'list'" />
+      <DocumentsTemplate v-else-if="activeTab === 'template'" />
+      <DocumentsShortCode v-else-if="activeTab === 'shortcode'" />
     </div>
   </div>
 </template>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>

@@ -1,69 +1,29 @@
 <script setup>
+import { ref } from "vue";
 import { User, UserCog, Users, RefreshCcw } from "lucide-vue-next";
-import { useRoute } from "vue-router";
+import UserSettings from "./usersetings.vue"; // perhatikan nama file (sesuaikan)
+import UserPermission from "./userpermission.vue";
+import UserTeam from "./userteam.vue";
 
-const route = useRoute();
-
-// Mock total for the header
-const totalUser = 10;
-const users = [];
+const activeTab = ref("settings"); // 'settings', 'permission', 'team'
 
 const menuItems = [
-  {
-    name: "User Settings",
-    icon: User,
-    path: "/crmAdmin/users",
-    exact: true,
-  },
-  {
-    name: "User Permission",
-    icon: UserCog,
-    path: "/crmAdmin/users/user-permission",
-    exact: false,
-  },
-  {
-    name: "Team",
-    icon: Users,
-    path: "/crmAdmin/users/user-team",
-    exact: false,
-  },
+  { key: "settings", label: "User Settings", icon: User },
+  { key: "permission", label: "User Permission", icon: UserCog },
+  { key: "team", label: "Team", icon: Users },
 ];
 
-const isActive = (item) => {
-  if (item.exact) {
-    return route.path === item.path;
-  }
-  return route.path.startsWith(item.path);
-};
+// Data dummy untuk total user (nanti dari API)
+const users = [];
+const totalUser = users.length;
 </script>
 
 <template>
-  <!-- Header with Title and Total -->
-  <div class="flex items-center justify-between mb-6">
-    <div class="flex items-baseline gap-3">
-      <h1 class="text-2xl font-bold text-dark-base">User</h1>
-      <span
-        class="text-sm text-sub-text"
-        v-if="route.path.startsWith('/crmAdmin/user')"
-      >
-        {{ totalUser }} Total User
-      </span>
-    </div>
-
-    <!-- Update Button -->
-    <button
-      class="flex items-center gap-2 px-4 py-2 border border-outline bg-white text-sub-text rounded-lg hover:bg-sub-text hover:text-white transition shadow-sm"
-    >
-      <span class="text-sm font-medium">Update</span>
-      <RefreshCcw :size="18" />
-    </button>
-  </div>
-
   <!-- Main Layout Grid -->
   <div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 items-start">
     <!-- Secondary Sidebar -->
     <div
-      class="bg-white rounded-xl shadow-sm border border-outline overflow-hidden sticky top-4"
+      class="bg-white rounded-xl shadow-sm border border-outline overflow-hidden sticky"
     >
       <div class="bg-light-base/50 px-5 py-3 border-b border-outline">
         <h3 class="font-bold text-dark-base uppercase tracking-wider text-xs">
@@ -72,24 +32,20 @@ const isActive = (item) => {
       </div>
 
       <nav class="p-2 space-y-1">
-        <router-link
+        <button
           v-for="item in menuItems"
-          :key="item.name"
-          :to="item.path"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group border border-transparent hover:bg-gray-50/50"
-          active-class="text-dark-base"
-          exact-active-class="bg-gray-50/80 text-dark-base border-outline/50 shadow-sm font-semibold"
+          :key="item.key"
+          @click="activeTab = item.key"
+          class="flex items-center gap-3 px-4 py-3 rounded-lg w-full text-left transition"
+          :class="[
+            activeTab === item.key
+              ? 'bg-gray-50/80 text-dark-base border-outline/50 shadow-sm font-semibold'
+              : 'hover:bg-gray-50/50 text-sub-text',
+          ]"
         >
-          <component
-            :is="item.icon"
-            :size="18"
-            class="text-sub-text group-hover:text-dark-base group-[.router-link-exact-active]:text-dark-base"
-          />
-          <span
-            class="font-medium text-sm group-hover:text-dark-base group-[.router-link-exact-active]:text-dark-base"
-            >{{ item.name }}</span
-          >
-        </router-link>
+          <component :is="item.icon" :size="18" />
+          <span class="text-sm">{{ item.label }}</span>
+        </button>
       </nav>
 
       <div class="p-4 bg-light-base/30 border-t border-outline">
@@ -99,9 +55,8 @@ const isActive = (item) => {
         <div class="space-y-2 text-sm text-sub-text">
           <div class="flex justify-between">
             <span>Number of Users</span>
-            <span class="font-medium">{{ users.length }}</span>
+            <span class="font-medium">{{ totalUser }}</span>
           </div>
-
           <div class="flex justify-between">
             <span>Maximum Users</span>
             <span class="font-medium">10</span>
@@ -112,19 +67,9 @@ const isActive = (item) => {
 
     <!-- Content Area -->
     <div class="min-w-0">
-      <router-view />
+      <UserSettings v-if="activeTab === 'settings'" />
+      <UserPermission v-else-if="activeTab === 'permission'" />
+      <UserTeam v-else-if="activeTab === 'team'" />
     </div>
   </div>
 </template>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>
