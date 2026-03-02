@@ -165,24 +165,12 @@ const handleSubmit = () => {
                 <label class="block text-sm font-medium text-dark-base mb-2"
                   >Status</label
                 >
-                <div class="relative">
-                  <select
-                    v-model="formData.status"
-                    class="w-full px-3 py-2 pr-8 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white appearance-none cursor-pointer text-dark-base"
-                  >
-                    <option
-                      v-for="opt in statusOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                  <ChevronDown
-                    :size="16"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                  />
-                </div>
+                <input
+                  v-model="formData.status"
+                  type="text"
+                  placeholder="Ex Manager"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                />
               </div>
             </div>
 
@@ -286,8 +274,9 @@ const handleSubmit = () => {
                     v-model="formData.source"
                     class="w-full px-3 py-2 pr-8 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white appearance-none cursor-pointer text-dark-base"
                   >
+                    <option value="" disabled selected>Select Data</option>
                     <option
-                      v-for="opt in sourceOptions"
+                      v-for="opt in sourceOptions.filter(o => o.value !== '')"
                       :key="opt.value"
                       :value="opt.value"
                     >

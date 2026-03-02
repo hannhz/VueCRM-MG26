@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from "vue";
-import { ArrowRight, X } from "lucide-vue-next";
+import { ArrowRight, X, Plus, ChevronDown } from "lucide-vue-next";
+import AddContactQuickForm from "./AddContactQuickForm.vue";
 
 defineProps({
   isOpen: {
@@ -40,6 +41,8 @@ const typeOptions = [
   { value: "vendor", label: "Vendor" },
 ];
 
+const showAddContactQuickForm = ref(false);
+
 const formData = ref({
   companyName: "",
   companyOwner: "",
@@ -56,6 +59,7 @@ const formData = ref({
   source: "",
   type: "",
   deals: "",
+  contactAssociation: "",
 });
 
 const handleClose = () => emit("close");
@@ -320,6 +324,33 @@ const handleSubmit = () => {
                 />
               </div>
             </div>
+
+            <!-- Contact Association -->
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Contact Association</label
+              >
+              <div class="relative">
+                <input
+                  v-model="formData.contactAssociation"
+                  type="text"
+                  placeholder="Search by Name"
+                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                />
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
+              </div>
+              <button
+                type="button"
+                @click="showAddContactQuickForm = true"
+                class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
+              >
+                <Plus :size="14" />
+                Create Contact
+              </button>
+            </div>
           </form>
         </div>
 
@@ -345,6 +376,13 @@ const handleSubmit = () => {
       </div>
     </div>
   </Transition>
+
+  <!-- Add Contact Quick Form -->
+  <AddContactQuickForm
+    :isOpen="showAddContactQuickForm"
+    @close="showAddContactQuickForm = false"
+    @submit="showAddContactQuickForm = false"
+  />
 </template>
 
 <style scoped>

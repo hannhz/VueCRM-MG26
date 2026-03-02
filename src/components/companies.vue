@@ -11,8 +11,10 @@ import {
   ChevronRight,
   RefreshCcw,
   FolderPlus,
+  FileDown,
+  FolderDown,
 } from "lucide-vue-next";
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import CreateCompanyForm from "./forms/CreateCompanyForm.vue";
 import BulkAddCompanyForm from "./forms/BulkAddCompanyForm.vue";
 import DetailForm from "./forms/DetailForm.vue";
@@ -72,7 +74,32 @@ const showCreateCompanyForm = ref(false);
 const showBulkAddForm = ref(false);
 const showDetailForm = ref(false);
 const showDropdown = ref(false);
+const showDownloadDropdown = ref(false);
 const selectedIds = ref([]);
+
+const toggleDownloadDropdown = () => {
+  showDownloadDropdown.value = !showDownloadDropdown.value;
+};
+
+const downloadAll = () => {
+  console.log("Download all data");
+  showDownloadDropdown.value = false;
+};
+
+const handleDownload = () => {
+  if (selectedIds.value.length) {
+    console.log("Download selected:", selectedIds.value);
+  } else {
+    console.log("Download all data");
+  }
+  showDownloadDropdown.value = false;
+};
+
+const downloadLabel = computed(() => {
+  return selectedIds.value.length
+    ? `Download (${selectedIds.value.length})`
+    : "Download";
+});
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value;
@@ -80,8 +107,9 @@ const toggleDropdown = () => {
 
 // auto close saat klik luar
 const handleClickOutside = (e) => {
-  if (!e.target.closest(".add-dropdown")) {
+  if (!e.target.closest(".add-dropdown") && !e.target.closest(".download-dropdown")) {
     showDropdown.value = false;
+    showDownloadDropdown.value = false;
   }
 };
 
@@ -155,7 +183,7 @@ const handleBulkAdd = () => {
         </div>
 
         <!-- Download -->
-        <div class="relative inline-block">
+        <div class="relative inline-block download-dropdown">
           <!-- Button -->
           <button
             type="button"
@@ -171,24 +199,24 @@ const handleBulkAdd = () => {
             />
           </button>
 
-          <!-- Dropdown -->
+          <!-- DropdownMenu -->
           <div
             v-show="showDownloadDropdown"
-            class="absolute text-sub-text right-0 mt-2 w-48 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95"
+            class="absolute text-dark-base right-0 mt-2 w-48 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95"
           >
             <button
               @click="downloadAll"
               class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
             >
-              <FolderDown :size="16" />
+              <FolderDown :size="18" class="text-dark-base" />
               <span class="font-medium">Download All</span>
             </button>
 
             <button
               @click="handleDownload"
-              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2 border-t border-gray-50"
             >
-              <FileDown :size="16" />
+              <FileDown :size="18" class="text-dark-base" />
               <span class="font-medium">{{ downloadLabel }}</span>
             </button>
           </div>
@@ -452,9 +480,11 @@ const handleBulkAdd = () => {
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
+  appearance: none;
   margin: 0;
 }
 input[type="number"] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 </style>
