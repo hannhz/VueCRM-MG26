@@ -87,7 +87,7 @@ const triggerFileInput = () => {
           <!-- Step 1 -->
           <div class="flex gap-4">
             <div
-              class="shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm"
+              class="shrink-0 w-8 h-8 rounded-full bg-dark-base text-white flex items-center justify-center font-bold text-sm"
             >
               1
             </div>
@@ -95,11 +95,14 @@ const triggerFileInput = () => {
               The maximum row for uploading multiple companies is 1000 rows.
               Prepare a file of your companies using our template in '.csv',
               '.xls', or '.xlsx'.
-              <a href="#" class="text-blue-600 hover:underline">csv template</a
+              <a href="#" class="text-dark-base font-semibold hover:underline"
+                >csv template</a
               >,
-              <a href="#" class="text-blue-600 hover:underline">xls template</a
+              <a href="#" class="text-dark-base font-semibold hover:underline"
+                >xls template</a
               >,
-              <a href="#" class="text-blue-600 hover:underline">xlsx template</a
+              <a href="#" class="text-dark-base font-semibold hover:underline"
+                >xlsx template</a
               >.
             </p>
           </div>
@@ -107,7 +110,7 @@ const triggerFileInput = () => {
           <!-- Step 2 -->
           <div class="flex gap-4">
             <div
-              class="shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm"
+              class="shrink-0 w-8 h-8 rounded-full bg-dark-base text-white flex items-center justify-center font-bold text-sm"
             >
               2
             </div>
@@ -122,7 +125,7 @@ const triggerFileInput = () => {
           <!-- Step 3 -->
           <div class="flex gap-4">
             <div
-              class="shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm"
+              class="shrink-0 w-8 h-8 rounded-full bg-dark-base text-white flex items-center justify-center font-bold text-sm"
             >
               3
             </div>
@@ -133,8 +136,8 @@ const triggerFileInput = () => {
 
           <!-- File Upload Zone -->
           <div
-            class="border-2 border-dashed border-blue-400/50 rounded-lg h-32 flex flex-col items-center justify-center text-center cursor-pointer transition-colors hover:bg-gray-50 hover:border-blue-500 group bg-white"
-            :class="{ 'border-blue-500 bg-blue-50': dragging }"
+            class="border-2 border-dashed border-outline rounded-lg h-32 flex flex-col items-center justify-center text-center cursor-pointer transition-colors hover:bg-light-base hover:border-sub-text group bg-white"
+            :class="{ 'border-sub-text bg-light-base': dragging }"
             @dragover.prevent="dragging = true"
             @dragleave.prevent="dragging = false"
             @drop.prevent="handleDrop"
@@ -151,13 +154,13 @@ const triggerFileInput = () => {
             <div v-if="!selectedFile" class="flex flex-col items-center">
               <Upload
                 :size="24"
-                class="text-blue-500 mb-2"
+                class="text-sub-text mb-2"
                 stroke-width="2.5"
               />
-              <p class="text-sm font-medium text-slate-600 mb-0.5">
+              <p class="text-sm font-medium text-dark-base mb-0.5">
                 Klik untuk pilih file
               </p>
-              <p class="text-xs text-slate-400 font-medium">
+              <p class="text-xs text-sub-text/70 font-medium">
                 PDF, DOC, XLS, JPG, PNG
               </p>
             </div>

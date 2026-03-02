@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { X, Plus, ChevronDown } from "lucide-vue-next";
 import AddDealForm from "./AddDealForm.vue";
+import AddContactQuickForm from "./AddContactQuickForm.vue";
 
 const props = defineProps({
   isOpen: {
@@ -71,6 +72,7 @@ const formData = ref({
 });
 
 const showAddDealForm = ref(false);
+const showAddContactQuickForm = ref(false);
 
 const handleClose = () => emit("close");
 
@@ -398,6 +400,7 @@ const handleReset = () => {
             </div>
             <button
               type="button"
+              @click="showAddContactQuickForm = true"
               class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
             >
               <Plus :size="14" />
@@ -470,6 +473,13 @@ const handleReset = () => {
     :isOpen="showAddDealForm"
     @close="showAddDealForm = false"
     @submit="showAddDealForm = false"
+  />
+
+  <!-- Add Contact Quick Form -->
+  <AddContactQuickForm
+    :isOpen="showAddContactQuickForm"
+    @close="showAddContactQuickForm = false"
+    @submit="showAddContactQuickForm = false"
   />
 </template>
 
