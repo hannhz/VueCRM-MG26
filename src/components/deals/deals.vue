@@ -156,7 +156,7 @@ const handleDownload = () => {
             ? 'bg-sub-text text-white border-sub-text'
             : 'bg-white text-sub-text border-outline hover:bg-sub-text hover:text-white',
         ]"
-        title="Kanban View"
+        title="kanban view"
       >
         <LayoutGrid :size="18" :stroke-width="2" />
         <!-- Tooltip -->
