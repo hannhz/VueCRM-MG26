@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
+import { useStore } from "vuex";
 import DealsCard from "./dealscard.vue";
 import DealsList from "./dealslist.vue";
 import CreateDealForm from "@/components/forms/CreateDealForm.vue";
@@ -16,7 +17,20 @@ import {
   List,
 } from "lucide-vue-next";
 
-const activeMode = ref("card"); // 'card' atau 'list'
+const store = useStore();
+
+/* 🔥 GANTI activeMode dengan Vuex */
+const activeMode = computed(() =>
+  store.getters["deals/currentView"]
+);
+
+function changeToCard() {
+  store.dispatch("deals/setViewMode", "card");
+}
+
+function changeToList() {
+  store.dispatch("deals/setViewMode", "list");
+}
 
 const totalDeals = ref(18600);
 const showDropdown = ref(false);
@@ -154,7 +168,7 @@ const handleDownload = () => {
 
         <!-- Grid Mode (Card) -->
         <button
-          @click="activeMode = 'card'"
+          @click="changeToCard"
           :class="[
             'relative group flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition',
             activeMode === 'card'
@@ -169,7 +183,7 @@ const handleDownload = () => {
 
         <!-- List Mode -->
         <button
-          @click="activeMode = 'list'"
+          @click="changeToList"
           :class="[
             'relative group flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition',
             activeMode === 'list'

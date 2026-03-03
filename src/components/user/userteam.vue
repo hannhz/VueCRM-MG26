@@ -8,6 +8,7 @@ import {
   ChevronDown,
   Trash2,
 } from "lucide-vue-next";
+import CreateTeamForm from "../forms/CreateTeamForm.vue";
 
 /* =========================
    TEAM DATA (DUMMY)
@@ -20,6 +21,8 @@ const teams = ref([
   { id: 5, team: "Development", members: 12 },
   { id: 6, team: "Support", members: 6 },
 ]);
+
+const showCreateTeamForm = ref(false);
 
 /* =========================
    SEARCH
@@ -126,11 +129,12 @@ function toggleSelectAll(e) {
           <!-- Add New -->
           <div class="relative inline-block add-dropdown">
             <button
+              @click="showCreateTeamForm = true"
               type="button"
               class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
             >
               <span class="text-lg font-semibold">+</span>
-              <span class="text-sm font-medium">Add User</span>
+              <span class="text-sm font-medium">Add Team</span>
             </button>
           </div>
 
@@ -242,4 +246,11 @@ function toggleSelectAll(e) {
       </table>
     </div>
   </div>
+
+  <!-- Add Team Form -->
+  <CreateTeamForm
+    :isOpen="showCreateTeamForm"
+    @close="showCreateTeamForm = false"
+    @submit="showCreateTeamForm = false"
+  />
 </template>

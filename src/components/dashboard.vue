@@ -9,6 +9,11 @@ import TasksKPI from "./carddb/tasksKPI.vue";
 import TaskList from "./carddb/taskList.vue";
 import TopslsPeople from "./carddb/topslspeople.vue";
 import { RefreshCcw } from "lucide-vue-next";
+import { useStore } from "vuex";
+import { computed } from "vue";
+
+const store = useStore();
+const message = computed(() => store.state.message);
 </script>
 
 <template>
@@ -28,8 +33,10 @@ import { RefreshCcw } from "lucide-vue-next";
   </div> -->
 
   <!-- Content Area -->
+
   <!-- Summary Cards -->
   <!-- contact Summary Card -->
+   <div>{{ message }}</div>
   <Summary></Summary>
 
   <!-- Deals and Activity -->

@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ChevronDown,
 } from "lucide-vue-next";
+import CreateUserForm from "../forms/CreateUserForm.vue";
 
 //data
 const users = ref([
@@ -61,6 +62,8 @@ const users = ref([
     role: "Viewer",
   },
 ]);
+
+const showCreateUserForm = ref(false);
 
 //pagination
 
@@ -170,6 +173,7 @@ function prevPage() {
           <!-- Add New -->
           <div class="relative inline-block add-dropdown">
             <button
+              @click="showCreateUserForm = true"
               type="button"
               class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
             >
@@ -314,4 +318,11 @@ function prevPage() {
       </table>
     </div>
   </div>
+
+  <!-- Add User Form -->
+  <CreateUserForm
+    :isOpen="showCreateUserForm"
+    @close="showCreateUserForm = false"
+    @submit="showCreateUserForm = false"
+  />
 </template>
