@@ -43,13 +43,16 @@ const menuItems = [
       <div class="p-4 bg-light-base/30 border-t border-outline">
         <p class="text-xs text-sub-text">Internal note...</p>
         <span class="text-sm text-sub-text" v-if="activeTab === 'list'">
-          6 Total Documents. Click on a document to view details, edit, or manage its settings.
+          6 Total Documents. Click on a document to view details, edit, or
+          manage its settings.
         </span>
         <span class="text-sm text-sub-text" v-if="activeTab === 'template'">
-          Input the template for your document, you can use dynamic variables to populate data.
+          Input the template for your document, you can use dynamic variables to
+          populate data.
         </span>
         <span class="text-sm text-sub-text" v-if="activeTab === 'shortcode'">
-          Use the shortcode to embed the document form in your website or application.
+          Use the shortcode to embed the document form in your website or
+          application.
         </span>
       </div>
     </div>

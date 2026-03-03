@@ -1,10 +1,10 @@
 <script setup>
 import { ref } from "vue";
-import { 
-  X, 
-  ChevronDown, 
-  Calendar, 
-  Clock, 
+import {
+  X,
+  ChevronDown,
+  Calendar,
+  Clock,
   ClipboardList,
   Type,
   Bold,
@@ -19,7 +19,7 @@ import {
   List,
   ListOrdered,
   RotateCcw,
-  RotateCw
+  RotateCw,
 } from "lucide-vue-next";
 
 defineProps({
@@ -117,153 +117,240 @@ const handleReset = () => {
 
       <div class="flex-1 overflow-y-auto min-h-0">
         <form @submit.prevent="handleSubmit" class="p-4 sm:p-6 space-y-5">
-            <!-- Name of Task -->
+          <!-- Name of Task -->
+          <div>
+            <label class="block text-sm font-medium text-dark-base mb-2"
+              >Name of Task</label
+            >
+            <input
+              v-model="formData.taskName"
+              type="text"
+              placeholder="Task name..."
+              class="w-full px-4 py-3 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
+            />
+          </div>
+
+          <!-- Task Description (Rich Text Editor Mockup) -->
+          <div
+            class="border border-outline rounded-lg overflow-hidden shadow-sm"
+          >
+            <!-- Toolbar -->
+            <div
+              class="flex items-center gap-1.5 px-4 py-2 border-b border-outline bg-light-base/50 flex-wrap"
+            >
+              <button
+                type="button"
+                class="p-1.5 hover:bg-white rounded transition-colors text-sub-text"
+              >
+                <RotateCcw :size="16" />
+              </button>
+              <button
+                type="button"
+                class="p-1.5 hover:bg-white rounded transition-colors text-sub-text"
+              >
+                <RotateCw :size="16" />
+              </button>
+              <div class="w-px h-4 bg-outline mx-1"></div>
+              <div class="relative flex items-center">
+                <select
+                  class="text-xs font-medium border-none bg-transparent text-sub-text focus:outline-none bg-white py-1 pl-1 pr-6 rounded cursor-pointer appearance-none"
+                >
+                  <option>Format</option>
+                </select>
+                <ChevronDown
+                  :size="12"
+                  class="absolute right-1 text-sub-text pointer-events-none"
+                />
+              </div>
+              <div class="w-px h-4 bg-outline mx-1"></div>
+              <button
+                type="button"
+                class="p-1.5 hover:bg-white rounded transition-colors text-dark-base font-bold"
+              >
+                <Bold :size="16" />
+              </button>
+              <button
+                type="button"
+                class="p-1.5 hover:bg-white rounded transition-colors text-sub-text"
+              >
+                <Italic :size="16" />
+              </button>
+              <button
+                type="button"
+                class="p-1.5 hover:bg-white rounded transition-colors text-sub-text"
+              >
+                <Underline :size="16" />
+              </button>
+              <div class="w-px h-4 bg-outline mx-1"></div>
+              <button
+                type="button"
+                class="p-1.5 hover:bg-white rounded transition-colors text-sub-text"
+              >
+                <Link2 :size="16" />
+              </button>
+              <button
+                type="button"
+                class="p-1.5 hover:bg-white rounded transition-colors text-sub-text"
+              >
+                <Anchor :size="16" />
+              </button>
+              <div class="w-px h-4 bg-outline mx-1"></div>
+              <button
+                type="button"
+                class="p-1.5 hover:bg-white rounded transition-colors text-sub-text"
+              >
+                <AlignLeft :size="16" />
+              </button>
+              <button
+                type="button"
+                class="p-1.5 hover:bg-white rounded transition-colors text-sub-text"
+              >
+                <AlignCenter :size="16" />
+              </button>
+              <button
+                type="button"
+                class="p-1.5 hover:bg-white rounded transition-colors text-sub-text"
+              >
+                <AlignRight :size="16" />
+              </button>
+              <button
+                type="button"
+                class="p-1.5 hover:bg-white rounded transition-colors text-sub-text"
+              >
+                <AlignJustify :size="16" />
+              </button>
+              <button
+                type="button"
+                class="p-1.5 hover:bg-white rounded transition-colors text-sub-text"
+              >
+                <List :size="16" />
+              </button>
+              <button
+                type="button"
+                class="p-1.5 hover:bg-white rounded transition-colors text-sub-text"
+              >
+                <ListOrdered :size="16" />
+              </button>
+            </div>
+            <!-- Textarea -->
+            <textarea
+              v-model="formData.taskContent"
+              rows="6"
+              class="w-full px-4 py-4 text-sm text-sub-text focus:outline-none resize-none bg-white"
+              placeholder="Lorem ipsum..."
+            ></textarea>
+          </div>
+
+          <!-- Status & Assignee -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-               <label class="block text-sm font-medium text-dark-base mb-2">Name of Task</label>
-              <input
-                v-model="formData.taskName"
-                type="text"
-                placeholder="Task name..."
-                class="w-full px-4 py-3 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
-              />
-            </div>
-
-            <!-- Task Description (Rich Text Editor Mockup) -->
-            <div class="border border-outline rounded-lg overflow-hidden shadow-sm">
-              <!-- Toolbar -->
-              <div class="flex items-center gap-1.5 px-4 py-2 border-b border-outline bg-light-base/50 flex-wrap">
-                <button type="button" class="p-1.5 hover:bg-white rounded transition-colors text-sub-text">
-                  <RotateCcw :size="16" />
-                </button>
-                <button type="button" class="p-1.5 hover:bg-white rounded transition-colors text-sub-text">
-                  <RotateCw :size="16" />
-                </button>
-                <div class="w-px h-4 bg-outline mx-1"></div>
-                <div class="relative flex items-center">
-                  <select class="text-xs font-medium border-none bg-transparent text-sub-text focus:outline-none bg-white py-1 pl-1 pr-6 rounded cursor-pointer appearance-none">
-                    <option>Format</option>
-                  </select>
-                  <ChevronDown :size="12" class="absolute right-1 text-sub-text pointer-events-none" />
-                </div>
-                <div class="w-px h-4 bg-outline mx-1"></div>
-                <button type="button" class="p-1.5 hover:bg-white rounded transition-colors text-dark-base font-bold">
-                  <Bold :size="16" />
-                </button>
-                <button type="button" class="p-1.5 hover:bg-white rounded transition-colors text-sub-text">
-                  <Italic :size="16" />
-                </button>
-                <button type="button" class="p-1.5 hover:bg-white rounded transition-colors text-sub-text">
-                  <Underline :size="16" />
-                </button>
-                <div class="w-px h-4 bg-outline mx-1"></div>
-                <button type="button" class="p-1.5 hover:bg-white rounded transition-colors text-sub-text">
-                  <Link2 :size="16" />
-                </button>
-                <button type="button" class="p-1.5 hover:bg-white rounded transition-colors text-sub-text">
-                  <Anchor :size="16" />
-                </button>
-                <div class="w-px h-4 bg-outline mx-1"></div>
-                <button type="button" class="p-1.5 hover:bg-white rounded transition-colors text-sub-text">
-                  <AlignLeft :size="16" />
-                </button>
-                <button type="button" class="p-1.5 hover:bg-white rounded transition-colors text-sub-text">
-                  <AlignCenter :size="16" />
-                </button>
-                <button type="button" class="p-1.5 hover:bg-white rounded transition-colors text-sub-text">
-                  <AlignRight :size="16" />
-                </button>
-                <button type="button" class="p-1.5 hover:bg-white rounded transition-colors text-sub-text">
-                  <AlignJustify :size="16" />
-                </button>
-                <button type="button" class="p-1.5 hover:bg-white rounded transition-colors text-sub-text">
-                  <List :size="16" />
-                </button>
-                <button type="button" class="p-1.5 hover:bg-white rounded transition-colors text-sub-text">
-                  <ListOrdered :size="16" />
-                </button>
-              </div>
-              <!-- Textarea -->
-              <textarea
-                v-model="formData.taskContent"
-                rows="6"
-                class="w-full px-4 py-4 text-sm text-sub-text focus:outline-none resize-none bg-white"
-                placeholder="Lorem ipsum..."
-              ></textarea>
-            </div>
-
-            <!-- Status & Assignee -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Status</label>
-                <div class="relative">
-                  <select
-                    v-model="formData.status"
-                    class="w-full px-4 py-3 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white appearance-none cursor-pointer text-dark-base"
-                  >
-                    <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                  <ChevronDown :size="18" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
-                </div>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Assignee</label>
-                <div class="relative">
-                  <select
-                    v-model="formData.assignee"
-                    class="w-full px-4 py-3 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white appearance-none cursor-pointer text-dark-base"
-                  >
-                    <option v-for="opt in assigneeOptions" :key="opt.value" :value="opt.value">
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                  <ChevronDown :size="18" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
-                </div>
-              </div>
-            </div>
-
-            <!-- Due Date & Time -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Due Date</label>
-                <div class="relative">
-                  <input
-                    v-model="formData.dueDate"
-                    type="date"
-                    class="w-full px-4 py-3 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white"
-                  />
-                  <Calendar :size="18" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
-                </div>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Time</label>
-                <div class="relative">
-                  <input
-                    v-model="formData.time"
-                    type="time"
-                    class="w-full px-4 py-3 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white"
-                  />
-                  <Clock :size="18" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
-                </div>
-              </div>
-            </div>
-
-            <!-- Priority -->
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">Priority</label>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Status</label
+              >
               <div class="relative">
                 <select
-                  v-model="formData.priority"
+                  v-model="formData.status"
                   class="w-full px-4 py-3 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white appearance-none cursor-pointer text-dark-base"
                 >
-                  <option v-for="opt in priorityOptions" :key="opt.value" :value="opt.value">
+                  <option
+                    v-for="opt in statusOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
                     {{ opt.label }}
                   </option>
                 </select>
-                <ChevronDown :size="18" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none" />
+                <ChevronDown
+                  :size="18"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
               </div>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Assignee</label
+              >
+              <div class="relative">
+                <select
+                  v-model="formData.assignee"
+                  class="w-full px-4 py-3 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white appearance-none cursor-pointer text-dark-base"
+                >
+                  <option
+                    v-for="opt in assigneeOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
+                </select>
+                <ChevronDown
+                  :size="18"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Due Date & Time -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Due Date</label
+              >
+              <div class="relative">
+                <input
+                  v-model="formData.dueDate"
+                  type="date"
+                  class="w-full px-4 py-3 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white"
+                />
+                <Calendar
+                  :size="18"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Time</label
+              >
+              <div class="relative">
+                <input
+                  v-model="formData.time"
+                  type="time"
+                  class="w-full px-4 py-3 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white"
+                />
+                <Clock
+                  :size="18"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Priority -->
+          <div>
+            <label class="block text-sm font-medium text-dark-base mb-2"
+              >Priority</label
+            >
+            <div class="relative">
+              <select
+                v-model="formData.priority"
+                class="w-full px-4 py-3 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white appearance-none cursor-pointer text-dark-base"
+              >
+                <option
+                  v-for="opt in priorityOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </option>
+              </select>
+              <ChevronDown
+                :size="18"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+              />
+            </div>
+          </div>
         </form>
       </div>
 

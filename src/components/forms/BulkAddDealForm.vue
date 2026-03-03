@@ -80,9 +80,7 @@ const triggerFileInput = () => {
       <!-- Form Content (Scrollable) -->
       <div class="flex-1 overflow-y-auto p-6">
         <div class="space-y-6 text-sm">
-          <p class="text-sub-text">
-            Save time on adding more deals
-          </p>
+          <p class="text-sub-text">Save time on adding more deals</p>
 
           <!-- Step 1 -->
           <div class="flex gap-4">
@@ -92,9 +90,9 @@ const triggerFileInput = () => {
               1
             </div>
             <p class="text-dark-base leading-relaxed">
-              The maximum row for uploading multiple deals is 1000 rows.
-              Prepare a file of your deals using our template in '.csv',
-              '.xls', or '.xlsx'.
+              The maximum row for uploading multiple deals is 1000 rows. Prepare
+              a file of your deals using our template in '.csv', '.xls', or
+              '.xlsx'.
               <a href="#" class="text-dark-base font-semibold hover:underline"
                 >csv template</a
               >,
@@ -115,7 +113,8 @@ const triggerFileInput = () => {
               2
             </div>
             <p class="text-dark-base leading-relaxed">
-              Ensure the pipeline and stage in your file match the existing system. Any slug ID added to your deals will be ignored.
+              Ensure the pipeline and stage in your file match the existing
+              system. Any slug ID added to your deals will be ignored.
             </p>
           </div>
 
@@ -157,12 +156,12 @@ const triggerFileInput = () => {
               <p class="font-medium text-dark-base mb-0.5">
                 Klik untuk pilih file
               </p>
-              <p class="text-xs text-sub-text/70 font-medium">
-                CSV, XLS, XLSX
-              </p>
+              <p class="text-xs text-sub-text/70 font-medium">CSV, XLS, XLSX</p>
             </div>
             <div v-else class="flex items-center gap-2 text-dark-base">
-              <span class="font-medium truncate max-w-xs">{{ selectedFile.name }}</span>
+              <span class="font-medium truncate max-w-xs">{{
+                selectedFile.name
+              }}</span>
               <button
                 @click.stop="selectedFile = null"
                 class="text-red hover:underline text-xs ml-2"

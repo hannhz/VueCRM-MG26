@@ -85,8 +85,8 @@ const toggleCollapsed = () => {
       collapsed && isHovered
         ? 'left-0 top-0 w-64 shadow-xl z-50'
         : !collapsed
-        ? 'relative w-64'
-        : 'relative w-20',
+          ? 'relative w-64'
+          : 'relative w-20',
     ]"
   >
     <!-- Header -->
@@ -112,7 +112,13 @@ const toggleCollapsed = () => {
     <nav class="flex-1 min-h-0 p-4 space-y-1 overflow-y-auto">
       <!-- Dashboard -->
       <button
-        @click="emit('open-tab', { name: 'dashboard', title: 'Dashboard', component: Dashboard })"
+        @click="
+          emit('open-tab', {
+            name: 'dashboard',
+            title: 'Dashboard',
+            component: Dashboard,
+          })
+        "
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white w-full',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
@@ -134,7 +140,13 @@ const toggleCollapsed = () => {
 
       <!-- Contacts -->
       <button
-        @click="emit('open-tab', { name: 'contacts', title: 'Contacts', component: Contacts })"
+        @click="
+          emit('open-tab', {
+            name: 'contacts',
+            title: 'Contacts',
+            component: Contacts,
+          })
+        "
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white w-full',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
@@ -149,7 +161,13 @@ const toggleCollapsed = () => {
 
       <!-- Companies -->
       <button
-        @click="emit('open-tab', { name: 'companies', title: 'Companies', component: Companies })"
+        @click="
+          emit('open-tab', {
+            name: 'companies',
+            title: 'Companies',
+            component: Companies,
+          })
+        "
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white w-full',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
@@ -171,7 +189,9 @@ const toggleCollapsed = () => {
 
       <!-- Deals -->
       <button
-        @click="emit('open-tab', { name: 'deals', title: 'Deals', component: Deals })"
+        @click="
+          emit('open-tab', { name: 'deals', title: 'Deals', component: Deals })
+        "
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white w-full',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
@@ -193,7 +213,9 @@ const toggleCollapsed = () => {
 
       <!-- Task -->
       <button
-        @click="emit('open-tab', { name: 'task', title: 'Task', component: Task })"
+        @click="
+          emit('open-tab', { name: 'task', title: 'Task', component: Task })
+        "
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white w-full',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
@@ -208,7 +230,13 @@ const toggleCollapsed = () => {
 
       <!-- Broadcast -->
       <button
-        @click="emit('open-tab', { name: 'emailbroadcast', title: 'Broadcast', component: EmailBroadcast })"
+        @click="
+          emit('open-tab', {
+            name: 'emailbroadcast',
+            title: 'Broadcast',
+            component: EmailBroadcast,
+          })
+        "
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white w-full',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
@@ -230,7 +258,13 @@ const toggleCollapsed = () => {
 
       <!-- Documents -->
       <button
-        @click="emit('open-tab', { name: 'documents', title: 'Documents', component: Documents })"
+        @click="
+          emit('open-tab', {
+            name: 'documents',
+            title: 'Documents',
+            component: Documents,
+          })
+        "
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white w-full',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
@@ -252,7 +286,9 @@ const toggleCollapsed = () => {
 
       <!-- User -->
       <button
-        @click="emit('open-tab', { name: 'user', title: 'User', component: User })"
+        @click="
+          emit('open-tab', { name: 'user', title: 'User', component: User })
+        "
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white w-full',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',
@@ -267,7 +303,13 @@ const toggleCollapsed = () => {
 
       <!-- Settings -->
       <button
-        @click="emit('open-tab', { name: 'settings', title: 'Settings', component: SettingsPage })"
+        @click="
+          emit('open-tab', {
+            name: 'settings',
+            title: 'Settings',
+            component: SettingsPage,
+          })
+        "
         :class="[
           'flex h-12 items-center p-3 rounded-xl transition group hover:bg-slate-800 hover:text-white w-full',
           isExpanded ? 'gap-3 justify-start' : 'justify-center',

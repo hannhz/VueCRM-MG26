@@ -276,7 +276,7 @@ const handleSubmit = () => {
                   >
                     <option value="" disabled selected>Select Data</option>
                     <option
-                      v-for="opt in sourceOptions.filter(o => o.value !== '')"
+                      v-for="opt in sourceOptions.filter((o) => o.value !== '')"
                       :key="opt.value"
                       :value="opt.value"
                     >

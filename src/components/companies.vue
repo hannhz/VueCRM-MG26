@@ -107,7 +107,10 @@ const toggleDropdown = () => {
 
 // auto close saat klik luar
 const handleClickOutside = (e) => {
-  if (!e.target.closest(".add-dropdown") && !e.target.closest(".download-dropdown")) {
+  if (
+    !e.target.closest(".add-dropdown") &&
+    !e.target.closest(".download-dropdown")
+  ) {
     showDropdown.value = false;
     showDownloadDropdown.value = false;
   }
