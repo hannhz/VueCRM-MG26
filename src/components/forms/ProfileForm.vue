@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, watch } from "vue";
 import { X, ChevronDown } from "lucide-vue-next";
 import { useStore } from "vuex";
 
@@ -13,9 +13,12 @@ const props = defineProps({
 const emit = defineEmits(["close", "submit"]);
 const store = useStore();
 
-// Options
+const currentUser = computed(() => store.getters["auth/currentUser"]);
+const isAdmin = computed(() => currentUser.value?.role?.toLowerCase() === "admin" || currentUser.value?.role?.toLowerCase() === "super_admin");
+
+// Options (consistent with CreateUserForm)
 const teamOptions = [
-  { value: "", label: "Select Team" },
+  { value: "", label: "Name Team" },
   { value: "management", label: "Management" },
   { value: "marketing", label: "Marketing" },
   { value: "design", label: "Design" },
@@ -25,24 +28,25 @@ const teamOptions = [
 ];
 
 const staffLevelOptions = [
-  { value: "", label: "Select Staff Level" },
-  { value: "ExcecutiveLevel", label: "Excecutive Level" },
-  { value: "DirectorLevel", label: "Director Level" },
-  { value: "ManagerLevel", label: "Manager Level" },
-  { value: "Staff", label: "Staff" },
-  { value: "Other", label: "Other" },
+  { value: "", label: "Staff Level" },
+  { value: "executive", label: "Executive Level" },
+  { value: "director", label: "Director Level" },
+  { value: "manager", label: "Manager Level" },
+  { value: "staff", label: "Staff" },
+  { value: "other", label: "Other" },
 ];
 
 const roleOptions = [
-  { value: "", label: "Select Role" },
+  { value: "", label: "Role" },
   { value: "super_admin", label: "Super Admin" },
   { value: "admin", label: "Admin" },
   { value: "manager", label: "Manager" },
   { value: "marketing", label: "Marketing" },
 ];
 
-// Form data - aligned with backend
+// Form data - aligned with backend keys from image
 const formData = ref({
+  id: "",
   name: "",
   firstname: "",
   lastname: "",
@@ -56,9 +60,92 @@ const formData = ref({
   role: "",
 });
 
+const isLoading = ref(false);
 const isSaving = ref(false);
 const errorMsg = ref("");
 const successMsg = ref("");
+
+const fetchProfileData = async () => {
+  isLoading.value = true;
+  errorMsg.value = "";
+  successMsg.value = "";
+  try {
+    const apiBaseUrl = import.meta.env.VITE_APP_API_URL || import.meta.env.BACKEND_APP_API_URL;
+    const response = await fetch(`${apiBaseUrl}/api/userscrm/`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${store.state.auth.token}`,
+        "Accept": "application/json",
+      },
+    });
+
+    if (response.ok) {
+      let data = await response.json();
+      console.log("Raw Profile Response:", data);
+      
+      // Handle array or wrapped response
+      let userRecord = {};
+      if (Array.isArray(data)) {
+        const currentEmail = currentUser.value?.email;
+        userRecord = data.find(u => u.email === currentEmail) || data[0] || {};
+      } else if (data.data) {
+        userRecord = data.data;
+      } else if (data.user) {
+        userRecord = data.user;
+      } else {
+        userRecord = data;
+      }
+
+      console.log("Calculated User Record:", userRecord);
+
+      formData.value = {
+        id: userRecord.id || currentUser.value?.id || "",
+        name: userRecord.name || (userRecord.firstname + ' ' + userRecord.lastname) || "",
+        firstname: userRecord.firstname || currentUser.value?.firstname || currentUser.value?.first_name || "",
+        lastname: userRecord.lastname || currentUser.value?.lastname || currentUser.value?.last_name || "",
+        no_handphone: userRecord.no_handphone || userRecord.Telephone || currentUser.value?.no_handphone || currentUser.value?.Telephone || currentUser.value?.telephone || "",
+        nik: userRecord.nik || currentUser.value?.nik || "",
+        email: userRecord.email || currentUser.value?.email || "",
+        password: "", // Keep empty for security, but prevent backend error
+        primaryteam: userRecord.primaryteam || currentUser.value?.primaryteam || currentUser.value?.primary_team || "",
+        secondaryteam: userRecord.secondaryteam || currentUser.value?.secondaryteam || currentUser.value?.secondary_team || "",
+        stafflevel: userRecord.stafflevel || currentUser.value?.stafflevel || currentUser.value?.staff_level || "",
+        role: userRecord.role || currentUser.value?.role || "",
+      };
+    } else {
+      throw new Error("Failed to fetch profile");
+    }
+  } catch (err) {
+    console.error("Profile fetch error:", err);
+    errorMsg.value = "Failed to load profile data from server.";
+    // Fallback to store data entirely
+    if (currentUser.value) {
+      formData.value = {
+        id: currentUser.value.id || "",
+        name: currentUser.value.name || (currentUser.value.firstname + ' ' + currentUser.value.lastname) || "",
+        firstname: currentUser.value.firstname || currentUser.value.first_name || "",
+        lastname: currentUser.value.lastname || currentUser.value.last_name || "",
+        no_handphone: currentUser.value.no_handphone || currentUser.value.Telephone || currentUser.value.telephone || "",
+        nik: currentUser.value.nik || "",
+        email: currentUser.value.email || "",
+        password: "",
+        primaryteam: currentUser.value.primaryteam || currentUser.value.primary_team || "",
+        secondaryteam: currentUser.value.secondaryteam || currentUser.value.secondary_team || "",
+        stafflevel: currentUser.value.stafflevel || currentUser.value.staff_level || "",
+        role: currentUser.value.role || "",
+      };
+    }
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Sync with store data/fetch from API when form opens
+watch(() => props.isOpen, (newVal) => {
+  if (newVal) {
+    fetchProfileData();
+  }
+});
 
 const handleClose = () => {
   emit("close");
@@ -69,7 +156,7 @@ const handleSubmit = async () => {
   errorMsg.value = "";
   successMsg.value = "";
 
-  // Set name before submitting
+  // Update name before submitting
   formData.value.name = `${formData.value.firstname} ${formData.value.lastname}`.trim();
 
   try {
@@ -85,11 +172,12 @@ const handleSubmit = async () => {
     });
 
     if (response.ok) {
-      successMsg.value = "User created successfully!";
-      emit("submit", formData.value);
-      
-      // Reset form on success
-      handleReset();
+      successMsg.value = "Profile updated successfully!";
+      // Update local store if needed
+      store.dispatch("auth/login", { 
+        user: { ...store.state.auth.user, ...formData.value },
+        token: store.state.auth.token 
+      });
       
       // Close after a short delay
       setTimeout(() => {
@@ -97,32 +185,18 @@ const handleSubmit = async () => {
       }, 1500);
     } else {
       const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to create user");
+      throw new Error(errorData.message || "Failed to update profile");
     }
   } catch (err) {
-    console.error("Create user error:", err);
-    errorMsg.value = err.message || "Failed to connect to server.";
+    console.error("Profile update error:", err);
+    errorMsg.value = err.message || "Failed to save profile changes.";
   } finally {
     isSaving.value = false;
   }
 };
 
 const handleReset = () => {
-  formData.value = {
-    name: "",
-    firstname: "",
-    lastname: "",
-    no_handphone: "",
-    nik: "",
-    email: "",
-    password: "",
-    primaryteam: "",
-    secondaryteam: "",
-    stafflevel: "",
-    role: "",
-  };
-  errorMsg.value = "";
-  successMsg.value = "";
+  fetchProfileData();
 };
 </script>
 
@@ -131,7 +205,7 @@ const handleReset = () => {
   <Transition name="overlay">
     <div
       v-if="isOpen"
-      class="fixed inset-0 bg-sub-text/80 z-40 transition-all duration-300"
+      class="fixed inset-0 bg-sub-text/80 z-[60] transition-all duration-300"
       @click="handleClose"
     ></div>
   </Transition>
@@ -140,14 +214,14 @@ const handleReset = () => {
   <Transition name="slide">
     <div
       v-if="isOpen"
-      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-50 flex flex-col"
+      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[70] flex flex-col"
       @click.stop
     >
       <!-- Header -->
       <div
-        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
+        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-sm"
       >
-        <h2 class="text-xl font-bold text-dark-base">Add User</h2>
+        <h2 class="text-xl font-bold text-dark-base">My Profile</h2>
         <button
           @click="handleClose"
           class="p-2 hover:bg-light-base rounded-lg transition-colors"
@@ -158,12 +232,12 @@ const handleReset = () => {
 
       <!-- Form Content (Scrollable) -->
       <div class="flex-1 overflow-y-auto relative">
-        <!-- Loading overlay during save -->
-        <div v-if="isSaving" class="absolute inset-0 bg-white/50 z-20 flex items-center justify-center">
+        <!-- Loading State -->
+        <div v-if="isLoading" class="absolute inset-0 bg-white/50 z-20 flex items-center justify-center">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-950"></div>
         </div>
 
-        <form @submit.prevent="handleSubmit" id="addUserForm" class="p-6 space-y-6">
+        <form @submit.prevent="handleSubmit" id="profileForm" class="p-6 space-y-6">
           <!-- Error Message -->
           <div v-if="errorMsg" class="p-3 bg-red-50 text-red-600 text-xs rounded-lg border border-red-100 italic">
             {{ errorMsg }}
@@ -173,7 +247,8 @@ const handleReset = () => {
           <div v-if="successMsg" class="p-3 bg-green-50 text-green-600 text-xs rounded-lg border border-green-100 font-medium">
             {{ successMsg }}
           </div>
-          <!-- Name Section -->
+
+          <!-- Names -->
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2">
@@ -201,20 +276,8 @@ const handleReset = () => {
             </div>
           </div>
 
-          <!-- Telephone & NIK -->
+          <!-- NIK & Telephone -->
           <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">
-                Telephone
-              </label>
-              <input
-                v-model="formData.no_handphone"
-                type="text"
-                placeholder="Telephone"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                required
-              />
-            </div>
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2">
                 NIK
@@ -223,6 +286,18 @@ const handleReset = () => {
                 v-model="formData.nik"
                 type="text"
                 placeholder="NIK"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2">
+                Telephone
+              </label>
+              <input
+                v-model="formData.no_handphone"
+                type="text"
+                placeholder="Telephone"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
                 required
               />
@@ -239,20 +314,22 @@ const handleReset = () => {
                 v-model="formData.email"
                 type="email"
                 placeholder="youremail@gmail.com"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                :disabled="!isAdmin"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm transition-all shadow-sm"
+                :class="{ 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200': !isAdmin }"
                 required
               />
             </div>
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2">
-                Password
+                Update Password
               </label>
               <input
                 v-model="formData.password"
                 type="password"
-                placeholder="Password"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                required
+                placeholder="Leave blank to keep current"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm transition-all shadow-sm"
+                :placeholder="isSaving ? 'Updating...' : 'Update Password'"
               />
             </div>
           </div>
@@ -266,7 +343,12 @@ const handleReset = () => {
               <div class="relative">
                 <select
                   v-model="formData.primaryteam"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                  :disabled="!isAdmin"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm transition-all shadow-sm appearance-none"
+                  :class="{ 
+                    'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200': !isAdmin,
+                    'text-dark-base bg-white pr-10 cursor-pointer': isAdmin 
+                  }"
                   required
                 >
                   <option
@@ -278,6 +360,7 @@ const handleReset = () => {
                   </option>
                 </select>
                 <ChevronDown
+                  v-if="isAdmin"
                   :size="16"
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
                 />
@@ -290,7 +373,12 @@ const handleReset = () => {
               <div class="relative">
                 <select
                   v-model="formData.secondaryteam"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                  :disabled="!isAdmin"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm transition-all shadow-sm appearance-none"
+                  :class="{ 
+                    'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200': !isAdmin,
+                    'text-dark-base bg-white pr-10 cursor-pointer': isAdmin 
+                  }"
                 >
                   <option
                     v-for="option in teamOptions"
@@ -301,6 +389,7 @@ const handleReset = () => {
                   </option>
                 </select>
                 <ChevronDown
+                  v-if="isAdmin"
                   :size="16"
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
                 />
@@ -317,7 +406,12 @@ const handleReset = () => {
               <div class="relative">
                 <select
                   v-model="formData.stafflevel"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                  :disabled="!isAdmin"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm transition-all shadow-sm appearance-none"
+                  :class="{ 
+                    'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200': !isAdmin,
+                    'text-dark-base bg-white pr-10 cursor-pointer': isAdmin 
+                  }"
                   required
                 >
                   <option
@@ -329,6 +423,7 @@ const handleReset = () => {
                   </option>
                 </select>
                 <ChevronDown
+                  v-if="isAdmin"
                   :size="16"
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
                 />
@@ -341,7 +436,12 @@ const handleReset = () => {
               <div class="relative">
                 <select
                   v-model="formData.role"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                  :disabled="!isAdmin"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm transition-all shadow-sm appearance-none"
+                  :class="{ 
+                    'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200': !isAdmin,
+                    'text-dark-base bg-white pr-10 cursor-pointer': isAdmin 
+                  }"
                   required
                 >
                   <option
@@ -353,6 +453,7 @@ const handleReset = () => {
                   </option>
                 </select>
                 <ChevronDown
+                  v-if="isAdmin"
                   :size="16"
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
                 />
@@ -362,16 +463,16 @@ const handleReset = () => {
         </form>
       </div>
 
-      <!-- Footer Actions (Sticky) -->
+      <!-- Footer Actions -->
       <div
-        class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+        class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-sm"
       >
         <button
           type="button"
           @click="handleReset"
-          class="text-sm text-red font-medium hover:underline"
+          class="text-sm text-red-500 font-medium hover:underline"
         >
-          Reset
+          Reset to Original
         </button>
         <div class="flex gap-3">
           <button
@@ -382,14 +483,13 @@ const handleReset = () => {
             Cancel
           </button>
           <button
-            @click="handleSubmit"
             type="submit"
-            form="addUserForm"
+            form="profileForm"
             :disabled="isSaving"
-            class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            class="px-8 py-2 bg-blue-950 text-white rounded-lg hover:bg-opacity-90 transition-all text-sm font-semibold shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <div v-if="isSaving" class="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-            {{ isSaving ? 'Submitting...' : 'Submit' }}
+            {{ isSaving ? 'Saving...' : 'Save Changes' }}
           </button>
         </div>
       </div>
@@ -423,24 +523,8 @@ const handleReset = () => {
   transform: translateX(100%);
 }
 
-/* Remove Browser Autofill Blue Background */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:active,
-select:-webkit-autofill,
-select:-webkit-autofill:hover,
-select:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px white inset !important;
-  -webkit-text-fill-color: #1c2434 !important;
-  transition: background-color 5000s ease-in-out 0s;
-}
-
-/* Preserve focus ring on autofilled inputs */
-input:-webkit-autofill:focus,
-select:-webkit-autofill:focus {
-  -webkit-box-shadow:
-    0 0 0 30px white inset,
-    0 0 0 1px #64728b !important;
-  -webkit-text-fill-color: #1c2434 !important;
+/* Chrome/Safari focus fix */
+input:focus, select:focus {
+  border-color: #1e3a8a !important; /* blue-950 */
 }
 </style>

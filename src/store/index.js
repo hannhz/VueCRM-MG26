@@ -7,10 +7,14 @@ import documentsModule from './modules/documents';
 import usersModule from './modules/users';
 import broadcastModule from './modules/broadcast';
 import settingsModule from './modules/settings';
+import authModule from './modules/auth';
+import tabsModule from './modules/tabs';
+import settingsfeModule from './modules/settingsfe';
 
 export default createStore({
   modules: {
-    deals: dealsModule, // Nama 'deals' di sini harus sama dengan prefix di getter/dispatch
+    auth: authModule,
+    deals: dealsModule,
     contacts: contactsModule,
     companies: companiesModule,
     tasks: tasksModule,
@@ -18,5 +22,7 @@ export default createStore({
     users: usersModule,
     broadcast: broadcastModule,
     settings: settingsModule,
+    tabs: tabsModule,
+    settingsfe: settingsfeModule,
   }
 });

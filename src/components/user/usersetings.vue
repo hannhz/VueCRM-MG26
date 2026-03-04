@@ -9,59 +9,41 @@ import {
   ChevronRight,
   ChevronDown,
 } from "lucide-vue-next";
+import { onMounted } from "vue";
+import { useRouter } from "vue-router";
 import CreateUserForm from "../forms/CreateUserForm.vue";
+import { useStore } from "vuex";
 
 //data
-const users = ref([
-  {
-    id: 1,
-    name: "Hanan Hafizhah",
-    email: "hanan@mail.com",
-    team: "Management",
-    lastactv: "2 minutes ago",
-    role: "Super Admin",
-  },
-  {
-    id: 2,
-    name: "Aulia Rahman",
-    email: "aulia@mail.com",
-    team: "Marketing",
-    lastactv: "10 minutes ago",
-    role: "Admin",
-  },
-  {
-    id: 3,
-    name: "Rizky Pratama",
-    email: "rizky@mail.com",
-    team: "Design",
-    lastactv: "1 hour ago",
-    role: "Editor",
-  },
-  {
-    id: 4,
-    name: "Siti Lestari",
-    email: "siti@mail.com",
-    team: "Finance",
-    lastactv: "Yesterday",
-    role: "Viewer",
-  },
-  {
-    id: 5,
-    name: "Budi Santoso",
-    email: "budi@mail.com",
-    team: "Development",
-    lastactv: "2 days ago",
-    role: "Admin",
-  },
-  {
-    id: 6,
-    name: "Kevin Wijaya",
-    email: "kevin@mail.com",
-    team: "Support",
-    lastactv: "3 days ago",
-    role: "Viewer",
-  },
-]);
+// data
+const store = useStore();
+const router = useRouter();
+
+// Store mapping
+const users = computed(() => store.getters["users/allUsers"]);
+const isLoadingTable = computed(() => store.getters["users/isLoading"]);
+const errorMsgTable = computed(() => store.getters["users/error"]);
+
+// Admin validation
+const isAdmin = computed(() => {
+  const user = store.state.auth.user;
+  return user && (user.role === 'admin' || user.stafflevel === 'admin' || user.role === 'Admin');
+});
+
+const fetchUsers = () => {
+  store.dispatch("users/fetchUsers").catch(err => {
+    console.error("Component fetch error:", err);
+  });
+};
+
+onMounted(() => {
+  if (!isAdmin.value) {
+    console.warn("Access denied: User is not an admin");
+    router.push("/crmAdmin");
+    return;
+  }
+  fetchUsers();
+});
 
 const showCreateUserForm = ref(false);
 
@@ -125,14 +107,22 @@ function prevPage() {
 
 <template>
   <!-- Document List -->
-  <div class="bg-white rounded-lg shadow-sm border border-outline">
+  <div v-if="isAdmin" class="bg-white rounded-lg shadow-sm border border-outline">
     <div class="p-4 border-b border-outline">
       <div class="flex items-center justify-between gap-4 flex-wrap">
         <!-- Left Section: Filter + Search + Show -->
         <div class="flex items-center gap-3">
+          <button
+            @click="fetchUsers"
+            class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition shadow-sm bg-white"
+            title="Refresh list"
+          >
+            <RefreshCcw :size="20" class="text-dark-base" :class="{ 'animate-spin': isLoadingTable }" />
+          </button>
+
           <!-- Filter Icon -->
           <button
-            class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
+            class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition shadow-sm bg-white"
           >
             <Filter :size="20" class="text-dark-base" />
           </button>
@@ -239,7 +229,7 @@ function prevPage() {
     <div class="overflow-x-auto">
       <table class="w-full">
         <thead>
-          <tr class="border-b border-gray-200 bg-gray-50/50">
+          <tr class="border-b border-gray-200">
             <th class="px-6 py-4 text-left">
               <input
                 type="checkbox"
@@ -266,7 +256,7 @@ function prevPage() {
 
         <tbody>
           <!-- Empty State -->
-          <tr v-if="currentUser.length === 0">
+          <tr v-if="currentUser.length === 0 && !isLoadingTable">
             <td colspan="5" class="px-6 py-20 text-center text-sub-text">
               <div class="flex flex-col items-center gap-3">
                 <div
@@ -274,10 +264,20 @@ function prevPage() {
                 >
                   <Search :size="32" class="text-gray-400" />
                 </div>
-                <p class="text-lg font-medium">No documents found</p>
+                <p class="text-lg font-medium">No users found</p>
                 <p class="text-sm text-gray-400">
-                  Start adding documents to see them here
+                  Try refreshing or adding a new user
                 </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Loading State -->
+          <tr v-if="isLoadingTable">
+            <td colspan="5" class="px-6 py-12 text-center text-sub-text">
+              <div class="flex flex-col items-center gap-3">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-950"></div>
+                <p class="text-sm font-medium">Loading user list...</p>
               </div>
             </td>
           </tr>
@@ -298,19 +298,19 @@ function prevPage() {
             </td>
             <td class="px-6 py-4 text-sm text-gray-800 font-medium">
               <div class="text-sm font-medium text-gray-800">
-                {{ user.name }}
+                {{ user.firstname ? `${user.firstname} ${user.lastname || ''}` : (user.name || 'Unknown User') }}
               </div>
               <div class="text-xs text-gray-400">
                 {{ user.email }}
               </div>
             </td>
             <td class="px-6 py-4 text-sm text-dark-base">
-              {{ user.team }}
+              {{ user.primaryteam || user.team || '-' }}
             </td>
             <td class="px-6 py-4 text-sm text-dark-base">
-              {{ user.lastactv }}
+              {{ user.last_active || user.lastactv || user.updated_at || '-' }}
             </td>
-            <td class="px-6 py-4 text-sm text-dark-base">
+            <td class="px-6 py-4 text-sm text-dark-base font-medium">
               {{ user.role }}
             </td>
           </tr>
@@ -323,6 +323,6 @@ function prevPage() {
   <CreateUserForm
     :isOpen="showCreateUserForm"
     @close="showCreateUserForm = false"
-    @submit="showCreateUserForm = false"
+    @submit="fetchUsers"
   />
 </template>
