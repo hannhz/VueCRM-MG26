@@ -21,9 +21,20 @@ const membersList = [
   { id: 6, name: "Kevin Wijaya", email: "kevin@mail.com" },
 ];
 
+// Dummy Teams for parent team dropdown
+const teamsList = [
+  { id: 1, name: "Management" },
+  { id: 2, name: "Marketing" },
+  { id: 3, name: "Design" },
+  { id: 4, name: "Finance" },
+  { id: 5, name: "Development" },
+  { id: 6, name: "Support" },
+];
+
 // Form data
 const formData = ref({
   teamName: "",
+  parentTeam: null,
   selectedMembers: [],
 });
 
@@ -38,6 +49,27 @@ const filteredMembers = computed(() => {
     m.email.toLowerCase().includes(memberSearch.value.toLowerCase())
   );
 });
+
+// Parent Team Dropdown State
+const isParentDropdownOpen = ref(false);
+const parentSearch = ref("");
+
+const filteredTeams = computed(() => {
+  if (!parentSearch.value) return teamsList;
+  return teamsList.filter((t) =>
+    t.name.toLowerCase().includes(parentSearch.value.toLowerCase())
+  );
+});
+
+const selectParentTeam = (team) => {
+  formData.value.parentTeam = team;
+  isParentDropdownOpen.value = false;
+  parentSearch.value = "";
+};
+
+const removeParentTeam = () => {
+  formData.value.parentTeam = null;
+};
 
 const toggleMember = (member) => {
   const index = formData.value.selectedMembers.findIndex(m => m.id === member.id);
@@ -70,16 +102,23 @@ const handleSubmit = () => {
 const handleReset = () => {
   formData.value = {
     teamName: "",
+    parentTeam: null,
     selectedMembers: [],
   };
   memberSearch.value = "";
+  parentSearch.value = "";
 };
 
 // Outside click handling
 const dropdownRef = ref(null);
+const parentDropdownRef = ref(null);
+
 const handleClickOutside = (event) => {
   if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
     isDropdownOpen.value = false;
+  }
+  if (parentDropdownRef.value && !parentDropdownRef.value.contains(event.target)) {
+    isParentDropdownOpen.value = false;
   }
 };
 
@@ -137,6 +176,69 @@ onBeforeUnmount(() => {
               class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
               required
             />
+          </div>
+
+          <!-- Parent Team Name (Searchable Dropdown) -->
+          <div class="relative" ref="parentDropdownRef">
+            <label class="block text-sm font-medium text-dark-base mb-2">
+              Parent Team Name
+            </label>
+            
+            <div 
+              @click="isParentDropdownOpen = !isParentDropdownOpen"
+              class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-[42px] bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
+            >
+              <div v-if="!formData.parentTeam" class="text-gray-400 text-sm">
+                Search and select parent team
+              </div>
+              <div 
+                v-else
+                class="flex items-center gap-1 bg-light-base px-2 py-1 rounded text-xs font-medium text-dark-base border border-outline"
+                @click.stop
+              >
+                {{ formData.parentTeam.name }}
+                <X :size="12" class="cursor-pointer hover:text-red" @click="removeParentTeam" />
+              </div>
+              <ChevronDown :size="16" class="ml-auto text-sub-text" />
+            </div>
+
+            <!-- Parent Team Dropdown Menu -->
+            <div 
+              v-if="isParentDropdownOpen"
+              class="absolute z-50 w-full mt-1 bg-white border border-outline rounded-lg shadow-xl flex flex-col max-h-64"
+            >
+              <div class="p-2 border-b border-outline">
+                <div class="relative">
+                  <Search :size="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-sub-text" />
+                  <input
+                    v-model="parentSearch"
+                    type="text"
+                    placeholder="Search teams"
+                    class="w-full pl-9 pr-3 py-2 bg-light-base/50 border border-outline rounded text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
+                    @click.stop
+                  />
+                </div>
+              </div>
+              <div class="flex-1 overflow-y-auto py-1">
+                <div 
+                  v-for="team in filteredTeams" 
+                  :key="team.id"
+                  @click="selectParentTeam(team)"
+                  class="px-4 py-2 hover:bg-light-base cursor-pointer flex items-center justify-between text-sm transition"
+                >
+                  <span class="font-medium text-dark-base">{{ team.name }}</span>
+                  <div 
+                    v-if="formData.parentTeam?.id === team.id"
+                    class="w-5 h-5 bg-dark-base rounded-full flex items-center justify-center"
+                  >
+                    <Check :size="12" class="text-white" />
+                  </div>
+                </div>
+                <div v-if="filteredTeams.length === 0" class="px-4 py-6 text-center text-sm text-sub-text">
+                  No teams found
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Add Team Member (Searchable Dropdown) -->
