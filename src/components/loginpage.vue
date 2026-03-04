@@ -51,51 +51,54 @@ const handleLogin = () => {
           Log In to CRM MG26
         </h2>
 
-        <!-- Email -->
-        <label class="text-gray-800 font-medium mb-2">Email</label>
-        <div class="relative mb-6">
-          <input
-            v-model="email"
-            type="email"
-            placeholder="Enter your email"
-            class="w-full h-14 px-4 pr-12 rounded-xl border border-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-900"
-          />
-          <span class="absolute right-4 top-1/2 -translate-y-1/2 opacity-50">
-            <Mail class="w-5 h-5 text-blue-950" />
-          </span>
-        </div>
+        <form @submit.prevent="handleLogin">
+          <!-- Email -->
+          <label class="text-gray-800 font-medium mb-2">Email</label>
+          <div class="relative mb-6">
+            <input
+              v-model="email"
+              type="email"
+              placeholder="Enter your email"
+              class="w-full h-14 px-4 pr-12 rounded-xl border border-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            />
+            <span class="absolute right-4 top-1/2 -translate-y-1/2 opacity-50">
+              <Mail class="w-5 h-5 text-blue-950" />
+            </span>
+          </div>
 
-        <!-- Password -->
-        <label class="text-gray-800 font-medium mb-2">Password</label>
-        <div class="relative mb-6">
-          <input
-            v-model="password"
-            :type="showPassword ? 'text' : 'password'"
-            placeholder="Enter your password"
-            class="w-full h-14 px-4 pr-12 rounded-xl border border-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-900"
-          />
+          <!-- Password -->
+          <label class="text-gray-800 font-medium mb-2">Password</label>
+          <div class="relative mb-6">
+            <input
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="Enter your password"
+              class="w-full h-14 px-4 pr-12 rounded-xl border border-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            />
 
+            <button
+              type="button"
+              @click="showPassword = !showPassword"
+              class="absolute right-4 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100"
+            >
+              <Eye v-if="showPassword" class="w-5 h-5 text-blue-950" />
+              <EyeOff v-else class="w-5 h-5 text-blue-950" />
+            </button>
+          </div>
+
+          <!-- Error Message -->
+          <p v-if="errorMsg" class="text-red-500 text-sm mb-3">
+            {{ errorMsg }}
+          </p>
+
+          <!-- Button -->
           <button
-            type="button"
-            @click="showPassword = !showPassword"
-            class="absolute right-4 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100"
+            type="submit"
+            class="w-full h-14 bg-blue-950 text-white rounded-xl font-semibold hover:opacity-90 transition"
           >
-            <Eye v-if="showPassword" class="w-5 h-5 text-blue-950" />
-            <EyeOff v-else class="w-5 h-5 text-blue-950" />
+            Log In
           </button>
-        </div>
-
-        <!-- Error Message -->
-        <p v-if="errorMsg" class="text-red-500 text-sm mb-3">
-          {{ errorMsg }}
-        </p>
-        <!-- Button -->
-        <button
-          @click="handleLogin"
-          class="w-full h-14 bg-blue-950 text-white rounded-xl font-semibold hover:opacity-90 transition"
-        >
-          Log In
-        </button>
+        </form>
 
         <!-- Sign Up -->
         <p class="text-center text-slate-500 mt-8">
