@@ -24,19 +24,19 @@ const teamOptions = [
 
 const staffLevelOptions = [
   { value: "", label: "Select Staff Level" },
-  { value: "junior", label: "Junior" },
-  { value: "middle", label: "Middle" },
-  { value: "senior", label: "Senior" },
-  { value: "lead", label: "Lead" },
-  { value: "manager", label: "Manager" },
+  { value: "ExcecutiveLevel", label: "Excecutive Level" },
+  { value: "DirectorLevel", label: "Director Level" },
+  { value: "ManagerLevel", label: "Manager Level" },
+  { value: "Staff", label: "Staff" },
+  { value: "Other", label: "Other" },
 ];
 
 const roleOptions = [
   { value: "", label: "Select Role" },
   { value: "super_admin", label: "Super Admin" },
   { value: "admin", label: "Admin" },
-  { value: "editor", label: "Editor" },
-  { value: "viewer", label: "Viewer" },
+  { value: "manager", label: "Manager" },
+  { value: "marketing", label: "Marketing" },
 ];
 
 // Form data
@@ -46,7 +46,8 @@ const formData = ref({
   telephone: "",
   nik: "",
   email: "",
-  team: "",
+  primaryTeam: "",
+  secondaryTeam: "",
   staffLevel: "",
   role: "",
 });
@@ -68,7 +69,8 @@ const handleReset = () => {
     telephone: "",
     nik: "",
     email: "",
-    team: "",
+    primaryTeam: "",
+    secondaryTeam: "",
     staffLevel: "",
     role: "",
   };
@@ -178,15 +180,15 @@ const handleReset = () => {
             />
           </div>
 
-          <!-- Team & Staff Level -->
+          <!-- Primary & Secondary Team -->
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2">
-                Team
+                Primary Team
               </label>
               <div class="relative">
                 <select
-                  v-model="formData.team"
+                  v-model="formData.primaryTeam"
                   class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                   required
                 >
@@ -204,6 +206,33 @@ const handleReset = () => {
                 />
               </div>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2">
+                Secondary Team
+              </label>
+              <div class="relative">
+                <select
+                  v-model="formData.secondaryTeam"
+                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                >
+                  <option
+                    v-for="option in teamOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </option>
+                </select>
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Staff Level & Role -->
+          <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2">
                 Staff Level
@@ -228,31 +257,29 @@ const handleReset = () => {
                 />
               </div>
             </div>
-          </div>
-
-          <!-- Role -->
-          <div>
-            <label class="block text-sm font-medium text-dark-base mb-2">
-              Role
-            </label>
-            <div class="relative">
-              <select
-                v-model="formData.role"
-                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                required
-              >
-                <option
-                  v-for="option in roleOptions"
-                  :key="option.value"
-                  :value="option.value"
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2">
+                Role
+              </label>
+              <div class="relative">
+                <select
+                  v-model="formData.role"
+                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                  required
                 >
-                  {{ option.label }}
-                </option>
-              </select>
-              <ChevronDown
-                :size="16"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-              />
+                  <option
+                    v-for="option in roleOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </option>
+                </select>
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
+              </div>
             </div>
           </div>
         </form>
