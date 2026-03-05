@@ -192,7 +192,7 @@ const actions = {
   },
 
   // Updated actlayoutweb action
-  actlayoutwebold(context) {
+  actlayoutwebflmenu(context) {
     // If layoutweb already has data, return it without making API call
     if (context.state.layoutweb) {
       return Promise.resolve(context.state.layoutweb);

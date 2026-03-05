@@ -65,7 +65,7 @@ export default {
       commit("ADD_TAB", tab);
     },
 
-    clearTabsold({ commit }) {
+    clearTabsflmenu({ commit }) {
       // Kosongkan state Vuex
       commit("SET_TABS", []);
       commit("SET_NAMETABS", []);
@@ -81,7 +81,7 @@ export default {
       localStorage.removeItem("selectedTabflmenu");
     },
 
-    handleOpenTabold({ state, commit, dispatch, rootGetters }, tabName) {
+    handleOpenTabflmenu({ state, commit, dispatch, rootGetters }, tabName) {
       if (!tabName || !tabName.pathfile) return;
 
       // Pastikan route memang ada
@@ -212,9 +212,6 @@ export default {
     },
   },
 };
-
-
-
 
 // export default {
 //     namespaced: true,

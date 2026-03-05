@@ -1,49 +1,3 @@
-<script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
-import { Bell, Search, ChevronDown, User, Settings, LogOut } from "lucide-vue-next";
-import { useStore } from "vuex";
-import { useRouter } from "vue-router";
-import ProfileForm from "../forms/ProfileForm.vue";
-
-const store = useStore();
-const router = useRouter();
-
-const user = computed(() => store.getters["auth/currentUser"] || { name: "Guest", role: "Visitor" });
-const initials = computed(() => store.getters["auth/userInitials"]);
-
-const isDropdownOpen = ref(false);
-const isProfileFormOpen = ref(false);
-const dropdownRef = ref(null);
-
-const toggleDropdown = () => {
-  isDropdownOpen.value = !isDropdownOpen.value;
-};
-
-const openProfileForm = () => {
-  isProfileFormOpen.value = true;
-  isDropdownOpen.value = false;
-};
-
-const handleLogout = () => {
-  store.dispatch("auth/logout");
-  router.push("/");
-};
-
-const handleClickOutside = (event) => {
-  if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
-    isDropdownOpen.value = false;
-  }
-};
-
-onMounted(() => {
-  document.addEventListener("click", handleClickOutside);
-});
-
-onUnmounted(() => {
-  document.removeEventListener("click", handleClickOutside);
-});
-</script>
-
 <template>
   <header
     class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-30"
@@ -83,8 +37,8 @@ onUnmounted(() => {
 
             <!-- User Info -->
             <div class="hidden sm:block text-left">
-              <p class="text-sm font-bold text-gray-800 leading-tight">{{ user.name }}</p>
-              <p class="text-[11px] text-gray-500 font-medium">{{ user.role }}</p>
+              <p class="text-sm font-bold text-gray-800 leading-tight">{{ userName }}</p>
+              <!-- <p class="text-[11px] text-gray-500 font-medium">pegawai</p> -->
             </div>
           </div>
 
@@ -128,7 +82,7 @@ onUnmounted(() => {
             <div class="h-px bg-gray-100 my-1"></div>
             
             <button 
-              @click="handleLogout"
+              @click="logout"
               class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
             >
               <LogOut :size="16" />
@@ -147,5 +101,106 @@ onUnmounted(() => {
     </div>
   </header>
 </template>
+
+<script>
+import { Bell, Search, ChevronDown, User, Settings, LogOut } from "lucide-vue-next";
+import ProfileForm from "../forms/ProfileForm.vue";
+import { mapGetters, mapActions } from "vuex";
+import { alertService } from "@/services/alertService";
+
+export default {
+  name: "HeaderComponent",
+
+  components: {
+    Bell,
+    Search,
+    ChevronDown,
+    User,
+    Settings,
+    LogOut,
+    ProfileForm
+  },
+
+  data() {
+    return {
+      isDropdownOpen: false,
+      isProfileFormOpen: false
+    };
+  },
+
+  computed: {
+    // user() {
+    //   return (
+    //     this.$store.getters["auth/currentUser"] || {
+    //       name: "Guest",
+    //       role: "Visitor"
+    //     }
+    //   );
+    // },
+    ...mapGetters("users", ["usersignin"]),
+    userName() {
+      if (this.usersignin?.name) return this.usersignin.name;
+      if (this.usersignin?.user?.name) return this.usersignin.user.name;
+      return "User";
+    },
+    initials() {
+      return this.$store.getters["auth/userInitials"];
+    }
+  },
+
+  methods: {
+    ...mapActions({
+      getusersignin: "users/getusersignin",
+      authlogout: "auth/authlogout",
+    }),
+
+    async logout() {
+      const result = await alertService.confirmLogout();
+      if (result.isConfirmed) {
+        this.authlogout()
+          .then((data) => {
+            alertService.success(data.msg || "");
+            this.$router.push({ name: "login" });
+            alertService.logoutSuccess();
+          })
+          .catch((error) => {
+            console.log(error.response?.data?.message);
+            alertService.error(error.response?.data?.message || "", "");
+          });
+      }
+      
+    },
+    toggleDropdown() {
+      this.isDropdownOpen = !this.isDropdownOpen;
+    },
+
+    openProfileForm() {
+      this.isProfileFormOpen = true;
+      this.isDropdownOpen = false;
+    },
+
+
+    handleClickOutside(event) {
+      if (this.$refs.dropdownRef && 
+          !this.$refs.dropdownRef.contains(event.target)) {
+        this.isDropdownOpen = false;
+      }
+    }
+  },
+
+  mounted() {
+    document.addEventListener("click", this.handleClickOutside);
+  },
+
+  beforeDestroy() { // Vue 2 lifecycle
+    document.removeEventListener("click", this.handleClickOutside);
+  },
+
+  created() {
+    this.getusersignin();
+  },
+
+};
+</script>
 
 <style scoped></style>

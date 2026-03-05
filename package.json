@@ -13,11 +13,16 @@
     "@tailwindcss/vite": "^4.1.18",
     "axios": "^1.13.6",
     "lucide-vue-next": "^0.563.0",
+    "pinia": "^3.0.4",
+    "sweetalert2": "^11.26.21",
     "vue": "^3.5.24",
     "vue-router": "^4.6.4",
     "vue3-cookies": "^1.0.6",
+    "vue3-toastify": "^0.2.8",
     "vuedraggable": "^4.1.0",
-    "vuex": "^4.1.0"
+    "vuex": "^4.1.0",
+    "devextreme": "23.1.15",
+    "devextreme-vue": "23.1.15"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.1",

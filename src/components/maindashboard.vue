@@ -1,63 +1,7 @@
-<script setup>
-import { ref } from "vue";
-
-import Sidebar from "./layouts/sidebar.vue";
-import Kepala from "./layouts/kepala.vue";
-
-/* contoh pages */
-import Dashboard from "./dashboard.vue";
-
-const collapsed = ref(false);
-
-/* ========================
-   TAB STATE
-======================== */
-
-const tabs = ref([
-  {
-    name: "dashboard",
-    title: "Dashboard",
-    component: Dashboard,
-  },
-]);
-
-const activeTab = ref("dashboard");
-
-/* ========================
-   OPEN TAB
-======================== */
-
-function openTab(tab) {
-  const exist = tabs.value.find((t) => t.name === tab.name);
-
-  if (!exist) {
-    tabs.value.push(tab);
-  }
-
-  activeTab.value = tab.name;
-}
-
-/* ========================
-   CLOSE TAB
-======================== */
-
-function closeTab(name) {
-  if (name === "dashboard") return;
-
-  const index = tabs.value.findIndex((t) => t.name === name);
-
-  tabs.value.splice(index, 1);
-
-  if (activeTab.value === name) {
-    activeTab.value = tabs.value[index - 1]?.name || tabs.value[0]?.name;
-  }
-}
-</script>
-
 <template>
   <div class="flex h-screen font-sans">
     <!-- SIDEBAR -->
-    <Sidebar v-model:collapsed="collapsed" @open-tab="openTab" />
+    <Sidebar v-model:collapsed="collapsed" @opentabchange="handleOpenTab" />
 
     <div class="flex flex-col flex-1">
       <!-- HEADER -->
@@ -68,21 +12,20 @@ function closeTab(name) {
         class="flex items-center gap-2 bg-gray-100 px-4 py-2 border-b overflow-x-auto"
       >
         <div
-          v-for="tab in tabs"
-          :key="tab.name"
-          @click="activeTab = tab.name"
+          v-for="tab in tabsflmenu"
+          :key="tab"
           class="flex items-center gap-0.5 px-4 py-2 rounded-t-lg cursor-pointer whitespace-nowrap"
-          :class="
-            activeTab === tab.name
-              ? 'bg-dark-base text-white'
-              : 'bg-dark-base/75 text-white'
-          "
+          :class="{
+            'bg-dark-base text-white': tab.pathfile === selectedTab,
+            'bg-dark-base/75 text-white': tab.pathfile !== selectedTab,
+          }"
+          @click="selectTab(tab)"
         >
-          {{ tab.title }}
+          {{ tab.CAPTION }}
 
           <span
-            v-if="tab.name !== 'dashboard'"
-            @click.stop="closeTab(tab.name)"
+            v-if="tab.CAPTION !== 'Dashboard'"
+            @click.stop="removeTab(tab)"
             class="ml-1 hover:text-red-300 cursor-pointer"
           >
             ✕
@@ -92,10 +35,143 @@ function closeTab(name) {
 
       <!-- CONTENT -->
       <main class="flex-1 overflow-y-auto bg-light-base p-4">
-        <KeepAlive>
-          <component :is="tabs.find((t) => t.name === activeTab)?.component" />
-        </KeepAlive>
+        <router-view v-slot="{ Component, route }">
+          <!-- <keep-alive>  -->
+          <keep-alive :include="this.nametabs">
+            <component :is="Component" :key="key" />
+          </keep-alive>
+        </router-view>
       </main>
     </div>
   </div>
 </template>
+
+<script>
+import { mapGetters, mapActions } from "vuex";
+import Sidebar from "./layouts/sidebar.vue";
+import Kepala from "./layouts/kepala.vue";
+
+/* contoh pages */
+import Dashboard from "./dashboard.vue";
+
+import functioncustom from "@/mixins/customformat";
+
+export default {
+  name: "MainLayout",
+
+  components: {
+    Sidebar,
+    Kepala,
+    Dashboard,
+  },
+  mixins: [functioncustom],
+  computed: {
+    ...mapGetters({
+      getlayoutmenuweb: "settingsfe/getlayoutmenuweb",
+      tabsflmenu: "tabs/getTabsFlMenu",
+      nametabs: "tabs/getNameTabs",
+      selectedTab: "tabs/getSelectedTab",
+      selectedTabFlMenu: "tabs/getSelectedTabFlMenu",
+    }),
+
+    isScrollable() {
+      return this.$route.meta.scrollable === true;
+    },
+
+    key() {
+      return this.$route.path;
+    },
+
+    opentab() {
+      const stored = JSON.parse(localStorage.getItem("openTabsflmenu")) ?? [];
+      // const stored = localStorage.getItem("openTabs") ?? [];
+      console.log(stored);
+      return stored;
+    },
+  },
+
+  data() {
+    return {
+      collapsed: false,
+
+      opentabsflmenu: [],
+      dropdownOpen: false,
+      dropdownButton: null,
+      dropdownMenu: null,
+
+      /* ========================
+         TAB STATE
+      ======================== */
+      tabs: [
+        {
+          name: "dashboard",
+          title: "Dashboard",
+          component: Dashboard,
+        },
+      ],
+
+      activeTab: "dashboard",
+    };
+  },
+
+  methods: {
+    ...mapActions({
+      addTab: "tabs/addTab",
+      removeTabvuex: "tabs/removeTab",
+      removeOtherTabs: "tabs/removeOtherTabs",
+      removeAllTabs: "tabs/removeAllTabs",
+      selectTabvuex: "tabs/selectTab",
+      selectTabFlMenu: "tabs/selectTabFlMenu",
+      handleOpenTabs: "tabs/handleOpenTabflmenu",
+      actlayoutweb: "settingsfe/actlayoutwebflmenu",
+    }),
+
+    activeTabIndex() {
+      if (!this.selectedTabFlMenu) return 0;
+      const idx = this.tabsflmenu.findIndex(
+        (tab) => tab.pathfile === this.selectedTabFlMenu.pathfile,
+      );
+      return idx >= 0 ? idx + 1 : 0;
+    },
+
+    handleOpenTab(tab) {
+      console.log(tab);
+      this.handleOpenTabs(tab);
+    },
+
+    selectTab(tab) {
+      this.selectTabvuex(tab);
+    },
+
+    removeTab(tab) {
+      this.removeTabvuex(tab);
+    },
+
+    toggleDropdown() {
+      this.dropdownOpen = !this.dropdownOpen;
+    },
+
+    selectTabFromDropdown(tab) {
+      this.selectTab(tab);
+      this.selectTabFlMenu(tab);
+      this.dropdownOpen = false;
+    },
+  },
+
+  async mounted() {
+    if (!this.getlayoutmenuweb || this.getlayoutmenuweb.length === 0) {
+      await this.actlayoutweb().then((e) => {
+        console.log(e);
+      });
+    }
+
+    // this.loadTabsFromStorage();
+  },
+
+  watch: {
+    nametabs(e) {
+      console.log(e);
+    },
+  },
+};
+</script>
