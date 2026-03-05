@@ -53,8 +53,8 @@ const actions = {
       .catch((error) => {
         // Tangani error lain jika ada
         console.error("Error:", error);
-         commit('SET_ERROR', error.message);
-         commit('SET_LOADING', false);
+        commit('SET_ERROR', error.message);
+        commit('SET_LOADING', false);
       });
 
     return promise;
@@ -232,6 +232,27 @@ const actions = {
     promise.then((data) => {
       // console.log(data);
     });
+  },
+
+  saveUserProfile(context, data) {
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        let network = await api.post("userscrm/input", data, {
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
+          },
+        });
+        resolve(network.data);
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    promise.then(() => {
+      context.dispatch("fetchAllusers");
+    });
+
+    return promise;
   },
 
   setViewMode({ commit }, mode) {

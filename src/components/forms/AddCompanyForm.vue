@@ -44,8 +44,8 @@ const typeOptions = [
 const showAddContactQuickForm = ref(false);
 
 const formData = ref({
-  companyName: "",
-  companyOwner: "",
+  company_name: "",
+  company_owner: "",
   description: "",
   email: "",
   telephone: "",
@@ -55,7 +55,7 @@ const formData = ref({
   country: "",
   province: "",
   city: "",
-  posCode: "",
+  pos_code: "",
   source: "",
   type: "",
   deals: "",
@@ -65,6 +65,7 @@ const formData = ref({
 const handleClose = () => emit("close");
 
 const handleSubmit = () => {
+  console.log("FORM DATA:", formData.value);
   emit("submit", formData.value);
   handleClose();
 };
@@ -118,7 +119,7 @@ const handleSubmit = () => {
                   >Company Name</label
                 >
                 <input
-                  v-model="formData.companyName"
+                  v-model="formData.company_name"
                   type="text"
                   placeholder="Ex Siap Soft"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
@@ -130,7 +131,7 @@ const handleSubmit = () => {
                   >Company Owner</label
                 >
                 <input
-                  v-model="formData.companyOwner"
+                  v-model="formData.company_owner"
                   type="text"
                   placeholder="Ex Abdul"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
@@ -268,7 +269,7 @@ const handleSubmit = () => {
                   >Pos Code</label
                 >
                 <input
-                  v-model="formData.posCode"
+                  v-model="formData.pos_code"
                   type="text"
                   placeholder="Pos Code"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"

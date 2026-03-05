@@ -1,5 +1,5 @@
-<script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+<script>
+import { mapActions, mapGetters } from "vuex";
 import AddContactForm from "./forms/AddContactForm.vue";
 import BulkAddContactForm from "./forms/BulkAddContactForm.vue";
 
@@ -17,386 +17,425 @@ import {
   FilePlus,
   FileDown,
   FolderDown,
+  RefreshCw,
 } from "lucide-vue-next";
 
-// Sample data - replace with actual data from API
-const contacts = ref([]);
+export default {
+  name: "ContactsPage",
 
-const currentPage = ref(1);
-const totalContacts = ref(18600);
-const itemsPerPage = ref(10);
-const showAddContactForm = ref(false);
-const showBulkAddForm = ref(false);
+  components: {
+    AddContactForm,
+    BulkAddContactForm,
+    Search,
+    ChevronDown,
+    Download,
+    Edit,
+    Trash2,
+    Facebook,
+    Filter,
+    ChevronLeft,
+    ChevronRight,
+    FolderPlus,
+    FilePlus,
+    FileDown,
+    FolderDown,
+    RefreshCw,
+  },
 
-const handleAddContact = (contactData) => {
-  // Logic untuk save contact data ke API atau state
-  console.log("New contact:", contactData);
-  // TODO: Implement API call
+  data() {
+    return {
+      currentPage: 1,
+      itemsPerPage: 10,
+      showAddContactForm: false,
+      showBulkAddForm: false,
+      showDropdown: false,
+      showDownloadDropdown: false,
+      selectedIds: [],
+    };
+  },
+
+  computed: {
+    ...mapGetters({
+      contacts: "contacts/allContacts",
+      isLoading: "contacts/isLoading",
+      error: "contacts/error",
+    }),
+
+    totalContacts() {
+      return this.contacts.length;
+    },
+
+    downloadLabel() {
+      return this.selectedIds.length
+        ? `Download (${this.selectedIds.length})`
+        : "Download";
+    },
+
+    paginatedContacts() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      const end = start + this.itemsPerPage;
+      return this.contacts.slice(start, end);
+    },
+
+    totalPages() {
+      return Math.ceil(this.totalContacts / this.itemsPerPage) || 1;
+    },
+  },
+
+  methods: {
+    ...mapActions({
+      fetchAllContacts: "contacts/fetchAllContacts",
+    }),
+
+    fetchData() {
+      this.fetchAllContacts()
+        .then(() => {
+          console.log("Contacts fetched successfully");
+        })
+        .catch((err) => {
+          console.error("Failed to fetch contacts:", err);
+        });
+    },
+
+    handleAddContact(contactData) {
+      console.log("New contact:", contactData);
+      // TODO: Implement API call via Vuex
+    },
+
+    toggleDropdown() {
+      this.showDropdown = !this.showDropdown;
+    },
+
+    toggleDownloadDropdown() {
+      this.showDownloadDropdown = !this.showDownloadDropdown;
+    },
+
+    handleBulkAdd() {
+      this.showBulkAddForm = true;
+    },
+
+    downloadAll() {
+      console.log("Download all data");
+      this.showDownloadDropdown = false;
+    },
+
+    handleDownload() {
+      if (this.selectedIds.length) {
+        console.log("Download selected:", this.selectedIds);
+      } else {
+        console.log("Download all data");
+      }
+      this.showDownloadDropdown = false;
+    },
+
+    handleClickOutside(e) {
+      if (!e.target.closest(".printable-dropdown") && !e.target.closest(".add-dropdown")) {
+        this.showDropdown = false;
+        this.showDownloadDropdown = false;
+      }
+    },
+
+    formatDate(dateString) {
+      if (!dateString) return "-";
+      const date = new Date(dateString);
+      return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+  },
+
+  mounted() {
+    document.addEventListener("click", this.handleClickOutside);
+    this.fetchData();
+  },
+
+  beforeUnmount() {
+    document.removeEventListener("click", this.handleClickOutside);
+  },
 };
-
-const showDropdown = ref(false);
-
-const toggleDropdown = () => {
-  showDropdown.value = !showDropdown.value;
-};
-
-// auto close saat klik luar
-const handleClickOutside = (e) => {
-  if (!e.target.closest(".add-dropdown")) {
-    showDropdown.value = false;
-  }
-};
-
-onMounted(() => document.addEventListener("click", handleClickOutside));
-onBeforeUnmount(() =>
-  document.removeEventListener("click", handleClickOutside),
-);
-
-const handleBulkAdd = () => {
-  console.log("Bulk add clicked");
-  showBulkAddForm.value = true;
-};
-
-const showDownloadDropdown = ref(false);
-const toggleDownloadDropdown = () => {
-  showDownloadDropdown.value = !showDownloadDropdown.value;
-};
-
-const selectedIds = ref([]);
-const downloadAll = () => {
-  console.log("Download all data");
-  showDownloadDropdown.value = false;
-};
-const handleDownload = () => {
-  if (selectedIds.value.length) {
-    console.log("Download selected:", selectedIds.value);
-  } else {
-    console.log("Download all data");
-  }
-  showDownloadDropdown.value = false;
-};
-
-const downloadLabel = computed(() => {
-  return selectedIds.value.length
-    ? `Download (${selectedIds.value.length})`
-    : "Download";
-});
 </script>
 
 <template>
-  <!-- Action Bar -->
-  <div class="bg-white rounded-lg shadow-sm h-147 p-4 border border-outline">
-    <!-- Header with Title and Total -->
-    <div class="flex items-center justify-between mb-4">
-      <div class="flex items-baseline gap-3">
-        <h1 class="text-2xl font-bold text-dark-base">Contacts</h1>
-        <span class="text-sm text-sub-text"
-          >{{ totalContacts.toLocaleString() }} Total Contacts</span
-        >
-      </div>
-
-      <!-- Right Section: Action Buttons -->
-      <!-- Fesnuc login -->
-      <div class="flex items-center gap-2">
-        <button
-          class="flex items-center gap-2 px-4 py-2 border border-fecbuk text-fecbuk rounded-lg hover:bg-fecbuk bg-white hover:text-white transition shadow-sm"
-        >
-          <Facebook :size="18" class="bg-facebuk" />
-          <span class="text-sm font-medium">Connect Facebook</span>
-          <ChevronDown :size="16" />
-        </button>
-        <!-- Add New -->
-        <div class="relative inline-block add-dropdown">
-          <button
-            type="button"
-            @click="toggleDropdown"
-            class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+  <div class="space-y-4">
+    <!-- Action Bar -->
+    <div class="bg-white rounded-lg shadow-sm p-4 border border-outline">
+      <!-- Header with Title and Total -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-baseline gap-3">
+          <h1 class="text-2xl font-bold text-dark-base">Contacts</h1>
+          <span class="text-sm text-sub-text"
+            >{{ totalContacts.toLocaleString() }} Total Contacts</span
           >
-            <span class="text-lg font-semibold">+</span>
-            <span class="text-sm font-medium">Add New</span>
-            <ChevronDown
-              :size="16"
-              class="transition-transform duration-200"
-              :class="{ 'rotate-180': showDropdown }"
-            />
-          </button>
-          <!-- Dropdown Menu -->
-          <div
-            v-show="showDropdown"
-            class="absolute right-0 text-sub-text mt-2 w-44 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95"
-          >
-            <button
-              @click="
-                showAddContactForm = true;
-                showDropdown = false;
-              "
-              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
-            >
-              <FilePlus :size="18" />
-              <span class="font-medium"> Single Contact </span>
-            </button>
-
-            <button
-              @click="
-                handleBulkAdd();
-                showDropdown = false;
-              "
-              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
-            >
-              <FolderPlus :size="18" />
-              <span class="font-medium"> Bulk Contact </span>
-            </button>
-          </div>
         </div>
 
-        <!-- Download -->
-        <div class="relative inline-block">
-          <!-- Button -->
-          <button
-            type="button"
-            @click="toggleDownloadDropdown"
-            class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
-          >
-            <Download :size="18" />
-            <span class="text-sm font-medium">Download</span>
-            <ChevronDown
-              :size="16"
-              class="transition-transform duration-200"
-              :class="{ 'rotate-180': showDownloadDropdown }"
-            />
-          </button>
-
-          <!-- Dropdown -->
-          <div
-            v-show="showDownloadDropdown"
-            class="absolute text-sub-text right-0 mt-2 w-48 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95"
-          >
-            <button
-              @click="downloadAll"
-              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
-            >
-              <FolderDown :size="16" />
-              <span class="font-medium">Download All</span>
-            </button>
-
-            <button
-              @click="handleDownload"
-              class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
-            >
-              <FileDown :size="16" />
-              <span class="font-medium">{{ downloadLabel }}</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Bulk Edit -->
-        <button
-          class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
-        >
-          <Edit :size="18" />
-          <span class="text-sm font-medium">Bulk Edit</span>
-        </button>
-
-        <!-- Delete -->
-        <button
-          class="p-2 bg-white border border-red text-red rounded-lg hover:bg-red hover:text-white transition"
-        >
-          <Trash2 :size="18" />
-        </button>
-      </div>
-
-      <!-- Connect Facebook Button -->
-    </div>
-    <div class="flex items-center justify-between gap-4">
-      <!-- Left Section: Filter + Search + Show -->
-      <div class="flex items-center gap-3">
-        <!-- Filter Icon -->
-        <button
-          class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
-        >
-          <Filter :size="20" class="text-dark-base" />
-        </button>
-
-        <!-- Search Input -->
-        <div class="relative">
-          <input
-            type="text"
-            placeholder="Search by Name"
-            class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-          />
-        </div>
-
-        <!-- Search Icon Button -->
-        <button
-          class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition"
-        >
-          <Search :size="20" class="text-dark-base" />
-        </button>
-
-        <!-- Show Dropdown -->
+        <!-- Right Section: Action Buttons -->
         <div class="flex items-center gap-2">
-          <span class="text-sm text-dark-base">Show</span>
-          <select
-            v-model="itemsPerPage"
-            class="px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+          <button
+            class="flex items-center gap-2 px-4 py-2 border border-fecbuk text-fecbuk rounded-lg hover:bg-fecbuk bg-white hover:text-white transition shadow-sm"
           >
-            <option :value="10">10</option>
-            <option :value="25">25</option>
-            <option :value="50">50</option>
-            <option :value="100">100</option>
-          </select>
+            <Facebook :size="18" />
+            <span class="text-sm font-medium">Connect Facebook</span>
+            <ChevronDown :size="16" />
+          </button>
+
+          <!-- Refresh Button -->
+          <button
+            @click="fetchData"
+            :disabled="isLoading"
+            class="p-2 border border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
+            title="Refresh Data"
+          >
+            <RefreshCw :size="18" :class="{ 'animate-spin': isLoading }" class="text-sub-text" />
+          </button>
+
+          <!-- Add New -->
+          <div class="relative inline-block add-dropdown">
+            <button
+              type="button"
+              @click="toggleDropdown"
+              class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+            >
+              <span class="text-lg font-semibold">+</span>
+              <span class="text-sm font-medium">Add New</span>
+              <ChevronDown
+                :size="16"
+                class="transition-transform duration-200"
+                :class="{ 'rotate-180': showDropdown }"
+              />
+            </button>
+            <!-- Dropdown Menu -->
+            <div
+              v-show="showDropdown"
+              class="absolute right-0 text-sub-text mt-2 w-44 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95"
+            >
+              <button
+                @click="
+                  showAddContactForm = true;
+                  showDropdown = false;
+                "
+                class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+              >
+                <FilePlus :size="18" />
+                <span class="font-medium"> Single Contact </span>
+              </button>
+
+              <button
+                @click="
+                  handleBulkAdd();
+                  showDropdown = false;
+                "
+                class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+              >
+                <FolderPlus :size="18" />
+                <span class="font-medium"> Bulk Contact </span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Download -->
+          <div class="relative inline-block printable-dropdown">
+            <button
+              type="button"
+              @click="toggleDownloadDropdown"
+              class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+            >
+              <Download :size="18" />
+              <span class="text-sm font-medium">Download</span>
+              <ChevronDown
+                :size="16"
+                class="transition-transform duration-200"
+                :class="{ 'rotate-180': showDownloadDropdown }"
+              />
+            </button>
+
+            <!-- Dropdown -->
+            <div
+              v-show="showDownloadDropdown"
+              class="absolute text-sub-text right-0 mt-2 w-48 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95"
+            >
+              <button
+                @click="downloadAll"
+                class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+              >
+                <FolderDown :size="16" />
+                <span class="font-medium">Download All</span>
+              </button>
+
+              <button
+                @click="handleDownload"
+                class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+              >
+                <FileDown :size="16" />
+                <span class="font-medium">{{ downloadLabel }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Bulk Edit -->
+          <button
+            class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+          >
+            <Edit :size="18" />
+            <span class="text-sm font-medium">Bulk Edit</span>
+          </button>
+
+          <!-- Delete -->
+          <button
+            class="p-2 bg-white border border-red text-red rounded-lg hover:bg-red hover:text-white transition"
+          >
+            <Trash2 :size="18" />
+          </button>
         </div>
       </div>
-      <!-- PUSH KANAN -->
-      <div class="ml-auto flex items-center gap-3 text-sm text-sub-text">
-        <button
-          class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
-          :disabled="currentPage === 1"
-        >
-          <ChevronLeft :size="18" class="text-sub-text" />
-        </button>
 
-        <span>Page</span>
+      <div class="flex items-center justify-between gap-4">
+        <!-- Left Section: Filter + Search + Show -->
+        <div class="flex items-center gap-3">
+          <button
+            class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
+          >
+            <Filter :size="20" class="text-dark-base" />
+          </button>
 
-        <input
-          type="number"
-          v-model="currentPage"
-          min="1"
-          class="w-12 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-sub-text"
-        />
+          <div class="relative">
+            <input
+              type="text"
+              placeholder="Search by Name"
+              class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+            />
+          </div>
 
-        <span>of {{ Math.ceil(totalContacts / itemsPerPage) }}</span>
+          <button
+            class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition"
+          >
+            <Search :size="20" class="text-dark-base" />
+          </button>
 
-        <button
-          class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
-        >
-          <ChevronRight :size="18" class="text-sub-text" />
-        </button>
-      </div>
-    </div>
-
-    <!-- Table -->
-    <div class="overflow-hidden">
-      <!-- Table -->
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead>
-            <tr class="border-b border-gray-200">
-              <th class="px-6 py-4 text-left">
-                <input
-                  type="checkbox"
-                  class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
-                />
-              </th>
-              <th
-                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
-              >
-                <div class="flex items-center gap-2">
-                  Name
-                  <ChevronDown :size="16" class="text-gray-400" />
-                </div>
-              </th>
-              <th
-                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
-              >
-                <div class="flex items-center gap-2">
-                  Contact Info
-                  <ChevronDown :size="16" class="text-gray-400" />
-                </div>
-              </th>
-              <th
-                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
-              >
-                <div class="flex items-center gap-2">
-                  Associated with
-                  <ChevronDown :size="16" class="text-gray-400" />
-                </div>
-              </th>
-              <th
-                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
-              >
-                <div class="flex items-center gap-2">
-                  Status
-                  <ChevronDown :size="16" class="text-gray-400" />
-                </div>
-              </th>
-              <th
-                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
-              >
-                <div class="flex items-center gap-2">
-                  Created/Update
-                  <ChevronDown :size="16" class="text-gray-400" />
-                </div>
-              </th>
-              <th
-                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
-              >
-                <div class="flex items-center gap-2">
-                  Owner
-                  <ChevronDown :size="16" class="text-gray-400" />
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Empty State -->
-            <tr v-if="contacts.length === 0">
-              <td colspan="7" class="px-6 py-20 text-center text-sub-text">
-                <div class="flex flex-col items-center gap-3">
-                  <div
-                    class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center"
-                  >
-                    <Search :size="32" class="text-gray-400" />
-                  </div>
-                  <p class="text-lg font-medium">No contacts found</p>
-                  <p class="text-sm text-gray-400">
-                    Start adding contacts to see them here
-                  </p>
-                </div>
-              </td>
-            </tr>
-
-            <!-- Sample rows - will be populated with actual data -->
-            <tr
-              v-for="contact in contacts"
-              :key="contact.id"
-              class="border-b border-gray-100 hover:bg-gray-50 transition"
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-dark-base">Show</span>
+            <select
+              v-model="itemsPerPage"
+              class="px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
             >
-              <td class="px-6 py-4">
-                <input
-                  type="checkbox"
-                  class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
-                />
-              </td>
-              <td class="px-6 py-4 text-sm text-gray-800 font-medium">
-                {{ contact.name }}
-              </td>
-              <td class="px-6 py-4 text-sm text-dark-base">
-                {{ contact.email }}
-              </td>
-              <td class="px-6 py-4 text-sm text-dark-base">
-                {{ contact.company }}
-              </td>
-              <td class="px-6 py-4">
-                <span
-                  class="px-3 py-1 rounded-full text-xs font-medium"
-                  :class="{
-                    'bg-green-100 text-green-700': contact.status === 'Active',
-                    'bg-gray-100 text-gray-700': contact.status === 'Inactive',
-                  }"
-                >
-                  {{ contact.status }}
-                </span>
-              </td>
-              <td class="px-6 py-4 text-sm text-dark-base">
-                {{ contact.updatedAt }}
-              </td>
-              <td class="px-6 py-4 text-sm text-dark-base">
-                {{ contact.owner }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              <option :value="10">10</option>
+              <option :value="25">25</option>
+              <option :value="50">50</option>
+              <option :value="100">100</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="ml-auto flex items-center gap-3 text-sm text-sub-text">
+          <button
+            @click="currentPage > 1 && currentPage--"
+            class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
+            :disabled="currentPage === 1"
+          >
+            <ChevronLeft :size="18" />
+          </button>
+
+          <span>Page</span>
+
+          <input
+            type="number"
+            v-model="currentPage"
+            min="1"
+            :max="totalPages"
+            class="w-12 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none"
+          />
+
+          <span>of {{ totalPages }}</span>
+
+          <button
+            @click="currentPage < totalPages && currentPage++"
+            class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
+            :disabled="currentPage === totalPages"
+          >
+            <ChevronRight :size="18" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Table Container with Horizontal Scroll -->
+      <div class="mt-4 border border-outline rounded-lg overflow-hidden relative min-h-[400px]">
+        <!-- Loading Overlay -->
+        <div v-if="isLoading" class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center">
+          <div class="flex flex-col items-center gap-2">
+            <RefreshCw class="animate-spin text-blue-950" :size="32" />
+            <span class="text-sm font-medium text-blue-950">Loading Contacts...</span>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-light-base border-b border-outline">
+                <th class="px-6 py-4 w-10">
+                  <input type="checkbox" class="rounded border-outline" />
+                </th>
+                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Name</th>
+                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Contact Info</th>
+                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Associated with</th>
+                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Status</th>
+                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Created/Update</th>
+                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Owner</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Empty State -->
+              <tr v-if="paginatedContacts.length === 0 && !isLoading">
+                <td colspan="7" class="px-6 py-20 text-center">
+                  <div class="flex flex-col items-center gap-3">
+                    <Search :size="48" class="text-outline" />
+                    <p class="text-lg font-medium text-dark-base">No contacts found</p>
+                    <p class="text-sm text-sub-text">We couldn't find any contacts matching your criteria.</p>
+                    <button @click="showAddContactForm = true" class="mt-2 text-blue-600 font-medium hover:underline text-sm">+ Add Your First Contact</button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Data Rows -->
+              <tr
+                v-for="contact in paginatedContacts"
+                :key="contact.id"
+                class="border-b border-outline hover:bg-light-base/50 transition-colors group"
+              >
+                <td class="px-6 py-4 text-sm">
+                  <input type="checkbox" v-model="selectedIds" :value="contact.id" class="rounded border-outline" />
+                </td>
+                <td class="px-6 py-4">
+                  <div class="text-sm font-semibold text-dark-base">
+                    {{ contact.first_name }} {{ contact.last_name }}
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="text-sm text-dark-base">{{ contact.email || '-' }}</div>
+                  <div class="text-xs text-sub-text">{{ contact.telephone_1 || '-' }}</div>
+                </td>
+                <td class="px-6 py-4 text-sm text-dark-base">
+                  {{ contact.companiesAssociation || contact.company || '-' }}
+                </td>
+                <td class="px-6 py-4">
+                  <span
+                    class="px-3 py-1 rounded-full text-xs font-medium"
+                    :class="{
+                      'bg-green-100 text-green-700': contact.status?.toLowerCase() === 'active',
+                      'bg-yellow-100 text-yellow-700': contact.status?.toLowerCase() === 'pending',
+                      'bg-gray-100 text-gray-700': !contact.status || contact.status?.toLowerCase() === 'inactive',
+                    }"
+                  >
+                    {{ contact.status || 'Inactive' }}
+                  </span>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="text-xs text-dark-base">{{ formatDate(contact.updated_at || contact.created_at) }}</div>
+                </td>
+                <td class="px-6 py-4 text-sm text-dark-base">
+                  {{ contact.owner || '-' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -422,6 +461,22 @@ const downloadLabel = computed(() => {
 </template>
 
 <style scoped>
+/* Custom Scrollbar for the table */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 8px;
+}
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
@@ -431,5 +486,21 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* Slide and Fade transitions from userscrm */
+.animate-in {
+  animation: animate-in 0.2s ease-out;
+}
+
+@keyframes animate-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 </style>

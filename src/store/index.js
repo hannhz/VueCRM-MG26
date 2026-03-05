@@ -16,7 +16,7 @@ export default createStore({
     auth: authModule,
     deals: dealsModule,
     contacts: contactsModule,
-    companies: companiesModule,
+    company: companiesModule,
     tasks: tasksModule,
     documents: documentsModule,
     users: usersModule,

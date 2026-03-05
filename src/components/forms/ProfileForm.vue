@@ -1,202 +1,210 @@
-<script setup>
-import { ref, computed, watch } from "vue";
+<script>
 import { X, ChevronDown } from "lucide-vue-next";
-import { useStore } from "vuex";
+import { mapGetters, mapActions, mapState } from "vuex";
 
-const props = defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false,
+export default {
+  name: "ProfileForm",
+
+  components: {
+    X,
+    ChevronDown,
   },
-});
 
-const emit = defineEmits(["close", "submit"]);
-const store = useStore();
+  props: {
+    isOpen: {
+      type: Boolean,
+      default: false,
+    },
+  },
 
-const currentUser = computed(() => store.getters["auth/currentUser"]);
-const isAdmin = computed(() => currentUser.value?.role?.toLowerCase() === "admin" || currentUser.value?.role?.toLowerCase() === "super_admin");
+  emits: ["close", "submit"],
 
-// Options (consistent with CreateUserForm)
-const teamOptions = [
-  { value: "", label: "Name Team" },
-  { value: "management", label: "Management" },
-  { value: "marketing", label: "Marketing" },
-  { value: "design", label: "Design" },
-  { value: "finance", label: "Finance" },
-  { value: "development", label: "Development" },
-  { value: "support", label: "Support" },
-];
-
-const staffLevelOptions = [
-  { value: "", label: "Staff Level" },
-  { value: "executive", label: "Executive Level" },
-  { value: "director", label: "Director Level" },
-  { value: "manager", label: "Manager Level" },
-  { value: "staff", label: "Staff" },
-  { value: "other", label: "Other" },
-];
-
-const roleOptions = [
-  { value: "", label: "Role" },
-  { value: "super_admin", label: "Super Admin" },
-  { value: "admin", label: "Admin" },
-  { value: "manager", label: "Manager" },
-  { value: "marketing", label: "Marketing" },
-];
-
-// Form data - aligned with backend keys from image
-const formData = ref({
-  id: "",
-  name: "",
-  firstname: "",
-  lastname: "",
-  no_handphone: "",
-  nik: "",
-  email: "",
-  password: "",
-  primaryteam: "",
-  secondaryteam: "",
-  stafflevel: "",
-  role: "",
-});
-
-const isLoading = ref(false);
-const isSaving = ref(false);
-const errorMsg = ref("");
-const successMsg = ref("");
-
-const fetchProfileData = async () => {
-  isLoading.value = true;
-  errorMsg.value = "";
-  successMsg.value = "";
-  try {
-    const apiBaseUrl = import.meta.env.VITE_APP_API_URL || import.meta.env.BACKEND_APP_API_URL;
-    const response = await fetch(`${apiBaseUrl}/api/userscrm/`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${store.state.auth.token}`,
-        "Accept": "application/json",
-      },
-    });
-
-    if (response.ok) {
-      let data = await response.json();
-      console.log("Raw Profile Response:", data);
-      
-      // Handle array or wrapped response
-      let userRecord = {};
-      if (Array.isArray(data)) {
-        const currentEmail = currentUser.value?.email;
-        userRecord = data.find(u => u.email === currentEmail) || data[0] || {};
-      } else if (data.data) {
-        userRecord = data.data;
-      } else if (data.user) {
-        userRecord = data.user;
-      } else {
-        userRecord = data;
-      }
-
-      console.log("Calculated User Record:", userRecord);
-
-      formData.value = {
-        id: userRecord.id || currentUser.value?.id || "",
-        name: userRecord.name || (userRecord.firstname + ' ' + userRecord.lastname) || "",
-        firstname: userRecord.firstname || currentUser.value?.firstname || currentUser.value?.first_name || "",
-        lastname: userRecord.lastname || currentUser.value?.lastname || currentUser.value?.last_name || "",
-        no_handphone: userRecord.no_handphone || userRecord.Telephone || currentUser.value?.no_handphone || currentUser.value?.Telephone || currentUser.value?.telephone || "",
-        nik: userRecord.nik || currentUser.value?.nik || "",
-        email: userRecord.email || currentUser.value?.email || "",
-        password: "", // Keep empty for security, but prevent backend error
-        primaryteam: userRecord.primaryteam || currentUser.value?.primaryteam || currentUser.value?.primary_team || "",
-        secondaryteam: userRecord.secondaryteam || currentUser.value?.secondaryteam || currentUser.value?.secondary_team || "",
-        stafflevel: userRecord.stafflevel || currentUser.value?.stafflevel || currentUser.value?.staff_level || "",
-        role: userRecord.role || currentUser.value?.role || "",
-      };
-    } else {
-      throw new Error("Failed to fetch profile");
-    }
-  } catch (err) {
-    console.error("Profile fetch error:", err);
-    errorMsg.value = "Failed to load profile data from server.";
-    // Fallback to store data entirely
-    if (currentUser.value) {
-      formData.value = {
-        id: currentUser.value.id || "",
-        name: currentUser.value.name || (currentUser.value.firstname + ' ' + currentUser.value.lastname) || "",
-        firstname: currentUser.value.firstname || currentUser.value.first_name || "",
-        lastname: currentUser.value.lastname || currentUser.value.last_name || "",
-        no_handphone: currentUser.value.no_handphone || currentUser.value.Telephone || currentUser.value.telephone || "",
-        nik: currentUser.value.nik || "",
-        email: currentUser.value.email || "",
+  data() {
+    return {
+      formData: {
+        id: "",
+        name: "",
+        firstname: "",
+        lastname: "",
+        no_handphone: "",
+        nik: "",
+        email: "",
         password: "",
-        primaryteam: currentUser.value.primaryteam || currentUser.value.primary_team || "",
-        secondaryteam: currentUser.value.secondaryteam || currentUser.value.secondary_team || "",
-        stafflevel: currentUser.value.stafflevel || currentUser.value.staff_level || "",
-        role: currentUser.value.role || "",
-      };
-    }
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-// Sync with store data/fetch from API when form opens
-watch(() => props.isOpen, (newVal) => {
-  if (newVal) {
-    fetchProfileData();
-  }
-});
-
-const handleClose = () => {
-  emit("close");
-};
-
-const handleSubmit = async () => {
-  isSaving.value = true;
-  errorMsg.value = "";
-  successMsg.value = "";
-
-  // Update name before submitting
-  formData.value.name = `${formData.value.firstname} ${formData.value.lastname}`.trim();
-
-  try {
-    const apiBaseUrl = import.meta.env.VITE_APP_API_URL || import.meta.env.BACKEND_APP_API_URL;
-    const response = await fetch(`${apiBaseUrl}/api/userscrm/input`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${store.state.auth.token}`,
-        "Accept": "application/json",
+        primaryteam: "",
+        secondaryteam: "",
+        stafflevel: "",
+        role: "",
       },
-      body: JSON.stringify(formData.value),
-    });
+      isLoadingLocal: false,
+      isSaving: false,
+      errorMsg: "",
+      successMsg: "",
 
-    if (response.ok) {
-      successMsg.value = "Profile updated successfully!";
-      // Update local store if needed
-      store.dispatch("auth/login", { 
-        user: { ...store.state.auth.user, ...formData.value },
-        token: store.state.auth.token 
-      });
-      
-      // Close after a short delay
-      setTimeout(() => {
-        handleClose();
-      }, 1500);
-    } else {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to update profile");
-    }
-  } catch (err) {
-    console.error("Profile update error:", err);
-    errorMsg.value = err.message || "Failed to save profile changes.";
-  } finally {
-    isSaving.value = false;
-  }
-};
+      // Options
+      teamOptions: [
+        { value: "", label: "Name Team" },
+        { value: "management", label: "Management" },
+        { value: "marketing", label: "Marketing" },
+        { value: "design", label: "Design" },
+        { value: "finance", label: "Finance" },
+        { value: "development", label: "Development" },
+        { value: "support", label: "Support" },
+      ],
+      staffLevelOptions: [
+        { value: "", label: "Staff Level" },
+        { value: "executive", label: "Executive Level" },
+        { value: "director", label: "Director Level" },
+        { value: "manager", label: "Manager Level" },
+        { value: "staff", label: "Staff" },
+        { value: "other", label: "Other" },
+      ],
+      roleOptions: [
+        { value: "", label: "Role" },
+        { value: "super_admin", label: "Super Admin" },
+        { value: "admin", label: "Admin" },
+        { value: "manager", label: "Manager" },
+        { value: "marketing", label: "Marketing" },
+      ],
+    };
+  },
 
-const handleReset = () => {
-  fetchProfileData();
+  computed: {
+    ...mapState({
+      authStoreUser: (state) => state.auth.user,
+    }),
+    ...mapGetters({
+      users: "users/allUsers",
+      usersignin: "users/usersignin",
+    }),
+
+    isAdmin() {
+      // Use usersignin as the source of truth for current logged in user
+      const role = this.usersignin?.role?.toLowerCase();
+      return role === "admin" || role === "super_admin";
+    },
+
+    isLoading() {
+      return this.isLoadingLocal;
+    },
+  },
+
+  watch: {
+    isOpen(newVal) {
+      if (newVal) {
+        this.fetchProfileData();
+      }
+    },
+  },
+
+  methods: {
+    ...mapActions({
+      fetchAllUsersAction: "users/fetchAllusers",
+      saveProfileStore: "users/saveUserProfile",
+    }),
+
+    fetchProfileData() {
+      this.isLoadingLocal = true;
+      this.errorMsg = "";
+      this.successMsg = "";
+
+      this.fetchAllUsersAction()
+        .then(() => {
+          // Local data population logic (finding self in the users all list)
+          // Using usersignin from the users store as primary identity
+          const currentEmail = this.usersignin?.email;
+          const userRecord =
+            this.users.find((u) => u.email === currentEmail) ||
+            this.usersignin ||
+            {};
+
+          console.log("Senior Style - Calculated User Record:", userRecord);
+
+          this.formData = {
+            id: userRecord.id || this.usersignin?.id || "",
+            name:
+              userRecord.name ||
+              userRecord.firstname + " " + userRecord.lastname ||
+              "",
+            firstname:
+              userRecord.firstname ||
+              this.usersignin?.firstname ||
+              this.usersignin?.first_name ||
+              "",
+            lastname:
+              userRecord.lastname ||
+              this.usersignin?.lastname ||
+              this.usersignin?.last_name ||
+              "",
+            no_handphone:
+              userRecord.no_handphone ||
+              userRecord.Telephone ||
+              this.usersignin?.no_handphone ||
+              this.usersignin?.Telephone ||
+              "",
+            nik: userRecord.nik || this.usersignin?.nik || "",
+            email: userRecord.email || this.usersignin?.email || "",
+            password: "",
+            primaryteam:
+              userRecord.primaryteam ||
+              this.usersignin?.primaryteam ||
+              this.usersignin?.primary_team ||
+              "",
+            secondaryteam:
+              userRecord.secondaryteam ||
+              this.usersignin?.secondaryteam ||
+              "",
+            stafflevel:
+              userRecord.stafflevel ||
+              this.usersignin?.stafflevel ||
+              this.usersignin?.staff_level ||
+              "",
+            role: userRecord.role || this.usersignin?.role || "",
+          };
+        })
+        .catch((err) => {
+          console.error("Profile fetch error:", err);
+          this.errorMsg = "Failed to load profile data from server.";
+        })
+        .finally(() => {
+          this.isLoadingLocal = false;
+        });
+    },
+
+    handleClose() {
+      this.$emit("close");
+    },
+
+    handleSubmit() {
+      this.isSaving = true;
+      this.errorMsg = "";
+      this.successMsg = "";
+
+      // Update name before submitting
+      this.formData.name =
+        `${this.formData.firstname} ${this.formData.lastname}`.trim();
+
+      // Calling Senior Style Action (hitting userscrm/input POST)
+      this.saveProfileStore(this.formData)
+        .then(() => {
+          this.successMsg = "Profile updated successfully!";
+          // Close after a short delay
+          setTimeout(() => {
+            this.handleClose();
+          }, 1500);
+        })
+        .catch((err) => {
+          console.error("Profile update error:", err);
+          this.errorMsg = err.message || "Failed to save profile changes.";
+        })
+        .finally(() => {
+          this.isSaving = false;
+        });
+    },
+
+    handleReset() {
+      this.fetchProfileData();
+    },
+  },
 };
 </script>
 

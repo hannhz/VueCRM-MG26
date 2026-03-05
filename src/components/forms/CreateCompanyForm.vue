@@ -52,8 +52,8 @@ const dealsOptions = [
 ];
 
 const formData = ref({
-  companyName: "",
-  companyOwner: "",
+  company_name: "",
+  company_owner: "",
   description: "",
   email: "",
   telephone: "",
@@ -63,7 +63,7 @@ const formData = ref({
   country: "",
   province: "",
   city: "",
-  posCode: "",
+  pos_code: "",
   source: "",
   type: "",
   deals: "",
@@ -77,14 +77,31 @@ const showAddContactQuickForm = ref(false);
 const handleClose = () => emit("close");
 
 const handleSubmit = () => {
-  emit("submit", formData.value);
+  const payload = {
+    company_name: formData.value.company_name,
+    company_owner: formData.value.company_owner,
+    description: formData.value.description,
+    email: formData.value.email,
+    telephone: formData.value.telephone,
+    website: formData.value.website,
+    industry: formData.value.industry,
+    address: formData.value.address,
+    country: formData.value.country,
+    province: formData.value.province,
+    city: formData.value.city,
+    pos_code: formData.value.pos_code,
+    source: formData.value.source,
+    type: formData.value.type,
+  };
+
+  emit("submit", payload);
   handleClose();
 };
 
 const handleReset = () => {
   formData.value = {
-    companyName: "",
-    companyOwner: "",
+    company_name: "",
+    company_owner: "",
     description: "",
     email: "",
     telephone: "",
@@ -94,7 +111,7 @@ const handleReset = () => {
     country: "",
     province: "",
     city: "",
-    posCode: "",
+    pos_code: "",
     source: "",
     type: "",
     deals: "",
@@ -144,7 +161,7 @@ const handleReset = () => {
                 >Company Name</label
               >
               <input
-                v-model="formData.companyName"
+                v-model="formData.company_name"
                 type="text"
                 placeholder="Ex Siap Soft"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
@@ -156,7 +173,7 @@ const handleReset = () => {
                 >Company Owner</label
               >
               <input
-                v-model="formData.companyOwner"
+                v-model="formData.company_owner"
                 type="text"
                 placeholder="Ex Abdul"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
@@ -300,7 +317,7 @@ const handleReset = () => {
                 >Pos Code</label
               >
               <input
-                v-model="formData.posCode"
+                v-model="formData.pos_code"
                 type="text"
                 placeholder="Pos Code"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
