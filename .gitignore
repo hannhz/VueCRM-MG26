@@ -24,7 +24,7 @@ dist-ssr
 *.sw?
 
 build_merge_verify_new.txt
-.env
+
 .env.local
 .env.example
 .env.development
