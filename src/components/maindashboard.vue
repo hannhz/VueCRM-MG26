@@ -135,7 +135,6 @@ export default {
     },
 
     handleOpenTab(tab) {
-      console.log(tab);
       this.handleOpenTabs(tab);
     },
 

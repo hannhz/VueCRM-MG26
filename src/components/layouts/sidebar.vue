@@ -87,12 +87,12 @@
         </div>
 
         <!-- Separator -->
-        <div
+        <!-- <div
           :class="[
             'h-[0.75px] my-3 bg-outline transition-all duration-300',
             isExpanded ? 'w-20 mx-auto' : 'w-6 mx-auto',
           ]"
-        ></div>
+        ></div> -->
       </div>
     </nav>
 
@@ -288,7 +288,9 @@ export default {
     },
 
     openTab(menuItem) {
-        console.log("sidebaropentab", menuItem);
+        // console.log("sidebaropentab", menuItem);
+        // console.log("sidebaropentab", this.$router.getRoutes());
+        
       if (menuItem.pathfile) {
         this.$router.push(menuItem.pathfile);
       }

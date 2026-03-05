@@ -1,4 +1,4 @@
-<script setup>
+<!-- <script setup>
 import { ref, computed, watch } from "vue";
 import {
   RefreshCcw,
@@ -37,11 +37,11 @@ const fetchUsers = () => {
 };
 
 onMounted(() => {
-  if (!isAdmin.value) {
-    console.warn("Access denied: User is not an admin");
-    router.push("/crmAdmin");
-    return;
-  }
+  // if (!isAdmin.value) {
+  //   console.warn("Access denied: User is not an admin");
+  //   router.push("/crmAdmin");
+  //   return;
+  // }
   fetchUsers();
 });
 
@@ -103,11 +103,144 @@ function nextPage() {
 function prevPage() {
   if (currentPage.value > 1) currentPage.value--;
 }
+</script> -->
+
+
+<script>
+import {
+  RefreshCcw,
+  Filter,
+  Search,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+} from "lucide-vue-next";
+
+import CreateUserForm from "../forms/CreateUserForm.vue";
+import { mapGetters, mapActions, mapState } from "vuex";
+
+export default {
+  name: "UsersTable",
+
+  components: {
+    RefreshCcw,
+    Filter,
+    Search,
+    Trash2,
+    ChevronLeft,
+    ChevronRight,
+    ChevronDown,
+    CreateUserForm,
+  },
+
+  data() {
+    return {
+      showCreateUserForm: false,
+
+      // pagination
+      itemsPerPage: 5,
+      currentPage: 1,
+
+      // checkbox
+      selectedIds: [],
+    };
+  },
+
+  computed: {
+    ...mapGetters({
+      users: "users/allUsers",
+      isLoadingTable: "users/isLoading",
+      errorMsgTable: "users/error",
+    }),
+
+    ...mapState({
+      authUser: (state) => state.auth.user,
+    }),
+
+    // admin validation
+    isAdmin() {
+      const user = this.authUser;
+      return (
+        user &&
+        (user.role === "admin" ||
+          user.stafflevel === "admin" ||
+          user.role === "Admin")
+      );
+    },
+
+    totalDocuments() {
+      return this.users.length;
+    },
+
+    totalPages() {
+      return Math.max(1, Math.ceil(this.totalDocuments / this.itemsPerPage));
+    },
+
+    currentUser() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      const end = start + this.itemsPerPage;
+      return this.users.slice(start, end);
+    },
+
+    isAllSelected: {
+      get() {
+        return (
+          this.currentUser.length > 0 &&
+          this.currentUser.every((user) =>
+            this.selectedIds.includes(user.id)
+          )
+        );
+      },
+      set(val) {
+        if (val) {
+          this.selectedIds = this.currentUser.map((user) => user.id);
+        } else {
+          this.selectedIds = [];
+        }
+      },
+    },
+  },
+
+  watch: {
+    currentPage(val) {
+      if (val < 1) this.currentPage = 1;
+      if (val > this.totalPages) this.currentPage = this.totalPages;
+    },
+
+    itemsPerPage() {
+      this.currentPage = 1;
+    },
+  },
+
+  methods: {
+    ...mapActions({
+      fetchUsers: "users/fetchAllusers",
+    }),
+
+    nextPage() {
+      if (this.currentPage < this.totalPages) this.currentPage++;
+    },
+
+    prevPage() {
+      if (this.currentPage > 1) this.currentPage--;
+    },
+  },
+
+  mounted() {
+    // if (!this.isAdmin) {
+    //   console.warn("Access denied: User is not an admin");
+    //   this.$router.push("/crmAdmin");
+    //   return;
+    // }
+    this.fetchUsers();
+  },
+};
 </script>
 
 <template>
   <!-- Document List -->
-  <div v-if="isAdmin" class="bg-white rounded-lg shadow-sm border border-outline">
+  <div class="bg-white rounded-lg shadow-sm border border-outline">
     <div class="p-4 border-b border-outline">
       <div class="flex items-center justify-between gap-4 flex-wrap">
         <!-- Left Section: Filter + Search + Show -->

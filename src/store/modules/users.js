@@ -10,6 +10,9 @@ const state = {
   useridsignin: null,
   userbyid: [],
   token: cookies.get("token"),
+  isLoading: false,
+  error: null,
+  viewMode: "list",
 };
 
 const getters = {
@@ -17,91 +20,94 @@ const getters = {
   usersignin: (state) => state.usersignin,
   useridsignin: (state) => state.useridsignin,
   userbyid: (state) => state.userbyid,
+  allUsers: (state) => state.users,
+  isLoading: (state) => state.isLoading,
+  error: (state) => state.error,
+  currentView: (state) => state.viewMode,
 };
 
 const actions = {
   fetchAllusers({ commit }) {
-    const promise =  new Promise(async (resolve, reject) => {
+    commit("SET_LOADING", true);
+    commit("SET_ERROR", null);
+    const promise = new Promise(async (resolve, reject) => {
       try {
-        let network = await api.get("users", {
+        let network = await api.get("userscrm", {
           headers: {
-            Authorization:
-              "Bearer " + cookies.get("token"),
+            Authorization: "Bearer " + cookies.get("token"),
           },
           // headers: { Authorization: "Bearer " + localStorage.getItem("token") },
         });
-        
+
         resolve(network.data);
       } catch (error) {
         reject(error);
       }
     });
 
-
     promise
       .then((data) => {
         commit("setusers", data.users);
+        commit('SET_LOADING', false);
       })
       .catch((error) => {
         // Tangani error lain jika ada
         console.error("Error:", error);
+         commit('SET_ERROR', error.message);
+         commit('SET_LOADING', false);
       });
 
     return promise;
-
-
-
   },
 
   getusersignin({ commit }) {
-  const promise = new Promise(async (resolve, reject) => {
-    try {
-      let network = await api.get("user/", {
-        headers: {
-          Authorization: "Bearer " + cookies.get("token"),
-        },
-      });
-      resolve(network);
-    } catch (error) {
-      // Jika endpoint Sanctum tidak bekerja, coba endpoint JWT
-      if (error.response && error.response.status === 404) {
-        try {
-          let jwtNetwork = await api.get("getAuthenticatedUser", {
-            headers: {
-              Authorization: "Bearer " + cookies.get("token"),
-            },
-          });
-          resolve(jwtNetwork);
-        } catch (jwtError) {
-          reject(jwtError);
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        let network = await api.get("user/", {
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
+          },
+        });
+        resolve(network);
+      } catch (error) {
+        // Jika endpoint Sanctum tidak bekerja, coba endpoint JWT
+        if (error.response && error.response.status === 404) {
+          try {
+            let jwtNetwork = await api.get("getAuthenticatedUser", {
+              headers: {
+                Authorization: "Bearer " + cookies.get("token"),
+              },
+            });
+            resolve(jwtNetwork);
+          } catch (jwtError) {
+            reject(jwtError);
+          }
+        } else {
+          reject(error);
         }
-      } else {
-        reject(error);
       }
-    }
-  });
-
-  promise
-    .then((data) => {
-      // Handle response dari Sanctum atau JWT
-      const userData = data.data.user || data.data; // JWT mengembalikan langsung user object
-      commit("setuseridsignin", userData.id);
-      commit("setusersignin", userData);
-    })
-    .catch((error) => {
-      console.error("Error:", error);
     });
 
-  return promise;
-},
+    promise
+      .then((data) => {
+        // Handle response dari Sanctum atau JWT
+        const userData = data.data.user || data.data; // JWT mengembalikan langsung user object
+        commit("setuseridsignin", userData.id);
+        commit("setusersignin", userData);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+
+    return promise;
+  },
 
   fetchuserbyid(context, id) {
     const promise = new Promise(async (resolve, reject) => {
       try {
         let network = api.get("fetchuserbyid/" + id, {
           headers: {
-            Authorization:
-              "Bearer " + cookies.get("token"),
+            Authorization: "Bearer " + cookies.get("token"),
           },
           // headers: { Authorization: "Bearer " + localStorage.getItem("token") },
         });
@@ -126,8 +132,7 @@ const actions = {
       try {
         let network = await api.post("users/insertusr", data.formdata, {
           headers: {
-            Authorization:
-              "Bearer " + cookies.get("token"),
+            Authorization: "Bearer " + cookies.get("token"),
           },
           // headers: { Authorization: "Bearer " + localStorage.getItem("token") },
         });
@@ -145,9 +150,8 @@ const actions = {
     const promise = new Promise(async (resolve, reject) => {
       try {
         let network = await api.post("reg", data, {
-          headers: {    
-            Authorization:
-              "Bearer " + cookies.get("token"),
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
           },
           // headers: { Authorization: "Bearer " + localStorage.getItem("token") },
         });
@@ -176,7 +180,7 @@ const actions = {
             // headers: {
             //   Authorization: "Bearer " + localStorage.getItem("token"),
             // },
-          }
+          },
         );
         resolve(network.data);
         context.dispatch("fetchAllusers");
@@ -196,8 +200,7 @@ const actions = {
       try {
         let network = await api.delete(`users/deleteusr?id=${data}`, {
           headers: {
-            Authorization:
-              "Bearer " + cookies.get("token"),
+            Authorization: "Bearer " + cookies.get("token"),
           },
           // headers: { Authorization: "Bearer " + localStorage.getItem("token") },
         });
@@ -215,8 +218,7 @@ const actions = {
       try {
         let network = await api.post(`editprofile`, data, {
           headers: {
-            Authorization:
-              "Bearer " + cookies.get("token"),
+            Authorization: "Bearer " + cookies.get("token"),
           },
           // headers: { Authorization: "Bearer " + localStorage.getItem("token") },
         });
@@ -230,6 +232,10 @@ const actions = {
     promise.then((data) => {
       // console.log(data);
     });
+  },
+
+  setViewMode({ commit }, mode) {
+    commit("SET_VIEW_MODE", mode);
   },
 };
 
@@ -247,6 +253,16 @@ const mutations = {
   setuserbyid: (state, user) => {
     state.userbyid = user;
   },
+
+  SET_LOADING(state, isLoading) {
+    state.isLoading = isLoading;
+  },
+  SET_ERROR(state, error) {
+    state.error = error;
+  },
+  SET_VIEW_MODE(state, mode) {
+    state.viewMode = mode;
+  },
 };
 
 export default {
@@ -256,8 +272,6 @@ export default {
   actions,
   mutations,
 };
-
-
 
 // export default {
 //   namespaced: true,
