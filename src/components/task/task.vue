@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { useStore } from "vuex";
 import {
   ChevronDown,
   Download,
@@ -12,15 +13,23 @@ import {
   LayoutGrid,
   List,
   CalendarDays,
+  RefreshCw,
 } from "lucide-vue-next";
 import TaskList from "./tasklist.vue";
 import TaskCalender from "./taskcalender.vue";
 import TaskCard from "./taskcard.vue";
 import CreateTaskForm from "@/components/forms/CreateTaskForm.vue";
 
+const store = useStore();
+
+// Get tasks from Vuex store
+const allTasks = computed(() => store.getters["tasks/filteredTasks"] || []);
+const totalTask = computed(() => allTasks.value.length);
+const isLoading = computed(() => store.getters["tasks/isLoading"]);
+const error = computed(() => store.getters["tasks/error"]);
+
 const showDropdown = ref(false);
 const showDownloadDropdown = ref(false);
-const totalTask = ref(12);
 const showCreateTaskForm = ref(false);
 
 function toggleDropdown() {
@@ -54,19 +63,50 @@ const activeMode = ref("list"); // 'list', 'calendar', 'grid'
 function setMode(mode) {
   activeMode.value = mode;
 }
+
+// Fetch data function untuk refresh
+const fetchData = () => {
+  store.dispatch("tasks/fetchAllTasks")
+    .then(() => {
+      console.log("Tasks fetched successfully");
+    })
+    .catch((err) => {
+      console.error("Failed to fetch tasks:", err);
+    });
+};
+
+// Lifecycle: Fetch tasks on mount
+onMounted(() => {
+  fetchData();
+});
 </script>
 
 <template>
   <div class="flex items-center justify-between mb-4">
     <div class="flex items-baseline gap-3">
       <h1 class="text-2xl font-bold text-dark-base">Tasks</h1>
-      <span class="text-sm text-sub-text"
-        >{{ totalTask.toLocaleString() }} Total Tasks</span
-      >
+      <span class="text-sm text-sub-text">
+        <template v-if="isLoading">
+          Loading tasks...
+        </template>
+        <template v-else>
+          {{ totalTask.toLocaleString() }} Total Tasks
+        </template>
+      </span>
     </div>
 
     <!-- Action Button -->
     <div class="flex items-center gap-2 ml-auto">
+      <!-- Refresh Button -->
+      <button
+        @click="fetchData"
+        :disabled="isLoading"
+        class="p-2 border bg-white border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
+        title="Refresh Data"
+      >
+        <RefreshCw :size="18" :class="{ 'animate-spin': isLoading }" class="text-sub-text" />
+      </button>
+
       <!-- Add New -->
       <div class="relative inline-block add-dropdown">
         <button

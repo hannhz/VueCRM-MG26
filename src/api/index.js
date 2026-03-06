@@ -73,10 +73,23 @@ const httpPost = (url, data = {}, config = {}) => {
   });
 };
 
+const httpDelete = (url, config = {}) => {
+  return Api.request({
+    method: "delete",
+    url: "api" + devPath + url,
+    ...config,
+    headers: {
+      Authorization: "Bearer " + cookies.get("token"),
+      ...(config.headers || {}),
+    },
+  });
+};
+
 const api = {
   get: httpGet,
   getbydata: httpGetbydata,
   post: httpPost,
+  delete: httpDelete,
 };
 
 export default api;

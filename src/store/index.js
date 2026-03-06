@@ -10,6 +10,7 @@ import settingsModule from './modules/settings';
 import authModule from './modules/auth';
 import tabsModule from './modules/tabs';
 import settingsfeModule from './modules/settingsfe';
+import teamModule from './modules/team';
 
 export default createStore({
   modules: {
@@ -24,5 +25,6 @@ export default createStore({
     settings: settingsModule,
     tabs: tabsModule,
     settingsfe: settingsfeModule,
+    team: teamModule,
   }
 });

@@ -26,7 +26,11 @@ import {
 const store = useStore();
 
 // Pakai 'company' karena tadi kita daftarkan dengan nama itu di store/index.js
-const companies = computed(() => store.getters["company/allcompany"]);
+const companies = computed(() => store.getters["company/filteredCompanies"]);
+const searchQuery = computed({
+  get: () => store.state.company.searchQuery,
+  set: (value) => store.dispatch("company/setSearchQuery", value),
+});
 const isLoading = computed(() => store.getters["company/isLoading"]);
 const error = computed(() => store.getters["company/error"]);
 
@@ -106,6 +110,40 @@ const fetchData = () => {
     .catch((err) => {
       console.error("Failed to fetch companies:", err);
     });
+};
+
+// Delete selected companies
+const handleDeleteCompanies = async () => {
+  if (selectedIds.value.length === 0) {
+    alert("Please select at least one company to delete");
+    return;
+  }
+
+  const confirmDelete = confirm(
+    `Are you sure you want to delete ${selectedIds.value.length} company(ies)? This action cannot be undone.`
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    // Delete each selected company
+    for (const id of selectedIds.value) {
+      await store.dispatch("company/deletecompany", id);
+    }
+    // Clear selected IDs
+    selectedIds.value = [];
+    console.log("Companies deleted successfully");
+  } catch (error) {
+    console.error("Error deleting companies:", error);
+    const status = error?.response?.status;
+    const backendMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message;
+    alert(
+      `Failed to delete company. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Please try again."}`
+    );
+  }
 };
 </script>
 
@@ -231,6 +269,7 @@ const fetchData = () => {
 
         <!-- Delete -->
         <button
+          @click="handleDeleteCompanies"
           class="p-2 bg-white border border-red text-red rounded-lg hover:bg-red hover:text-white transition"
         >
           <Trash2 :size="18" />
@@ -250,6 +289,7 @@ const fetchData = () => {
         <!-- Search Input -->
         <div class="relative">
           <input
+            v-model="searchQuery"
             type="text"
             placeholder="Search by Name"
             class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
@@ -421,7 +461,7 @@ const fetchData = () => {
                   {{ company.type }}
               </td>
               <td class="px-6 py-4 text-sm text-dark-base">
-                {{ company.updatedAt }} / {{ company.createdAt }}
+                {{ company.updated_at }}
               </td>
               <td class="px-6 py-4 text-sm text-dark-base">
                 {{ company.company_owner }}

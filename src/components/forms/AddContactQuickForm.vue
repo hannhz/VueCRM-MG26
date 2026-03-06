@@ -200,7 +200,7 @@ const handleSubmit = () => {
               </div>
             </div>
 
-            <!-- Address & Country -->
+            <!-- Address & City -->
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2"
@@ -215,18 +215,18 @@ const handleSubmit = () => {
               </div>
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Country</label
+                  >City</label
                 >
                 <input
-                  v-model="formData.country"
+                  v-model="formData.city"
                   type="text"
-                  placeholder="Country"
+                  placeholder="City"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
                 />
               </div>
             </div>
 
-            <!-- Province & City -->
+            <!-- Province & Country -->
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2"
@@ -241,12 +241,12 @@ const handleSubmit = () => {
               </div>
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2"
-                  >City</label
+                  >Country</label
                 >
                 <input
-                  v-model="formData.city"
+                  v-model="formData.country"
                   type="text"
-                  placeholder="City"
+                  placeholder="Country"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
                 />
               </div>

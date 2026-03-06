@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import DealsCard from "./dealscard.vue";
 import DealsList from "./dealslist.vue";
@@ -15,6 +15,7 @@ import {
   FolderPlus,
   FilePlus,
   List,
+  RefreshCw,
 } from "lucide-vue-next";
 
 const store = useStore();
@@ -24,6 +25,12 @@ const activeMode = computed(() =>
   store.getters["deals/currentView"]
 );
 
+// Get total deals dynamically from Vuex store
+const totalDeals = computed(() => store.getters["deals/allDeals"]?.length || 0);
+const isLoading = computed(() => store.getters["deals/isLoading"]);
+const error = computed(() => store.getters["deals/error"]);
+const showDropdown = ref(false);
+
 function changeToCard() {
   store.dispatch("deals/setViewMode", "card");
 }
@@ -31,9 +38,6 @@ function changeToCard() {
 function changeToList() {
   store.dispatch("deals/setViewMode", "list");
 }
-
-const totalDeals = ref(18600);
-const showDropdown = ref(false);
 const selectedIds = ref([]);
 const showDownloadDropdown = ref(false);
 const showCreateDealForm = ref(false);
@@ -60,6 +64,22 @@ const handleDownload = () => {
   console.log("Download selected data:", selectedIds.value);
   showDownloadDropdown.value = false;
 };
+
+// Fetch data function untuk refresh
+const fetchData = () => {
+  store.dispatch("deals/fetchAllDeals")
+    .then(() => {
+      console.log("Deals fetched successfully");
+    })
+    .catch((err) => {
+      console.error("Failed to fetch deals:", err);
+    });
+};
+
+// Lifecycle: Fetch deals on mount
+onMounted(() => {
+  fetchData();
+});
 </script>
 
 <template>
@@ -68,12 +88,22 @@ const handleDownload = () => {
       <div class="flex items-baseline gap-3">
         <h1 class="text-2xl font-bold text-dark-base">Deals</h1>
         <span class="text-sm text-sub-text"
-          >{{ totalDeals.toLocaleString() }} Total Deals</span
-        >
+          >{{ totalDeals.toLocaleString() }} Total Deals</span>
       </div>
 
       <!-- Action Button -->
       <div class="flex items-center gap-2 ml-auto">
+
+        <!-- Refresh Button -->
+          <button
+            @click="fetchData"
+            :disabled="isLoading"
+            class="p-2 border bg-white border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
+            title="Refresh Data"
+          >
+            <RefreshCw :size="18" :class="{ 'animate-spin': isLoading }" class="text-sub-text" />
+          </button>
+
         <!-- Add New -->
         <div class="relative inline-block add-dropdown">
           <button
