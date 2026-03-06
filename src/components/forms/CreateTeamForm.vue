@@ -194,7 +194,7 @@ onBeforeUnmount(() => {
 
             <div
               @click="isParentDropdownOpen = !isParentDropdownOpen"
-              class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-[42px] bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
+              class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-10.5 bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
             >
               <div v-if="!formData.parentTeam" class="text-gray-400 text-sm">
                 Search and select parent team
@@ -269,7 +269,7 @@ onBeforeUnmount(() => {
 
             <div
               @click="isDropdownOpen = !isDropdownOpen"
-              class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-[42px] bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
+              class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-10.5 bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
             >
               <div
                 v-if="formData.selectedMembers.length === 0"

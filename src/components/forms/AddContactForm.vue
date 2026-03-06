@@ -468,7 +468,7 @@ export default {
             type="submit"
             form="addContactForm"
             :disabled="isLoading"
-            class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium flex items-center gap-2 min-w-[100px] justify-center"
+            class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium flex items-center gap-2 min-w-25 justify-center"
           >
             <Loader2 v-if="isLoading" :size="16" class="animate-spin" />
             <span>{{ isLoading ? "Saving..." : "Next" }}</span>

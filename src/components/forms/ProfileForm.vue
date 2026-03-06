@@ -211,7 +211,7 @@ export default {
   <Transition name="overlay">
     <div
       v-if="isOpen"
-      class="fixed inset-0 bg-sub-text/80 z-[60] transition-all duration-300"
+      class="fixed inset-0 bg-sub-text/80 z-60 transition-all duration-300"
       @click="handleClose"
     ></div>
   </Transition>
@@ -220,7 +220,7 @@ export default {
   <Transition name="slide">
     <div
       v-if="isOpen"
-      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[70] flex flex-col"
+      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-70 flex flex-col"
       @click.stop
     >
       <!-- Header -->
