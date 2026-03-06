@@ -368,43 +368,35 @@ const handleBulkAdd = () => {
 
             <!-- Sample rows - will be populated with actual data -->
             <tr
-              v-for="contact in companies"
-              :key="contact.id"
+              v-for="company in companies"
+              :key="company.id"
               class="border-b border-gray-100 hover:bg-gray-50 transition"
             >
               <td class="px-6 py-4">
                 <input
                   type="checkbox"
-                  :value="contact.id"
+                  :value="company.id"
                   v-model="selectedIds"
                   class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
                 />
               </td>
               <td class="px-6 py-4 text-sm text-gray-800 font-medium">
-                {{ contact.name }}
+                {{ company.company_name }}
               </td>
               <td class="px-6 py-4 text-sm text-dark-base">
-                {{ contact.email }}
+                {{ company.website }}
               </td>
               <td class="px-6 py-4 text-sm text-dark-base">
-                {{ contact.company }}
+                {{ company.email }}
               </td>
               <td class="px-6 py-4">
-                <span
-                  class="px-3 py-1 rounded-full text-xs font-medium"
-                  :class="{
-                    'bg-green-100 text-green-700': contact.status === 'Active',
-                    'bg-gray-100 text-gray-700': contact.status === 'Inactive',
-                  }"
-                >
-                  {{ contact.status }}
-                </span>
+                  {{ company.type }}
               </td>
               <td class="px-6 py-4 text-sm text-dark-base">
-                {{ contact.updatedAt }}
+                {{ company.updatedAt }} / {{ company.createdAt }}
               </td>
               <td class="px-6 py-4 text-sm text-dark-base">
-                {{ contact.owner }}
+                {{ company.company_owner }}
               </td>
             </tr>
           </tbody>
