@@ -36,7 +36,7 @@ const getters = {
         company.name?.toLowerCase().includes(query) ||
         company.email?.toLowerCase().includes(query) ||
         company.phone?.toLowerCase().includes(query) ||
-        company.country?.toLowerCase().includes(query)
+        company.country?.toLowerCase().includes(query),
     );
   },
 };
@@ -63,13 +63,13 @@ const actions = {
     promise
       .then((data) => {
         commit("setcompany", data.companies || data);
-        commit('SET_LOADING', false);
+        commit("SET_LOADING", false);
       })
       .catch((error) => {
         // Tangani error lain jika ada
         console.error("Error:", error);
-        commit('SET_ERROR', error.message);
-        commit('SET_LOADING', false);
+        commit("SET_ERROR", error.message);
+        commit("SET_LOADING", false);
       });
 
     return promise;

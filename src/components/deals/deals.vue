@@ -21,9 +21,7 @@ import {
 const store = useStore();
 
 /* 🔥 GANTI activeMode dengan Vuex */
-const activeMode = computed(() =>
-  store.getters["deals/currentView"]
-);
+const activeMode = computed(() => store.getters["deals/currentView"]);
 
 // Get total deals dynamically from Vuex store
 const totalDeals = computed(() => store.getters["deals/allDeals"]?.length || 0);
@@ -67,7 +65,8 @@ const handleDownload = () => {
 
 // Fetch data function untuk refresh
 const fetchData = () => {
-  store.dispatch("deals/fetchAllDeals")
+  store
+    .dispatch("deals/fetchAllDeals")
     .then(() => {
       console.log("Deals fetched successfully");
     })
@@ -88,21 +87,25 @@ onMounted(() => {
       <div class="flex items-baseline gap-3">
         <h1 class="text-2xl font-bold text-dark-base">Deals</h1>
         <span class="text-sm text-sub-text"
-          >{{ totalDeals.toLocaleString() }} Total Deals</span>
+          >{{ totalDeals.toLocaleString() }} Total Deals</span
+        >
       </div>
 
       <!-- Action Button -->
       <div class="flex items-center gap-2 ml-auto">
-
         <!-- Refresh Button -->
-          <button
-            @click="fetchData"
-            :disabled="isLoading"
-            class="p-2 border bg-white border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
-            title="Refresh Data"
-          >
-            <RefreshCw :size="18" :class="{ 'animate-spin': isLoading }" class="text-sub-text" />
-          </button>
+        <button
+          @click="fetchData"
+          :disabled="isLoading"
+          class="p-2 border bg-white border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
+          title="Refresh Data"
+        >
+          <RefreshCw
+            :size="18"
+            :class="{ 'animate-spin': isLoading }"
+            class="text-sub-text"
+          />
+        </button>
 
         <!-- Add New -->
         <div class="relative inline-block add-dropdown">

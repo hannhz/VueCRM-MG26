@@ -92,7 +92,8 @@ const handleChangeStage = async (deal, newStage) => {
 const stageColor = (stage) => {
   if (stage === "new") return "bg-slate-100 text-slate-700";
   if (stage === "qualified") return "bg-green-100 text-green-700";
-  if (stage === "advanced" || stage === "payment") return "bg-yellow-100 text-yellow-700";
+  if (stage === "advanced" || stage === "payment")
+    return "bg-yellow-100 text-yellow-700";
   if (stage === "won") return "bg-emerald-100 text-emerald-700";
   if (stage === "lost") return "bg-red-100 text-red-700";
   return "bg-slate-100 text-slate-700";
@@ -120,13 +121,15 @@ watch(
   (newDeals) => {
     deals.value = newDeals;
   },
-  { immediate: true }
+  { immediate: true },
 );
 </script>
 <style scoped>
 .stage-dropdown-enter-active,
 .stage-dropdown-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
 .stage-dropdown-enter-from {
@@ -440,19 +443,26 @@ watch(
                   <!-- Stage Button -->
                   <button
                     type="button"
-                    @click="openStageDropdown.value = openStageDropdown.value === deal.id ? null : deal.id"
+                    @click="
+                      openStageDropdown.value =
+                        openStageDropdown.value === deal.id ? null : deal.id
+                    "
                     :disabled="isSyncingStage && updatingDealId === deal.id"
                     class="w-full px-3 py-1.5 rounded-md text-xs font-medium inline-flex items-center justify-between gap-2 border border-gray-200 transition hover:border-gray-300 disabled:opacity-60 disabled:cursor-not-allowed"
                     :class="[
                       stageColor(deal.stage),
-                      openStageDropdown.value === deal.id ? 'ring-1 ring-sub-text border-sub-text' : '',
+                      openStageDropdown.value === deal.id
+                        ? 'ring-1 ring-sub-text border-sub-text'
+                        : '',
                     ]"
                   >
                     <span class="capitalize">{{ deal.stage }}</span>
                     <ChevronDown
                       :size="14"
                       class="transition-transform"
-                      :class="openStageDropdown.value === deal.id ? 'rotate-180' : ''"
+                      :class="
+                        openStageDropdown.value === deal.id ? 'rotate-180' : ''
+                      "
                     />
                   </button>
 
@@ -477,9 +487,15 @@ watch(
                           v-for="opt in stageOptions"
                           :key="opt.value"
                           @click="handleChangeStage(deal, opt.value)"
-                          :disabled="isSyncingStage && updatingDealId === deal.id"
+                          :disabled="
+                            isSyncingStage && updatingDealId === deal.id
+                          "
                           class="w-full text-left px-4 py-2 text-sm transition hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                          :class="deal.stage === opt.value ? 'font-semibold bg-gray-50 text-sub-text' : 'text-gray-700'"
+                          :class="
+                            deal.stage === opt.value
+                              ? 'font-semibold bg-gray-50 text-sub-text'
+                              : 'text-gray-700'
+                          "
                         >
                           <span
                             v-if="deal.stage === opt.value"

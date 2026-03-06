@@ -48,13 +48,13 @@ const actions = {
     promise
       .then((data) => {
         commit("setusers", data.users);
-        commit('SET_LOADING', false);
+        commit("SET_LOADING", false);
       })
       .catch((error) => {
         // Tangani error lain jika ada
         console.error("Error:", error);
-        commit('SET_ERROR', error.message);
-        commit('SET_LOADING', false);
+        commit("SET_ERROR", error.message);
+        commit("SET_LOADING", false);
       });
 
     return promise;

@@ -105,7 +105,6 @@ function prevPage() {
 }
 </script> -->
 
-
 <script>
 import {
   RefreshCcw,
@@ -187,9 +186,7 @@ export default {
       get() {
         return (
           this.currentUser.length > 0 &&
-          this.currentUser.every((user) =>
-            this.selectedIds.includes(user.id)
-          )
+          this.currentUser.every((user) => this.selectedIds.includes(user.id))
         );
       },
       set(val) {
@@ -302,7 +299,11 @@ export default {
             class="p-2 border border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
             title="Refresh Data"
           >
-            <RefreshCcw :size="18" :class="{ 'animate-spin': isLoadingTable }" class="text-sub-text" />
+            <RefreshCcw
+              :size="18"
+              :class="{ 'animate-spin': isLoadingTable }"
+              class="text-sub-text"
+            />
           </button>
 
           <!-- Add New -->
@@ -444,17 +445,21 @@ export default {
             </td>
             <td class="px-6 py-4 text-sm text-gray-800 font-medium">
               <div class="text-sm font-medium text-gray-800">
-                {{ user.firstname ? `${user.firstname} ${user.lastname || ''}` : (user.name || 'Unknown User') }}
+                {{
+                  user.firstname
+                    ? `${user.firstname} ${user.lastname || ""}`
+                    : user.name || "Unknown User"
+                }}
               </div>
               <div class="text-xs text-gray-400">
                 {{ user.email }}
               </div>
             </td>
             <td class="px-6 py-4 text-sm text-dark-base">
-              {{ user.primaryteam || user.team || '-' }}
+              {{ user.primaryteam || user.team || "-" }}
             </td>
             <td class="px-6 py-4 text-sm text-dark-base">
-              {{ user.last_active || user.lastactv || user.updated_at || '-' }}
+              {{ user.last_active || user.lastactv || user.updated_at || "-" }}
             </td>
             <td class="px-6 py-4 text-sm text-dark-base font-medium">
               {{ user.role }}

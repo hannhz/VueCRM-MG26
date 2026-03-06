@@ -80,7 +80,8 @@ function toggleSelect(id) {
 
 // Lifecycle: Fetch tasks on mount
 onMounted(() => {
-  store.dispatch("tasks/fetchAllTasks")
+  store
+    .dispatch("tasks/fetchAllTasks")
     .then(() => {
       console.log("Tasks fetched successfully");
     })
@@ -200,7 +201,10 @@ onMounted(() => {
     <!-- Table -->
     <div class="overflow-hidden relative">
       <!-- Loading Overlay -->
-      <div v-if="isLoading" class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center">
+      <div
+        v-if="isLoading"
+        class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center"
+      >
         <div class="flex flex-col items-center gap-3">
           <RefreshCw class="animate-spin text-blue-950" :size="32" />
           <p class="text-sm text-sub-text font-medium">Loading tasks...</p>

@@ -13,7 +13,7 @@ const connectExchange = async () => {
   }
 
   exchangeStatus.value = "connecting";
-  
+
   try {
     // Simulate API call - replace with actual endpoint
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -33,7 +33,7 @@ const connectGmail = async () => {
   }
 
   gmailStatus.value = "connecting";
-  
+
   try {
     // Simulate API call - replace with actual endpoint
     await new Promise((resolve) => setTimeout(resolve, 1500));

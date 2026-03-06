@@ -107,7 +107,7 @@ const customformat = {
       let nametabss = nametabs.filter(
         (ta) =>
           ta !==
-          this.$router.getRoutes().find((r) => r.path === tab.pathfile).name
+          this.$router.getRoutes().find((r) => r.path === tab.pathfile).name,
       );
       localStorage.setItem("openTabs", JSON.stringify(tabss));
       localStorage.setItem("opennameTabs", JSON.stringify(nametabss));
@@ -132,7 +132,7 @@ const customformat = {
           this.selectedflmenu(tab.pathfile);
         } else {
           const dashboardMenu = this.getlayoutmenuweb.dbmenu2.find((item) =>
-            item.CAPTION.toLowerCase().includes("dashboard")
+            item.CAPTION.toLowerCase().includes("dashboard"),
           );
 
           if (dashboardMenu) {
@@ -159,19 +159,19 @@ const customformat = {
 
     selectedflmenu(path) {
       const hasil = this.getlayoutmenuweb.dbmenu2.filter(
-        (item) => item.pathfile == path
+        (item) => item.pathfile == path,
       );
       this.selectedtabsflmenu = hasil[0];
       localStorage.setItem(
         "selectedTabflmenu",
-        JSON.stringify(this.selectedtabsflmenu)
+        JSON.stringify(this.selectedtabsflmenu),
       );
     },
 
     tabcaptions() {
       const paths = Array.from(this.tabs);
       const hasil = this.getlayoutmenuweb.dbmenu2.filter((item) =>
-        paths.includes(item.pathfile)
+        paths.includes(item.pathfile),
       );
       this.tabsflmenu = hasil;
       let captions = hasil.map((tab) => tab.CAPTION);
@@ -552,7 +552,7 @@ const customformat = {
       };
 
       let lebihDariSatu = Object.keys(countByKey(e, keye)).filter(
-        (key) => countByKey(e, keye)[key] >= 1
+        (key) => countByKey(e, keye)[key] >= 1,
       );
       return lebihDariSatu;
     },
@@ -568,14 +568,14 @@ const customformat = {
       };
 
       let lebihDariSatu = Object.keys(countByKey(e, "kodecabang")).filter(
-        (key) => countByKey(e, "kodecabang")[key] >= 1
+        (key) => countByKey(e, "kodecabang")[key] >= 1,
       );
 
       lebihDariSatu.forEach((cabang) => {
         let filterdata = e.filter((item) => item.kodecabang === cabang);
 
         let lebihDariSatu2 = Object.keys(
-          countByKey(filterdata, "kategori")
+          countByKey(filterdata, "kategori"),
         ).filter((key) => countByKey(filterdata, "kategori")[key] >= 1);
 
         let todat = {};
@@ -594,14 +594,14 @@ const customformat = {
 
     databypt(e) {
       let filterdata = e.filter((item) =>
-        [1, 2, 3, 4, 5].includes(parseInt(item.kodecabang))
+        [1, 2, 3, 4, 5].includes(parseInt(item.kodecabang)),
       );
       return filterdata;
     },
 
     databycabang(e) {
       let filterdata = e.filter(
-        (item) => ![1, 2, 3, 4, 5].includes(parseInt(item.kodecabang))
+        (item) => ![1, 2, 3, 4, 5].includes(parseInt(item.kodecabang)),
       );
       return filterdata;
     },
@@ -652,7 +652,6 @@ const customformat = {
       return allPaths;
     },
   },
-  
 };
 
 export default customformat;

@@ -47,7 +47,7 @@ const getters = {
   getlayoutwebl0: (state) => {
     if (state.layoutweb && state.layoutweb.dbmenu2) {
       return state.layoutweb.dbmenu2.filter(
-        (item) => item.L0 === "0" && item.HASACCESS === "1"
+        (item) => item.L0 === "0" && item.HASACCESS === "1",
       );
     }
     return [];
@@ -58,7 +58,7 @@ const getters = {
     if (state.layoutweb && state.layoutweb.dbmenu2) {
       const parentL1s = getters.getlayoutwebl0.map((item) => item.L1);
       return state.layoutweb.dbmenu2.filter(
-        (item) => parentL1s.includes(item.Parent) && item.HASACCESS === "1"
+        (item) => parentL1s.includes(item.Parent) && item.HASACCESS === "1",
       );
     }
     return [];
@@ -68,11 +68,11 @@ const getters = {
   getlayoutwebl2: (state, getters) => {
     if (state.layoutweb && state.layoutweb.dbmenu2) {
       const parentL2s = getters.getlayoutwebl1.filter(
-        (item) => item.ACCESS === "0"
+        (item) => item.ACCESS === "0",
       );
       const parentL2ss = parentL2s.map((item) => item.L1);
       return state.layoutweb.dbmenu2.filter(
-        (item) => parentL2ss.includes(item.Parent) && item.HASACCESS === "1"
+        (item) => parentL2ss.includes(item.Parent) && item.HASACCESS === "1",
       );
     }
     return [];
@@ -80,7 +80,7 @@ const getters = {
 
   getparentL1s: (state, getters) => {
     const parentL2s = getters.getlayoutwebl1.filter(
-      (item) => item.ACCESS === "0"
+      (item) => item.ACCESS === "0",
     );
     const parentL2ss = parentL2s.map((item) => item.L1);
     return parentL2ss;
@@ -90,7 +90,7 @@ const getters = {
   getMenuByLevel: (state) => (level) => {
     if (state.layoutweb && state.layoutweb.dbmenu2) {
       return state.layoutweb.dbmenu2.filter(
-        (item) => item.L0 === level.toString() && item.HASACCESS === "1"
+        (item) => item.L0 === level.toString() && item.HASACCESS === "1",
       );
     }
     return [];
@@ -99,7 +99,7 @@ const getters = {
   getMenuByParent: (state) => (parentId) => {
     if (state.layoutweb && state.layoutweb.dbmenu2) {
       return state.layoutweb.dbmenu2.filter(
-        (item) => item.Parent === parentId && item.HASACCESS === "1"
+        (item) => item.Parent === parentId && item.HASACCESS === "1",
       );
     }
     return [];
@@ -110,7 +110,7 @@ const getters = {
     if (state.layoutweb && state.layoutweb.dbmenu2) {
       return state.layoutweb.dbmenu2.filter(
         (item) =>
-          item.pathfile && item.pathfile !== "" && item.HASACCESS === "1"
+          item.pathfile && item.pathfile !== "" && item.HASACCESS === "1",
       );
     }
     return [];
@@ -128,8 +128,12 @@ const actions = {
       // Real implementation would fetch from server
       const data = {
         dbmenu2: [
-          { pathfile: "/crmAdmin", pathfiledefault: "/crmAdmin", label: "Dashboard" }
-        ]
+          {
+            pathfile: "/crmAdmin",
+            pathfiledefault: "/crmAdmin",
+            label: "Dashboard",
+          },
+        ],
       };
       commit("SET_LAYOUT", data);
       return data;
@@ -322,8 +326,6 @@ export default {
   actions,
   mutations,
 };
-
-
 
 // export default {
 //     namespaced: true,

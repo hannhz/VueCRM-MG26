@@ -106,16 +106,16 @@ const handleSubmit = async () => {
     // Jika berhasil
     console.log("Company berhasil ditambahkan:", response);
     alertService.success("Company berhasil ditambahkan!");
-    
+
     emit("submit", formData.value);
     handleClose();
   } catch (error) {
     // Jika error
     console.error("Error saat menambah company:", error);
     alertService.error(
-      error.response?.data?.message || 
-      error.message || 
-      "Gagal menambah company. Silakan coba lagi."
+      error.response?.data?.message ||
+        error.message ||
+        "Gagal menambah company. Silakan coba lagi.",
     );
   } finally {
     isSubmitting.value = false;
@@ -308,7 +308,7 @@ const handleReset = () => {
             </div>
           </div>
 
-<!-- Province & Country -->
+          <!-- Province & Country -->
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2"
@@ -510,9 +510,7 @@ const handleReset = () => {
               ></span>
               <span>Saving...</span>
             </template>
-            <template v-else>
-              Next
-            </template>
+            <template v-else> Next </template>
           </button>
         </div>
       </div>

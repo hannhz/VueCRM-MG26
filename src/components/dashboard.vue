@@ -23,22 +23,16 @@ export default {
     TasksKPI,
     TaskList,
     TopslsPeople,
-    RefreshCcw
+    RefreshCcw,
   },
 
   computed: {
     message() {
       return this.$store.state.message;
-    }
-  }
+    },
+  },
 };
 </script>
-
-
-
-
-
-
 
 <template>
   <!-- Header with Title and Total -->
@@ -60,7 +54,7 @@ export default {
 
   <!-- Summary Cards -->
   <!-- contact Summary Card -->
-   <div>{{ message }}</div>
+  <div>{{ message }}</div>
   <Summary></Summary>
 
   <!-- Deals and Activity -->

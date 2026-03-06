@@ -26,7 +26,6 @@ import store from "@/store";
 import { useCookies } from "vue3-cookies";
 const { cookies } = useCookies();
 
-
 const routes = [
   {
     path: "/",
@@ -154,7 +153,6 @@ const routes = [
     ],
   },
 ];
-
 
 const router = createRouter({
   history: createWebHistory(),

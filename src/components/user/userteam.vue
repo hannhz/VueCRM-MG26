@@ -86,11 +86,13 @@ const handleCreateTeamSubmit = async (data) => {
 
     const createResult = await store.dispatch("team/createTeam", createPayload);
     const createdTeamId =
-      createResult?.team?.id ||
-      createResult?.data?.id ||
-      createResult?.id;
+      createResult?.team?.id || createResult?.data?.id || createResult?.id;
 
-    if (createdTeamId && Array.isArray(data.selectedMembers) && data.selectedMembers.length) {
+    if (
+      createdTeamId &&
+      Array.isArray(data.selectedMembers) &&
+      data.selectedMembers.length
+    ) {
       const addUsersPayload = {
         team_id: createdTeamId,
         user_ids: data.selectedMembers.map((member) => member.id),
@@ -165,7 +167,11 @@ onMounted(() => {
             class="p-2 border border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
             title="Refresh Data"
           >
-            <RefreshCw :size="18" :class="{ 'animate-spin': isLoading }" class="text-sub-text" />
+            <RefreshCw
+              :size="18"
+              :class="{ 'animate-spin': isLoading }"
+              class="text-sub-text"
+            />
           </button>
           <!-- Add New -->
           <div class="relative inline-block add-dropdown">

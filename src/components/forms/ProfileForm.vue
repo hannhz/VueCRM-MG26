@@ -150,9 +150,7 @@ export default {
               this.usersignin?.primary_team ||
               "",
             secondaryteam:
-              userRecord.secondaryteam ||
-              this.usersignin?.secondaryteam ||
-              "",
+              userRecord.secondaryteam || this.usersignin?.secondaryteam || "",
             stafflevel:
               userRecord.stafflevel ||
               this.usersignin?.stafflevel ||
@@ -241,18 +239,33 @@ export default {
       <!-- Form Content (Scrollable) -->
       <div class="flex-1 overflow-y-auto relative">
         <!-- Loading State -->
-        <div v-if="isLoading" class="absolute inset-0 bg-white/50 z-20 flex items-center justify-center">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-950"></div>
+        <div
+          v-if="isLoading"
+          class="absolute inset-0 bg-white/50 z-20 flex items-center justify-center"
+        >
+          <div
+            class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-950"
+          ></div>
         </div>
 
-        <form @submit.prevent="handleSubmit" id="profileForm" class="p-6 space-y-6">
+        <form
+          @submit.prevent="handleSubmit"
+          id="profileForm"
+          class="p-6 space-y-6"
+        >
           <!-- Error Message -->
-          <div v-if="errorMsg" class="p-3 bg-red-50 text-red-600 text-xs rounded-lg border border-red-100 italic">
+          <div
+            v-if="errorMsg"
+            class="p-3 bg-red-50 text-red-600 text-xs rounded-lg border border-red-100 italic"
+          >
             {{ errorMsg }}
           </div>
-          
+
           <!-- Success Message -->
-          <div v-if="successMsg" class="p-3 bg-green-50 text-green-600 text-xs rounded-lg border border-green-100 font-medium">
+          <div
+            v-if="successMsg"
+            class="p-3 bg-green-50 text-green-600 text-xs rounded-lg border border-green-100 font-medium"
+          >
             {{ successMsg }}
           </div>
 
@@ -324,7 +337,10 @@ export default {
                 placeholder="youremail@gmail.com"
                 :disabled="!isAdmin"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm transition-all shadow-sm"
-                :class="{ 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200': !isAdmin }"
+                :class="{
+                  'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200':
+                    !isAdmin,
+                }"
                 required
               />
             </div>
@@ -353,9 +369,10 @@ export default {
                   v-model="formData.primaryteam"
                   :disabled="!isAdmin"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm transition-all shadow-sm appearance-none"
-                  :class="{ 
-                    'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200': !isAdmin,
-                    'text-dark-base bg-white pr-10 cursor-pointer': isAdmin 
+                  :class="{
+                    'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200':
+                      !isAdmin,
+                    'text-dark-base bg-white pr-10 cursor-pointer': isAdmin,
                   }"
                   required
                 >
@@ -383,9 +400,10 @@ export default {
                   v-model="formData.secondaryteam"
                   :disabled="!isAdmin"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm transition-all shadow-sm appearance-none"
-                  :class="{ 
-                    'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200': !isAdmin,
-                    'text-dark-base bg-white pr-10 cursor-pointer': isAdmin 
+                  :class="{
+                    'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200':
+                      !isAdmin,
+                    'text-dark-base bg-white pr-10 cursor-pointer': isAdmin,
                   }"
                 >
                   <option
@@ -416,9 +434,10 @@ export default {
                   v-model="formData.stafflevel"
                   :disabled="!isAdmin"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm transition-all shadow-sm appearance-none"
-                  :class="{ 
-                    'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200': !isAdmin,
-                    'text-dark-base bg-white pr-10 cursor-pointer': isAdmin 
+                  :class="{
+                    'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200':
+                      !isAdmin,
+                    'text-dark-base bg-white pr-10 cursor-pointer': isAdmin,
                   }"
                   required
                 >
@@ -446,9 +465,10 @@ export default {
                   v-model="formData.role"
                   :disabled="!isAdmin"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm transition-all shadow-sm appearance-none"
-                  :class="{ 
-                    'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200': !isAdmin,
-                    'text-dark-base bg-white pr-10 cursor-pointer': isAdmin 
+                  :class="{
+                    'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200':
+                      !isAdmin,
+                    'text-dark-base bg-white pr-10 cursor-pointer': isAdmin,
                   }"
                   required
                 >
@@ -496,8 +516,11 @@ export default {
             :disabled="isSaving"
             class="px-8 py-2 bg-blue-950 text-white rounded-lg hover:bg-opacity-90 transition-all text-sm font-semibold shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            <div v-if="isSaving" class="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-            {{ isSaving ? 'Saving...' : 'Save Changes' }}
+            <div
+              v-if="isSaving"
+              class="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"
+            ></div>
+            {{ isSaving ? "Saving..." : "Save Changes" }}
           </button>
         </div>
       </div>
@@ -532,7 +555,8 @@ export default {
 }
 
 /* Chrome/Safari focus fix */
-input:focus, select:focus {
+input:focus,
+select:focus {
   border-color: #1e3a8a !important; /* blue-950 */
 }
 </style>

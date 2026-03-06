@@ -103,7 +103,8 @@ const handleBulkAdd = () => {
 
 // Fetch data function untuk refresh
 const fetchData = () => {
-  store.dispatch("company/fetchAllcompany")
+  store
+    .dispatch("company/fetchAllcompany")
     .then(() => {
       console.log("Companies fetched successfully");
     })
@@ -120,7 +121,7 @@ const handleDeleteCompanies = async () => {
   }
 
   const confirmDelete = confirm(
-    `Are you sure you want to delete ${selectedIds.value.length} company(ies)? This action cannot be undone.`
+    `Are you sure you want to delete ${selectedIds.value.length} company(ies)? This action cannot be undone.`,
   );
 
   if (!confirmDelete) return;
@@ -141,7 +142,7 @@ const handleDeleteCompanies = async () => {
       error?.response?.data?.error ||
       error?.message;
     alert(
-      `Failed to delete company. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Please try again."}`
+      `Failed to delete company. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Please try again."}`,
     );
   }
 };
@@ -155,9 +156,7 @@ const handleDeleteCompanies = async () => {
       <div class="flex items-baseline gap-3">
         <h1 class="text-2xl font-bold text-dark-base">Companies</h1>
         <span class="text-sm text-sub-text">
-          <template v-if="isLoading">
-            Searching company...
-          </template>
+          <template v-if="isLoading"> Searching company... </template>
           <template v-else>
             {{ totalCompanies.toLocaleString() }} Total Companies
           </template>
@@ -167,14 +166,18 @@ const handleDeleteCompanies = async () => {
       <!-- Right Section: Action Buttons -->
       <div class="flex items-center gap-2">
         <!-- Refresh Button -->
-          <button
-            @click="fetchData"
-            :disabled="isLoading"
-            class="p-2 border border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
-            title="Refresh Data"
-          >
-            <RefreshCw :size="18" :class="{ 'animate-spin': isLoading }" class="text-sub-text" />
-          </button>
+        <button
+          @click="fetchData"
+          :disabled="isLoading"
+          class="p-2 border border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
+          title="Refresh Data"
+        >
+          <RefreshCw
+            :size="18"
+            :class="{ 'animate-spin': isLoading }"
+            class="text-sub-text"
+          />
+        </button>
         <!-- Add New -->
         <div class="relative inline-block add-dropdown">
           <button
@@ -348,7 +351,10 @@ const handleDeleteCompanies = async () => {
     <!-- Table -->
     <div class="overflow-hidden relative">
       <!-- Loading Overlay -->
-      <div v-if="isLoading" class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center">
+      <div
+        v-if="isLoading"
+        class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center"
+      >
         <div class="flex flex-col items-center gap-3">
           <RefreshCw class="animate-spin text-blue-950" :size="32" />
           <p class="text-sm text-sub-text font-medium">Loading companies...</p>
@@ -458,7 +464,7 @@ const handleDeleteCompanies = async () => {
                 {{ company.email }}
               </td>
               <td class="px-6 py-4">
-                  {{ company.type }}
+                {{ company.type }}
               </td>
               <td class="px-6 py-4 text-sm text-dark-base">
                 {{ company.updated_at }}

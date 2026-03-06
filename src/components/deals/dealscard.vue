@@ -7,7 +7,9 @@ import { ChevronDown, Search, Filter } from "lucide-vue-next";
 const store = useStore();
 
 // Access sidebar state from Vuex
-const isSidebarCollapsed = computed(() => store.getters['settingsfe/isSidebarCollapsed']);
+const isSidebarCollapsed = computed(
+  () => store.getters["settingsfe/isSidebarCollapsed"],
+);
 
 // Data Mata Uang
 const currencies = ["IDR", "USD", "SGD", "EUR"];
@@ -117,7 +119,11 @@ const normalizeDeal = (deal) => ({
   name: deal.name || deal.dealName || deal.deal_name || "Untitled Deal",
   stage: normalizeStage(deal.stage || deal.pipeline),
   jumlah: deal.jumlah || deal.amount || "-",
-  tertanggal: deal.tertanggal || deal.expectedCloseDate || deal.expected_close_date || "-",
+  tertanggal:
+    deal.tertanggal ||
+    deal.expectedCloseDate ||
+    deal.expected_close_date ||
+    "-",
   contact: deal.contact || deal.contact_name || "-",
   company: deal.company || deal.company_name || "-",
   updatedAt: deal.updatedAt || deal.updated_at || "-",
@@ -219,7 +225,7 @@ onBeforeUnmount(() => {
   <div
     :class="[
       'bg-white rounded-lg shadow-sm h-147 border border-outline flex flex-col overflow-hidden',
-      isSidebarCollapsed ? 'max-w-352' : 'max-w-310'
+      isSidebarCollapsed ? 'max-w-352' : 'max-w-310',
     ]"
   >
     <!-- Action Bar -->
@@ -227,8 +233,6 @@ onBeforeUnmount(() => {
       <div class="flex items-center gap-4 w-full">
         <!-- LEFT -->
         <div class="flex items-center gap-3 flex-1 min-w-0">
-          
-          
           <!-- Filter -->
           <button
             class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"

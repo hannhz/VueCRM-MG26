@@ -125,7 +125,6 @@ const actions = {
           cookies.set("loggedIn", "true", "10h");
           localStorage.setItem("token", res.data.token);
           localStorage.setItem("loggedIn", "true");
-          
 
           // Ambil data user yang login
           return context.dispatch("users/getusersignin", null, { root: true });
@@ -282,11 +281,6 @@ export default {
   actions,
   mutations,
 };
-
-
-
-
-
 
 // import api from "@/api";
 

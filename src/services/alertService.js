@@ -6,22 +6,22 @@ const buttonColors = {
 };
 
 export const alertServicenew = {
-    success(message, title = "Success") {
-        alert(`${title}: ${message}`);
-        return Promise.resolve();
-    },
-    error(message, title = "Error") {
-        alert(`${title}: ${message}`);
-        return Promise.resolve();
-    },
-    info(message, title = "Info") {
-        alert(`${title}: ${message}`);
-        return Promise.resolve();
-    },
-    confirm(message, title = "Confirm") {
-        const result = confirm(`${title}: ${message}`);
-        return Promise.resolve(result);
-    },
+  success(message, title = "Success") {
+    alert(`${title}: ${message}`);
+    return Promise.resolve();
+  },
+  error(message, title = "Error") {
+    alert(`${title}: ${message}`);
+    return Promise.resolve();
+  },
+  info(message, title = "Info") {
+    alert(`${title}: ${message}`);
+    return Promise.resolve();
+  },
+  confirm(message, title = "Confirm") {
+    const result = confirm(`${title}: ${message}`);
+    return Promise.resolve(result);
+  },
 };
 
 export const alertService = {
@@ -41,30 +41,29 @@ export const alertService = {
   },
 
   error(message, title = "Error") {
-  return Swal.fire({
-    title,
-    html: message,
-    icon: "error",
-    allowOutsideClick: false,
-    allowEscapeKey: true,
-    showConfirmButton: true,   
-    showCancelButton: false,   
-    confirmButtonColor: buttonColors.confirm,
-    confirmButtonText: "OK",
-    customClass: {
-      popup: "animated-popup",
-      confirmButton: "animated-button",
-    },
-    didOpen: setupButtonAnimations,
-    willOpen: () => {
-      const cancelBtn = document.querySelector(".swal2-cancel");
-      if (cancelBtn) {
-        cancelBtn.remove();
-      }
-    },
-  });
-},
-
+    return Swal.fire({
+      title,
+      html: message,
+      icon: "error",
+      allowOutsideClick: false,
+      allowEscapeKey: true,
+      showConfirmButton: true,
+      showCancelButton: false,
+      confirmButtonColor: buttonColors.confirm,
+      confirmButtonText: "OK",
+      customClass: {
+        popup: "animated-popup",
+        confirmButton: "animated-button",
+      },
+      didOpen: setupButtonAnimations,
+      willOpen: () => {
+        const cancelBtn = document.querySelector(".swal2-cancel");
+        if (cancelBtn) {
+          cancelBtn.remove();
+        }
+      },
+    });
+  },
 
   confirm(message, title = "Konfirmasi", options = {}) {
     return Swal.fire({
@@ -102,7 +101,7 @@ export const alertService = {
           cancelButton: "animated-button",
         },
         didOpen: setupButtonAnimations,
-      }
+      },
     );
   },
 
@@ -250,25 +249,24 @@ export const alertService = {
   },
 
   formWarning(fields, timer = 2000) {
-  const fieldList = Array.isArray(fields) ? fields : [fields];
-  const fieldNames = fieldList.join(", ");
-  const message = `Form ${fieldNames} masih kosong!`;
+    const fieldList = Array.isArray(fields) ? fields : [fields];
+    const fieldNames = fieldList.join(", ");
+    const message = `Form ${fieldNames} masih kosong!`;
 
-  return Swal.fire({
-    icon: "warning",
-    title: "Peringatan",
-    text: message,
-    timer, 
-    showConfirmButton: false, 
-    allowOutsideClick: false,
-    allowEscapeKey: true,
-    customClass: {
-      popup: "animated-popup",
-    },
-    didOpen: setupButtonAnimations,
-  });
-},
-
+    return Swal.fire({
+      icon: "warning",
+      title: "Peringatan",
+      text: message,
+      timer,
+      showConfirmButton: false,
+      allowOutsideClick: false,
+      allowEscapeKey: true,
+      customClass: {
+        popup: "animated-popup",
+      },
+      didOpen: setupButtonAnimations,
+    });
+  },
 
   perkiraanSuccess(action = "disimpan") {
     return this.success(`Data perkiraan berhasil ${action}!`, "Berhasil", 2500);
@@ -290,7 +288,7 @@ export const alertService = {
           cancelButton: "animated-button",
         },
         didOpen: setupButtonAnimations,
-      }
+      },
     );
   },
 
@@ -315,7 +313,7 @@ function setupButtonAnimations() {
 
   const confirmButton = document.querySelector(".swal2-confirm");
   const cancelButton = document.querySelector(".swal2-cancel");
-  
+
   if (confirmButton && !cancelButton) {
     confirmButton.focus();
   } else if (cancelButton) {

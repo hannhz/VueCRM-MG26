@@ -96,10 +96,7 @@ const actions = {
       const teamsResponse = await api.get("team/", { headers });
       const teamsData = teamsResponse.data;
       const teamsRows =
-        teamsData?.teams ||
-        teamsData?.team ||
-        teamsData?.data ||
-        teamsData;
+        teamsData?.teams || teamsData?.team || teamsData?.data || teamsData;
       teamsRaw = Array.isArray(teamsRows) ? teamsRows : [];
     } catch (error) {
       // Team name mapping is optional; keep fallback name if endpoint is unavailable.

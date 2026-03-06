@@ -190,7 +190,7 @@ export default {
   computed: {
     // Get collapsed state from Vuex
     collapsed() {
-      return this.$store.getters['settingsfe/isSidebarCollapsed'];
+      return this.$store.getters["settingsfe/isSidebarCollapsed"];
     },
 
     sidebarWidth() {
@@ -245,12 +245,12 @@ export default {
   methods: {
     handleMedia(e) {
       // Update Vuex state instead of local
-      this.$store.dispatch('settingsfe/setSidebarCollapsed', e.matches);
+      this.$store.dispatch("settingsfe/setSidebarCollapsed", e.matches);
     },
 
     toggleCollapsed() {
       // Toggle via Vuex
-      this.$store.dispatch('settingsfe/toggleSidebar');
+      this.$store.dispatch("settingsfe/toggleSidebar");
       this.$emit("update:collapsed", this.collapsed);
     },
 
@@ -295,9 +295,9 @@ export default {
     },
 
     openTab(menuItem) {
-        // console.log("sidebaropentab", menuItem);
-        // console.log("sidebaropentab", this.$router.getRoutes());
-        
+      // console.log("sidebaropentab", menuItem);
+      // console.log("sidebaropentab", this.$router.getRoutes());
+
       if (menuItem.pathfile) {
         this.$router.push(menuItem.pathfile);
       }
@@ -483,7 +483,10 @@ export default {
   mounted() {
     this.mediaQuery = window.matchMedia("(max-width: 1200px)");
     // Initialize Vuex state with media query
-    this.$store.dispatch('settingsfe/setSidebarCollapsed', this.mediaQuery.matches);
+    this.$store.dispatch(
+      "settingsfe/setSidebarCollapsed",
+      this.mediaQuery.matches,
+    );
     this.mediaQuery.addListener(this.handleMedia);
 
     document.addEventListener("click", this.handleClickOutside);

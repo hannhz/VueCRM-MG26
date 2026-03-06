@@ -66,7 +66,8 @@ function setMode(mode) {
 
 // Fetch data function untuk refresh
 const fetchData = () => {
-  store.dispatch("tasks/fetchAllTasks")
+  store
+    .dispatch("tasks/fetchAllTasks")
     .then(() => {
       console.log("Tasks fetched successfully");
     })
@@ -86,9 +87,7 @@ onMounted(() => {
     <div class="flex items-baseline gap-3">
       <h1 class="text-2xl font-bold text-dark-base">Tasks</h1>
       <span class="text-sm text-sub-text">
-        <template v-if="isLoading">
-          Loading tasks...
-        </template>
+        <template v-if="isLoading"> Loading tasks... </template>
         <template v-else>
           {{ totalTask.toLocaleString() }} Total Tasks
         </template>
@@ -104,7 +103,11 @@ onMounted(() => {
         class="p-2 border bg-white border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
         title="Refresh Data"
       >
-        <RefreshCw :size="18" :class="{ 'animate-spin': isLoading }" class="text-sub-text" />
+        <RefreshCw
+          :size="18"
+          :class="{ 'animate-spin': isLoading }"
+          class="text-sub-text"
+        />
       </button>
 
       <!-- Add New -->

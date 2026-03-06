@@ -123,7 +123,8 @@ const selectedDateLabel = computed(() => {
 
 // Lifecycle: Fetch tasks on mount
 onMounted(() => {
-  store.dispatch("tasks/fetchAllTasks")
+  store
+    .dispatch("tasks/fetchAllTasks")
     .then(() => {
       console.log("Tasks fetched successfully");
     })
@@ -180,7 +181,10 @@ onMounted(() => {
     <!-- CALENDAR AREA -->
     <div class="p-4 grid grid-cols-1 xl:grid-cols-4 gap-4 relative">
       <!-- Loading Overlay -->
-      <div v-if="isLoading" class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center rounded-lg">
+      <div
+        v-if="isLoading"
+        class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center rounded-lg"
+      >
         <div class="flex flex-col items-center gap-3">
           <RefreshCw class="animate-spin text-blue-950" :size="32" />
           <p class="text-sm text-sub-text font-medium">Loading tasks...</p>

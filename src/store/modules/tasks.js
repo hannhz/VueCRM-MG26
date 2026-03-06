@@ -87,7 +87,7 @@ export default {
       return state.tasks.filter(
         (task) =>
           task.title?.toLowerCase().includes(query) ||
-          task.description?.toLowerCase().includes(query)
+          task.description?.toLowerCase().includes(query),
       );
     },
   },

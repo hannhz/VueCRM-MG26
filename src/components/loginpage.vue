@@ -219,7 +219,7 @@ export default {
           (t) => t.pathfile == data.dbmenu2[0].pathfiledefault,
         );
         console.log(filter);
-        
+
         this.handleOpenTabs(filter[0]);
       } catch (err) {
         console.error("Login gagal:", err);

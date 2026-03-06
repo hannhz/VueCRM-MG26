@@ -7,7 +7,9 @@ import { Filter, Search } from "lucide-vue-next";
 const store = useStore();
 
 // Access sidebar state from Vuex
-const isSidebarCollapsed = computed(() => store.getters['settingsfe/isSidebarCollapsed']);
+const isSidebarCollapsed = computed(
+  () => store.getters["settingsfe/isSidebarCollapsed"],
+);
 
 const columns = ref([
   {
@@ -30,7 +32,7 @@ const isDragging = ref(false);
   <div
     :class="[
       'bg-white rounded-lg shadow-sm h-147 border border-outline flex flex-col overflow-hidden',
-      isSidebarCollapsed ? 'max-w-352' : 'max-w-310'
+      isSidebarCollapsed ? 'max-w-352' : 'max-w-310',
     ]"
   >
     <!-- Action Bar -->

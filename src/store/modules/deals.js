@@ -94,15 +94,30 @@ export default {
       };
 
       const candidates = [
-        () => api.post("deal/update-stage", { id: dealId, stage: newStage }, { headers }),
-        () => api.post("deal/updatestage", { id: dealId, stage: newStage }, { headers }),
+        () =>
+          api.post(
+            "deal/update-stage",
+            { id: dealId, stage: newStage },
+            { headers },
+          ),
+        () =>
+          api.post(
+            "deal/updatestage",
+            { id: dealId, stage: newStage },
+            { headers },
+          ),
         () =>
           api.post(
             `deal/updateusr?id=${dealId}`,
             { stage: newStage, pipeline: newStage },
             { headers },
           ),
-        () => api.post(`deal/update?id=${dealId}`, { stage: newStage }, { headers }),
+        () =>
+          api.post(
+            `deal/update?id=${dealId}`,
+            { stage: newStage },
+            { headers },
+          ),
       ];
 
       let lastError = null;
@@ -130,10 +145,11 @@ export default {
         return state.deals;
       }
       const query = state.searchQuery.toLowerCase();
-      return state.deals.filter((deal) =>
-        deal.name?.toLowerCase().includes(query) ||
-        deal.contact?.toLowerCase().includes(query) ||
-        deal.company?.toLowerCase().includes(query)
+      return state.deals.filter(
+        (deal) =>
+          deal.name?.toLowerCase().includes(query) ||
+          deal.contact?.toLowerCase().includes(query) ||
+          deal.company?.toLowerCase().includes(query),
       );
     },
   },

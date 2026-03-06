@@ -129,7 +129,10 @@ export default {
     },
 
     handleClickOutside(e) {
-      if (!e.target.closest(".printable-dropdown") && !e.target.closest(".add-dropdown")) {
+      if (
+        !e.target.closest(".printable-dropdown") &&
+        !e.target.closest(".add-dropdown")
+      ) {
         this.showDropdown = false;
         this.showDownloadDropdown = false;
       }
@@ -138,8 +141,12 @@ export default {
     formatDate(dateString) {
       if (!dateString) return "-";
       const date = new Date(dateString);
-      return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
+      return (
+        date.toLocaleDateString() +
+        " " +
+        date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      );
+    },
   },
 
   mounted() {
@@ -183,7 +190,11 @@ export default {
             class="p-2 border border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
             title="Refresh Data"
           >
-            <RefreshCw :size="18" :class="{ 'animate-spin': isLoading }" class="text-sub-text" />
+            <RefreshCw
+              :size="18"
+              :class="{ 'animate-spin': isLoading }"
+              class="text-sub-text"
+            />
           </button>
 
           <!-- Add New -->
@@ -356,12 +367,19 @@ export default {
       </div>
 
       <!-- Table Container with Horizontal Scroll -->
-      <div class="mt-4 border border-outline rounded-lg overflow-hidden relative min-h-100">
+      <div
+        class="mt-4 border border-outline rounded-lg overflow-hidden relative min-h-100"
+      >
         <!-- Loading Overlay -->
-        <div v-if="isLoading" class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center">
+        <div
+          v-if="isLoading"
+          class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center"
+        >
           <div class="flex flex-col items-center gap-2">
             <RefreshCw class="animate-spin text-blue-950" :size="32" />
-            <span class="text-sm font-medium text-blue-950">Loading Contacts...</span>
+            <span class="text-sm font-medium text-blue-950"
+              >Loading Contacts...</span
+            >
           </div>
         </div>
 
@@ -372,12 +390,24 @@ export default {
                 <th class="px-6 py-4 w-10">
                   <input type="checkbox" class="rounded border-outline" />
                 </th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Name</th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Contact Info</th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Associated with</th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Status</th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Created/Update</th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Owner</th>
+                <th class="px-6 py-4 text-sm font-semibold text-gray-700">
+                  Name
+                </th>
+                <th class="px-6 py-4 text-sm font-semibold text-gray-700">
+                  Contact Info
+                </th>
+                <th class="px-6 py-4 text-sm font-semibold text-gray-700">
+                  Associated with
+                </th>
+                <th class="px-6 py-4 text-sm font-semibold text-gray-700">
+                  Status
+                </th>
+                <th class="px-6 py-4 text-sm font-semibold text-gray-700">
+                  Created/Update
+                </th>
+                <th class="px-6 py-4 text-sm font-semibold text-gray-700">
+                  Owner
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -386,9 +416,18 @@ export default {
                 <td colspan="7" class="px-6 py-20 text-center">
                   <div class="flex flex-col items-center gap-3">
                     <Search :size="48" class="text-outline" />
-                    <p class="text-lg font-medium text-dark-base">No contacts found</p>
-                    <p class="text-sm text-sub-text">We couldn't find any contacts matching your criteria.</p>
-                    <button @click="showAddContactForm = true" class="mt-2 text-blue-600 font-medium hover:underline text-sm">+ Add Your First Contact</button>
+                    <p class="text-lg font-medium text-dark-base">
+                      No contacts found
+                    </p>
+                    <p class="text-sm text-sub-text">
+                      We couldn't find any contacts matching your criteria.
+                    </p>
+                    <button
+                      @click="showAddContactForm = true"
+                      class="mt-2 text-blue-600 font-medium hover:underline text-sm"
+                    >
+                      + Add Your First Contact
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -400,7 +439,12 @@ export default {
                 class="border-b border-outline hover:bg-light-base/50 transition-colors group"
               >
                 <td class="px-6 py-4 text-sm">
-                  <input type="checkbox" v-model="selectedIds" :value="contact.id" class="rounded border-outline" />
+                  <input
+                    type="checkbox"
+                    v-model="selectedIds"
+                    :value="contact.id"
+                    class="rounded border-outline"
+                  />
                 </td>
                 <td class="px-6 py-4">
                   <div class="text-sm font-semibold text-dark-base">
@@ -408,29 +452,39 @@ export default {
                   </div>
                 </td>
                 <td class="px-6 py-4">
-                  <div class="text-sm text-dark-base">{{ contact.email || '-' }}</div>
-                  <div class="text-xs text-sub-text">{{ contact.telephone_1 || '-' }}</div>
+                  <div class="text-sm text-dark-base">
+                    {{ contact.email || "-" }}
+                  </div>
+                  <div class="text-xs text-sub-text">
+                    {{ contact.telephone_1 || "-" }}
+                  </div>
                 </td>
                 <td class="px-6 py-4 text-sm text-dark-base">
-                  {{ contact.companiesAssociation || contact.company || '-' }}
+                  {{ contact.companiesAssociation || contact.company || "-" }}
                 </td>
                 <td class="px-6 py-4">
                   <span
                     class="px-3 py-1 rounded-full text-xs font-medium"
                     :class="{
-                      'bg-green-100 text-green-700': contact.status?.toLowerCase() === 'active',
-                      'bg-yellow-100 text-yellow-700': contact.status?.toLowerCase() === 'pending',
-                      'bg-gray-100 text-gray-700': !contact.status || contact.status?.toLowerCase() === 'inactive',
+                      'bg-green-100 text-green-700':
+                        contact.status?.toLowerCase() === 'active',
+                      'bg-yellow-100 text-yellow-700':
+                        contact.status?.toLowerCase() === 'pending',
+                      'bg-gray-100 text-gray-700':
+                        !contact.status ||
+                        contact.status?.toLowerCase() === 'inactive',
                     }"
                   >
-                    {{ contact.status || 'Inactive' }}
+                    {{ contact.status || "Inactive" }}
                   </span>
                 </td>
                 <td class="px-6 py-4">
-                  <div class="text-xs text-dark-base">{{ formatDate(contact.updated_at || contact.created_at) }}</div>
+                  <div class="text-xs text-dark-base">
+                    {{ formatDate(contact.updated_at || contact.created_at) }}
+                  </div>
                 </td>
                 <td class="px-6 py-4 text-sm text-dark-base">
-                  {{ contact.owner || '-' }}
+                  {{ contact.owner || "-" }}
                 </td>
               </tr>
             </tbody>
