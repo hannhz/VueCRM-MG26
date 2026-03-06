@@ -1,7 +1,13 @@
 <script setup>
-import { ref, onBeforeUnmount } from "vue"; // 1. Pastikan onBeforeUnmount sudah di-import
+import { ref, computed, onBeforeUnmount } from "vue";
+import { useStore } from "vuex";
 import draggable from "vuedraggable";
 import { ChevronDown, Search, Filter } from "lucide-vue-next";
+
+const store = useStore();
+
+// Access sidebar state from Vuex
+const isSidebarCollapsed = computed(() => store.getters['settingsfe/isSidebarCollapsed']);
 
 const viewMode = ref("grid"); // defaultnya grid
 
@@ -23,11 +29,66 @@ const isDragging = ref(false);
 
 const pipeline = ref({
   new: [
-    { id: 1, name: "Client A", value: 500000 },
-    { id: 2, name: "Client B", value: 300000 },
-    { id: 3, name: "Client C", value: 450000 },
-    { id: 4, name: "Client D", value: 200000 },
-    { id: 5, name: "Client E", value: 750000 },
+    {
+      id: 1,
+      name: "TechFlow Solutions",
+      stage: "qualified",
+      jumlah: "Main Enterprise",
+      tertanggal: "2023-10-20",
+      contact: "John Doe",
+      company: "Meta Tech",
+      updatedAt: "2023-10-24",
+      owner: "Alex Graham",
+      value: 500000,
+    },
+    {
+      id: 2,
+      name: "Client B",
+      stage: "proposal",
+      jumlah: "SMB Plan",
+      tertanggal: "2023-10-18",
+      contact: "Maya Putri",
+      company: "Binar Corp",
+      updatedAt: "2023-10-25",
+      owner: "Dita Rahma",
+      value: 300000,
+    },
+    {
+      id: 3,
+      name: "Client C",
+      stage: "qualified",
+      jumlah: "Pro Package",
+      tertanggal: "2023-10-17",
+      contact: "Rizky Anwar",
+      company: "Nusantara Labs",
+      updatedAt: "2023-10-26",
+      owner: "Fahmi Yusuf",
+      value: 450000,
+    },
+    {
+      id: 4,
+      name: "Client D",
+      stage: "lost",
+      jumlah: "Starter",
+      tertanggal: "2023-10-16",
+      contact: "Lisa Wijaya",
+      company: "Skyline ID",
+      updatedAt: "2023-10-23",
+      owner: "Anita Dewi",
+      value: 200000,
+    },
+    {
+      id: 5,
+      name: "Client E",
+      stage: "proposal",
+      jumlah: "Annual Contract",
+      tertanggal: "2023-10-21",
+      contact: "Budi Santoso",
+      company: "Garuda Digital",
+      updatedAt: "2023-10-27",
+      owner: "Salsa Putri",
+      value: 750000,
+    },
   ],
   qualified: [],
   advanced: [],
@@ -51,6 +112,14 @@ const deleteDeal = (item) => {
     b.items = b.items.filter((i) => i.id !== item.id);
   });
 };
+
+const stageClass = (stage) => {
+  if (stage === "qualified") return "bg-green-100 text-green-700";
+  if (stage === "proposal") return "bg-yellow-100 text-yellow-700";
+  if (stage === "lost") return "bg-red-100 text-red-700";
+  return "bg-slate-100 text-slate-700";
+};
+
 onBeforeUnmount(() => {
   isDragging.value = false;
   isCurrencyOpen.value = false;
@@ -63,13 +132,18 @@ onBeforeUnmount(() => {
 <template>
   <!-- Placeholder for Deals Card -->
   <div
-    class="bg-white rounded-lg shadow-sm max-w-311.25 h-147 border border-outline flex flex-col overflow-hidden"
+    :class="[
+      'bg-white rounded-lg shadow-sm h-147 border border-outline flex flex-col overflow-hidden',
+      isSidebarCollapsed ? 'max-w-352' : 'max-w-310'
+    ]"
   >
     <!-- Action Bar -->
     <div class="p-4 border-b border-outline">
       <div class="flex items-center gap-4 w-full">
         <!-- LEFT -->
         <div class="flex items-center gap-3 flex-1 min-w-0">
+          
+          
           <!-- Filter -->
           <button
             class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
@@ -232,11 +306,33 @@ onBeforeUnmount(() => {
                   <div
                     class="bg-white p-4 rounded shadow-sm border border-gray-200 cursor-move hover:border-blue-500 transition"
                   >
-                    <p class="text-sm font-medium text-gray-700">
+                    <p class="text-sm font-medium text-gray-800 truncate">
                       {{ element.name }}
                     </p>
+
+                    <div class="mt-2">
+                      <span
+                        class="px-2 py-0.5 rounded-full text-[11px] font-medium capitalize"
+                        :class="stageClass(element.stage)"
+                      >
+                        {{ element.stage }}
+                      </span>
+                    </div>
+
+                    <p class="text-xs text-gray-500 mt-2">
+                      {{ element.jumlah }} / {{ element.tertanggal }}
+                    </p>
+
+                    <p class="text-xs text-gray-500 mt-1 truncate">
+                      {{ element.contact }} - {{ element.company }}
+                    </p>
+
                     <p class="text-xs text-gray-400 mt-1">
-                      ID: #{{ element.id }}
+                      Updated: {{ element.updatedAt }}
+                    </p>
+
+                    <p class="text-xs text-gray-400 mt-1">
+                      Owner: {{ element.owner }}
                     </p>
                   </div>
                 </template>

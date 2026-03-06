@@ -10,7 +10,8 @@ const state = {
   sharetanggal: null,
   paramdetailperkiraan: null,
   frbrowse: null,
-  layoutMenu: null
+  layoutMenu: null,
+  sidebarCollapsed: false, // State untuk sidebar
 };
 
 const getters = {
@@ -114,6 +115,9 @@ const getters = {
     }
     return [];
   },
+
+  // Sidebar state getter
+  isSidebarCollapsed: (state) => state.sidebarCollapsed,
 };
 
 const actions = {
@@ -255,6 +259,15 @@ const actions = {
   actparamdetailperkiraan(context, data) {
     context.commit("setparamdetailperkiraan", data);
   },
+
+  // Sidebar actions
+  toggleSidebar({ commit, state }) {
+    commit("SET_SIDEBAR_COLLAPSED", !state.sidebarCollapsed);
+  },
+
+  setSidebarCollapsed({ commit }, collapsed) {
+    commit("SET_SIDEBAR_COLLAPSED", collapsed);
+  },
 };
 
 const mutations = {
@@ -294,6 +307,11 @@ const mutations = {
   },
   setparamdetailperkiraan: (state, paramdetailperkiraan) => {
     state.paramdetailperkiraan = paramdetailperkiraan;
+  },
+
+  // Sidebar mutations
+  SET_SIDEBAR_COLLAPSED: (state, collapsed) => {
+    state.sidebarCollapsed = collapsed;
   },
 };
 

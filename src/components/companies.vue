@@ -16,7 +16,7 @@ import {
   ChevronLeft,
   FilePlus,
   ChevronRight,
-  RefreshCcw,
+  RefreshCw,
   FolderPlus,
   FileDown,
   FolderDown,
@@ -96,6 +96,17 @@ const handleBulkAdd = () => {
   console.log("Bulk add clicked");
   showBulkAddForm.value = true;
 };
+
+// Fetch data function untuk refresh
+const fetchData = () => {
+  store.dispatch("company/fetchAllcompany")
+    .then(() => {
+      console.log("Companies fetched successfully");
+    })
+    .catch((err) => {
+      console.error("Failed to fetch companies:", err);
+    });
+};
 </script>
 
 <template>
@@ -117,6 +128,15 @@ const handleBulkAdd = () => {
 
       <!-- Right Section: Action Buttons -->
       <div class="flex items-center gap-2">
+        <!-- Refresh Button -->
+          <button
+            @click="fetchData"
+            :disabled="isLoading"
+            class="p-2 border border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
+            title="Refresh Data"
+          >
+            <RefreshCw :size="18" :class="{ 'animate-spin': isLoading }" class="text-sub-text" />
+          </button>
         <!-- Add New -->
         <div class="relative inline-block add-dropdown">
           <button
@@ -286,7 +306,15 @@ const handleBulkAdd = () => {
     </div>
 
     <!-- Table -->
-    <div class="overflow-hidden">
+    <div class="overflow-hidden relative">
+      <!-- Loading Overlay -->
+      <div v-if="isLoading" class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center">
+        <div class="flex flex-col items-center gap-3">
+          <RefreshCw class="animate-spin text-blue-950" :size="32" />
+          <p class="text-sm text-sub-text font-medium">Loading companies...</p>
+        </div>
+      </div>
+
       <!-- Table -->
       <div class="overflow-x-auto">
         <table class="w-full">
@@ -350,7 +378,7 @@ const handleBulkAdd = () => {
           </thead>
           <tbody>
             <!-- Empty State -->
-            <tr v-if="companies.length === 0">
+            <tr v-if="companies.length === 0 && !isLoading">
               <td colspan="7" class="px-6 py-20 text-center text-sub-text">
                 <div class="flex flex-col items-center gap-3">
                   <div
