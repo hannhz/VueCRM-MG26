@@ -2,6 +2,10 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { useStore } from "vuex";
 
+import CreateCompanyForm from "./forms/CreateCompanyForm.vue";
+import BulkAddCompanyForm from "./forms/BulkAddCompanyForm.vue";
+import DetailForm from "./forms/DetailForm.vue";
+
 import {
   Search,
   ChevronDown,
@@ -18,14 +22,17 @@ import {
   FolderDown,
 } from "lucide-vue-next";
 
-import CreateCompanyForm from "./forms/CreateCompanyForm.vue";
-import BulkAddCompanyForm from "./forms/BulkAddCompanyForm.vue";
-import DetailForm from "./forms/DetailForm.vue";
+// Hubungkan ke Vuex Store
+const store = useStore();
+
+// Pakai 'company' karena tadi kita daftarkan dengan nama itu di store/index.js
+const companies = computed(() => store.getters["company/allcompany"]);
+const isLoading = computed(() => store.getters["company/isLoading"]);
+const error = computed(() => store.getters["company/error"]);
 
 // Sample data - replace with actual data from API
-const store = useStore();
 const currentPage = ref(1);
-const totalCompanies = ref(18600);
+const totalCompanies = computed(() => companies.value.length); // Dynamically compute from actual data
 const itemsPerPage = ref(10);
 const showCreateCompanyForm = ref(false);
 const showBulkAddForm = ref(false);
@@ -33,12 +40,6 @@ const showDetailForm = ref(false);
 const showDropdown = ref(false);
 const showDownloadDropdown = ref(false);
 const selectedIds = ref([]);
-
-// Hubungkan ke Vuex Store
-// Pakai 'company' karena tadi kita daftarkan dengan nama itu di store/index.js
-const companies = computed(() => store.getters["company/allcompany"]);
-const isLoading = computed(() => store.getters["company/isLoading"]);
-const error = computed(() => store.getters["company/error"]);
 
 const toggleDownloadDropdown = () => {
   showDownloadDropdown.value = !showDownloadDropdown.value;
@@ -79,11 +80,12 @@ const handleClickOutside = (e) => {
   }
 };
 
-// Ambil data dari API saat halaman dibuka
+// Load data saat component mount
 onMounted(() => {
+  // Fetch data dari API
   store.dispatch("company/fetchAllcompany");
+  // Add event listener untuk close dropdown saat klik luar
   document.addEventListener("click", handleClickOutside);
-  console.log("DATA COMPANY:", companies.value);
 });
 
 onBeforeUnmount(() =>
@@ -102,11 +104,16 @@ const handleBulkAdd = () => {
     <!-- Header with Title and Total -->
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-baseline gap-3">
-  <h1 class="text-2xl font-bold text-dark-base">Companies</h1>
-  <span class="text-sm text-sub-text">{{ totalCompanies.toLocaleString() }} Total Companies</span>
-  
-  <span v-if="isLoading" class="text-xs text-blue-500 animate-pulse ml-2">Loading data...</span>
-</div>
+        <h1 class="text-2xl font-bold text-dark-base">Companies</h1>
+        <span class="text-sm text-sub-text">
+          <template v-if="isLoading">
+            Searching company...
+          </template>
+          <template v-else>
+            {{ totalCompanies.toLocaleString() }} Total Companies
+          </template>
+        </span>
+      </div>
 
       <!-- Right Section: Action Buttons -->
       <div class="flex items-center gap-2">
@@ -361,43 +368,43 @@ const handleBulkAdd = () => {
 
             <!-- Sample rows - will be populated with actual data -->
             <tr
-              v-for="company in companies"
-              :key="company.id"
+              v-for="contact in companies"
+              :key="contact.id"
               class="border-b border-gray-100 hover:bg-gray-50 transition"
             >
               <td class="px-6 py-4">
                 <input
                   type="checkbox"
-                  :value="company.id"
+                  :value="contact.id"
                   v-model="selectedIds"
                   class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
                 />
               </td>
               <td class="px-6 py-4 text-sm text-gray-800 font-medium">
-                {{ company.company_name }}
+                {{ contact.name }}
               </td>
               <td class="px-6 py-4 text-sm text-dark-base">
-                {{ company.email }}
+                {{ contact.email }}
               </td>
               <td class="px-6 py-4 text-sm text-dark-base">
-                {{ company.website }}
+                {{ contact.company }}
               </td>
               <td class="px-6 py-4">
                 <span
                   class="px-3 py-1 rounded-full text-xs font-medium"
                   :class="{
-                    'bg-green-100 text-green-700': company.status === 'Active',
-                    'bg-gray-100 text-gray-700': company.status === 'Inactive',
+                    'bg-green-100 text-green-700': contact.status === 'Active',
+                    'bg-gray-100 text-gray-700': contact.status === 'Inactive',
                   }"
                 >
-                  {{ company.type }}
+                  {{ contact.status }}
                 </span>
               </td>
               <td class="px-6 py-4 text-sm text-dark-base">
-                {{ company.updated_at }}
+                {{ contact.updatedAt }}
               </td>
               <td class="px-6 py-4 text-sm text-dark-base">
-                {{ company.company_owner }}
+                {{ contact.owner }}
               </td>
             </tr>
           </tbody>
@@ -410,17 +417,13 @@ const handleBulkAdd = () => {
   <CreateCompanyForm
     :isOpen="showCreateCompanyForm"
     @close="showCreateCompanyForm = false"
-    @submit="async (data) => {
-      try {
-        await store.dispatch('company/insertcompany', { formdata: data });
+    @submit="
+      (data) => {
+        console.log('Company added:', data);
         showCreateCompanyForm = false;
-        await nextTick();
         showDetailForm = true;
-        console.log('Company added successfully, DetailForm should now be visible');
-      } catch (error) {
-        console.error('Error adding company:', error);
       }
-    }"
+    "
   />
 
   <!-- Bulk Add Company Form -->
