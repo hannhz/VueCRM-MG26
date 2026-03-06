@@ -356,7 +356,7 @@ export default {
       </div>
 
       <!-- Table Container with Horizontal Scroll -->
-      <div class="mt-4 border border-outline rounded-lg overflow-hidden relative min-h-[400px]">
+      <div class="mt-4 border border-outline rounded-lg overflow-hidden relative min-h-100">
         <!-- Loading Overlay -->
         <div v-if="isLoading" class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center">
           <div class="flex flex-col items-center gap-2">
