@@ -29,6 +29,10 @@ const { cookies } = useCookies();
 const routes = [
   {
     path: "/",
+    redirect: { name: "login" },
+  },
+  {
+    path: "/login",
     name: "login",
     component: LoginPage,
   },

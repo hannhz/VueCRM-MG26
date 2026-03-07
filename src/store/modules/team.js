@@ -46,14 +46,23 @@ const actions = {
     commit("SET_SEARCH_QUERY", query);
   },
 
-  async createTeam({ dispatch }, payload) {
-    const headers = {
-      Authorization: "Bearer " + cookies.get("token"),
-    };
+  createTeam(context, data) {
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        let network = await api.post("team/input", data, {
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
+          },
+          // headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        });
+        resolve(network.data);
+      } catch (error) {
+        reject(error);
+      }
+      context.dispatch("fetchAllTeamUsers");
+    });
 
-    const response = await api.post("team/input", payload, { headers });
-    await dispatch("fetchAllTeamUsers");
-    return response.data;
+    return promise;
   },
 
   async addTeamUsers({ dispatch }, payload) {
@@ -66,73 +75,37 @@ const actions = {
     return response.data;
   },
 
-  async fetchAllTeamUsers({ commit }) {
+  fetchAllTeamUsers({ commit }) {
     commit("SET_LOADING", true);
     commit("SET_ERROR", null);
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        let network = await api.get("team", {
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
+          },
+          // headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        });
 
-    const headers = {
-      Authorization: "Bearer " + cookies.get("token"),
-    };
+        resolve(network.data);
+      } catch (error) {
+        reject(error);
+      }
+    });
 
-    let lastError = null;
-    let teamUsersRaw = [];
-    let teamsRaw = [];
+    promise
+      .then((data) => {
+        commit("SET_TEAM_USERS", data.teams);
+        commit("SET_LOADING", false);
+      })
+      .catch((error) => {
+        // Tangani error lain jika ada
+        console.error("Error:", error);
+        commit("SET_ERROR", error.message);
+        commit("SET_LOADING", false);
+      });
 
-    try {
-      const teamUsersResponse = await api.get("team/users", { headers });
-      const teamUsersData = teamUsersResponse.data;
-      const teamUsersRows =
-        teamUsersData?.team_user ||
-        teamUsersData?.teamUsers ||
-        teamUsersData?.users ||
-        teamUsersData?.data ||
-        teamUsersData;
-      teamUsersRaw = Array.isArray(teamUsersRows) ? teamUsersRows : [];
-    } catch (error) {
-      lastError = error;
-    }
-
-    try {
-      const teamsResponse = await api.get("team/", { headers });
-      const teamsData = teamsResponse.data;
-      const teamsRows =
-        teamsData?.teams || teamsData?.team || teamsData?.data || teamsData;
-      teamsRaw = Array.isArray(teamsRows) ? teamsRows : [];
-    } catch (error) {
-      // Team name mapping is optional; keep fallback name if endpoint is unavailable.
-    }
-
-    if (!teamUsersRaw.length) {
-      commit("SET_LOADING", false);
-      commit("SET_ERROR", lastError?.message || "Failed to fetch team users");
-      throw lastError || new Error("Failed to fetch team users");
-    }
-
-    const teamNameMap = new Map(
-      teamsRaw.map((team) => [
-        Number(team.id),
-        team.team_name || team.name || `Team ${team.id}`,
-      ]),
-    );
-
-    const countByTeamId = teamUsersRaw.reduce((acc, row) => {
-      const teamId = Number(row.team_id);
-      if (!Number.isFinite(teamId)) return acc;
-      acc.set(teamId, (acc.get(teamId) || 0) + 1);
-      return acc;
-    }, new Map());
-
-    const aggregated = Array.from(countByTeamId.entries())
-      .map(([team_id, total_users]) => ({
-        team_id,
-        team_name: teamNameMap.get(team_id) || `Team ${team_id}`,
-        total_users,
-      }))
-      .sort((a, b) => a.team_id - b.team_id);
-
-    commit("SET_TEAM_USERS", aggregated);
-    commit("SET_LOADING", false);
-    return aggregated;
+    return promise;
   },
 };
 
