@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed } from "vue";
 import { useStore } from "vuex";
 import { Filter, Search, RefreshCw } from "lucide-vue-next";
 
@@ -8,6 +8,7 @@ const store = useStore();
 // Get tasks state from Vuex
 const isLoading = computed(() => store.getters["tasks/isLoading"]);
 const error = computed(() => store.getters["tasks/error"]);
+const allTasks = computed(() => store.getters["tasks/allTasks"] || []);
 
 const taskText = ref("");
 const emit = defineEmits(["add"]);
@@ -20,12 +21,30 @@ const currentMonth = ref(today.getMonth());
 const currentYear = ref(today.getFullYear());
 const selectedDate = ref(formatDate(today));
 
-/* =========================
-   EVENTS DATA
-========================= */
-const events = ref({
-  "2026-02-05": [{ title: "Meeting Client", time: "09:00" }],
-  "2026-02-10": [{ title: "Design Review", time: "13:00" }],
+const events = computed(() => {
+  return allTasks.value.reduce((acc, task) => {
+    if (!task?.dueDate) {
+      return acc;
+    }
+
+    const parsedDate = new Date(task.dueDate);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return acc;
+    }
+
+    const key = formatDate(parsedDate);
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+
+    acc[key].push({
+      id: task.id,
+      title: task.title || task.name || "Untitled Task",
+      time: task.time || "",
+    });
+
+    return acc;
+  }, {});
 });
 
 /* =========================
@@ -121,17 +140,6 @@ const selectedDateLabel = computed(() => {
   return new Date(selectedDate.value).toDateString();
 });
 
-// Lifecycle: Fetch tasks on mount
-onMounted(() => {
-  store
-    .dispatch("tasks/fetchAllTasks")
-    .then(() => {
-      console.log("Tasks fetched successfully");
-    })
-    .catch((err) => {
-      console.error("Failed to fetch tasks:", err);
-    });
-});
 </script>
 
 <template>
@@ -271,7 +279,7 @@ onMounted(() => {
         <ul v-else class="space-y-2">
           <li
             v-for="(event, index) in selectedEvents"
-            :key="index"
+            :key="event.id || index"
             class="p-3 border rounded-lg"
           >
             <div class="font-medium">{{ event.title }}</div>
@@ -280,5 +288,9 @@ onMounted(() => {
         </ul>
       </div>
     </div>
+
+    <p v-if="error" class="px-6 py-3 text-sm text-red-600 border-t border-gray-100">
+      {{ error }}
+    </p>
   </div>
 </template>

@@ -69,6 +69,26 @@ export default {
       return this.contacts.length;
     },
 
+    contactsStatusText() {
+      if (this.isLoading) {
+        return "Searching contacts...";
+      }
+      if (this.error) {
+        return `Error: ${this.error}`;
+      }
+      return `${this.totalContacts.toLocaleString()} Total Contacts`;
+    },
+
+    contactsStatusClass() {
+      if (this.isLoading) {
+        return "text-blue-600";
+      }
+      if (this.error) {
+        return "text-red-600";
+      }
+      return "text-sub-text";
+    },
+
     downloadLabel() {
       return this.selectedIds.length
         ? `Download (${this.selectedIds.length})`
@@ -177,10 +197,7 @@ export default {
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-baseline gap-3">
           <h1 class="text-2xl font-bold text-dark-base">Contacts</h1>
-          <span class="text-sm text-sub-text"
-            >{{ totalContacts.toLocaleString() }} Total Contacts</span
-          >
-          <span v-if="isLoading" class="text-xs text-blue-500 animate-pulse ml-2">Loading data...</span>
+          <span class="text-sm" :class="contactsStatusClass">{{ contactsStatusText }}</span>
         </div>
 
         <!-- Right Section: Action Buttons -->
@@ -377,7 +394,18 @@ export default {
       </div>
 
       <!-- Table Content -->
-      <div class="overflow-hidden">
+      <div class="overflow-hidden relative">
+        <!-- Loading Overlay -->
+        <div
+          v-if="isLoading"
+          class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center"
+        >
+          <div class="flex flex-col items-center gap-3">
+            <RefreshCw class="animate-spin text-blue-950" :size="32" />
+            <p class="text-sm text-sub-text font-medium">Loading contacts...</p>
+          </div>
+        </div>
+
         <div class="overflow-x-auto">
           <table class="w-full">
             <thead>

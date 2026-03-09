@@ -32,26 +32,24 @@ const stageOptions = [
   { value: "lost", label: "Lost" },
 ];
 
+const getStageLabel = (stage) => {
+  return stageOptions.find((opt) => opt.value === stage)?.label || stage;
+};
+
 const isSyncingStage = ref(false);
 const updatingDealId = ref(null);
 const openStageDropdown = ref(null);
 
-//data
-const deals = ref([
-  {
-    id: 1,
-    name: "TechFlow Solutions",
-    stage: "qualified",
-    jumlah: "Main Enterprise",
-    tertanggal: "2023-10-20",
-    contact: "John Doe",
-    company: "meta tech",
-    updatedAt: "2023-10-24",
-    owner: "Alex Graham",
-  },
-]);
+// Data list table is normalized from API payload to keep it consistent with card view.
+const deals = ref([]);
 
 const selectedDeals = ref([]);
+
+const deleteSelected = () => {
+  deals.value = deals.value.filter((deal) => !selectedDeals.value.includes(deal.id));
+  selectedDeals.value = [];
+  totalDeals.value = deals.value.length;
+};
 
 // Data Mata Uang
 const currencies = ["IDR", "USD", "SGD", "EUR"];
@@ -62,6 +60,32 @@ const isCurrencyOpen = ref(false);
 const pipelines = ["Sales Pipeline", "Marketing Pipeline", "Dev Pipeline"];
 const selectedPipeline = ref("Sales Pipeline");
 const isPipelineOpen = ref(false);
+
+const normalizeStage = (rawStage) => {
+  const stage = String(rawStage || "new").toLowerCase();
+  if (stage.includes("qual")) return "qualified";
+  if (stage.includes("adv") || stage.includes("negot")) return "advanced";
+  if (stage.includes("pay") || stage.includes("proposal")) return "payment";
+  if (stage.includes("won") || stage.includes("close_won") || stage.includes("closed_won")) return "won";
+  if (stage.includes("lost") || stage.includes("close_lost") || stage.includes("closed_lost")) return "lost";
+  return "new";
+};
+
+const normalizeDeal = (deal) => ({
+  id: deal.id,
+  name: deal.name || deal.dealName || deal.deal_name || "Untitled Deal",
+  stage: normalizeStage(deal.stage || deal.pipeline),
+  jumlah: deal.jumlah || deal.amount_value || deal.amount || "-",
+  tertanggal:
+    deal.tertanggal ||
+    deal.expectedCloseDate ||
+    deal.expected_close_date ||
+    "-",
+  contact: deal.contact || deal.contact_name || "-",
+  company: deal.company || deal.company_name || "-",
+  updatedAt: deal.updatedAt || deal.updated_at || "-",
+  owner: deal.owner || deal.owner_name || "-",
+});
 
 const handleChangeStage = async (deal, newStage) => {
   if (deal.stage === newStage) {
@@ -119,7 +143,8 @@ onMounted(async () => {
 watch(
   () => allDeals.value,
   (newDeals) => {
-    deals.value = newDeals;
+    deals.value = newDeals.map(normalizeDeal);
+    totalDeals.value = deals.value.length;
   },
   { immediate: true },
 );
@@ -444,25 +469,23 @@ watch(
                   <button
                     type="button"
                     @click="
-                      openStageDropdown.value =
-                        openStageDropdown.value === deal.id ? null : deal.id
+                      openStageDropdown =
+                        openStageDropdown === deal.id ? null : deal.id
                     "
                     :disabled="isSyncingStage && updatingDealId === deal.id"
                     class="w-full px-3 py-1.5 rounded-md text-xs font-medium inline-flex items-center justify-between gap-2 border border-gray-200 transition hover:border-gray-300 disabled:opacity-60 disabled:cursor-not-allowed"
                     :class="[
                       stageColor(deal.stage),
-                      openStageDropdown.value === deal.id
+                      openStageDropdown === deal.id
                         ? 'ring-1 ring-sub-text border-sub-text'
                         : '',
                     ]"
                   >
-                    <span class="capitalize">{{ deal.stage }}</span>
+                    <span>{{ getStageLabel(deal.stage) }}</span>
                     <ChevronDown
                       :size="14"
                       class="transition-transform"
-                      :class="
-                        openStageDropdown.value === deal.id ? 'rotate-180' : ''
-                      "
+                      :class="openStageDropdown === deal.id ? 'rotate-180' : ''"
                     />
                   </button>
 
@@ -477,7 +500,7 @@ watch(
                   <!-- Dropdown Menu -->
                   <Transition name="stage-dropdown">
                     <div
-                      v-if="openStageDropdown.value === deal.id"
+                      v-if="openStageDropdown === deal.id"
                       class="absolute top-full mt-1 left-0 right-0 bg-white border border-outline rounded-lg shadow-lg z-20 min-w-max"
                       @click.stop
                     >

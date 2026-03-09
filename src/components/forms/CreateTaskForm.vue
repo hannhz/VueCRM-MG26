@@ -33,12 +33,12 @@ const emit = defineEmits(["close", "submit"]);
 
 // Form Data
 const formData = ref({
-  taskName: "",
-  taskContent: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+  task_name: "",
+  description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
   status: "",
   assignee: "",
-  dueDate: "",
-  time: "",
+  due_date: "",
+  task_time: "",
   priority: "",
 });
 
@@ -71,12 +71,12 @@ const handleSubmit = () => {
 
 const handleReset = () => {
   formData.value = {
-    taskName: "",
-    taskContent: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+    task_name: "",
+    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
     status: "",
     assignee: "",
-    dueDate: "",
-    time: "",
+    due_date: "",
+    task_time: "",
     priority: "",
   };
 };
@@ -123,7 +123,7 @@ const handleReset = () => {
               >Name of Task</label
             >
             <input
-              v-model="formData.taskName"
+              v-model="formData.task_name"
               type="text"
               placeholder="Task name..."
               class="w-full px-4 py-3 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
@@ -234,7 +234,7 @@ const handleReset = () => {
             </div>
             <!-- Textarea -->
             <textarea
-              v-model="formData.taskContent"
+              v-model="formData.description"
               rows="6"
               class="w-full px-4 py-4 text-sm text-sub-text focus:outline-none resize-none bg-white"
               placeholder="Lorem ipsum..."
@@ -299,7 +299,7 @@ const handleReset = () => {
               >
               <div class="relative">
                 <input
-                  v-model="formData.dueDate"
+                  v-model="formData.due_date"
                   type="date"
                   class="w-full px-4 py-3 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white"
                 />
@@ -315,7 +315,7 @@ const handleReset = () => {
               >
               <div class="relative">
                 <input
-                  v-model="formData.time"
+                  v-model="formData.task_time"
                   type="time"
                   class="w-full px-4 py-3 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white"
                 />

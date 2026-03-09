@@ -28,6 +28,26 @@ const totalTask = computed(() => allTasks.value.length);
 const isLoading = computed(() => store.getters["tasks/isLoading"]);
 const error = computed(() => store.getters["tasks/error"]);
 
+const tasksStatusText = computed(() => {
+  if (isLoading.value) {
+    return "Searching tasks...";
+  }
+  if (error.value) {
+    return `Error: ${error.value}`;
+  }
+  return `${totalTask.value.toLocaleString()} Total Tasks`;
+});
+
+const tasksStatusClass = computed(() => {
+  if (isLoading.value) {
+    return "text-blue-600";
+  }
+  if (error.value) {
+    return "text-red-600";
+  }
+  return "text-sub-text";
+});
+
 const showDropdown = ref(false);
 const showDownloadDropdown = ref(false);
 const showCreateTaskForm = ref(false);
@@ -56,8 +76,13 @@ function handleDelete() {
   console.log("Delete selected tasks");
 }
 
-// State untuk mode tampilan
-const activeMode = ref("list"); // 'list', 'calendar', 'grid'
+// Keep local UI mode in sync with Vuex for consistency across task subviews.
+const activeMode = computed({
+  get: () => store.getters["tasks/currentView"] || "list",
+  set: (mode) => {
+    store.dispatch("tasks/setViewMode", mode);
+  },
+});
 
 // Fungsi untuk mengubah mode
 function setMode(mode) {
@@ -66,14 +91,16 @@ function setMode(mode) {
 
 // Fetch data function untuk refresh
 const fetchData = () => {
-  store
-    .dispatch("tasks/fetchAllTasks")
-    .then(() => {
-      console.log("Tasks fetched successfully");
-    })
-    .catch((err) => {
-      console.error("Failed to fetch tasks:", err);
-    });
+  return store.dispatch("tasks/fetchAllTasks");
+};
+
+const handleCreateTask = async (formData) => {
+  try {
+    await store.dispatch("tasks/createTask", formData);
+    showCreateTaskForm.value = false;
+  } catch (err) {
+    console.error("Failed to create task:", err);
+  }
 };
 
 // Lifecycle: Fetch tasks on mount
@@ -86,12 +113,7 @@ onMounted(() => {
   <div class="flex items-center justify-between mb-4">
     <div class="flex items-baseline gap-3">
       <h1 class="text-2xl font-bold text-dark-base">Tasks</h1>
-      <span class="text-sm text-sub-text">
-        <template v-if="isLoading"> Loading tasks... </template>
-        <template v-else>
-          {{ totalTask.toLocaleString() }} Total Tasks
-        </template>
-      </span>
+      <span class="text-sm" :class="tasksStatusClass">{{ tasksStatusText }}</span>
     </div>
 
     <!-- Action Button -->
@@ -256,7 +278,18 @@ onMounted(() => {
   </div>
 
   <!-- Konten berdasarkan mode -->
-  <div class="mt-4">
+  <div class="mt-4 relative">
+    <!-- Loading Overlay -->
+    <div
+      v-if="isLoading"
+      class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center rounded-lg"
+    >
+      <div class="flex flex-col items-center gap-3">
+        <RefreshCw class="animate-spin text-blue-950" :size="32" />
+        <p class="text-sm text-sub-text font-medium">Loading tasks...</p>
+      </div>
+    </div>
+
     <TaskList v-if="activeMode === 'list'" />
     <TaskCalender v-else-if="activeMode === 'calendar'" />
     <TaskCard v-else-if="activeMode === 'grid'" />
@@ -266,6 +299,6 @@ onMounted(() => {
   <CreateTaskForm
     :isOpen="showCreateTaskForm"
     @close="showCreateTaskForm = false"
-    @submit="showCreateTaskForm = false"
+    @submit="handleCreateTask"
   />
 </template>

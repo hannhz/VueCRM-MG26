@@ -1,9 +1,13 @@
 <script setup>
 import { ref } from "vue";
+import { useStore } from "vuex";
 import { X, Plus, ChevronDown, Paperclip } from "lucide-vue-next";
 import ContactDetailForm from "./DetailForm.vue";
 import AddCompanyForm from "./AddCompanyForm.vue";
 import AddContactQuickForm from "./AddContactQuickForm.vue";
+import { alertService } from "@/services/alertService";
+
+const store = useStore();
 
 const props = defineProps({
   isOpen: {
@@ -59,6 +63,7 @@ const showOptional = ref(false);
 const showDetailForm = ref(false);
 const showAddCompanyForm = ref(false);
 const showAddContactQuickForm = ref(false);
+const isSavingBeforeDetail = ref(false);
 
 // Documents dropdown
 const docSourceOptions = [
@@ -100,8 +105,28 @@ const handleFileChange = (e) => {
 
 const handleClose = () => emit("close");
 
-const handleSubmit = () => {
-  emit("submit", formData.value);
+const handleSubmit = async () => {
+  if (isSavingBeforeDetail.value) {
+    return;
+  }
+
+  isSavingBeforeDetail.value = true;
+
+  try {
+    await store.dispatch("deals/createDeal", formData.value);
+    showDetailForm.value = true;
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Gagal menyimpan deal sebelum membuka detail";
+    await alertService.toastError(message);
+  } finally {
+    isSavingBeforeDetail.value = false;
+  }
+};
+
+const handleDetailSubmit = () => {
   handleClose();
 };
 
@@ -534,10 +559,12 @@ const handleReset = () => {
           </button>
           <button
             type="button"
-            @click="showDetailForm = true"
+            @click="handleSubmit"
+            :disabled="isSavingBeforeDetail"
             class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
+            :class="{ 'opacity-60 cursor-not-allowed': isSavingBeforeDetail }"
           >
-            Next
+            {{ isSavingBeforeDetail ? "Saving..." : "Next" }}
           </button>
         </div>
       </div>
@@ -549,10 +576,7 @@ const handleReset = () => {
     :isOpen="showDetailForm"
     @close="showDetailForm = false"
     @back="showDetailForm = false"
-    @submit="
-      showDetailForm = false;
-      handleClose();
-    "
+    @submit="handleDetailSubmit"
   />
 
   <!-- Add Company Form -->

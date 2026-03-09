@@ -74,6 +74,26 @@ const downloadLabel = computed(() => {
     : "Download";
 });
 
+const companiesStatusText = computed(() => {
+  if (isLoading.value) {
+    return "Searching company...";
+  }
+  if (error.value) {
+    return `Error: ${error.value}`;
+  }
+  return `${totalCompanies.value.toLocaleString()} Total Companies`;
+});
+
+const companiesStatusClass = computed(() => {
+  if (isLoading.value) {
+    return "text-blue-600";
+  }
+  if (error.value) {
+    return "text-red-600";
+  }
+  return "text-sub-text";
+});
+
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value;
 };
@@ -210,11 +230,8 @@ const handleDeleteCompanies = async () => {
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-baseline gap-3">
         <h1 class="text-2xl font-bold text-dark-base">Companies</h1>
-        <span class="text-sm text-sub-text">
-          <template v-if="isLoading"> Searching company... </template>
-          <template v-else>
-            {{ totalCompanies.toLocaleString() }} Total Companies
-          </template>
+        <span class="text-sm" :class="companiesStatusClass">
+          {{ companiesStatusText }}
         </span>
       </div>
 

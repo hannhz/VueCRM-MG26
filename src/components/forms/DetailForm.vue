@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from "vue";
+import { ref } from "vue";
 import {
   X,
   ChevronDown,
@@ -10,51 +10,14 @@ import {
   Mic,
 } from "lucide-vue-next";
 
-const props = defineProps({
+defineProps({
   isOpen: {
-    type: Boolean,
-    default: false,
-  },
-  contact: {
-    type: Object,
-    default: null,
-  },
-  isSubmitting: {
     type: Boolean,
     default: false,
   },
 });
 
 const emit = defineEmits(["close", "submit", "back"]);
-
-const getContactFormDefaults = (contact = null) => ({
-  first_name: contact?.first_name || "",
-  last_name: contact?.last_name || "",
-  job_title: contact?.job_title || "",
-  owner: contact?.owner || "",
-  email: contact?.email || "",
-  telephone_1: contact?.telephone_1 || "",
-  telephone_2: contact?.telephone_2 || "",
-  status: contact?.status || "",
-  address: contact?.address || "",
-  city: contact?.city || "",
-  province: contact?.province || "",
-  country: contact?.country || "",
-  pos_code: contact?.pos_code || "",
-  source: contact?.source || "",
-  companiesAssociation: contact?.companiesAssociation || "",
-  dealsAssociation: contact?.dealsAssociation || "",
-});
-
-const contactForm = ref(getContactFormDefaults());
-
-watch(
-  () => props.contact,
-  (newContact) => {
-    contactForm.value = getContactFormDefaults(newContact);
-  },
-  { immediate: true },
-);
 
 // Section toggles
 const showNotes = ref(true);
@@ -127,7 +90,6 @@ const handleBack = () => emit("back");
 
 const handleSave = () => {
   emit("submit", {
-    contact: { ...contactForm.value },
     note: noteContent.value,
     task: {
       name: taskName.value,
@@ -149,7 +111,6 @@ const handleSave = () => {
 };
 
 const handleReset = () => {
-  contactForm.value = getContactFormDefaults(props.contact);
   noteContent.value = "";
   taskName.value = "";
   taskContent.value = "";
@@ -186,9 +147,7 @@ const handleReset = () => {
       <div
         class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
       >
-        <h2 class="text-xl font-bold text-dark-base">
-          {{ props.contact ? "Contact Details" : "Add Contact / Details" }}
-        </h2>
+        <h2 class="text-xl font-bold text-dark-base">Add Contact / Details</h2>
         <button
           @click="handleClose"
           class="p-2 hover:bg-light-base rounded-lg transition-colors"
@@ -200,177 +159,6 @@ const handleReset = () => {
       <!-- Scrollable Content -->
       <div class="flex-1 overflow-y-auto min-h-0">
         <div class="p-6 pb-10 space-y-6">
-          <!-- CONTACT INFO SECTION -->
-          <div class="border border-outline rounded-lg p-4 space-y-4">
-            <h3 class="text-sm font-semibold text-dark-base">Contact Info</h3>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">First Name</label>
-                <input
-                  v-model="contactForm.first_name"
-                  type="text"
-                  placeholder="First Name"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Last Name</label>
-                <input
-                  v-model="contactForm.last_name"
-                  type="text"
-                  placeholder="Last Name"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Job Title</label>
-                <input
-                  v-model="contactForm.job_title"
-                  type="text"
-                  placeholder="Job Title"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Owner</label>
-                <input
-                  v-model="contactForm.owner"
-                  type="text"
-                  placeholder="Owner"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Email</label>
-                <input
-                  v-model="contactForm.email"
-                  type="email"
-                  placeholder="youremail@gmail.com"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Status</label>
-                <input
-                  v-model="contactForm.status"
-                  type="text"
-                  placeholder="Status"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Telephone 1</label>
-                <input
-                  v-model="contactForm.telephone_1"
-                  type="text"
-                  placeholder="Telephone 1"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Telephone 2</label>
-                <input
-                  v-model="contactForm.telephone_2"
-                  type="text"
-                  placeholder="Telephone 2"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
-
-             <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Address</label>
-                <input
-                  v-model="contactForm.address"
-                  type="text"
-                  placeholder="Address"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">City</label>
-                <input
-                  v-model="contactForm.city"
-                  type="text"
-                  placeholder="City"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Province</label>
-                <input
-                  v-model="contactForm.province"
-                  type="text"
-                  placeholder="Province"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Country</label>
-                <input
-                  v-model="contactForm.country"
-                  type="text"
-                  placeholder="Country"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Pos Code</label>
-                <input
-                  v-model="contactForm.pos_code"
-                  type="text"
-                  placeholder="Pos Code"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2">Source</label>
-                <input
-                  v-model="contactForm.source"
-                  type="text"
-                  placeholder="Source"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">Companies Association</label>
-              <input
-                v-model="contactForm.companiesAssociation"
-                type="text"
-                placeholder="Search by Name"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">Deals Association</label>
-              <input
-                v-model="contactForm.dealsAssociation"
-                type="text"
-                placeholder="Search by Name"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-            </div>
-          </div>
           <!-- NOTES SECTION -->
           <div>
             <button

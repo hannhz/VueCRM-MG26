@@ -5,6 +5,7 @@ import DealsCard from "./dealscard.vue";
 import DealsList from "./dealslist.vue";
 import CreateDealForm from "@/components/forms/CreateDealForm.vue";
 import BulkAddDealForm from "@/components/forms/BulkAddDealForm.vue";
+import { alertService } from "@/services/alertService";
 import {
   ChevronDown,
   FileDown,
@@ -27,6 +28,24 @@ const activeMode = computed(() => store.getters["deals/currentView"]);
 const totalDeals = computed(() => store.getters["deals/allDeals"]?.length || 0);
 const isLoading = computed(() => store.getters["deals/isLoading"]);
 const error = computed(() => store.getters["deals/error"]);
+const dealsStatusText = computed(() => {
+  if (isLoading.value) {
+    return "Searching deals...";
+  }
+  if (error.value) {
+    return `Error: ${error.value}`;
+  }
+  return `${totalDeals.value.toLocaleString()} Total Deals`;
+});
+const dealsStatusClass = computed(() => {
+  if (isLoading.value) {
+    return "text-blue-600";
+  }
+  if (error.value) {
+    return "text-red-600";
+  }
+  return "text-sub-text";
+});
 const showDropdown = ref(false);
 
 function changeToCard() {
@@ -75,6 +94,20 @@ const fetchData = () => {
     });
 };
 
+const handleCreateDealSubmit = async (formData) => {
+  try {
+    await store.dispatch("deals/createDeal", formData);
+    showCreateDealForm.value = false;
+    await alertService.toastSuccess("Deal berhasil disimpan ke database");
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Gagal menyimpan deal ke database";
+    await alertService.toastError(message);
+  }
+};
+
 // Lifecycle: Fetch deals on mount
 onMounted(() => {
   fetchData();
@@ -86,9 +119,7 @@ onMounted(() => {
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-baseline gap-3">
         <h1 class="text-2xl font-bold text-dark-base">Deals</h1>
-        <span class="text-sm text-sub-text"
-          >{{ totalDeals.toLocaleString() }} Total Deals</span
-        >
+        <span class="text-sm" :class="dealsStatusClass">{{ dealsStatusText }}</span>
       </div>
 
       <!-- Action Button -->
@@ -232,7 +263,18 @@ onMounted(() => {
     </div>
 
     <!-- Render komponen berdasarkan mode -->
-    <div class="mt-4">
+    <div class="mt-4 relative">
+      <!-- Loading Overlay -->
+      <div
+        v-if="isLoading"
+        class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center rounded-lg"
+      >
+        <div class="flex flex-col items-center gap-3">
+          <RefreshCw class="animate-spin text-blue-950" :size="32" />
+          <p class="text-sm text-sub-text font-medium">Loading deals...</p>
+        </div>
+      </div>
+
       <DealsCard v-if="activeMode === 'card'" />
       <DealsList v-else-if="activeMode === 'list'" />
     </div>
@@ -241,7 +283,7 @@ onMounted(() => {
     <CreateDealForm
       :isOpen="showCreateDealForm"
       @close="showCreateDealForm = false"
-      @submit="showCreateDealForm = false"
+      @submit="handleCreateDealSubmit"
     />
 
     <!-- Bulk Add Deal Form -->

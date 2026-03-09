@@ -3,6 +3,49 @@ import { useCookies } from "vue3-cookies";
 
 const { cookies } = useCookies();
 
+const normalizeNumber = (value) => {
+  if (value === "" || value === null || value === undefined) {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const mapCreateDealPayload = (formData = {}) => {
+  const normalizedAmount = normalizeNumber(formData.amount);
+
+  return {
+    // Mapping utama sesuai kolom DB
+    deal_name: formData.dealName?.trim() || null,
+    pipeline: formData.pipeline || null,
+    currency: formData.currency || "IDR",
+    amount_value: normalizedAmount,
+    expected_close_date: formData.expectedCloseDate || null,
+    owner: formData.owner || null,
+    priority: formData.priority || null,
+    source: formData.source || null,
+    // Alias untuk kompatibilitas variasi backend
+    name: formData.dealName?.trim() || null,
+    dealName: formData.dealName?.trim() || null,
+    amount: normalizedAmount,
+    stage: formData.pipeline || "new",
+    expectedCloseDate: formData.expectedCloseDate || null,
+  };
+};
+
+const mapBoardStageToPipeline = (stage) => {
+  const stageMap = {
+    new: "new",
+    qualified: "qualified",
+    advanced: "negotiation",
+    payment: "proposal",
+    won: "closed_won",
+    lost: "closed_lost",
+  };
+
+  return stageMap[stage] || stage || "new";
+};
+
 export default {
   namespaced: true,
 
@@ -21,6 +64,10 @@ export default {
 
     SET_DEALS(state, deals) {
       state.deals = deals;
+    },
+
+    ADD_DEAL(state, deal) {
+      state.deals = [deal, ...state.deals];
     },
 
     UPDATE_DEAL_STAGE(state, payload) {
@@ -59,7 +106,7 @@ export default {
 
       const promise = new Promise(async (resolve, reject) => {
         try {
-          const response = await api.get("deal", {
+          const response = await api.get("deals", {
             headers: {
               Authorization: "Bearer " + cookies.get("token"),
             },
@@ -77,7 +124,17 @@ export default {
           commit("SET_LOADING", false);
         })
         .catch((error) => {
-          commit("SET_ERROR", error.message || "Failed to fetch deals");
+          const status = error?.response?.status;
+          const serverMessage = error?.response?.data?.message;
+          commit(
+            "SET_ERROR",
+            serverMessage ||
+              (status
+                ? status === 404
+                  ? "Endpoint deals tidak ditemukan di server (404)."
+                  : `Fetch deals gagal (HTTP ${status})`
+                : error.message || "Failed to fetch deals"),
+          );
           commit("SET_LOADING", false);
         });
 
@@ -86,6 +143,8 @@ export default {
 
     async updateDealStage({ commit }, payload) {
       const { dealId, newStage } = payload;
+      const pipelineValue = mapBoardStageToPipeline(newStage);
+      const apiStageValue = pipelineValue;
 
       commit("UPDATE_DEAL_STAGE", { dealId, newStage });
 
@@ -97,25 +156,64 @@ export default {
         () =>
           api.post(
             "deal/update-stage",
-            { id: dealId, stage: newStage },
+            {
+              id: dealId,
+              stage: apiStageValue,
+              pipeline: pipelineValue,
+              board_stage: newStage,
+            },
             { headers },
           ),
         () =>
           api.post(
             "deal/updatestage",
-            { id: dealId, stage: newStage },
+            {
+              id: dealId,
+              stage: apiStageValue,
+              pipeline: pipelineValue,
+              board_stage: newStage,
+            },
             { headers },
           ),
         () =>
           api.post(
             `deal/updateusr?id=${dealId}`,
-            { stage: newStage, pipeline: newStage },
+            {
+              stage: apiStageValue,
+              pipeline: pipelineValue,
+              board_stage: newStage,
+            },
             { headers },
           ),
         () =>
           api.post(
             `deal/update?id=${dealId}`,
-            { stage: newStage },
+            {
+              stage: apiStageValue,
+              pipeline: pipelineValue,
+              board_stage: newStage,
+            },
+            { headers },
+          ),
+        () =>
+          api.post(
+            `deals/updateusr?id=${dealId}`,
+            {
+              stage: apiStageValue,
+              pipeline: pipelineValue,
+              board_stage: newStage,
+            },
+            { headers },
+          ),
+        () =>
+          api.post(
+            "deals/update",
+            {
+              id: dealId,
+              stage: apiStageValue,
+              pipeline: pipelineValue,
+              board_stage: newStage,
+            },
             { headers },
           ),
       ];
@@ -131,6 +229,48 @@ export default {
       }
 
       throw lastError || new Error("Failed to update deal stage");
+    },
+
+    async createDeal({ commit, dispatch }, formData) {
+      commit("SET_LOADING", true);
+      commit("SET_ERROR", null);
+
+      const payload = mapCreateDealPayload(formData);
+      const headers = {
+        Authorization: "Bearer " + cookies.get("token"),
+      };
+
+      try {
+        const response = await api.post("deals/input", payload, { headers });
+
+        await dispatch("fetchAllDeals").catch(() => {
+          const createdDeal = response?.data?.deal || response?.data?.data;
+          if (createdDeal) {
+            commit("ADD_DEAL", createdDeal);
+          }
+        });
+        commit("SET_LOADING", false);
+        return response.data;
+      } catch (error) {
+        const status = error?.response?.status;
+        const serverMessage = error?.response?.data?.message;
+        commit(
+          "SET_ERROR",
+          serverMessage ||
+            (status
+              ? status === 404
+                ? "Endpoint input deal tidak ditemukan di server (404)."
+                : `Create deal gagal (HTTP ${status})`
+              : error?.message || "Failed to create deal in API."),
+        );
+        commit("SET_LOADING", false);
+        throw error;
+      }
+    },
+
+    // Backward compatibility for older callers that still dispatch `deals/input`.
+    input({ dispatch }, formData) {
+      return dispatch("createDeal", formData);
     },
   },
 
@@ -148,6 +288,7 @@ export default {
       return state.deals.filter(
         (deal) =>
           deal.name?.toLowerCase().includes(query) ||
+          deal.deal_name?.toLowerCase().includes(query) ||
           deal.contact?.toLowerCase().includes(query) ||
           deal.company?.toLowerCase().includes(query),
       );

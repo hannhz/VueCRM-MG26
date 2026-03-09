@@ -31,69 +31,6 @@ const boardMeta = [
   { id: 6, key: "lost", title: "Lost" },
 ];
 
-const fallbackDeals = [
-  {
-    id: 1,
-    name: "TechFlow Solutions",
-    stage: "new",
-    jumlah: "Main Enterprise",
-    tertanggal: "2023-10-20",
-    contact: "John Doe",
-    company: "Meta Tech",
-    updatedAt: "2023-10-24",
-    owner: "Alex Graham",
-    value: 500000,
-  },
-  {
-    id: 2,
-    name: "Client B",
-    stage: "qualified",
-    jumlah: "SMB Plan",
-    tertanggal: "2023-10-18",
-    contact: "Maya Putri",
-    company: "Binar Corp",
-    updatedAt: "2023-10-25",
-    owner: "Dita Rahma",
-    value: 300000,
-  },
-  {
-    id: 3,
-    name: "Client C",
-    stage: "advanced",
-    jumlah: "Pro Package",
-    tertanggal: "2023-10-17",
-    contact: "Rizky Anwar",
-    company: "Nusantara Labs",
-    updatedAt: "2023-10-26",
-    owner: "Fahmi Yusuf",
-    value: 450000,
-  },
-  {
-    id: 4,
-    name: "Client D",
-    stage: "payment",
-    jumlah: "Starter",
-    tertanggal: "2023-10-16",
-    contact: "Lisa Wijaya",
-    company: "Skyline ID",
-    updatedAt: "2023-10-23",
-    owner: "Anita Dewi",
-    value: 200000,
-  },
-  {
-    id: 5,
-    name: "Client E",
-    stage: "won",
-    jumlah: "Annual Contract",
-    tertanggal: "2023-10-21",
-    contact: "Budi Santoso",
-    company: "Garuda Digital",
-    updatedAt: "2023-10-27",
-    owner: "Salsa Putri",
-    value: 750000,
-  },
-];
-
 const boards = ref([]);
 const isSyncingStage = ref(false);
 
@@ -109,8 +46,8 @@ const normalizeStage = (rawStage) => {
   if (stage.includes("qual")) return "qualified";
   if (stage.includes("adv") || stage.includes("negot")) return "advanced";
   if (stage.includes("pay") || stage.includes("proposal")) return "payment";
-  if (stage.includes("won") || stage.includes("close_won")) return "won";
-  if (stage.includes("lost") || stage.includes("close_lost")) return "lost";
+  if (stage.includes("won") || stage.includes("close_won") || stage.includes("closed_won")) return "won";
+  if (stage.includes("lost") || stage.includes("close_lost") || stage.includes("closed_lost")) return "lost";
   return "new";
 };
 
@@ -118,7 +55,7 @@ const normalizeDeal = (deal) => ({
   id: deal.id,
   name: deal.name || deal.dealName || deal.deal_name || "Untitled Deal",
   stage: normalizeStage(deal.stage || deal.pipeline),
-  jumlah: deal.jumlah || deal.amount || "-",
+  jumlah: deal.jumlah || deal.amount_value || deal.amount || "-",
   tertanggal:
     deal.tertanggal ||
     deal.expectedCloseDate ||
@@ -128,7 +65,7 @@ const normalizeDeal = (deal) => ({
   company: deal.company || deal.company_name || "-",
   updatedAt: deal.updatedAt || deal.updated_at || "-",
   owner: deal.owner || deal.owner_name || "-",
-  value: Number(deal.value || deal.amount || 0),
+  value: Number(deal.value || deal.amount_value || deal.amount || 0),
 });
 
 const rebuildBoards = (rawDeals) => {
@@ -194,18 +131,16 @@ const stageClass = (stage) => {
 };
 
 onMounted(async () => {
-  await store.dispatch("deals/fetchAllDeals").catch(() => {
-    rebuildBoards(fallbackDeals);
-  });
+  try {
+    await store.dispatch("deals/fetchAllDeals");
+  } catch (error) {
+    rebuildBoards([]);
+  }
 });
 
 watch(
   allDeals,
   (deals) => {
-    if (!deals.length) {
-      rebuildBoards(fallbackDeals);
-      return;
-    }
     rebuildBoards(deals);
   },
   { immediate: true },

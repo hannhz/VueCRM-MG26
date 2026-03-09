@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, watch } from "vue";
 import { useStore } from "vuex";
 import {
   Filter,
@@ -9,6 +9,8 @@ import {
   ChevronDown,
   RefreshCw,
 } from "lucide-vue-next";
+import TaskDetailDataForm from "@/components/forms/TaskDetailDataForm.vue";
+import { alertService } from "@/services/alertService";
 
 /* =========================
    QUICK ADD
@@ -19,20 +21,56 @@ const store = useStore();
 const allTasksData = computed(() => store.getters["tasks/filteredTasks"] || []);
 const isLoading = computed(() => store.getters["tasks/isLoading"]);
 const error = computed(() => store.getters["tasks/error"]);
+const signedInUser = computed(() => store.getters["users/usersignin"] || null);
+const authUser = computed(() => store.getters["auth/currentUser"] || null);
+const searchQuery = computed({
+  get: () => store.getters["tasks/searchQuery"] || "",
+  set: (value) => store.dispatch("tasks/setSearchQuery", value),
+});
 
 const taskText = ref("");
-const emit = defineEmits(["add"]);
+const isQuickAdding = ref(false);
+const quickAddOwnerLabel = computed(() => getLoggedInName());
 
-function quickAdd() {
-  if (!taskText.value.trim()) return;
-  emit("add", taskText.value);
-  taskText.value = "";
+const getLoggedInName = () => {
+  const user = signedInUser.value || authUser.value || {};
+  const fullName =
+    user.name ||
+    user.username ||
+    user.user_name ||
+    [user.firstname || user.first_name, user.lastname || user.last_name]
+      .filter(Boolean)
+      .join(" ") ||
+    user.email ||
+    "User";
+
+  return String(fullName).trim() || "User";
+};
+
+async function quickAdd() {
+  const taskName = taskText.value.trim();
+  if (!taskName || isQuickAdding.value) return;
+
+  isQuickAdding.value = true;
+
+  try {
+    if (!signedInUser.value) {
+      await store.dispatch("users/getusersignin").catch(() => null);
+    }
+
+    await store.dispatch("tasks/createTask", {
+      taskName,
+      owner: getLoggedInName(),
+    });
+
+    taskText.value = "";
+  } catch (err) {
+    console.error("Quick add task failed:", err);
+  } finally {
+    isQuickAdding.value = false;
+  }
 }
 
-/* =========================
-   DATA TASK (DUMMY)
-   nanti bisa dari API
-========================= */
 const tasks = computed(() => allTasksData.value);
 
 /* =========================
@@ -43,8 +81,19 @@ const itemsPerPage = ref(10);
 
 const totalTask = computed(() => tasks.value.length);
 const totalPages = computed(() =>
-  Math.ceil(totalTask.value / itemsPerPage.value),
+  Math.max(1, Math.ceil(totalTask.value / itemsPerPage.value)),
 );
+
+const paginatedTasks = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  return tasks.value.slice(start, start + itemsPerPage.value);
+});
+
+watch([itemsPerPage, totalTask], () => {
+  if (currentPage.value > totalPages.value) {
+    currentPage.value = totalPages.value;
+  }
+});
 
 function nextPage() {
   if (currentPage.value < totalPages.value) currentPage.value++;
@@ -58,16 +107,21 @@ function prevPage() {
    SELECT TASK
 ========================= */
 
-const task = ref([]);
 const selectedTask = ref([]);
+const selectedTaskDetail = ref(null);
+const showTaskDetailForm = ref(false);
+const isTaskDetailSubmitting = ref(false);
 
 const allSelected = computed(
   () =>
-    selectedTask.value.length === tasks.value.length && tasks.value.length > 0,
+    paginatedTasks.value.length > 0 &&
+    paginatedTasks.value.every((task) => selectedTask.value.includes(task.id)),
 );
 
 function toggleSelectAll(e) {
-  selectedTask.value = e.target.checked ? tasks.value.map((t) => t.id) : [];
+  selectedTask.value = e.target.checked
+    ? paginatedTasks.value.map((t) => t.id)
+    : [];
 }
 
 function toggleSelect(id) {
@@ -78,17 +132,58 @@ function toggleSelect(id) {
   }
 }
 
-// Lifecycle: Fetch tasks on mount
-onMounted(() => {
-  store
-    .dispatch("tasks/fetchAllTasks")
-    .then(() => {
-      console.log("Tasks fetched successfully");
-    })
-    .catch((err) => {
-      console.error("Failed to fetch tasks:", err);
+function openTaskDetail(task) {
+  selectedTaskDetail.value = { ...task };
+  showTaskDetailForm.value = true;
+}
+
+function closeTaskDetail() {
+  selectedTaskDetail.value = null;
+  showTaskDetailForm.value = false;
+}
+
+async function handleTaskDetailSubmit(payload) {
+  const taskId = selectedTaskDetail.value?.id || payload?.id;
+
+  if (!taskId) {
+    alertService.error("ID task tidak ditemukan. Coba buka ulang detail task.");
+    return;
+  }
+
+  if (!payload?.task_name?.trim()) {
+    alertService.error("Task name wajib diisi.");
+    return;
+  }
+
+  isTaskDetailSubmitting.value = true;
+
+  try {
+    await store.dispatch("tasks/updateTask", {
+      id: taskId,
+      formData: {
+        ...payload,
+        task_name: payload.task_name.trim(),
+        description: payload.description?.trim() || "",
+        assignee: payload.assignee?.trim() || "",
+      },
     });
-});
+
+    await store.dispatch("tasks/fetchAllTasks");
+
+    alertService.success("Task berhasil diperbarui.");
+    closeTaskDetail();
+  } catch (err) {
+    const backendMessage =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err?.message ||
+      "Gagal update task. Silakan coba lagi.";
+    alertService.error(backendMessage);
+  } finally {
+    isTaskDetailSubmitting.value = false;
+  }
+}
+
 </script>
 
 <template>
@@ -97,9 +192,9 @@ onMounted(() => {
   >
     <!-- Action Bar -->
     <div class="pt-4 pr-4 pl-4">
-      <div class="flex items-center gap-4 w-full">
+      <div class="flex flex-col xl:flex-row xl:items-start gap-4 w-full">
         <!-- LEFT -->
-        <div class="flex items-center gap-3 flex-1 min-w-0">
+        <div class="flex items-center flex-wrap gap-3 flex-1 min-w-0">
           <!-- Filter -->
           <button
             class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
@@ -111,7 +206,8 @@ onMounted(() => {
           <input
             type="text"
             placeholder="Search by Name"
-            class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+            v-model="searchQuery"
+            class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-full sm:w-64 lg:w-72 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
           />
 
           <!-- Search Btn -->
@@ -124,17 +220,20 @@ onMounted(() => {
           <!-- Show -->
           <div class="flex items-center gap-2">
             <span class="text-sm text-dark-base">Show</span>
-            <select class="px-3 py-2 border border-outline rounded-lg text-sm">
-              <option>10</option>
-              <option>25</option>
-              <option>50</option>
-              <option>100</option>
+            <select
+              v-model.number="itemsPerPage"
+              class="px-3 py-2 border border-outline rounded-lg text-sm"
+            >
+              <option :value="10">10</option>
+              <option :value="25">25</option>
+              <option :value="50">50</option>
+              <option :value="100">100</option>
             </select>
           </div>
         </div>
 
         <!-- quick add -->
-        <div class="w-full max-w-xl">
+        <div class="w-full xl:w-[26rem] shrink-0">
           <div
             class="flex flex-col sm:flex-row bg-white border border-slate-200 rounded-md shadow-sm overflow-hidden"
           >
@@ -144,17 +243,22 @@ onMounted(() => {
               @keyup.enter="quickAdd"
               type="text"
               placeholder="Enter new task here..."
-              class="flex-1 h-9 px-4 text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+              class="w-full min-w-0 flex-1 h-10 sm:h-9 px-4 text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
             />
 
             <!-- Button -->
             <button
               @click="quickAdd"
-              class="h-9 px-6 bg-sub-text text-white text-sm font-semibold hover:bg-gray-700 transition flex items-center justify-center"
+              :disabled="isQuickAdding || !taskText.trim()"
+              class="w-full sm:w-auto h-10 sm:h-9 px-6 bg-sub-text text-white text-sm font-semibold hover:bg-gray-700 transition flex items-center justify-center shrink-0"
+              :class="{ 'opacity-60 cursor-not-allowed': isQuickAdding || !taskText.trim() }"
             >
-              Quick Add
+              {{ isQuickAdding ? "Saving..." : "Quick Add" }}
             </button>
           </div>
+          <p class="mt-1 text-xs text-sub-text">
+            Owner otomatis: {{ quickAddOwnerLabel }}
+          </p>
         </div>
       </div>
     </div>
@@ -173,6 +277,7 @@ onMounted(() => {
       <!-- PUSH KANAN -->
       <div class="ml-auto flex items-center gap-3 text-sm text-sub-text">
         <button
+          @click="prevPage"
           class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
           :disabled="currentPage === 1"
         >
@@ -188,10 +293,12 @@ onMounted(() => {
           class="w-12 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-sub-text"
         />
 
-        <span>of {{ Math.ceil(totalTask / itemsPerPage) }}</span>
+        <span>of {{ totalPages }}</span>
 
         <button
+          @click="nextPage"
           class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
+          :disabled="currentPage === totalPages"
         >
           <ChevronRight :size="18" class="text-sub-text" />
         </button>
@@ -295,29 +402,44 @@ onMounted(() => {
 
             <!-- Data Rows -->
             <tr
-              v-for="task in tasks"
+              v-for="task in paginatedTasks"
               :key="task.id"
-              class="border-b border-gray-100 hover:bg-gray-50 transition"
+              class="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer"
+              @click="openTaskDetail(task)"
             >
               <td class="px-6 py-4">
                 <input
                   type="checkbox"
                   :value="task.id"
                   v-model="selectedTask"
+                  @click.stop
                   class="w-4 h-4"
                 />
               </td>
 
-              <td class="px-6 py-4">{{ task.name }}</td>
-              <td class="px-6 py-4">{{ task.stage }}</td>
-              <td class="px-6 py-4">{{ task.amount }}</td>
+              <td class="px-6 py-4">{{ task.title || task.name }}</td>
+              <td class="px-6 py-4">{{ task.stage || task.status || '-' }}</td>
+              <td class="px-6 py-4">{{ task.dueDate || task.time || '-' }}</td>
               <td class="px-6 py-4">—</td>
               <td class="px-6 py-4">—</td>
-              <td class="px-6 py-4">{{ task.owner }}</td>
+              <td class="px-6 py-4">{{ task.owner || task.assignee || '-' }}</td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
+
+    <p v-if="error" class="px-6 py-3 text-sm text-red-600 border-t border-gray-100">
+      {{ error }}
+    </p>
+
+    <TaskDetailDataForm
+      :isOpen="showTaskDetailForm"
+      :task="selectedTaskDetail"
+      :isSubmitting="isTaskDetailSubmitting"
+      @close="closeTaskDetail"
+      @back="closeTaskDetail"
+      @submit="handleTaskDetailSubmit"
+    />
   </div>
 </template>
