@@ -1,8 +1,10 @@
 <script setup>
 import { ref } from "vue";
+import { useStore } from "vuex";
 import { X, Plus, ChevronDown } from "lucide-vue-next";
 import AddDealForm from "./AddDealForm.vue";
 import AddContactQuickForm from "./AddContactQuickForm.vue";
+import { alertService } from "@/services/alertService";
 
 const props = defineProps({
   isOpen: {
@@ -12,6 +14,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["close", "submit"]);
+
+const store = useStore();
+const isSubmitting = ref(false);
 
 const industryOptions = [
   { value: "", label: "Select Industry" },
@@ -66,9 +71,9 @@ const formData = ref({
   pos_code: "",
   source: "",
   type: "",
-  deals: "",
-  contactAssociation: "",
-  dealsAssociation: "",
+  //deals: "",
+  //contact_association: "",
+  //deals_association: "",
 });
 
 const showAddDealForm = ref(false);
@@ -76,26 +81,45 @@ const showAddContactQuickForm = ref(false);
 
 const handleClose = () => emit("close");
 
-const handleSubmit = () => {
-  const payload = {
-    company_name: formData.value.company_name,
-    company_owner: formData.value.company_owner,
-    description: formData.value.description,
-    email: formData.value.email,
-    telephone: formData.value.telephone,
-    website: formData.value.website,
-    industry: formData.value.industry,
-    address: formData.value.address,
-    country: formData.value.country,
-    province: formData.value.province,
-    city: formData.value.city,
-    pos_code: formData.value.pos_code,
-    source: formData.value.source,
-    type: formData.value.type,
-  };
+const handleSubmit = async () => {
+  // Validasi input
+  if (!formData.value.company_name.trim()) {
+    alertService.error("Company Name wajib diisi!");
+    return;
+  }
 
-  emit("submit", payload);
-  handleClose();
+  isSubmitting.value = true;
+
+  try {
+    // Tambahkan timestamps sebelum kirim
+    const dataToSubmit = {
+      ...formData.value,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    // Kirim data ke store action insertcompany
+    const response = await store.dispatch("company/insertcompany", {
+      formdata: dataToSubmit,
+    });
+
+    // Jika berhasil
+    console.log("Company berhasil ditambahkan:", response);
+    alertService.success("Company berhasil ditambahkan!");
+
+    emit("submit", formData.value);
+    handleClose();
+  } catch (error) {
+    // Jika error
+    console.error("Error saat menambah company:", error);
+    alertService.error(
+      error.response?.data?.message ||
+        error.message ||
+        "Gagal menambah company. Silakan coba lagi.",
+    );
+  } finally {
+    isSubmitting.value = false;
+  }
 };
 
 const handleReset = () => {
@@ -114,9 +138,9 @@ const handleReset = () => {
     pos_code: "",
     source: "",
     type: "",
-    deals: "",
-    contactAssociation: "",
-    dealsAssociation: "",
+    //deals: "",
+    //contact_association: "",
+    //deals_association: "",
   };
 };
 </script>
@@ -258,7 +282,7 @@ const handleReset = () => {
             </div>
           </div>
 
-          <!-- Address & Country -->
+          <!-- Address & City -->
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2"
@@ -268,32 +292,6 @@ const handleReset = () => {
                 v-model="formData.address"
                 type="text"
                 placeholder="Ex simopomahan"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Country</label
-              >
-              <input
-                v-model="formData.country"
-                type="text"
-                placeholder="Country"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-            </div>
-          </div>
-
-          <!-- Province & City -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Province</label
-              >
-              <input
-                v-model="formData.province"
-                type="text"
-                placeholder="Province"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
               />
             </div>
@@ -310,6 +308,32 @@ const handleReset = () => {
             </div>
           </div>
 
+          <!-- Province & Country -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Province</label
+              >
+              <input
+                v-model="formData.province"
+                type="text"
+                placeholder="Province"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Country</label
+              >
+              <input
+                v-model="formData.country"
+                type="text"
+                placeholder="Country"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
+            </div>
+          </div>
+
           <!-- Pos Code & Source -->
           <div class="grid grid-cols-2 gap-4">
             <div>
@@ -317,7 +341,7 @@ const handleReset = () => {
                 >Pos Code</label
               >
               <input
-                v-model="formData.pos_code"
+                v-model="formData.posCode"
                 type="text"
                 placeholder="Pos Code"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
@@ -469,16 +493,24 @@ const handleReset = () => {
           <button
             type="button"
             @click="handleClose"
-            class="px-6 py-2 border border-outline rounded-lg text-sub-text hover:bg-light-base transition-colors text-sm font-medium"
+            :disabled="isSubmitting"
+            class="px-6 py-2 border border-outline rounded-lg text-sub-text hover:bg-light-base transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             type="button"
             @click="handleSubmit"
-            class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
+            :disabled="isSubmitting"
+            class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Next
+            <template v-if="isSubmitting">
+              <span
+                class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"
+              ></span>
+              <span>Saving...</span>
+            </template>
+            <template v-else> Next </template>
           </button>
         </div>
       </div>

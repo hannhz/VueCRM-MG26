@@ -1,4 +1,4 @@
-<script setup>
+<!-- <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { X, Search, ChevronDown, Check } from "lucide-vue-next";
 
@@ -44,9 +44,10 @@ const memberSearch = ref("");
 
 const filteredMembers = computed(() => {
   if (!memberSearch.value) return membersList;
-  return membersList.filter((m) =>
-    m.name.toLowerCase().includes(memberSearch.value.toLowerCase()) ||
-    m.email.toLowerCase().includes(memberSearch.value.toLowerCase())
+  return membersList.filter(
+    (m) =>
+      m.name.toLowerCase().includes(memberSearch.value.toLowerCase()) ||
+      m.email.toLowerCase().includes(memberSearch.value.toLowerCase()),
   );
 });
 
@@ -57,7 +58,7 @@ const parentSearch = ref("");
 const filteredTeams = computed(() => {
   if (!parentSearch.value) return teamsList;
   return teamsList.filter((t) =>
-    t.name.toLowerCase().includes(parentSearch.value.toLowerCase())
+    t.name.toLowerCase().includes(parentSearch.value.toLowerCase()),
   );
 });
 
@@ -72,7 +73,9 @@ const removeParentTeam = () => {
 };
 
 const toggleMember = (member) => {
-  const index = formData.value.selectedMembers.findIndex(m => m.id === member.id);
+  const index = formData.value.selectedMembers.findIndex(
+    (m) => m.id === member.id,
+  );
   if (index === -1) {
     formData.value.selectedMembers.push(member);
   } else {
@@ -81,11 +84,13 @@ const toggleMember = (member) => {
 };
 
 const isMemberSelected = (id) => {
-  return formData.value.selectedMembers.some(m => m.id === id);
+  return formData.value.selectedMembers.some((m) => m.id === id);
 };
 
 const removeMember = (id) => {
-  formData.value.selectedMembers = formData.value.selectedMembers.filter(m => m.id !== id);
+  formData.value.selectedMembers = formData.value.selectedMembers.filter(
+    (m) => m.id !== id,
+  );
 };
 
 const handleClose = () => {
@@ -117,7 +122,10 @@ const handleClickOutside = (event) => {
   if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
     isDropdownOpen.value = false;
   }
-  if (parentDropdownRef.value && !parentDropdownRef.value.contains(event.target)) {
+  if (
+    parentDropdownRef.value &&
+    !parentDropdownRef.value.contains(event.target)
+  ) {
     isParentDropdownOpen.value = false;
   }
 };
@@ -129,6 +137,185 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener("mousedown", handleClickOutside);
 });
+</script> -->
+
+<script>
+import { X, Search, ChevronDown, Check } from "lucide-vue-next";
+import { useStore, mapActions, mapGetters } from "vuex";
+
+export default {
+  props: {
+    isOpen: {
+      type: Boolean,
+      default: false,
+    },
+  },
+
+  components: {
+    X,
+    Search,
+    ChevronDown,
+    Check,
+  },
+
+  data() {
+    return {
+      membersList: [
+        { id: 1, name: "Hanan Hafizhah", email: "hanan@mail.com" },
+        { id: 2, name: "Aulia Rahman", email: "aulia@mail.com" },
+        { id: 3, name: "Rizky Pratama", email: "rizky@mail.com" },
+        { id: 4, name: "Siti Lestari", email: "siti@mail.com" },
+        { id: 5, name: "Budi Santoso", email: "budi@mail.com" },
+        { id: 6, name: "Kevin Wijaya", email: "kevin@mail.com" },
+      ],
+
+      teamsList: [
+        { id: 1, name: "Management" },
+        { id: 2, name: "Marketing" },
+        { id: 3, name: "Design" },
+        { id: 4, name: "Finance" },
+        { id: 5, name: "Development" },
+        { id: 6, name: "Support" },
+      ],
+
+      formData: {
+        teamName: "",
+        parentTeam: null,
+        selectedMembers: [],
+      },
+
+      isDropdownOpen: false,
+      memberSearch: "",
+
+      isParentDropdownOpen: false,
+      parentSearch: "",
+
+      dropdownRef: null,
+      parentDropdownRef: null,
+    };
+  },
+
+  computed: {
+    ...mapGetters({
+      users: "users/allUsers",
+      isLoadingTable: "users/isLoading",
+      errorMsgTable: "users/error",
+    }),
+
+    filteredMembers() {
+      if (!this.memberSearch) return this.users;
+
+      return this.users.filter(
+        (m) =>
+          m.name.toLowerCase().includes(this.memberSearch.toLowerCase()) ||
+          m.email.toLowerCase().includes(this.memberSearch.toLowerCase()),
+      );
+    },
+
+    filteredTeams() {
+      if (!this.parentSearch) return this.teamsList;
+
+      return this.teamsList.filter((t) =>
+        t.name.toLowerCase().includes(this.parentSearch.toLowerCase()),
+      );
+    },
+  },
+
+  methods: {
+    ...mapActions({
+      fetchUsers: "users/fetchAllusers",
+    }),
+
+    fetchData() {
+      this.fetchUsers()
+        .then(() => {
+          console.log("Users fetched successfully");
+        })
+        .catch((err) => {
+          console.error("Failed to fetch users:", err);
+        });
+    },
+
+    selectParentTeam(team) {
+      this.formData.parentTeam = team;
+      this.isParentDropdownOpen = false;
+      this.parentSearch = "";
+    },
+
+    removeParentTeam() {
+      this.formData.parentTeam = null;
+    },
+
+    toggleMember(member) {
+      const index = this.formData.selectedMembers.findIndex(
+        (m) => m.id === member.id,
+      );
+
+      if (index === -1) {
+        this.formData.selectedMembers.push(member);
+      } else {
+        this.formData.selectedMembers.splice(index, 1);
+      }
+    },
+
+    isMemberSelected(id) {
+      return this.formData.selectedMembers.some((m) => m.id === id);
+    },
+
+    removeMember(id) {
+      this.formData.selectedMembers = this.formData.selectedMembers.filter(
+        (m) => m.id !== id,
+      );
+    },
+
+    handleClose() {
+      this.$emit("close");
+      this.isDropdownOpen = false;
+      this.memberSearch = "";
+    },
+
+    handleSubmit() {
+      this.$emit("submit", this.formData);
+      this.handleClose();
+    },
+
+    handleReset() {
+      this.formData = {
+        teamName: "",
+        parentTeam: null,
+        selectedMembers: [],
+      };
+
+      this.memberSearch = "";
+      this.parentSearch = "";
+    },
+
+    handleClickOutside(event) {
+      if (
+        this.$refs.dropdownRef &&
+        !this.$refs.dropdownRef.contains(event.target)
+      ) {
+        this.isDropdownOpen = false;
+      }
+
+      if (
+        this.$refs.parentDropdownRef &&
+        !this.$refs.parentDropdownRef.contains(event.target)
+      ) {
+        this.isParentDropdownOpen = false;
+      }
+    },
+  },
+
+  mounted() {
+    document.addEventListener("mousedown", this.handleClickOutside);
+    this.fetchData();
+  },
+
+  beforeDestroy() {
+    document.removeEventListener("mousedown", this.handleClickOutside);
+  },
+};
 </script>
 
 <template>
@@ -183,33 +370,40 @@ onBeforeUnmount(() => {
             <label class="block text-sm font-medium text-dark-base mb-2">
               Parent Team Name
             </label>
-            
-            <div 
+
+            <div
               @click="isParentDropdownOpen = !isParentDropdownOpen"
-              class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-[42px] bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
+              class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-10.5 bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
             >
               <div v-if="!formData.parentTeam" class="text-gray-400 text-sm">
                 Search and select parent team
               </div>
-              <div 
+              <div
                 v-else
                 class="flex items-center gap-1 bg-light-base px-2 py-1 rounded text-xs font-medium text-dark-base border border-outline"
                 @click.stop
               >
                 {{ formData.parentTeam.name }}
-                <X :size="12" class="cursor-pointer hover:text-red" @click="removeParentTeam" />
+                <X
+                  :size="12"
+                  class="cursor-pointer hover:text-red"
+                  @click="removeParentTeam"
+                />
               </div>
               <ChevronDown :size="16" class="ml-auto text-sub-text" />
             </div>
 
             <!-- Parent Team Dropdown Menu -->
-            <div 
+            <div
               v-if="isParentDropdownOpen"
               class="absolute z-50 w-full mt-1 bg-white border border-outline rounded-lg shadow-xl flex flex-col max-h-64"
             >
               <div class="p-2 border-b border-outline">
                 <div class="relative">
-                  <Search :size="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-sub-text" />
+                  <Search
+                    :size="14"
+                    class="absolute left-3 top-1/2 -translate-y-1/2 text-sub-text"
+                  />
                   <input
                     v-model="parentSearch"
                     type="text"
@@ -220,21 +414,26 @@ onBeforeUnmount(() => {
                 </div>
               </div>
               <div class="flex-1 overflow-y-auto py-1">
-                <div 
-                  v-for="team in filteredTeams" 
+                <div
+                  v-for="team in filteredTeams"
                   :key="team.id"
                   @click="selectParentTeam(team)"
                   class="px-4 py-2 hover:bg-light-base cursor-pointer flex items-center justify-between text-sm transition"
                 >
-                  <span class="font-medium text-dark-base">{{ team.name }}</span>
-                  <div 
+                  <span class="font-medium text-dark-base">{{
+                    team.name
+                  }}</span>
+                  <div
                     v-if="formData.parentTeam?.id === team.id"
                     class="w-5 h-5 bg-dark-base rounded-full flex items-center justify-center"
                   >
                     <Check :size="12" class="text-white" />
                   </div>
                 </div>
-                <div v-if="filteredTeams.length === 0" class="px-4 py-6 text-center text-sm text-sub-text">
+                <div
+                  v-if="filteredTeams.length === 0"
+                  class="px-4 py-6 text-center text-sm text-sub-text"
+                >
                   No teams found
                 </div>
               </div>
@@ -246,34 +445,44 @@ onBeforeUnmount(() => {
             <label class="block text-sm font-medium text-dark-base mb-2">
               Add Team Member
             </label>
-            
-            <div 
+
+            <div
               @click="isDropdownOpen = !isDropdownOpen"
-              class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-[42px] bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
+              class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-10.5 bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
             >
-              <div v-if="formData.selectedMembers.length === 0" class="text-gray-400 text-sm">
+              <div
+                v-if="formData.selectedMembers.length === 0"
+                class="text-gray-400 text-sm"
+              >
                 Search and select members
               </div>
-              <div 
-                v-for="member in formData.selectedMembers" 
+              <div
+                v-for="member in formData.selectedMembers"
                 :key="member.id"
                 class="flex items-center gap-1 bg-light-base px-2 py-1 rounded text-xs font-medium text-dark-base border border-outline"
                 @click.stop
               >
                 {{ member.name }}
-                <X :size="12" class="cursor-pointer hover:text-red" @click="removeMember(member.id)" />
+                <X
+                  :size="12"
+                  class="cursor-pointer hover:text-red"
+                  @click="removeMember(member.id)"
+                />
               </div>
               <ChevronDown :size="16" class="ml-auto text-sub-text" />
             </div>
 
             <!-- Dropdown Menu -->
-            <div 
+            <div
               v-if="isDropdownOpen"
               class="absolute z-50 w-full mt-1 bg-white border border-outline rounded-lg shadow-xl flex flex-col max-h-64"
             >
               <div class="p-2 border-b border-outline">
                 <div class="relative">
-                  <Search :size="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-sub-text" />
+                  <Search
+                    :size="14"
+                    class="absolute left-3 top-1/2 -translate-y-1/2 text-sub-text"
+                  />
                   <input
                     v-model="memberSearch"
                     type="text"
@@ -284,24 +493,31 @@ onBeforeUnmount(() => {
                 </div>
               </div>
               <div class="flex-1 overflow-y-auto py-1">
-                <div 
-                  v-for="member in filteredMembers" 
+                <div
+                  v-for="member in filteredMembers"
                   :key="member.id"
                   @click="toggleMember(member)"
                   class="px-4 py-2 hover:bg-light-base cursor-pointer flex items-center justify-between text-sm transition"
                 >
                   <div class="flex flex-col">
-                    <span class="font-medium text-dark-base">{{ member.name }}</span>
-                    <span class="text-xs text-sub-text">{{ member.email }}</span>
+                    <span class="font-medium text-dark-base">{{
+                      member.name
+                    }}</span>
+                    <span class="text-xs text-sub-text">{{
+                      member.email
+                    }}</span>
                   </div>
-                  <div 
+                  <div
                     v-if="isMemberSelected(member.id)"
                     class="w-5 h-5 bg-dark-base rounded-full flex items-center justify-center"
                   >
                     <Check :size="12" class="text-white" />
                   </div>
                 </div>
-                <div v-if="filteredMembers.length === 0" class="px-4 py-6 text-center text-sm text-sub-text">
+                <div
+                  v-if="filteredMembers.length === 0"
+                  class="px-4 py-6 text-center text-sm text-sub-text"
+                >
                   No members found
                 </div>
               </div>

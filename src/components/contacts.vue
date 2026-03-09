@@ -129,7 +129,10 @@ export default {
     },
 
     handleClickOutside(e) {
-      if (!e.target.closest(".printable-dropdown") && !e.target.closest(".add-dropdown")) {
+      if (
+        !e.target.closest(".printable-dropdown") &&
+        !e.target.closest(".add-dropdown")
+      ) {
         this.showDropdown = false;
         this.showDownloadDropdown = false;
       }
@@ -138,8 +141,12 @@ export default {
     formatDate(dateString) {
       if (!dateString) return "-";
       const date = new Date(dateString);
-      return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
+      return (
+        date.toLocaleDateString() +
+        " " +
+        date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      );
+    },
   },
 
   mounted() {
@@ -184,7 +191,11 @@ export default {
             class="p-2 border border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
             title="Refresh Data"
           >
-            <RefreshCw :size="18" :class="{ 'animate-spin': isLoading }" class="text-sub-text" />
+            <RefreshCw
+              :size="18"
+              :class="{ 'animate-spin': isLoading }"
+              class="text-sub-text"
+            />
           </button>
 
           <!-- Add New -->

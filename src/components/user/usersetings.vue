@@ -105,7 +105,6 @@ function prevPage() {
 }
 </script> -->
 
-
 <script>
 import {
   RefreshCcw,
@@ -187,9 +186,7 @@ export default {
       get() {
         return (
           this.currentUser.length > 0 &&
-          this.currentUser.every((user) =>
-            this.selectedIds.includes(user.id)
-          )
+          this.currentUser.every((user) => this.selectedIds.includes(user.id))
         );
       },
       set(val) {
@@ -218,6 +215,16 @@ export default {
       fetchUsers: "users/fetchAllusers",
     }),
 
+    fetchData() {
+      this.fetchUsers()
+        .then(() => {
+          console.log("Users fetched successfully");
+        })
+        .catch((err) => {
+          console.error("Failed to fetch users:", err);
+        });
+    },
+
     nextPage() {
       if (this.currentPage < this.totalPages) this.currentPage++;
     },
@@ -233,7 +240,7 @@ export default {
     //   this.$router.push("/crmAdmin");
     //   return;
     // }
-    this.fetchUsers();
+    this.fetchData();
   },
 };
 </script>
@@ -245,14 +252,6 @@ export default {
       <div class="flex items-center justify-between gap-4 flex-wrap">
         <!-- Left Section: Filter + Search + Show -->
         <div class="flex items-center gap-3">
-          <button
-            @click="fetchUsers"
-            class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition shadow-sm bg-white"
-            title="Refresh list"
-          >
-            <RefreshCcw :size="20" class="text-dark-base" :class="{ 'animate-spin': isLoadingTable }" />
-          </button>
-
           <!-- Filter Icon -->
           <button
             class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition shadow-sm bg-white"
@@ -293,6 +292,20 @@ export default {
 
         <!-- Right Section: Action Buttons -->
         <div class="flex items-center gap-2">
+          <!-- Refresh Button -->
+          <button
+            @click="fetchData"
+            :disabled="isLoadingTable"
+            class="p-2 border border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
+            title="Refresh Data"
+          >
+            <RefreshCcw
+              :size="18"
+              :class="{ 'animate-spin': isLoadingTable }"
+              class="text-sub-text"
+            />
+          </button>
+
           <!-- Add New -->
           <div class="relative inline-block add-dropdown">
             <button
@@ -359,7 +372,18 @@ export default {
     </div>
 
     <!-- Table -->
-    <div class="overflow-x-auto">
+    <div class="relative overflow-x-auto">
+      <!-- Loading Overlay -->
+      <div
+        v-if="isLoadingTable"
+        class="absolute inset-0 bg-white/70 backdrop-blur-[1px] z-10 flex items-center justify-center"
+      >
+        <div class="flex flex-col items-center gap-3">
+          <RefreshCcw :size="32" class="animate-spin text-sub-text" />
+          <p class="text-sm font-medium text-sub-text">Loading users...</p>
+        </div>
+      </div>
+
       <table class="w-full">
         <thead>
           <tr class="border-b border-gray-200">
@@ -405,16 +429,6 @@ export default {
             </td>
           </tr>
 
-          <!-- Loading State -->
-          <tr v-if="isLoadingTable">
-            <td colspan="5" class="px-6 py-12 text-center text-sub-text">
-              <div class="flex flex-col items-center gap-3">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-950"></div>
-                <p class="text-sm font-medium">Loading user list...</p>
-              </div>
-            </td>
-          </tr>
-
           <!-- Sample rows -->
           <tr
             v-for="user in currentUser"
@@ -431,17 +445,21 @@ export default {
             </td>
             <td class="px-6 py-4 text-sm text-gray-800 font-medium">
               <div class="text-sm font-medium text-gray-800">
-                {{ user.firstname ? `${user.firstname} ${user.lastname || ''}` : (user.name || 'Unknown User') }}
+                {{
+                  user.firstname
+                    ? `${user.firstname} ${user.lastname || ""}`
+                    : user.name || "Unknown User"
+                }}
               </div>
               <div class="text-xs text-gray-400">
                 {{ user.email }}
               </div>
             </td>
             <td class="px-6 py-4 text-sm text-dark-base">
-              {{ user.primaryteam || user.team || '-' }}
+              {{ user.primaryteam || user.team || "-" }}
             </td>
             <td class="px-6 py-4 text-sm text-dark-base">
-              {{ user.last_active || user.lastactv || user.updated_at || '-' }}
+              {{ user.last_active || user.lastactv || user.updated_at || "-" }}
             </td>
             <td class="px-6 py-4 text-sm text-dark-base font-medium">
               {{ user.role }}

@@ -13,7 +13,9 @@
 
     <div class="flex items-center gap-4">
       <!-- Notification Bell -->
-      <button class="p-2 text-gray-400 hover:bg-gray-100 rounded-full relative transition-colors">
+      <button
+        class="p-2 text-gray-400 hover:bg-gray-100 rounded-full relative transition-colors"
+      >
         <Bell :size="20" />
         <span
           class="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"
@@ -37,14 +39,16 @@
 
             <!-- User Info -->
             <div class="hidden sm:block text-left">
-              <p class="text-sm font-bold text-gray-800 leading-tight">{{ userName }}</p>
+              <p class="text-sm font-bold text-gray-800 leading-tight">
+                {{ userName }}
+              </p>
               <!-- <p class="text-[11px] text-gray-500 font-medium">pegawai</p> -->
             </div>
           </div>
 
           <!-- Dropdown Icon -->
-          <ChevronDown 
-            :size="14" 
+          <ChevronDown
+            :size="14"
             class="text-gray-400 transition-transform duration-200"
             :class="{ 'rotate-180': isDropdownOpen }"
           />
@@ -64,24 +68,30 @@
             class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden"
           >
             <div class="px-4 py-3 border-b border-gray-50">
-              <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Account</p>
+              <p
+                class="text-xs text-gray-400 font-semibold uppercase tracking-wider"
+              >
+                Account
+              </p>
             </div>
-            
-            <button 
+
+            <button
               @click="openProfileForm"
               class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >
               <User :size="16" class="text-gray-400" />
               My Profile
             </button>
-            <button class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+            <button
+              class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            >
               <Settings :size="16" class="text-gray-400" />
               Settings
             </button>
-            
+
             <div class="h-px bg-gray-100 my-1"></div>
-            
-            <button 
+
+            <button
               @click="logout"
               class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
             >
@@ -93,9 +103,9 @@
       </div>
 
       <!-- My Profile Form -->
-      <ProfileForm 
-        :isOpen="isProfileFormOpen" 
-        @close="isProfileFormOpen = false" 
+      <ProfileForm
+        :isOpen="isProfileFormOpen"
+        @close="isProfileFormOpen = false"
         @submit="(data) => console.log('Profile update requested:', data)"
       />
     </div>
@@ -103,7 +113,14 @@
 </template>
 
 <script>
-import { Bell, Search, ChevronDown, User, Settings, LogOut } from "lucide-vue-next";
+import {
+  Bell,
+  Search,
+  ChevronDown,
+  User,
+  Settings,
+  LogOut,
+} from "lucide-vue-next";
 import ProfileForm from "../forms/ProfileForm.vue";
 import { mapGetters, mapActions } from "vuex";
 import { alertService } from "@/services/alertService";
@@ -118,13 +135,13 @@ export default {
     User,
     Settings,
     LogOut,
-    ProfileForm
+    ProfileForm,
   },
 
   data() {
     return {
       isDropdownOpen: false,
-      isProfileFormOpen: false
+      isProfileFormOpen: false,
     };
   },
 
@@ -145,7 +162,7 @@ export default {
     },
     initials() {
       return this.$store.getters["auth/userInitials"];
-    }
+    },
   },
 
   methods: {
@@ -168,7 +185,6 @@ export default {
             alertService.error(error.response?.data?.message || "", "");
           });
       }
-      
     },
     toggleDropdown() {
       this.isDropdownOpen = !this.isDropdownOpen;
@@ -179,27 +195,28 @@ export default {
       this.isDropdownOpen = false;
     },
 
-
     handleClickOutside(event) {
-      if (this.$refs.dropdownRef && 
-          !this.$refs.dropdownRef.contains(event.target)) {
+      if (
+        this.$refs.dropdownRef &&
+        !this.$refs.dropdownRef.contains(event.target)
+      ) {
         this.isDropdownOpen = false;
       }
-    }
+    },
   },
 
   mounted() {
     document.addEventListener("click", this.handleClickOutside);
   },
 
-  beforeDestroy() { // Vue 2 lifecycle
+  beforeDestroy() {
+    // Vue 2 lifecycle
     document.removeEventListener("click", this.handleClickOutside);
   },
 
   created() {
     this.getusersignin();
   },
-
 };
 </script>
 

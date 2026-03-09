@@ -1,5 +1,6 @@
-<script setup>
-import { ref, computed } from "vue";
+<!-- <script setup>
+import { ref, computed, onMounted } from "vue";
+import { useStore } from "vuex";
 import {
   Filter,
   Search,
@@ -7,34 +8,25 @@ import {
   ChevronRight,
   ChevronDown,
   Trash2,
+  RefreshCw,
 } from "lucide-vue-next";
 import CreateTeamForm from "../forms/CreateTeamForm.vue";
 
-/* =========================
-   TEAM DATA (DUMMY)
-========================= */
-const teams = ref([
-  { id: 1, team: "Management", members: 4 },
-  { id: 2, team: "Marketing", members: 7 },
-  { id: 3, team: "Design", members: 5 },
-  { id: 4, team: "Finance", members: 3 },
-  { id: 5, team: "Development", members: 12 },
-  { id: 6, team: "Support", members: 6 },
-]);
+const store = useStore();
+
+const teams = computed(() => store.getters["team/filteredTeamUsers"]);
+const isLoading = computed(() => store.getters["team/isLoading"]);
+const error = computed(() => store.getters["team/error"]);
 
 const showCreateTeamForm = ref(false);
 
-/* =========================
-   SEARCH
-========================= */
-const searchQuery = ref("");
+const searchQuery = computed({
+  get: () => store.state.team.searchQuery,
+  set: (value) => store.dispatch("team/setSearchQuery", value),
+});
 
 const filteredTeams = computed(() => {
-  if (!searchQuery.value) return teams.value;
-
-  return teams.value.filter((t) =>
-    t.team.toLowerCase().includes(searchQuery.value.toLowerCase()),
-  );
+  return teams.value;
 });
 
 /* =========================
@@ -68,14 +60,246 @@ const selectedTeam = ref([]);
 const allSelected = computed(
   () =>
     paginatedTeams.value.length > 0 &&
-    paginatedTeams.value.every((t) => selectedTeam.value.includes(t.id)),
+    paginatedTeams.value.every((t) => selectedTeam.value.includes(t.team_id)),
 );
 
 function toggleSelectAll(e) {
   selectedTeam.value = e.target.checked
-    ? paginatedTeams.value.map((t) => t.id)
+    ? paginatedTeams.value.map((t) => t.team_id)
     : [];
 }
+
+const fetchData = async () => {
+  try {
+    await store.dispatch("team/fetchAllTeamUsers");
+  } catch (err) {
+    console.error("Failed to fetch team_user:", err);
+  }
+};
+
+const handleCreateTeamSubmit = async (data) => {
+  try {
+    const createPayload = {
+      team_name: data.teamName,
+      parent_id: data.parentTeam?.id || null,
+    };
+
+    const createResult = await store.dispatch("team/createTeam", createPayload);
+    const createdTeamId =
+      createResult?.team?.id || createResult?.data?.id || createResult?.id;
+
+    if (
+      createdTeamId &&
+      Array.isArray(data.selectedMembers) &&
+      data.selectedMembers.length
+    ) {
+      const addUsersPayload = {
+        team_id: createdTeamId,
+        user_ids: data.selectedMembers.map((member) => member.id),
+      };
+      await store.dispatch("team/addTeamUsers", addUsersPayload);
+    }
+
+    showCreateTeamForm.value = false;
+    await fetchData();
+  } catch (err) {
+    console.error("Failed to create team:", err);
+    alert("Failed to create team. Please check API payload format.");
+  }
+};
+
+onMounted(() => {
+  fetchData();
+});
+</script> -->
+
+<script>
+import { mapGetters, mapState, mapActions } from "vuex";
+import {
+  Filter,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Trash2,
+  RefreshCw,
+} from "lucide-vue-next";
+import CreateTeamForm from "../forms/CreateTeamForm.vue";
+
+export default {
+  components: {
+    CreateTeamForm,
+    Filter,
+    Search,
+    ChevronLeft,
+    ChevronRight,
+    ChevronDown,
+    Trash2,
+    RefreshCw,
+  },
+
+  data() {
+    return {
+      showCreateTeamForm: false,
+      currentPage: 1,
+      itemsPerPage: 5,
+      selectedTeam: [],
+    };
+  },
+
+  computed: {
+    ...mapGetters({
+      teams: "team/allTeamUsers",
+      isLoading: "team/isLoading",
+      error: "team/error",
+
+    }),
+
+    searchQuery: {
+      get() {
+        return this.$store.state.team.searchQuery;
+      },
+      set(value) {
+        this.$store.dispatch("team/setSearchQuery", value);
+      },
+    },
+
+    filteredTeams() {
+      return this.teams;
+    },
+
+    totalPages() {
+      return Math.max(
+        1,
+        Math.ceil(this.filteredTeams.length / this.itemsPerPage),
+      );
+    },
+
+    paginatedTeams() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      return this.filteredTeams.slice(start, start + this.itemsPerPage);
+    },
+
+    allSelected() {
+      return (
+        this.paginatedTeams.length > 0 &&
+        this.paginatedTeams.every((t) => this.selectedTeam.includes(t.team_id))
+      );
+    },
+  },
+
+  methods: {
+    ...mapActions({
+      fetchAllTeamUsers: "team/fetchAllTeamUsers",
+      createTeam: "team/createTeam",
+      addTeamUsers: "team/addTeamUsers",
+      setSearchQuery: "team/setSearchQuery",
+    }),
+
+    nextPage() {
+      if (this.currentPage < this.totalPages) this.currentPage++;
+    },
+
+    prevPage() {
+      if (this.currentPage > 1) this.currentPage--;
+    },
+
+    toggleSelectAll(e) {
+      this.selectedTeam = e.target.checked
+        ? this.paginatedTeams.map((t) => t.team_id)
+        : [];
+    },
+
+    async fetchData() {
+      try {
+        await this.fetchAllTeamUsers();
+      } catch (err) {
+        console.error("Failed to fetch team_user:", err);
+      }
+    },
+
+    handleCreateTeamSubmit(data) {
+      console.log(data);
+
+      let dataparam = {
+        teamName: data.teamName,
+        parentTeam: data.parentTeam.name,
+        selectedMembers: data.selectedMembers.map((member) => member.id),
+      };
+
+      this.createTeam(dataparam)
+        .then((createResult) => {
+          const createdTeamId =
+            createResult?.team?.id ||
+            createResult?.data?.id ||
+            createResult?.id;
+
+          if (createdTeamId && dataparam.selectedMembers.length) {
+            const addUsersPayload = {
+              team_id: createdTeamId,
+              user_ids: dataparam.selectedMembers,
+            };
+            return this.addTeamUsers(addUsersPayload);
+          }
+        })
+        .then(() => {
+          this.showCreateTeamForm = false;
+          return this.fetchData();
+        })
+        .catch((err) => {
+          console.error("Failed to create team:", err);
+          alert("Failed to create team. Please check API payload format.");
+        });
+      console.log(dataparam);
+
+      // try {
+      //   const createPayload = {
+      //     team_name: data.teamName,
+      //     parent_id: data.parentTeam ? data.parentTeam.id : null,
+      //   };
+
+      //   const createResult = await this.createTeam(createPayload);
+
+      //   const createdTeamId =
+      //     (createResult && createResult.team && createResult.team.id) ||
+      //     (createResult && createResult.data && createResult.data.id) ||
+      //     (createResult && createResult.id);
+
+      //   if (
+      //     createdTeamId &&
+      //     Array.isArray(data.selectedMembers) &&
+      //     data.selectedMembers.length
+      //   ) {
+      //     const addUsersPayload = {
+      //       team_id: createdTeamId,
+      //       user_ids: data.selectedMembers.map((member) => member.id),
+      //     };
+
+      //     await this.addTeamUsers(addUsersPayload);
+      //   }
+
+      //   this.showCreateTeamForm = false;
+      //   await this.fetchData();
+      // } catch (err) {
+      //   console.error("Failed to create team:", err);
+      //   alert("Failed to create team. Please check API payload format.");
+      // }
+    },
+  },
+
+  mounted() {
+    this.fetchData();
+  },
+
+
+  watch:{
+    teams(e){
+      console.log(e);
+    }
+
+
+  }
+};
 </script>
 
 <template>
@@ -126,6 +350,18 @@ function toggleSelectAll(e) {
 
         <!-- Right Section: Action Buttons -->
         <div class="flex items-center gap-2">
+          <button
+            @click="fetchData"
+            :disabled="isLoading"
+            class="p-2 border border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
+            title="Refresh Data"
+          >
+            <RefreshCw
+              :size="18"
+              :class="{ 'animate-spin': isLoading }"
+              class="text-sub-text"
+            />
+          </button>
           <!-- Add New -->
           <div class="relative inline-block add-dropdown">
             <button
@@ -191,7 +427,18 @@ function toggleSelectAll(e) {
     </div>
 
     <!-- TABLE -->
-    <div class="overflow-x-auto">
+    <div class="relative overflow-x-auto">
+      <!-- Loading Overlay -->
+      <div
+        v-if="isLoading"
+        class="absolute inset-0 bg-white/70 backdrop-blur-[1px] z-10 flex items-center justify-center"
+      >
+        <div class="flex flex-col items-center gap-3">
+          <RefreshCw :size="32" class="animate-spin text-sub-text" />
+          <p class="text-sm font-medium text-sub-text">Loading teams...</p>
+        </div>
+      </div>
+
       <table class="w-full">
         <thead>
           <tr class="border-b border-gray-200 bg-gray-50/50">
@@ -199,14 +446,20 @@ function toggleSelectAll(e) {
 
             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
               <div class="flex items-center gap-2">
-                Team
+                Team Name
+                <ChevronDown :size="16" class="text-gray-400" />
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+              <div class="flex items-center gap-2">
+                Parent Name
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
             </th>
 
             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
               <div class="flex items-center gap-2">
-                Number of Members
+                Total Users
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
             </th>
@@ -214,33 +467,42 @@ function toggleSelectAll(e) {
         </thead>
 
         <tbody>
+          <tr v-if="error">
+            <td colspan="3" class="px-6 py-10 text-center text-red-500">
+              Failed to load data: {{ error }}
+            </td>
+          </tr>
+
           <!-- EMPTY STATE -->
-          <tr v-if="paginatedTeams.length === 0">
+          <tr v-else-if="!isLoading && paginatedTeams.length === 0">
             <td colspan="3" class="px-6 py-20 text-center text-sub-text">
-              No teams found
+              No team_user data found
             </td>
           </tr>
 
           <!-- ROWS -->
           <tr
             v-for="team in paginatedTeams"
-            :key="team.id"
+            :key="team.team_id"
             class="border-b border-gray-100 hover:bg-gray-50 transition"
           >
             <td class="px-6 py-4">
               <input
                 type="checkbox"
-                :value="team.id"
+                :value="team.team_id"
                 v-model="selectedTeam"
                 class="w-4 h-4"
               />
             </td>
 
             <td class="px-6 py-4 font-medium text-gray-800">
-              {{ team.team }}
+              {{ team.team_name }}
+            </td>
+            <td class="px-6 py-4 font-medium text-gray-800">
+              {{ team.parent }}
             </td>
 
-            <td class="px-6 py-4 text-dark-base">{{ team.members }} members</td>
+            <td class="px-6 py-4 text-dark-base">{{ team.total_users }}</td>
           </tr>
         </tbody>
       </table>
@@ -251,6 +513,6 @@ function toggleSelectAll(e) {
   <CreateTeamForm
     :isOpen="showCreateTeamForm"
     @close="showCreateTeamForm = false"
-    @submit="showCreateTeamForm = false"
+    @submit="handleCreateTeamSubmit"
   />
 </template>

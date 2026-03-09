@@ -26,10 +26,13 @@ import store from "@/store";
 import { useCookies } from "vue3-cookies";
 const { cookies } = useCookies();
 
-
 const routes = [
   {
     path: "/",
+    redirect: { name: "login" },
+  },
+  {
+    path: "/login",
     name: "login",
     component: LoginPage,
   },
@@ -154,7 +157,6 @@ const routes = [
     ],
   },
 ];
-
 
 const router = createRouter({
   history: createWebHistory(),

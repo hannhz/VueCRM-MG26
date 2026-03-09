@@ -13,6 +13,7 @@ const state = {
   isLoading: false,
   error: null,
   viewMode: "list",
+  searchQuery: "",
 };
 
 const getters = {
@@ -24,6 +25,20 @@ const getters = {
   isLoading: (state) => state.isLoading,
   error: (state) => state.error,
   currentView: (state) => state.viewMode,
+  searchQuery: (state) => state.searchQuery,
+  filteredCompanies: (state) => {
+    if (!state.searchQuery.trim()) {
+      return state.company;
+    }
+    const query = state.searchQuery.toLowerCase();
+    return state.company.filter(
+      (company) =>
+        company.name?.toLowerCase().includes(query) ||
+        company.email?.toLowerCase().includes(query) ||
+        company.phone?.toLowerCase().includes(query) ||
+        company.country?.toLowerCase().includes(query),
+    );
+  },
 };
 
 const actions = {
@@ -48,13 +63,13 @@ const actions = {
     promise
       .then((data) => {
         commit("setcompany", data.companies || data);
-        commit('SET_LOADING', false);
+        commit("SET_LOADING", false);
       })
       .catch((error) => {
         // Tangani error lain jika ada
         console.error("Error:", error);
-        commit('SET_ERROR', error.message);
-        commit('SET_LOADING', false);
+        commit("SET_ERROR", error.message);
+        commit("SET_LOADING", false);
       });
 
     return promise;
@@ -197,21 +212,35 @@ const actions = {
     // });
   },
 
-  deletecompany(context, data) {
-    return new Promise(async (resolve, reject) => {
+  async deletecompany(context, data) {
+    const headers = {
+      Authorization: "Bearer " + cookies.get("token"),
+    };
+
+    const candidates = [
+      () => api.delete(`company/deleteusr?id=${data}`, { headers }),
+      () => api.delete(`company/delete?id=${data}`, { headers }),
+      () => api.delete(`company/deletecompany?id=${data}`, { headers }),
+      () => api.post(`company/deleteusr?id=${data}`, {}, { headers }),
+      () => api.post(`company/delete?id=${data}`, {}, { headers }),
+      () => api.post("company/delete", { id: data }, { headers }),
+      () => api.post("company/deletecompany", { id: data }, { headers }),
+    ];
+
+    let lastError = null;
+
+    for (const run of candidates) {
       try {
-        let network = await api.delete(`company/deleteusr?id=${data}`, {
-          headers: {
-            Authorization: "Bearer " + cookies.get("token"),
-          },
-          // headers: { Authorization: "Bearer " + localStorage.getItem("token") },
-        });
-        resolve(network.data);
+        const response = await run();
+        context.dispatch("fetchAllcompany");
+        return response.data;
       } catch (error) {
-        reject(error);
+        lastError = error;
       }
-      context.dispatch("fetchAllcompany");
-    });
+    }
+
+    context.dispatch("fetchAllcompany");
+    throw lastError || new Error("Failed to delete company");
   },
 
   updateprofile(context, data) {
@@ -234,6 +263,10 @@ const actions = {
     promise.then((data) => {
       // console.log(data);
     });
+  },
+
+  setSearchQuery({ commit }, query) {
+    commit("SET_SEARCH_QUERY", query);
   },
 
   savecompanyProfile(context, data) {
@@ -285,6 +318,9 @@ const mutations = {
   },
   SET_VIEW_MODE(state, mode) {
     state.viewMode = mode;
+  },
+  SET_SEARCH_QUERY(state, query) {
+    state.searchQuery = query;
   },
 };
 

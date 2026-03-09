@@ -1,5 +1,49 @@
 <script setup>
-import { Mail } from "lucide-vue-next";
+import { ref } from "vue";
+import { Mail, RefreshCw, Check } from "lucide-vue-next";
+
+const exchangeStatus = ref("disconnected"); // disconnected | connecting | connected
+const gmailStatus = ref("disconnected");
+
+const connectExchange = async () => {
+  if (exchangeStatus.value === "connected") {
+    exchangeStatus.value = "disconnected";
+    alert("Disconnected from Exchange");
+    return;
+  }
+
+  exchangeStatus.value = "connecting";
+
+  try {
+    // Simulate API call - replace with actual endpoint
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    exchangeStatus.value = "connected";
+    alert("Successfully connected to Exchange!");
+  } catch (error) {
+    exchangeStatus.value = "disconnected";
+    alert("Failed to connect to Exchange");
+  }
+};
+
+const connectGmail = async () => {
+  if (gmailStatus.value === "connected") {
+    gmailStatus.value = "disconnected";
+    alert("Disconnected from Gmail");
+    return;
+  }
+
+  gmailStatus.value = "connecting";
+
+  try {
+    // Simulate API call - replace with actual endpoint
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    gmailStatus.value = "connected";
+    alert("Successfully connected to Gmail!");
+  } catch (error) {
+    gmailStatus.value = "disconnected";
+    alert("Failed to connect to Gmail");
+  }
+};
 </script>
 
 <template>
@@ -42,9 +86,26 @@ import { Mail } from "lucide-vue-next";
         </div>
 
         <button
-          class="w-full md:w-auto px-6 py-2.5 bg-[#0078D4] hover:bg-[#006abc] text-white font-semibold rounded-lg shadow-sm transition-colors text-sm mb-4"
+          @click="connectExchange"
+          :disabled="exchangeStatus === 'connecting'"
+          class="w-full md:w-auto px-6 py-2.5 font-semibold rounded-lg shadow-sm transition-all text-sm mb-4 flex items-center justify-center gap-2 disabled:opacity-60"
+          :class="[
+            exchangeStatus === 'connected'
+              ? 'bg-green-600 hover:bg-green-700 text-white'
+              : 'bg-[#0078D4] hover:bg-[#006abc] text-white',
+          ]"
         >
-          Connect with Exchange
+          <RefreshCw
+            v-if="exchangeStatus === 'connecting'"
+            :size="16"
+            class="animate-spin"
+          />
+          <Check v-else-if="exchangeStatus === 'connected'" :size="16" />
+          <span v-if="exchangeStatus === 'connecting'">Connecting...</span>
+          <span v-else-if="exchangeStatus === 'connected'">
+            Connected - Click to Disconnect
+          </span>
+          <span v-else>Connect with Exchange</span>
         </button>
 
         <p class="text-xs text-sub-text">
@@ -77,9 +138,26 @@ import { Mail } from "lucide-vue-next";
         </div>
 
         <button
-          class="w-full md:w-auto px-6 py-2.5 bg-[#0078D4] hover:bg-[#006abc] text-white font-semibold rounded-lg shadow-sm transition-colors text-sm mb-4"
+          @click="connectGmail"
+          :disabled="gmailStatus === 'connecting'"
+          class="w-full md:w-auto px-6 py-2.5 font-semibold rounded-lg shadow-sm transition-all text-sm mb-4 flex items-center justify-center gap-2 disabled:opacity-60"
+          :class="[
+            gmailStatus === 'connected'
+              ? 'bg-green-600 hover:bg-green-700 text-white'
+              : 'bg-[#0078D4] hover:bg-[#006abc] text-white',
+          ]"
         >
-          Connect with Gmail
+          <RefreshCw
+            v-if="gmailStatus === 'connecting'"
+            :size="16"
+            class="animate-spin"
+          />
+          <Check v-else-if="gmailStatus === 'connected'" :size="16" />
+          <span v-if="gmailStatus === 'connecting'">Connecting...</span>
+          <span v-else-if="gmailStatus === 'connected'">
+            Connected - Click to Disconnect
+          </span>
+          <span v-else>Connect with Gmail</span>
         </button>
 
         <p class="text-xs text-sub-text">*only for business email</p>

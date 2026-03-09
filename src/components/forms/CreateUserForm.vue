@@ -1,4 +1,4 @@
-<script setup>
+<!-- <script setup>
 import { ref } from "vue";
 import { X, ChevronDown } from "lucide-vue-next";
 import { useStore } from "vuex";
@@ -70,16 +70,18 @@ const handleSubmit = async () => {
   successMsg.value = "";
 
   // Set name before submitting
-  formData.value.name = `${formData.value.firstname} ${formData.value.lastname}`.trim();
+  formData.value.name =
+    `${formData.value.firstname} ${formData.value.lastname}`.trim();
 
   try {
-    const apiBaseUrl = import.meta.env.VITE_APP_API_URL || import.meta.env.BACKEND_APP_API_URL;
+    const apiBaseUrl =
+      import.meta.env.VITE_APP_API_URL || import.meta.env.BACKEND_APP_API_URL;
     const response = await fetch(`${apiBaseUrl}/api/userscrm/input`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${store.state.auth.token}`,
-        "Accept": "application/json",
+        Authorization: `Bearer ${store.state.auth.token}`,
+        Accept: "application/json",
       },
       body: JSON.stringify(formData.value),
     });
@@ -87,10 +89,10 @@ const handleSubmit = async () => {
     if (response.ok) {
       successMsg.value = "User created successfully!";
       emit("submit", formData.value);
-      
+
       // Reset form on success
       handleReset();
-      
+
       // Close after a short delay
       setTimeout(() => {
         handleClose();
@@ -123,6 +125,140 @@ const handleReset = () => {
   };
   errorMsg.value = "";
   successMsg.value = "";
+};
+</script> -->
+
+<script>
+import { X, ChevronDown } from "lucide-vue-next";
+import { mapState, mapActions } from "vuex";
+
+export default {
+  name: "UserFormModal",
+
+  emits: ["close", "submit"],
+  components: {
+    X,
+    ChevronDown,
+  },
+
+  props: {
+    isOpen: {
+      type: Boolean,
+      default: false,
+    },
+  },
+
+  data() {
+    return {
+      // Options
+      teamOptions: [
+        { value: "", label: "Select Team" },
+        { value: "management", label: "Management" },
+        { value: "marketing", label: "Marketing" },
+        { value: "design", label: "Design" },
+        { value: "finance", label: "Finance" },
+        { value: "development", label: "Development" },
+        { value: "support", label: "Support" },
+      ],
+
+      staffLevelOptions: [
+        { value: "", label: "Select Staff Level" },
+        { value: "ExcecutiveLevel", label: "Excecutive Level" },
+        { value: "DirectorLevel", label: "Director Level" },
+        { value: "ManagerLevel", label: "Manager Level" },
+        { value: "Staff", label: "Staff" },
+        { value: "Other", label: "Other" },
+      ],
+
+      roleOptions: [
+        { value: "", label: "Select Role" },
+        { value: "super_admin", label: "Super Admin" },
+        { value: "admin", label: "Admin" },
+        { value: "manager", label: "Manager" },
+        { value: "marketing", label: "Marketing" },
+      ],
+
+      formData: {
+        name: "",
+        firstname: "",
+        lastname: "",
+        no_handphone: "",
+        nik: "",
+        email: "",
+        password: "",
+        primaryteam: "",
+        secondaryteam: "",
+        stafflevel: "",
+        role: "",
+      },
+
+      isSaving: false,
+      errorMsg: "",
+      successMsg: "",
+    };
+  },
+
+  computed: {
+    ...mapState({
+      token: (state) => state.auth.token,
+    }),
+  },
+
+  methods: {
+    ...mapActions({
+      insertUser: "users/insertuser",
+    }),
+
+    handleClose() {
+      this.$emit("close");
+    },
+
+    handleSubmit() {
+      this.isSaving = true;
+      this.errorMsg = "";
+      this.successMsg = "";
+      // Set name before submitting
+      this.formData.name = `${this.formData.firstname} ${this.formData.lastname}`.trim();
+
+      console.log("Submitting form with data:", this.formData);
+
+      this.insertUser(this.formData)
+        .then(() => {
+          this.successMsg = "User berhasil ditambahkan!";
+          alertService.success("User berhasil ditambahkan!");
+          emit("submit", this.formData);
+
+          this.handleReset();
+        })
+        .catch((err) => {
+          console.error("Error inserting user:", err);
+          this.errorMsg = err.message || "Failed to create user.";
+        })
+        .finally(() => {
+          this.isSaving = false;
+          this.handleClose();
+        });
+    },
+
+    handleReset() {
+      this.formData = {
+        name: "",
+        firstname: "",
+        lastname: "",
+        no_handphone: "",
+        nik: "",
+        email: "",
+        password: "",
+        primaryteam: "",
+        secondaryteam: "",
+        stafflevel: "",
+        role: "",
+      };
+
+      this.errorMsg = "";
+      this.successMsg = "";
+    },
+  },
 };
 </script>
 
@@ -159,18 +295,33 @@ const handleReset = () => {
       <!-- Form Content (Scrollable) -->
       <div class="flex-1 overflow-y-auto relative">
         <!-- Loading overlay during save -->
-        <div v-if="isSaving" class="absolute inset-0 bg-white/50 z-20 flex items-center justify-center">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-950"></div>
+        <div
+          v-if="isSaving"
+          class="absolute inset-0 bg-white/50 z-20 flex items-center justify-center"
+        >
+          <div
+            class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-950"
+          ></div>
         </div>
 
-        <form @submit.prevent="handleSubmit" id="addUserForm" class="p-6 space-y-6">
+        <form
+          @submit.prevent="handleSubmit"
+          id="addUserForm"
+          class="p-6 space-y-6"
+        >
           <!-- Error Message -->
-          <div v-if="errorMsg" class="p-3 bg-red-50 text-red-600 text-xs rounded-lg border border-red-100 italic">
+          <div
+            v-if="errorMsg"
+            class="p-3 bg-red-50 text-red-600 text-xs rounded-lg border border-red-100 italic"
+          >
             {{ errorMsg }}
           </div>
-          
+
           <!-- Success Message -->
-          <div v-if="successMsg" class="p-3 bg-green-50 text-green-600 text-xs rounded-lg border border-green-100 font-medium">
+          <div
+            v-if="successMsg"
+            class="p-3 bg-green-50 text-green-600 text-xs rounded-lg border border-green-100 font-medium"
+          >
             {{ successMsg }}
           </div>
           <!-- Name Section -->
@@ -388,8 +539,11 @@ const handleReset = () => {
             :disabled="isSaving"
             class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            <div v-if="isSaving" class="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-            {{ isSaving ? 'Submitting...' : 'Submit' }}
+            <div
+              v-if="isSaving"
+              class="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"
+            ></div>
+            {{ isSaving ? "Submitting..." : "Submit" }}
           </button>
         </div>
       </div>

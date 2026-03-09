@@ -48,13 +48,13 @@ const actions = {
     promise
       .then((data) => {
         commit("setusers", data.users);
-        commit('SET_LOADING', false);
+        commit("SET_LOADING", false);
       })
       .catch((error) => {
         // Tangani error lain jika ada
         console.error("Error:", error);
-        commit('SET_ERROR', error.message);
-        commit('SET_LOADING', false);
+        commit("SET_ERROR", error.message);
+        commit("SET_LOADING", false);
       });
 
     return promise;
@@ -130,7 +130,7 @@ const actions = {
   insertuser(context, data) {
     const promise = new Promise(async (resolve, reject) => {
       try {
-        let network = await api.post("users/insertusr", data.formdata, {
+        let network = await api.post("userscrm/input", data, {
           headers: {
             Authorization: "Bearer " + cookies.get("token"),
           },

@@ -1,6 +1,13 @@
 <script setup>
-import { ref, computed } from "vue";
-import { Filter, Search } from "lucide-vue-next";
+import { ref, computed, onMounted } from "vue";
+import { useStore } from "vuex";
+import { Filter, Search, RefreshCw } from "lucide-vue-next";
+
+const store = useStore();
+
+// Get tasks state from Vuex
+const isLoading = computed(() => store.getters["tasks/isLoading"]);
+const error = computed(() => store.getters["tasks/error"]);
 
 const taskText = ref("");
 const emit = defineEmits(["add"]);
@@ -113,6 +120,18 @@ const selectedEvents = computed(() => {
 const selectedDateLabel = computed(() => {
   return new Date(selectedDate.value).toDateString();
 });
+
+// Lifecycle: Fetch tasks on mount
+onMounted(() => {
+  store
+    .dispatch("tasks/fetchAllTasks")
+    .then(() => {
+      console.log("Tasks fetched successfully");
+    })
+    .catch((err) => {
+      console.error("Failed to fetch tasks:", err);
+    });
+});
 </script>
 
 <template>
@@ -160,7 +179,18 @@ const selectedDateLabel = computed(() => {
     </div>
 
     <!-- CALENDAR AREA -->
-    <div class="p-4 grid grid-cols-1 xl:grid-cols-4 gap-4">
+    <div class="p-4 grid grid-cols-1 xl:grid-cols-4 gap-4 relative">
+      <!-- Loading Overlay -->
+      <div
+        v-if="isLoading"
+        class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center rounded-lg"
+      >
+        <div class="flex flex-col items-center gap-3">
+          <RefreshCw class="animate-spin text-blue-950" :size="32" />
+          <p class="text-sm text-sub-text font-medium">Loading tasks...</p>
+        </div>
+      </div>
+
       <!-- CALENDAR -->
       <div class="xl:col-span-3">
         <!-- HEADER -->

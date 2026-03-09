@@ -2,6 +2,10 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { useStore } from "vuex";
 
+import CreateCompanyForm from "./forms/CreateCompanyForm.vue";
+import BulkAddCompanyForm from "./forms/BulkAddCompanyForm.vue";
+import DetailForm from "./forms/DetailForm.vue";
+
 import {
   Search,
   ChevronDown,
@@ -12,20 +16,27 @@ import {
   ChevronLeft,
   FilePlus,
   ChevronRight,
-  RefreshCcw,
+  RefreshCw,
   FolderPlus,
   FileDown,
   FolderDown,
 } from "lucide-vue-next";
 
-import CreateCompanyForm from "./forms/CreateCompanyForm.vue";
-import BulkAddCompanyForm from "./forms/BulkAddCompanyForm.vue";
-import DetailForm from "./forms/DetailForm.vue";
+// Hubungkan ke Vuex Store
+const store = useStore();
+
+// Pakai 'company' karena tadi kita daftarkan dengan nama itu di store/index.js
+const companies = computed(() => store.getters["company/filteredCompanies"]);
+const searchQuery = computed({
+  get: () => store.state.company.searchQuery,
+  set: (value) => store.dispatch("company/setSearchQuery", value),
+});
+const isLoading = computed(() => store.getters["company/isLoading"]);
+const error = computed(() => store.getters["company/error"]);
 
 // Sample data - replace with actual data from API
-const store = useStore();
 const currentPage = ref(1);
-const totalCompanies = ref(18600);
+const totalCompanies = computed(() => companies.value.length); // Dynamically compute from actual data
 const itemsPerPage = ref(10);
 const showCreateCompanyForm = ref(false);
 const showBulkAddForm = ref(false);
@@ -33,12 +44,6 @@ const showDetailForm = ref(false);
 const showDropdown = ref(false);
 const showDownloadDropdown = ref(false);
 const selectedIds = ref([]);
-
-// Hubungkan ke Vuex Store
-// Pakai 'company' karena tadi kita daftarkan dengan nama itu di store/index.js
-const companies = computed(() => store.getters["company/allcompany"]);
-const isLoading = computed(() => store.getters["company/isLoading"]);
-const error = computed(() => store.getters["company/error"]);
 
 const toggleDownloadDropdown = () => {
   showDownloadDropdown.value = !showDownloadDropdown.value;
@@ -79,11 +84,12 @@ const handleClickOutside = (e) => {
   }
 };
 
-// Ambil data dari API saat halaman dibuka
+// Load data saat component mount
 onMounted(() => {
+  // Fetch data dari API
   store.dispatch("company/fetchAllcompany");
+  // Add event listener untuk close dropdown saat klik luar
   document.addEventListener("click", handleClickOutside);
-  console.log("DATA COMPANY:", companies.value);
 });
 
 onBeforeUnmount(() =>
@@ -94,6 +100,52 @@ const handleBulkAdd = () => {
   console.log("Bulk add clicked");
   showBulkAddForm.value = true;
 };
+
+// Fetch data function untuk refresh
+const fetchData = () => {
+  store
+    .dispatch("company/fetchAllcompany")
+    .then(() => {
+      console.log("Companies fetched successfully");
+    })
+    .catch((err) => {
+      console.error("Failed to fetch companies:", err);
+    });
+};
+
+// Delete selected companies
+const handleDeleteCompanies = async () => {
+  if (selectedIds.value.length === 0) {
+    alert("Please select at least one company to delete");
+    return;
+  }
+
+  const confirmDelete = confirm(
+    `Are you sure you want to delete ${selectedIds.value.length} company(ies)? This action cannot be undone.`,
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    // Delete each selected company
+    for (const id of selectedIds.value) {
+      await store.dispatch("company/deletecompany", id);
+    }
+    // Clear selected IDs
+    selectedIds.value = [];
+    console.log("Companies deleted successfully");
+  } catch (error) {
+    console.error("Error deleting companies:", error);
+    const status = error?.response?.status;
+    const backendMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message;
+    alert(
+      `Failed to delete company. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Please try again."}`,
+    );
+  }
+};
 </script>
 
 <template>
@@ -102,14 +154,30 @@ const handleBulkAdd = () => {
     <!-- Header with Title and Total -->
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-baseline gap-3">
-  <h1 class="text-2xl font-bold text-dark-base">Companies</h1>
-  <span class="text-sm text-sub-text">{{ totalCompanies.toLocaleString() }} Total Companies</span>
-  
-  <span v-if="isLoading" class="text-xs text-blue-500 animate-pulse ml-2">Loading data...</span>
-</div>
+        <h1 class="text-2xl font-bold text-dark-base">Companies</h1>
+        <span class="text-sm text-sub-text">
+          <template v-if="isLoading"> Searching company... </template>
+          <template v-else>
+            {{ totalCompanies.toLocaleString() }} Total Companies
+          </template>
+        </span>
+      </div>
 
       <!-- Right Section: Action Buttons -->
       <div class="flex items-center gap-2">
+        <!-- Refresh Button -->
+        <button
+          @click="fetchData"
+          :disabled="isLoading"
+          class="p-2 border border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
+          title="Refresh Data"
+        >
+          <RefreshCw
+            :size="18"
+            :class="{ 'animate-spin': isLoading }"
+            class="text-sub-text"
+          />
+        </button>
         <!-- Add New -->
         <div class="relative inline-block add-dropdown">
           <button
@@ -204,6 +272,7 @@ const handleBulkAdd = () => {
 
         <!-- Delete -->
         <button
+          @click="handleDeleteCompanies"
           class="p-2 bg-white border border-red text-red rounded-lg hover:bg-red hover:text-white transition"
         >
           <Trash2 :size="18" />
@@ -223,6 +292,7 @@ const handleBulkAdd = () => {
         <!-- Search Input -->
         <div class="relative">
           <input
+            v-model="searchQuery"
             type="text"
             placeholder="Search by Name"
             class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
@@ -279,7 +349,18 @@ const handleBulkAdd = () => {
     </div>
 
     <!-- Table -->
-    <div class="overflow-hidden">
+    <div class="overflow-hidden relative">
+      <!-- Loading Overlay -->
+      <div
+        v-if="isLoading"
+        class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center"
+      >
+        <div class="flex flex-col items-center gap-3">
+          <RefreshCw class="animate-spin text-blue-950" :size="32" />
+          <p class="text-sm text-sub-text font-medium">Loading companies...</p>
+        </div>
+      </div>
+
       <!-- Table -->
       <div class="overflow-x-auto">
         <table class="w-full">
@@ -343,7 +424,7 @@ const handleBulkAdd = () => {
           </thead>
           <tbody>
             <!-- Empty State -->
-            <tr v-if="companies.length === 0">
+            <tr v-if="companies.length === 0 && !isLoading">
               <td colspan="7" class="px-6 py-20 text-center text-sub-text">
                 <div class="flex flex-col items-center gap-3">
                   <div
@@ -377,21 +458,13 @@ const handleBulkAdd = () => {
                 {{ company.company_name }}
               </td>
               <td class="px-6 py-4 text-sm text-dark-base">
-                {{ company.email }}
-              </td>
-              <td class="px-6 py-4 text-sm text-dark-base">
                 {{ company.website }}
               </td>
+              <td class="px-6 py-4 text-sm text-dark-base">
+                {{ company.email }}
+              </td>
               <td class="px-6 py-4">
-                <span
-                  class="px-3 py-1 rounded-full text-xs font-medium"
-                  :class="{
-                    'bg-green-100 text-green-700': company.status === 'Active',
-                    'bg-gray-100 text-gray-700': company.status === 'Inactive',
-                  }"
-                >
-                  {{ company.type }}
-                </span>
+                {{ company.type }}
               </td>
               <td class="px-6 py-4 text-sm text-dark-base">
                 {{ company.updated_at }}
@@ -410,17 +483,13 @@ const handleBulkAdd = () => {
   <CreateCompanyForm
     :isOpen="showCreateCompanyForm"
     @close="showCreateCompanyForm = false"
-    @submit="async (data) => {
-      try {
-        await store.dispatch('company/insertcompany', { formdata: data });
+    @submit="
+      (data) => {
+        console.log('Company added:', data);
         showCreateCompanyForm = false;
-        await nextTick();
         showDetailForm = true;
-        console.log('Company added successfully, DetailForm should now be visible');
-      } catch (error) {
-        console.error('Error adding company:', error);
       }
-    }"
+    "
   />
 
   <!-- Bulk Add Company Form -->

@@ -85,33 +85,33 @@ export default {
 
     handleSubmit() {
       // Add timestamps directly to formData and payload
-      const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      const now = new Date().toISOString().slice(0, 19).replace("T", " ");
       this.formData.created_at = now;
       this.formData.updated_at = now;
 
       // Extract only database fields to avoid 500 error from unexpected fields
-      const { 
-        companiesAssociation, 
-        dealsAssociation, 
-        ...payload 
-      } = this.formData;
+      const { companiesAssociation, dealsAssociation, ...payload } =
+        this.formData;
 
       console.log("Submitting contact with payload:", payload);
-      
+
       this.saveContact(payload)
         .then((response) => {
           console.log("Contact saved successfully in component:", response);
           toast.success("Contact saved successfully!");
-          
+
           // Show the detail form as requested by the user
           this.showDetailForm = true;
-          
+
           // Optional: Reset the main form data since it's already saved
-          // this.handleReset(); 
+          // this.handleReset();
         })
         .catch((error) => {
           console.error("Failed to save contact in component:", error);
-          toast.error("Failed to save contact: " + (error.response?.data?.message || error.message));
+          toast.error(
+            "Failed to save contact: " +
+              (error.response?.data?.message || error.message),
+          );
         });
     },
 
@@ -285,7 +285,7 @@ export default {
             </div>
           </div>
 
-          <!-- Address & Country -->
+          <!-- Address & City -->
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2">
@@ -300,18 +300,18 @@ export default {
             </div>
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2">
-                Country
+                City
               </label>
               <input
-                v-model="formData.country"
+                v-model="formData.city"
                 type="text"
-                placeholder="Country"
+                placeholder="City"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
               />
             </div>
           </div>
 
-          <!-- Province & City -->
+          <!-- Province & Country -->
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2">
@@ -326,12 +326,12 @@ export default {
             </div>
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2">
-                City
+                Country
               </label>
               <input
-                v-model="formData.city"
+                v-model="formData.country"
                 type="text"
-                placeholder="City"
+                placeholder="Country"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
               />
             </div>
@@ -468,7 +468,7 @@ export default {
             type="submit"
             form="addContactForm"
             :disabled="isLoading"
-            class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium flex items-center gap-2 min-w-[100px] justify-center"
+            class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium flex items-center gap-2 min-w-25 justify-center"
           >
             <Loader2 v-if="isLoading" :size="16" class="animate-spin" />
             <span>{{ isLoading ? "Saving..." : "Next" }}</span>
