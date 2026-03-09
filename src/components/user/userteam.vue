@@ -11,6 +11,10 @@ import {
   RefreshCw,
 } from "lucide-vue-next";
 import CreateTeamForm from "../forms/CreateTeamForm.vue";
+import DetailTeamForm from "../forms/DetailTeamForm.vue";
+import DetailTeamForm from "../forms/DetailTeamForm.vue";
+import DetailTeamForm from "../forms/DetailTeamForm.vue";
+import DetailTeamForm from "../forms/DetailTeamForm.vue";
 
 const store = useStore();
 
@@ -125,10 +129,12 @@ import {
   RefreshCw,
 } from "lucide-vue-next";
 import CreateTeamForm from "../forms/CreateTeamForm.vue";
+import DetailTeamForm from "../forms/DetailTeamForm.vue";
 
 export default {
   components: {
     CreateTeamForm,
+    DetailTeamForm,
     Filter,
     Search,
     ChevronLeft,
@@ -141,6 +147,8 @@ export default {
   data() {
     return {
       showCreateTeamForm: false,
+      showTeamDetailForm: false,
+      selectedTeamDetail: null,
       currentPage: 1,
       itemsPerPage: 5,
       selectedTeam: [],
@@ -218,12 +226,22 @@ export default {
       }
     },
 
+    openTeamDetail(team) {
+      this.selectedTeamDetail = { ...team };
+      this.showTeamDetailForm = true;
+    },
+
+    closeTeamDetail() {
+      this.showTeamDetailForm = false;
+      this.selectedTeamDetail = null;
+    },
+
     handleCreateTeamSubmit(data) {
       console.log(data);
 
       let dataparam = {
         teamName: data.teamName,
-        parentTeam: data.parentTeam.name,
+        parentTeam: data.parentTeam?.name || null,
         selectedMembers: data.selectedMembers.map((member) => member.id),
       };
 
@@ -463,6 +481,9 @@ export default {
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
             </th>
+            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+              Action
+            </th>
           </tr>
         </thead>
 
@@ -484,25 +505,50 @@ export default {
           <tr
             v-for="team in paginatedTeams"
             :key="team.team_id"
-            class="border-b border-gray-100 hover:bg-gray-50 transition"
+            class="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer"
+            @click="openTeamDetail(team)"
           >
             <td class="px-6 py-4">
               <input
                 type="checkbox"
                 :value="team.team_id"
                 v-model="selectedTeam"
+                @click.stop
                 class="w-4 h-4"
               />
             </td>
 
-            <td class="px-6 py-4 font-medium text-gray-800">
+            <td
+              class="px-6 py-4 font-medium text-gray-800"
+              style="cursor: pointer"
+              @click="openTeamDetail(team)"
+            >
               {{ team.team_name }}
             </td>
-            <td class="px-6 py-4 font-medium text-gray-800">
+            <td
+              class="px-6 py-4 font-medium text-gray-800"
+              style="cursor: pointer"
+              @click="openTeamDetail(team)"
+            >
               {{ team.parent }}
             </td>
 
-            <td class="px-6 py-4 text-dark-base">{{ team.total_users }}</td>
+            <td
+              class="px-6 py-4 text-dark-base"
+              @click="openTeamDetail(team)"
+            >
+              {{ team.total_users }}
+            </td>
+
+            <td class="px-6 py-4" @click.stop>
+              <button
+                type="button"
+                class="px-3 py-1.5 text-xs font-medium rounded-lg border border-outline text-sub-text hover:bg-light-base"
+                @click="openTeamDetail(team)"
+              >
+                View Detail
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -514,5 +560,11 @@ export default {
     :isOpen="showCreateTeamForm"
     @close="showCreateTeamForm = false"
     @submit="handleCreateTeamSubmit"
+  />
+
+  <DetailTeamForm
+    :isOpen="showTeamDetailForm"
+    :team="selectedTeamDetail"
+    @close="closeTeamDetail"
   />
 </template>
