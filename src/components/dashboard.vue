@@ -1,4 +1,4 @@
-<script setup>
+<script>
 import Summary from "./carddb/summary.vue";
 import Deals from "./carddb/deals.vue";
 import Activity from "./carddb/activity.vue";
@@ -9,6 +9,29 @@ import TasksKPI from "./carddb/tasksKPI.vue";
 import TaskList from "./carddb/taskList.vue";
 import TopslsPeople from "./carddb/topslspeople.vue";
 import { RefreshCcw } from "lucide-vue-next";
+
+export default {
+  name: "MainDashboard",
+
+  components: {
+    Summary,
+    Deals,
+    Activity,
+    LeadsReport,
+    TopCont,
+    TopComp,
+    TasksKPI,
+    TaskList,
+    TopslsPeople,
+    RefreshCcw,
+  },
+
+  computed: {
+    message() {
+      return this.$store.state.message;
+    },
+  },
+};
 </script>
 
 <template>
@@ -28,8 +51,10 @@ import { RefreshCcw } from "lucide-vue-next";
   </div> -->
 
   <!-- Content Area -->
+
   <!-- Summary Cards -->
   <!-- contact Summary Card -->
+  <div>{{ message }}</div>
   <Summary></Summary>
 
   <!-- Deals and Activity -->

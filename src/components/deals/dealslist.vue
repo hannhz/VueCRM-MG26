@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from "vue"; // 1. Pastikan onBeforeUnmount sudah di-import
-// import CreateDealForm from "@/components/forms/CreateDealForm.vue";
+import { ref, onMounted, computed, watch } from "vue"; // 1. Pastikan onBeforeUnmount sudah di-import
+import { useStore } from "vuex";
 import {
   ChevronDown,
   Search,
@@ -10,9 +10,31 @@ import {
   Trash2,
 } from "lucide-vue-next";
 
+const store = useStore();
+
+// Get deals from Vuex store
+const allDeals = computed(() => store.getters["deals/filteredDeals"] || []);
+const searchQuery = computed({
+  get: () => store.state.deals.searchQuery,
+  set: (value) => store.dispatch("deals/setSearchQuery", value),
+});
+
 const currentPage = ref(1);
 const totalDeals = ref(18600);
 const itemsPerPage = ref(10);
+
+const stageOptions = [
+  { value: "new", label: "New" },
+  { value: "qualified", label: "Qualified" },
+  { value: "advanced", label: "Advanced" },
+  { value: "payment", label: "Payment" },
+  { value: "won", label: "Won" },
+  { value: "lost", label: "Lost" },
+];
+
+const isSyncingStage = ref(false);
+const updatingDealId = ref(null);
+const openStageDropdown = ref(null);
 
 //data
 const deals = ref([
@@ -40,7 +62,42 @@ const isCurrencyOpen = ref(false);
 const pipelines = ["Sales Pipeline", "Marketing Pipeline", "Dev Pipeline"];
 const selectedPipeline = ref("Sales Pipeline");
 const isPipelineOpen = ref(false);
-const showCreateDealForm = ref(false);
+
+const handleChangeStage = async (deal, newStage) => {
+  if (deal.stage === newStage) {
+    openStageDropdown.value = null;
+    return;
+  }
+
+  const previousStage = deal.stage;
+  deal.stage = newStage;
+  updatingDealId.value = deal.id;
+  isSyncingStage.value = true;
+  openStageDropdown.value = null;
+
+  try {
+    await store.dispatch("deals/updateDealStage", {
+      dealId: deal.id,
+      newStage: newStage,
+    });
+  } catch (error) {
+    deal.stage = previousStage;
+    console.error("Failed to update stage:", error);
+  } finally {
+    isSyncingStage.value = false;
+    updatingDealId.value = null;
+  }
+};
+
+const stageColor = (stage) => {
+  if (stage === "new") return "bg-slate-100 text-slate-700";
+  if (stage === "qualified") return "bg-green-100 text-green-700";
+  if (stage === "advanced" || stage === "payment")
+    return "bg-yellow-100 text-yellow-700";
+  if (stage === "won") return "bg-emerald-100 text-emerald-700";
+  if (stage === "lost") return "bg-red-100 text-red-700";
+  return "bg-slate-100 text-slate-700";
+};
 
 //handled add deal form
 const handleAddDeal = (dealData) => {
@@ -49,16 +106,42 @@ const handleAddDeal = (dealData) => {
   // TODO: Implement API call
 };
 
-const deleteSelected = () => {
-  if (confirm("Are you sure you want to delete selected deals?")) {
-    deals.value = deals.value.filter(
-      (d) => !selectedDeals.value.includes(d.id),
-    );
-    selectedDeals.value = [];
+// Lifecycle: Fetch deals on mount
+onMounted(async () => {
+  try {
+    await store.dispatch("deals/fetchAllDeals");
+  } catch (error) {
+    console.error("Failed to fetch deals:", error);
   }
-};
-</script>
+});
 
+// Watch Vuex deals and update local ref
+watch(
+  () => allDeals.value,
+  (newDeals) => {
+    deals.value = newDeals;
+  },
+  { immediate: true },
+);
+</script>
+<style scoped>
+.stage-dropdown-enter-active,
+.stage-dropdown-leave-active {
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.stage-dropdown-enter-from {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.stage-dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+</style>
 <template>
   <div
     class="bg-white rounded-lg shadow-sm max-w-full h-147 border border-outline flex flex-col overflow-hidden"
@@ -77,6 +160,7 @@ const deleteSelected = () => {
 
           <!-- Search -->
           <input
+            v-model="searchQuery"
             type="text"
             placeholder="Search by Name"
             class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
@@ -355,16 +439,77 @@ const deleteSelected = () => {
               </td>
 
               <td class="px-6 py-4 text-sm text-dark-base">
-                <span
-                  class="px-3 py-1 rounded-full text-xs font-medium"
-                  :class="{
-                    'bg-green-100 text-green-700': deal.stage === 'qualified',
-                    'bg-yellow-100 text-yellow-700': deal.stage === 'proposal',
-                    'bg-red-100 text-red-700': deal.stage === 'lost',
-                  }"
-                >
-                  {{ deal.stage }}
-                </span>
+                <div class="relative group">
+                  <!-- Stage Button -->
+                  <button
+                    type="button"
+                    @click="
+                      openStageDropdown.value =
+                        openStageDropdown.value === deal.id ? null : deal.id
+                    "
+                    :disabled="isSyncingStage && updatingDealId === deal.id"
+                    class="w-full px-3 py-1.5 rounded-md text-xs font-medium inline-flex items-center justify-between gap-2 border border-gray-200 transition hover:border-gray-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                    :class="[
+                      stageColor(deal.stage),
+                      openStageDropdown.value === deal.id
+                        ? 'ring-1 ring-sub-text border-sub-text'
+                        : '',
+                    ]"
+                  >
+                    <span class="capitalize">{{ deal.stage }}</span>
+                    <ChevronDown
+                      :size="14"
+                      class="transition-transform"
+                      :class="
+                        openStageDropdown.value === deal.id ? 'rotate-180' : ''
+                      "
+                    />
+                  </button>
+
+                  <!-- Syncing Indicator -->
+                  <div
+                    v-if="isSyncingStage && updatingDealId === deal.id"
+                    class="absolute right-0 top-full mt-1 text-xs text-slate-500 font-medium"
+                  >
+                    ✓ Syncing...
+                  </div>
+
+                  <!-- Dropdown Menu -->
+                  <Transition name="stage-dropdown">
+                    <div
+                      v-if="openStageDropdown.value === deal.id"
+                      class="absolute top-full mt-1 left-0 right-0 bg-white border border-outline rounded-lg shadow-lg z-20 min-w-max"
+                      @click.stop
+                    >
+                      <div class="py-1">
+                        <button
+                          type="button"
+                          v-for="opt in stageOptions"
+                          :key="opt.value"
+                          @click="handleChangeStage(deal, opt.value)"
+                          :disabled="
+                            isSyncingStage && updatingDealId === deal.id
+                          "
+                          class="w-full text-left px-4 py-2 text-sm transition hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                          :class="
+                            deal.stage === opt.value
+                              ? 'font-semibold bg-gray-50 text-sub-text'
+                              : 'text-gray-700'
+                          "
+                        >
+                          <span
+                            v-if="deal.stage === opt.value"
+                            class="text-sub-text"
+                          >
+                            ✓
+                          </span>
+                          <span v-else class="w-4"></span>
+                          {{ opt.label }}
+                        </button>
+                      </div>
+                    </div>
+                  </Transition>
+                </div>
               </td>
 
               <td class="px-6 py-4 text-sm text-dark-base">
@@ -388,11 +533,4 @@ const deleteSelected = () => {
       </div>
     </div>
   </div>
-
-  <!-- Create Deal Form -->
-  <!-- <CreateDealForm
-    :isOpen="showCreateDealForm"
-    @close="showCreateDealForm = false"
-    @submit="showCreateDealForm = false"
-  /> -->
 </template>

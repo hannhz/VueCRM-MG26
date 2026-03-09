@@ -1,15 +1,15 @@
 <script setup>
-import { ref, onBeforeUnmount } from "vue"; // 1. Pastikan onBeforeUnmount sudah di-import
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
+import { useStore } from "vuex";
 import draggable from "vuedraggable";
-import CreateDealForm from "@/components/forms/CreateDealForm.vue";
 import { ChevronDown, Search, Filter } from "lucide-vue-next";
 
-const viewMode = ref("grid"); // defaultnya grid
+const store = useStore();
 
-const totalDeals = ref(18600);
-const itemsPerPage = ref(10);
-
-const Draggable = draggable;
+// Access sidebar state from Vuex
+const isSidebarCollapsed = computed(
+  () => store.getters["settingsfe/isSidebarCollapsed"],
+);
 
 // Data Mata Uang
 const currencies = ["IDR", "USD", "SGD", "EUR"];
@@ -21,31 +21,135 @@ const pipelines = ["Sales Pipeline", "Marketing Pipeline", "Dev Pipeline"];
 const selectedPipeline = ref("Sales Pipeline");
 const isPipelineOpen = ref(false);
 const isDragging = ref(false);
-const showCreateDealForm = ref(false);
 
-const pipeline = ref({
-  new: [
-    { id: 1, name: "Client A", value: 500000 },
-    { id: 2, name: "Client B", value: 300000 },
-    { id: 3, name: "Client C", value: 450000 },
-    { id: 4, name: "Client D", value: 200000 },
-    { id: 5, name: "Client E", value: 750000 },
-  ],
-  qualified: [],
-  advanced: [],
-  payment: [],
-  won: [],
-  lost: [],
+const boardMeta = [
+  { id: 1, key: "new", title: "New" },
+  { id: 2, key: "qualified", title: "Qualified" },
+  { id: 3, key: "advanced", title: "Advanced" },
+  { id: 4, key: "payment", title: "Payment" },
+  { id: 5, key: "won", title: "Won" },
+  { id: 6, key: "lost", title: "Lost" },
+];
+
+const fallbackDeals = [
+  {
+    id: 1,
+    name: "TechFlow Solutions",
+    stage: "new",
+    jumlah: "Main Enterprise",
+    tertanggal: "2023-10-20",
+    contact: "John Doe",
+    company: "Meta Tech",
+    updatedAt: "2023-10-24",
+    owner: "Alex Graham",
+    value: 500000,
+  },
+  {
+    id: 2,
+    name: "Client B",
+    stage: "qualified",
+    jumlah: "SMB Plan",
+    tertanggal: "2023-10-18",
+    contact: "Maya Putri",
+    company: "Binar Corp",
+    updatedAt: "2023-10-25",
+    owner: "Dita Rahma",
+    value: 300000,
+  },
+  {
+    id: 3,
+    name: "Client C",
+    stage: "advanced",
+    jumlah: "Pro Package",
+    tertanggal: "2023-10-17",
+    contact: "Rizky Anwar",
+    company: "Nusantara Labs",
+    updatedAt: "2023-10-26",
+    owner: "Fahmi Yusuf",
+    value: 450000,
+  },
+  {
+    id: 4,
+    name: "Client D",
+    stage: "payment",
+    jumlah: "Starter",
+    tertanggal: "2023-10-16",
+    contact: "Lisa Wijaya",
+    company: "Skyline ID",
+    updatedAt: "2023-10-23",
+    owner: "Anita Dewi",
+    value: 200000,
+  },
+  {
+    id: 5,
+    name: "Client E",
+    stage: "won",
+    jumlah: "Annual Contract",
+    tertanggal: "2023-10-21",
+    contact: "Budi Santoso",
+    company: "Garuda Digital",
+    updatedAt: "2023-10-27",
+    owner: "Salsa Putri",
+    value: 750000,
+  },
+];
+
+const boards = ref([]);
+const isSyncingStage = ref(false);
+
+const allDeals = computed(() => store.getters["deals/filteredDeals"] || []);
+
+const searchQuery = computed({
+  get: () => store.state.deals.searchQuery,
+  set: (value) => store.dispatch("deals/setSearchQuery", value),
 });
 
-const boards = ref([
-  { id: 1, title: "New", items: pipeline.value.new },
-  { id: 2, title: "Qualified", items: pipeline.value.qualified },
-  { id: 3, title: "Advanced", items: pipeline.value.advanced },
-  { id: 4, title: "Payment", items: pipeline.value.payment },
-  { id: 5, title: "Won", items: pipeline.value.won },
-  { id: 6, title: "Lost", items: pipeline.value.lost },
-]);
+const normalizeStage = (rawStage) => {
+  const stage = String(rawStage || "new").toLowerCase();
+  if (stage.includes("qual")) return "qualified";
+  if (stage.includes("adv") || stage.includes("negot")) return "advanced";
+  if (stage.includes("pay") || stage.includes("proposal")) return "payment";
+  if (stage.includes("won") || stage.includes("close_won")) return "won";
+  if (stage.includes("lost") || stage.includes("close_lost")) return "lost";
+  return "new";
+};
+
+const normalizeDeal = (deal) => ({
+  id: deal.id,
+  name: deal.name || deal.dealName || deal.deal_name || "Untitled Deal",
+  stage: normalizeStage(deal.stage || deal.pipeline),
+  jumlah: deal.jumlah || deal.amount || "-",
+  tertanggal:
+    deal.tertanggal ||
+    deal.expectedCloseDate ||
+    deal.expected_close_date ||
+    "-",
+  contact: deal.contact || deal.contact_name || "-",
+  company: deal.company || deal.company_name || "-",
+  updatedAt: deal.updatedAt || deal.updated_at || "-",
+  owner: deal.owner || deal.owner_name || "-",
+  value: Number(deal.value || deal.amount || 0),
+});
+
+const rebuildBoards = (rawDeals) => {
+  const grouped = {
+    new: [],
+    qualified: [],
+    advanced: [],
+    payment: [],
+    won: [],
+    lost: [],
+  };
+
+  rawDeals.map(normalizeDeal).forEach((deal) => {
+    grouped[deal.stage].push(deal);
+  });
+
+  boards.value = boardMeta.map((board) => ({
+    ...board,
+    items: grouped[board.key],
+  }));
+};
 
 // hapus item
 const deleteDeal = (item) => {
@@ -53,21 +157,76 @@ const deleteDeal = (item) => {
     b.items = b.items.filter((i) => i.id !== item.id);
   });
 };
+
+const handleBoardChange = async (event, targetBoard) => {
+  if (!event || !event.added || !event.added.element) return;
+
+  const movedDeal = event.added.element;
+  const previousStage = movedDeal.stage;
+  const nextStage = targetBoard.key;
+
+  if (previousStage === nextStage) return;
+
+  movedDeal.stage = nextStage;
+  isSyncingStage.value = true;
+
+  try {
+    await store.dispatch("deals/updateDealStage", {
+      dealId: movedDeal.id,
+      newStage: nextStage,
+    });
+  } catch (error) {
+    movedDeal.stage = previousStage;
+    await store.dispatch("deals/fetchAllDeals").catch(() => {});
+  } finally {
+    isSyncingStage.value = false;
+  }
+};
+
+const stageClass = (stage) => {
+  if (stage === "new") return "bg-slate-100 text-slate-700";
+  if (stage === "qualified") return "bg-green-100 text-green-700";
+  if (stage === "advanced" || stage === "payment")
+    return "bg-yellow-100 text-yellow-700";
+  if (stage === "won") return "bg-emerald-100 text-emerald-700";
+  if (stage === "lost") return "bg-red-100 text-red-700";
+  return "bg-slate-100 text-slate-700";
+};
+
+onMounted(async () => {
+  await store.dispatch("deals/fetchAllDeals").catch(() => {
+    rebuildBoards(fallbackDeals);
+  });
+});
+
+watch(
+  allDeals,
+  (deals) => {
+    if (!deals.length) {
+      rebuildBoards(fallbackDeals);
+      return;
+    }
+    rebuildBoards(deals);
+  },
+  { immediate: true },
+);
+
 onBeforeUnmount(() => {
   isDragging.value = false;
   isCurrencyOpen.value = false;
   isPipelineOpen.value = false;
-  showCreateDealForm.value = false;
 
   console.log("State dibersihkan, overlay dimatikan!");
 });
 </script>
 
 <template>
-  <main class="flex-1 min-w-0 overflow-hidden bg-red"></main>
   <!-- Placeholder for Deals Card -->
   <div
-    class="bg-white rounded-lg shadow-sm max-w-311.25 h-147 border border-outline flex flex-col overflow-hidden"
+    :class="[
+      'bg-white rounded-lg shadow-sm h-147 border border-outline flex flex-col overflow-hidden',
+      isSidebarCollapsed ? 'max-w-352' : 'max-w-310',
+    ]"
   >
     <!-- Action Bar -->
     <div class="p-4 border-b border-outline">
@@ -83,6 +242,7 @@ onBeforeUnmount(() => {
 
           <!-- Search -->
           <input
+            v-model="searchQuery"
             type="text"
             placeholder="Search by Name"
             class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
@@ -231,16 +391,39 @@ onBeforeUnmount(() => {
                 class="flex-1 p-3 space-y-3 overflow-y-auto"
                 @start="isDragging = true"
                 @end="isDragging = false"
+                @change="(event) => handleBoardChange(event, board)"
               >
                 <template #item="{ element }">
                   <div
                     class="bg-white p-4 rounded shadow-sm border border-gray-200 cursor-move hover:border-blue-500 transition"
                   >
-                    <p class="text-sm font-medium text-gray-700">
+                    <p class="text-sm font-medium text-gray-800 truncate">
                       {{ element.name }}
                     </p>
+
+                    <div class="mt-2">
+                      <span
+                        class="px-2 py-0.5 rounded-full text-[11px] font-medium capitalize"
+                        :class="stageClass(element.stage)"
+                      >
+                        {{ board.title }}
+                      </span>
+                    </div>
+
+                    <p class="text-xs text-gray-500 mt-2">
+                      {{ element.jumlah }} / {{ element.tertanggal }}
+                    </p>
+
+                    <p class="text-xs text-gray-500 mt-1 truncate">
+                      {{ element.contact }} - {{ element.company }}
+                    </p>
+
                     <p class="text-xs text-gray-400 mt-1">
-                      ID: #{{ element.id }}
+                      Updated: {{ element.updatedAt }}
+                    </p>
+
+                    <p class="text-xs text-gray-400 mt-1">
+                      Owner: {{ element.owner }}
                     </p>
                   </div>
                 </template>
@@ -286,6 +469,12 @@ onBeforeUnmount(() => {
         <!-- center content -->
         <div class="absolute inset-0 flex flex-col items-center justify-center">
           <div
+            v-if="isSyncingStage"
+            class="mb-2 px-3 py-1 rounded bg-white/90 text-xs font-semibold text-slate-700"
+          >
+            Syncing to database...
+          </div>
+          <div
             class="w-16 h-16 rounded-full bg-white shadow-xl flex items-center justify-center border-4 border-red-500"
           >
             <!-- trash icon -->
@@ -312,13 +501,6 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </div>
-
-  <!-- Create Deal Form -->
-  <CreateDealForm
-    :isOpen="showCreateDealForm"
-    @close="showCreateDealForm = false"
-    @submit="showCreateDealForm = false"
-  />
 </template>
 
 <style scoped>

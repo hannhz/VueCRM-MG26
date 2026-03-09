@@ -1,4 +1,4 @@
-<script setup>
+<!-- <script setup>
 import { ref, computed, watch } from "vue";
 import {
   RefreshCcw,
@@ -9,58 +9,43 @@ import {
   ChevronRight,
   ChevronDown,
 } from "lucide-vue-next";
+import { onMounted } from "vue";
+import { useRouter } from "vue-router";
+import CreateUserForm from "../forms/CreateUserForm.vue";
+import { useStore } from "vuex";
 
 //data
-const users = ref([
-  {
-    id: 1,
-    name: "Hanan Hafizhah",
-    email: "hanan@mail.com",
-    team: "Management",
-    lastactv: "2 minutes ago",
-    role: "Super Admin",
-  },
-  {
-    id: 2,
-    name: "Aulia Rahman",
-    email: "aulia@mail.com",
-    team: "Marketing",
-    lastactv: "10 minutes ago",
-    role: "Admin",
-  },
-  {
-    id: 3,
-    name: "Rizky Pratama",
-    email: "rizky@mail.com",
-    team: "Design",
-    lastactv: "1 hour ago",
-    role: "Editor",
-  },
-  {
-    id: 4,
-    name: "Siti Lestari",
-    email: "siti@mail.com",
-    team: "Finance",
-    lastactv: "Yesterday",
-    role: "Viewer",
-  },
-  {
-    id: 5,
-    name: "Budi Santoso",
-    email: "budi@mail.com",
-    team: "Development",
-    lastactv: "2 days ago",
-    role: "Admin",
-  },
-  {
-    id: 6,
-    name: "Kevin Wijaya",
-    email: "kevin@mail.com",
-    team: "Support",
-    lastactv: "3 days ago",
-    role: "Viewer",
-  },
-]);
+// data
+const store = useStore();
+const router = useRouter();
+
+// Store mapping
+const users = computed(() => store.getters["users/allUsers"]);
+const isLoadingTable = computed(() => store.getters["users/isLoading"]);
+const errorMsgTable = computed(() => store.getters["users/error"]);
+
+// Admin validation
+const isAdmin = computed(() => {
+  const user = store.state.auth.user;
+  return user && (user.role === 'admin' || user.stafflevel === 'admin' || user.role === 'Admin');
+});
+
+const fetchUsers = () => {
+  store.dispatch("users/fetchUsers").catch(err => {
+    console.error("Component fetch error:", err);
+  });
+};
+
+onMounted(() => {
+  // if (!isAdmin.value) {
+  //   console.warn("Access denied: User is not an admin");
+  //   router.push("/crmAdmin");
+  //   return;
+  // }
+  fetchUsers();
+});
+
+const showCreateUserForm = ref(false);
 
 //pagination
 
@@ -118,6 +103,146 @@ function nextPage() {
 function prevPage() {
   if (currentPage.value > 1) currentPage.value--;
 }
+</script> -->
+
+<script>
+import {
+  RefreshCcw,
+  Filter,
+  Search,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+} from "lucide-vue-next";
+
+import CreateUserForm from "../forms/CreateUserForm.vue";
+import { mapGetters, mapActions, mapState } from "vuex";
+
+export default {
+  name: "UsersTable",
+
+  components: {
+    RefreshCcw,
+    Filter,
+    Search,
+    Trash2,
+    ChevronLeft,
+    ChevronRight,
+    ChevronDown,
+    CreateUserForm,
+  },
+
+  data() {
+    return {
+      showCreateUserForm: false,
+
+      // pagination
+      itemsPerPage: 5,
+      currentPage: 1,
+
+      // checkbox
+      selectedIds: [],
+    };
+  },
+
+  computed: {
+    ...mapGetters({
+      users: "users/allUsers",
+      isLoadingTable: "users/isLoading",
+      errorMsgTable: "users/error",
+    }),
+
+    ...mapState({
+      authUser: (state) => state.auth.user,
+    }),
+
+    // admin validation
+    isAdmin() {
+      const user = this.authUser;
+      return (
+        user &&
+        (user.role === "admin" ||
+          user.stafflevel === "admin" ||
+          user.role === "Admin")
+      );
+    },
+
+    totalDocuments() {
+      return this.users.length;
+    },
+
+    totalPages() {
+      return Math.max(1, Math.ceil(this.totalDocuments / this.itemsPerPage));
+    },
+
+    currentUser() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      const end = start + this.itemsPerPage;
+      return this.users.slice(start, end);
+    },
+
+    isAllSelected: {
+      get() {
+        return (
+          this.currentUser.length > 0 &&
+          this.currentUser.every((user) => this.selectedIds.includes(user.id))
+        );
+      },
+      set(val) {
+        if (val) {
+          this.selectedIds = this.currentUser.map((user) => user.id);
+        } else {
+          this.selectedIds = [];
+        }
+      },
+    },
+  },
+
+  watch: {
+    currentPage(val) {
+      if (val < 1) this.currentPage = 1;
+      if (val > this.totalPages) this.currentPage = this.totalPages;
+    },
+
+    itemsPerPage() {
+      this.currentPage = 1;
+    },
+  },
+
+  methods: {
+    ...mapActions({
+      fetchUsers: "users/fetchAllusers",
+    }),
+
+    fetchData() {
+      this.fetchUsers()
+        .then(() => {
+          console.log("Users fetched successfully");
+        })
+        .catch((err) => {
+          console.error("Failed to fetch users:", err);
+        });
+    },
+
+    nextPage() {
+      if (this.currentPage < this.totalPages) this.currentPage++;
+    },
+
+    prevPage() {
+      if (this.currentPage > 1) this.currentPage--;
+    },
+  },
+
+  mounted() {
+    // if (!this.isAdmin) {
+    //   console.warn("Access denied: User is not an admin");
+    //   this.$router.push("/crmAdmin");
+    //   return;
+    // }
+    this.fetchData();
+  },
+};
 </script>
 
 <template>
@@ -129,7 +254,7 @@ function prevPage() {
         <div class="flex items-center gap-3">
           <!-- Filter Icon -->
           <button
-            class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
+            class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition shadow-sm bg-white"
           >
             <Filter :size="20" class="text-dark-base" />
           </button>
@@ -167,9 +292,24 @@ function prevPage() {
 
         <!-- Right Section: Action Buttons -->
         <div class="flex items-center gap-2">
+          <!-- Refresh Button -->
+          <button
+            @click="fetchData"
+            :disabled="isLoadingTable"
+            class="p-2 border border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
+            title="Refresh Data"
+          >
+            <RefreshCcw
+              :size="18"
+              :class="{ 'animate-spin': isLoadingTable }"
+              class="text-sub-text"
+            />
+          </button>
+
           <!-- Add New -->
           <div class="relative inline-block add-dropdown">
             <button
+              @click="showCreateUserForm = true"
               type="button"
               class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
             >
@@ -232,10 +372,21 @@ function prevPage() {
     </div>
 
     <!-- Table -->
-    <div class="overflow-x-auto">
+    <div class="relative overflow-x-auto">
+      <!-- Loading Overlay -->
+      <div
+        v-if="isLoadingTable"
+        class="absolute inset-0 bg-white/70 backdrop-blur-[1px] z-10 flex items-center justify-center"
+      >
+        <div class="flex flex-col items-center gap-3">
+          <RefreshCcw :size="32" class="animate-spin text-sub-text" />
+          <p class="text-sm font-medium text-sub-text">Loading users...</p>
+        </div>
+      </div>
+
       <table class="w-full">
         <thead>
-          <tr class="border-b border-gray-200 bg-gray-50/50">
+          <tr class="border-b border-gray-200">
             <th class="px-6 py-4 text-left">
               <input
                 type="checkbox"
@@ -262,7 +413,7 @@ function prevPage() {
 
         <tbody>
           <!-- Empty State -->
-          <tr v-if="currentUser.length === 0">
+          <tr v-if="currentUser.length === 0 && !isLoadingTable">
             <td colspan="5" class="px-6 py-20 text-center text-sub-text">
               <div class="flex flex-col items-center gap-3">
                 <div
@@ -270,9 +421,9 @@ function prevPage() {
                 >
                   <Search :size="32" class="text-gray-400" />
                 </div>
-                <p class="text-lg font-medium">No documents found</p>
+                <p class="text-lg font-medium">No users found</p>
                 <p class="text-sm text-gray-400">
-                  Start adding documents to see them here
+                  Try refreshing or adding a new user
                 </p>
               </div>
             </td>
@@ -294,19 +445,23 @@ function prevPage() {
             </td>
             <td class="px-6 py-4 text-sm text-gray-800 font-medium">
               <div class="text-sm font-medium text-gray-800">
-                {{ user.name }}
+                {{
+                  user.firstname
+                    ? `${user.firstname} ${user.lastname || ""}`
+                    : user.name || "Unknown User"
+                }}
               </div>
               <div class="text-xs text-gray-400">
                 {{ user.email }}
               </div>
             </td>
             <td class="px-6 py-4 text-sm text-dark-base">
-              {{ user.team }}
+              {{ user.primaryteam || user.team || "-" }}
             </td>
             <td class="px-6 py-4 text-sm text-dark-base">
-              {{ user.lastactv }}
+              {{ user.last_active || user.lastactv || user.updated_at || "-" }}
             </td>
-            <td class="px-6 py-4 text-sm text-dark-base">
+            <td class="px-6 py-4 text-sm text-dark-base font-medium">
               {{ user.role }}
             </td>
           </tr>
@@ -314,4 +469,11 @@ function prevPage() {
       </table>
     </div>
   </div>
+
+  <!-- Add User Form -->
+  <CreateUserForm
+    :isOpen="showCreateUserForm"
+    @close="showCreateUserForm = false"
+    @submit="fetchUsers"
+  />
 </template>

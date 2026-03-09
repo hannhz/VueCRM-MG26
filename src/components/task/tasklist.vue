@@ -1,16 +1,25 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { useStore } from "vuex";
 import {
   Filter,
   Search,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  RefreshCw,
 } from "lucide-vue-next";
 
 /* =========================
    QUICK ADD
 ========================= */
+const store = useStore();
+
+// Get tasks from Vuex store
+const allTasksData = computed(() => store.getters["tasks/filteredTasks"] || []);
+const isLoading = computed(() => store.getters["tasks/isLoading"]);
+const error = computed(() => store.getters["tasks/error"]);
+
 const taskText = ref("");
 const emit = defineEmits(["add"]);
 
@@ -24,7 +33,7 @@ function quickAdd() {
    DATA TASK (DUMMY)
    nanti bisa dari API
 ========================= */
-const tasks = ref([]);
+const tasks = computed(() => allTasksData.value);
 
 /* =========================
    PAGINATION
@@ -68,6 +77,18 @@ function toggleSelect(id) {
     selectedTask.value.push(id);
   }
 }
+
+// Lifecycle: Fetch tasks on mount
+onMounted(() => {
+  store
+    .dispatch("tasks/fetchAllTasks")
+    .then(() => {
+      console.log("Tasks fetched successfully");
+    })
+    .catch((err) => {
+      console.error("Failed to fetch tasks:", err);
+    });
+});
 </script>
 
 <template>
@@ -178,7 +199,18 @@ function toggleSelect(id) {
     </div>
 
     <!-- Table -->
-    <div class="overflow-hidden">
+    <div class="overflow-hidden relative">
+      <!-- Loading Overlay -->
+      <div
+        v-if="isLoading"
+        class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center"
+      >
+        <div class="flex flex-col items-center gap-3">
+          <RefreshCw class="animate-spin text-blue-950" :size="32" />
+          <p class="text-sm text-sub-text font-medium">Loading tasks...</p>
+        </div>
+      </div>
+
       <!-- Table -->
       <div class="overflow-x-auto">
         <table class="w-full">

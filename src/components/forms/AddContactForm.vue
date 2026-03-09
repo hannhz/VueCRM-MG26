@@ -1,84 +1,143 @@
-<script setup>
-import { ref } from "vue";
-import { X, Plus, ChevronDown } from "lucide-vue-next";
+<script>
+import { mapActions, mapGetters } from "vuex";
+import { X, Plus, ChevronDown, Loader2 } from "lucide-vue-next";
+import { toast } from "vue3-toastify";
 import AddCompanyForm from "./AddCompanyForm.vue";
 import AddDealForm from "./AddDealForm.vue";
 import ContactDetailForm from "./DetailForm.vue";
 
-const props = defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false,
+export default {
+  name: "AddContactForm",
+
+  components: {
+    X,
+    Plus,
+    ChevronDown,
+    Loader2,
+    AddCompanyForm,
+    AddDealForm,
+    ContactDetailForm,
   },
-});
 
-const emit = defineEmits(["close", "submit"]);
+  props: {
+    isOpen: {
+      type: Boolean,
+      default: false,
+    },
+  },
 
-// Source options
-const sourceOptions = [
-  { value: "", label: "Select Source" },
-  { value: "website", label: "Website" },
-  { value: "referral", label: "Referral" },
-  { value: "social_media", label: "Social Media" },
-  { value: "email_campaign", label: "Email Campaign" },
-  { value: "cold_call", label: "Cold Call" },
-  { value: "trade_show", label: "Trade Show" },
-  { value: "partner", label: "Partner" },
-  { value: "advertisement", label: "Advertisement" },
-  { value: "other", label: "Other" },
-];
+  emits: ["close", "submit"],
 
-// Form data
-const formData = ref({
-  firstName: "",
-  lastName: "",
-  jobTitle: "",
-  owner: "",
-  email: "",
-  telephone: "",
-  status: "",
-  address: "",
-  country: "",
-  province: "",
-  city: "",
-  posCode: "",
-  source: "",
-  companiesAssociation: "",
-  dealsAssociation: "",
-});
+  data() {
+    return {
+      sourceOptions: [
+        { value: "", label: "Select Source" },
+        { value: "website", label: "Website" },
+        { value: "referral", label: "Referral" },
+        { value: "social_media", label: "Social Media" },
+        { value: "email_campaign", label: "Email Campaign" },
+        { value: "cold_call", label: "Cold Call" },
+        { value: "trade_show", label: "Trade Show" },
+        { value: "partner", label: "Partner" },
+        { value: "advertisement", label: "Advertisement" },
+        { value: "other", label: "Other" },
+      ],
+      formData: {
+        first_name: "",
+        last_name: "",
+        job_title: "",
+        owner: "",
+        email: "",
+        telephone_1: "",
+        telephone_2: "",
+        status: "",
+        address: "",
+        country: "",
+        province: "",
+        city: "",
+        pos_code: "",
+        source: "",
+        companiesAssociation: "",
+        dealsAssociation: "",
+        created_at: "",
+        updated_at: "",
+      },
+      showAddCompanyForm: false,
+      showAddDealForm: false,
+      showDetailForm: false,
+    };
+  },
 
-const showAddCompanyForm = ref(false);
-const showAddDealForm = ref(false);
-const showDetailForm = ref(false);
+  computed: {
+    ...mapGetters({
+      isLoading: "contacts/isLoading",
+    }),
+  },
 
-const handleClose = () => {
-  emit("close");
-};
+  methods: {
+    ...mapActions({
+      saveContact: "contacts/createContact",
+    }),
 
-const handleSubmit = () => {
-  // Validate and submit
-  emit("submit", formData.value);
-  handleClose();
-};
+    handleClose() {
+      this.$emit("close");
+    },
 
-const handleReset = () => {
-  formData.value = {
-    firstName: "",
-    lastName: "",
-    jobTitle: "",
-    owner: "",
-    email: "",
-    telephone: "",
-    status: "",
-    address: "",
-    country: "",
-    province: "",
-    city: "",
-    posCode: "",
-    source: "",
-    companiesAssociation: "",
-    dealsAssociation: "",
-  };
+    handleSubmit() {
+      // Add timestamps directly to formData and payload
+      const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+      this.formData.created_at = now;
+      this.formData.updated_at = now;
+
+      // Extract only database fields to avoid 500 error from unexpected fields
+      const { companiesAssociation, dealsAssociation, ...payload } =
+        this.formData;
+
+      console.log("Submitting contact with payload:", payload);
+
+      this.saveContact(payload)
+        .then((response) => {
+          console.log("Contact saved successfully in component:", response);
+          toast.success("Contact saved successfully!");
+
+          // Show the detail form as requested by the user
+          this.showDetailForm = true;
+
+          // Optional: Reset the main form data since it's already saved
+          // this.handleReset();
+        })
+        .catch((error) => {
+          console.error("Failed to save contact in component:", error);
+          toast.error(
+            "Failed to save contact: " +
+              (error.response?.data?.message || error.message),
+          );
+        });
+    },
+
+    handleReset() {
+      this.formData = {
+        first_name: "",
+        last_name: "",
+        job_title: "",
+        owner: "",
+        email: "",
+        telephone_1: "",
+        telephone_2: "",
+        status: "",
+        address: "",
+        country: "",
+        province: "",
+        city: "",
+        pos_code: "",
+        source: "",
+        companiesAssociation: "",
+        dealsAssociation: "",
+        created_at: "",
+        updated_at: "",
+      };
+    },
+  },
 };
 </script>
 
@@ -114,7 +173,11 @@ const handleReset = () => {
 
       <!-- Form Content (Scrollable) -->
       <div class="flex-1 overflow-y-auto">
-        <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
+        <form
+          id="addContactForm"
+          @submit.prevent="handleSubmit"
+          class="p-6 space-y-6"
+        >
           <!-- Name Section -->
           <div class="grid grid-cols-2 gap-4">
             <div>
@@ -122,7 +185,7 @@ const handleReset = () => {
                 First Name
               </label>
               <input
-                v-model="formData.firstName"
+                v-model="formData.first_name"
                 type="text"
                 placeholder="First Name"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
@@ -134,7 +197,7 @@ const handleReset = () => {
                 Last Name
               </label>
               <input
-                v-model="formData.lastName"
+                v-model="formData.last_name"
                 type="text"
                 placeholder="Last Name"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
@@ -150,7 +213,7 @@ const handleReset = () => {
                 Job Title
               </label>
               <input
-                v-model="formData.jobTitle"
+                v-model="formData.job_title"
                 type="text"
                 placeholder="Job Title"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
@@ -203,7 +266,7 @@ const handleReset = () => {
                 Telephone 1
               </label>
               <input
-                v-model="formData.telephone1"
+                v-model="formData.telephone_1"
                 type="text"
                 placeholder="Telephone 1"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
@@ -214,7 +277,7 @@ const handleReset = () => {
                 Telephone 2
               </label>
               <input
-                v-model="formData.telephone2"
+                v-model="formData.telephone_2"
                 type="text"
                 placeholder="Telephone 2"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
@@ -222,7 +285,7 @@ const handleReset = () => {
             </div>
           </div>
 
-          <!-- Address & Country -->
+          <!-- Address & City -->
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2">
@@ -232,32 +295,6 @@ const handleReset = () => {
                 v-model="formData.address"
                 type="text"
                 placeholder="Address"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">
-                Country
-              </label>
-              <input
-                v-model="formData.country"
-                type="text"
-                placeholder="Country"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-            </div>
-          </div>
-
-          <!-- Province & City -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">
-                Province
-              </label>
-              <input
-                v-model="formData.province"
-                type="text"
-                placeholder="Province"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
               />
             </div>
@@ -274,6 +311,32 @@ const handleReset = () => {
             </div>
           </div>
 
+          <!-- Province & Country -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2">
+                Province
+              </label>
+              <input
+                v-model="formData.province"
+                type="text"
+                placeholder="Province"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2">
+                Country
+              </label>
+              <input
+                v-model="formData.country"
+                type="text"
+                placeholder="Country"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
+            </div>
+          </div>
+
           <!-- Pos Code & Source -->
           <div class="grid grid-cols-2 gap-4">
             <div>
@@ -281,7 +344,7 @@ const handleReset = () => {
                 Pos Code
               </label>
               <input
-                v-model="formData.posCode"
+                v-model="formData.pos_code"
                 type="text"
                 placeholder="Pos Code"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
@@ -353,6 +416,32 @@ const handleReset = () => {
               Add Another Deal
             </button>
           </div>
+
+          <!-- Timestamps (Required by DB) -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2">
+                Created At
+              </label>
+              <input
+                v-model="formData.created_at"
+                type="text"
+                class="w-full px-3 py-2 border border-outline rounded-lg bg-light-base text-sub-text text-sm cursor-not-allowed"
+                readonly
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2">
+                Updated At
+              </label>
+              <input
+                v-model="formData.updated_at"
+                type="text"
+                class="w-full px-3 py-2 border border-outline rounded-lg bg-light-base text-sub-text text-sm cursor-not-allowed"
+                readonly
+              />
+            </div>
+          </div>
         </form>
       </div>
 
@@ -377,10 +466,12 @@ const handleReset = () => {
           </button>
           <button
             type="submit"
-            @click="showDetailForm = true"
-            class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
+            form="addContactForm"
+            :disabled="isLoading"
+            class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium flex items-center gap-2 min-w-25 justify-center"
           >
-            Next
+            <Loader2 v-if="isLoading" :size="16" class="animate-spin" />
+            <span>{{ isLoading ? "Saving..." : "Next" }}</span>
           </button>
         </div>
       </div>

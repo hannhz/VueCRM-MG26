@@ -1,7 +1,15 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
+import { useStore } from "vuex";
 import draggable from "vuedraggable";
 import { Filter, Search } from "lucide-vue-next";
+
+const store = useStore();
+
+// Access sidebar state from Vuex
+const isSidebarCollapsed = computed(
+  () => store.getters["settingsfe/isSidebarCollapsed"],
+);
 
 const columns = ref([
   {
@@ -22,7 +30,10 @@ const isDragging = ref(false);
 
 <template>
   <div
-    class="bg-white rounded-lg shadow-sm max-w-311.25 h-147 border border-outline flex flex-col overflow-hidden"
+    :class="[
+      'bg-white rounded-lg shadow-sm h-147 border border-outline flex flex-col overflow-hidden',
+      isSidebarCollapsed ? 'max-w-352' : 'max-w-310',
+    ]"
   >
     <!-- Action Bar -->
     <div class="pt-4 pr-4 pl-4">

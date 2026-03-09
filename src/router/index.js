@@ -1,4 +1,3 @@
-import { createRouter, createWebHistory } from "vue-router";
 import Dashboard from "@/components/dashboard.vue";
 import Contacts from "@/components/contacts.vue";
 import LoginPage from "@/components/loginpage.vue";
@@ -22,16 +21,25 @@ import UserTeam from "@/components/user/userteam.vue";
 import User from "@/components/user/user.vue";
 import SettingsPage from "@/components/Settings.vue";
 
+import { createRouter, createWebHistory } from "vue-router";
+import store from "@/store";
+import { useCookies } from "vue3-cookies";
+const { cookies } = useCookies();
+
 const routes = [
   {
     path: "/",
+    redirect: { name: "login" },
+  },
+  {
+    path: "/login",
     name: "login",
     component: LoginPage,
   },
   {
     path: "/crmAdmin",
-    name: "MainDashboard",
     component: MainDashboard,
+    meta: { requiresAuth: true },
     children: [
       {
         path: "",
@@ -51,7 +59,6 @@ const routes = [
       },
       {
         path: "deals",
-        name: "Deals",
         component: Deals, // File yang barusan kamu kirim
         children: [
           {
@@ -153,7 +160,46 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(),
+  linkActiveClass: "open",
   routes,
+  // scrollBehavior() {
+  //   return { top: 0 };
+  // },
+});
+
+// router.beforeEach((to, from, next) => {
+//   const isAuthenticated = store.getters["auth/isAuthenticated"];
+//   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
+
+//   if (requiresAuth && !isAuthenticated) {
+//     // Redirect to login if not authenticated
+//     next({ name: "login" });
+//   } else if (to.name === "login" && isAuthenticated) {
+//     // Redirect to dashboard if already authenticated
+//     next({ name: "Dashboard" });
+//   } else {
+//     next();
+//   }
+// });
+
+router.beforeEach((to, from, next) => {
+  const token = cookies.get("token");
+  const loggedIn = cookies.get("loggedIn");
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
+  const thisIsAuth = to.matched.some((record) => record.meta.thisisauth);
+
+  if (requiresAuth) {
+    if (!token || !loggedIn) {
+      return next({ name: "login" });
+    }
+    return next();
+  }
+
+  if (thisIsAuth && loggedIn) {
+    return next({ name: "Dashboard" });
+  }
+
+  return next();
 });
 
 export default router;

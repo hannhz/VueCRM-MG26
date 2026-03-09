@@ -1,9 +1,21 @@
 import { createApp } from "vue";
-
+import App from "./App.vue";
+import store from "./store";
+import router from "./router";
+//import { createPinia } from 'pinia'
+import Toast from "vue3-toastify";
+import "vue3-toastify/dist/index.css";
+// import VueCookies from 'vue3-cookies'
 import "./style.css";
 import "./css/welcome.css";
 
-import App from "./App.vue";
-import router from "./router";
+const app = createApp(App);
 
-createApp(App).use(router).mount("#app");
+// app.use(createPinia())
+app.use(store);
+app.use(router);
+app.use(Toast);
+// app.use(VueCookies)
+app.mount("#app");
+
+export default app;
