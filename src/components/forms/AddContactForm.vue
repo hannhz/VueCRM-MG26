@@ -417,31 +417,6 @@ export default {
             </button>
           </div>
 
-          <!-- Timestamps (Required by DB) -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">
-                Created At
-              </label>
-              <input
-                v-model="formData.created_at"
-                type="text"
-                class="w-full px-3 py-2 border border-outline rounded-lg bg-light-base text-sub-text text-sm cursor-not-allowed"
-                readonly
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">
-                Updated At
-              </label>
-              <input
-                v-model="formData.updated_at"
-                type="text"
-                class="w-full px-3 py-2 border border-outline rounded-lg bg-light-base text-sub-text text-sm cursor-not-allowed"
-                readonly
-              />
-            </div>
-          </div>
         </form>
       </div>
 

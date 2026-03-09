@@ -2,6 +2,7 @@
 import { mapActions, mapGetters } from "vuex";
 import AddContactForm from "./forms/AddContactForm.vue";
 import BulkAddContactForm from "./forms/BulkAddContactForm.vue";
+import DetailForm from "./forms/DetailForm.vue";
 
 import {
   Search,
@@ -26,6 +27,7 @@ export default {
   components: {
     AddContactForm,
     BulkAddContactForm,
+    DetailForm,
     Search,
     ChevronDown,
     Download,
@@ -51,6 +53,8 @@ export default {
       showDropdown: false,
       showDownloadDropdown: false,
       selectedIds: [],
+      selectedContact: null,
+      showDetailForm: false,
     };
   },
 
@@ -108,6 +112,11 @@ export default {
 
     toggleDownloadDropdown() {
       this.showDownloadDropdown = !this.showDownloadDropdown;
+    },
+
+    openContactDetail(contact) {
+      this.selectedContact = contact;
+      this.showDetailForm = true;
     },
 
     handleBulkAdd() {
@@ -435,9 +444,10 @@ export default {
               <tr
                 v-for="contact in paginatedContacts"
                 :key="contact.id"
-                class="border-b border-gray-100 hover:bg-gray-50 transition"
+                class="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer"
+                @click="openContactDetail(contact)"
               >
-                <td class="px-6 py-4">
+                <td class="px-6 py-4" @click.stop>
                   <input type="checkbox" v-model="selectedIds" :value="contact.id" class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300" />
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-800 font-medium">
@@ -480,6 +490,19 @@ export default {
       :isOpen="showAddContactForm"
       @close="showAddContactForm = false"
       @submit="handleAddContact"
+    />
+
+    <!-- Contact Detail Form -->
+    <DetailForm
+      :isOpen="showDetailForm"
+      :contact="selectedContact"
+      @close="showDetailForm = false"
+      @submit="
+        (data) => {
+          console.log('Contact detail updated:', data);
+          showDetailForm = false;
+        }
+      "
     />
 
     <!-- Bulk Add Contact Form -->

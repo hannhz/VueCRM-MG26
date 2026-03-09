@@ -146,6 +146,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    user: {
+      type: Object,
+      default: null,
+    },
   },
 
   data() {
@@ -178,19 +182,7 @@ export default {
         { value: "marketing", label: "Marketing" },
       ],
 
-      formData: {
-        name: "",
-        firstname: "",
-        lastname: "",
-        no_handphone: "",
-        nik: "",
-        email: "",
-        password: "",
-        primaryteam: "",
-        secondaryteam: "",
-        stafflevel: "",
-        role: "",
-      },
+      formData: this.getUserFormDefaults(this.user),
 
       isSaving: false,
       errorMsg: "",
@@ -204,10 +196,35 @@ export default {
     }),
   },
 
+  watch: {
+    user: {
+      handler(newUser) {
+        this.formData = this.getUserFormDefaults(newUser);
+      },
+      immediate: true,
+    },
+  },
+
   methods: {
     ...mapActions({
       insertUser: "users/insertuser",
     }),
+
+    getUserFormDefaults(user = null) {
+      return {
+        name: user?.name || "",
+        firstname: user?.firstname || "",
+        lastname: user?.lastname || "",
+        no_handphone: user?.no_handphone || user?.telephone || "",
+        nik: user?.nik || "",
+        email: user?.email || "",
+        password: "", // Jangan tampilkan password lama
+        primaryteam: user?.primaryteam || user?.team || "",
+        secondaryteam: user?.secondaryteam || "",
+        stafflevel: user?.stafflevel || "",
+        role: user?.role || "",
+      };
+    },
 
     handleClose() {
       this.$emit("close");
@@ -241,19 +258,7 @@ export default {
     },
 
     handleReset() {
-      this.formData = {
-        name: "",
-        firstname: "",
-        lastname: "",
-        no_handphone: "",
-        nik: "",
-        email: "",
-        password: "",
-        primaryteam: "",
-        secondaryteam: "",
-        stafflevel: "",
-        role: "",
-      };
+      this.formData = this.getUserFormDefaults(this.user);
 
       this.errorMsg = "";
       this.successMsg = "";
@@ -283,7 +288,9 @@ export default {
       <div
         class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
       >
-        <h2 class="text-xl font-bold text-dark-base">Add User</h2>
+        <h2 class="text-xl font-bold text-dark-base">
+          {{ user ? "User Details" : "Add User" }}
+        </h2>
         <button
           @click="handleClose"
           class="p-2 hover:bg-light-base rounded-lg transition-colors"

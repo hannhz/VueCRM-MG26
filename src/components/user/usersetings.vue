@@ -143,6 +143,8 @@ export default {
 
       // checkbox
       selectedIds: [],
+
+      selectedUser: null,
     };
   },
 
@@ -223,6 +225,11 @@ export default {
         .catch((err) => {
           console.error("Failed to fetch users:", err);
         });
+    },
+
+    openUserDetail(user) {
+      this.selectedUser = user;
+      this.showCreateUserForm = true;
     },
 
     nextPage() {
@@ -433,9 +440,10 @@ export default {
           <tr
             v-for="user in currentUser"
             :key="user.id"
-            class="border-b border-gray-100 hover:bg-gray-50 transition"
+            class="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer"
+            @click="openUserDetail(user)"
           >
-            <td class="px-6 py-4">
+            <td class="px-6 py-4" @click.stop>
               <input
                 type="checkbox"
                 :value="user.id"
@@ -473,7 +481,11 @@ export default {
   <!-- Add User Form -->
   <CreateUserForm
     :isOpen="showCreateUserForm"
-    @close="showCreateUserForm = false"
+    :user="selectedUser"
+    @close="
+      showCreateUserForm = false;
+      selectedUser = null;
+    "
     @submit="fetchUsers"
   />
 </template>
