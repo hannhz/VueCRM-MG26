@@ -1,4 +1,4 @@
-<script setup>
+<!-- <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import {
@@ -111,6 +111,195 @@ const handleCreateTeamSubmit = async (data) => {
 onMounted(() => {
   fetchData();
 });
+</script> -->
+
+<script>
+import { mapGetters, mapState, mapActions } from "vuex";
+import {
+  Filter,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Trash2,
+  RefreshCw,
+} from "lucide-vue-next";
+import CreateTeamForm from "../forms/CreateTeamForm.vue";
+
+export default {
+  components: {
+    CreateTeamForm,
+    Filter,
+    Search,
+    ChevronLeft,
+    ChevronRight,
+    ChevronDown,
+    Trash2,
+    RefreshCw,
+  },
+
+  data() {
+    return {
+      showCreateTeamForm: false,
+      currentPage: 1,
+      itemsPerPage: 5,
+      selectedTeam: [],
+    };
+  },
+
+  computed: {
+    ...mapGetters({
+      teams: "team/allTeamUsers",
+      isLoading: "team/isLoading",
+      error: "team/error",
+
+    }),
+
+    searchQuery: {
+      get() {
+        return this.$store.state.team.searchQuery;
+      },
+      set(value) {
+        this.$store.dispatch("team/setSearchQuery", value);
+      },
+    },
+
+    filteredTeams() {
+      return this.teams;
+    },
+
+    totalPages() {
+      return Math.max(
+        1,
+        Math.ceil(this.filteredTeams.length / this.itemsPerPage),
+      );
+    },
+
+    paginatedTeams() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      return this.filteredTeams.slice(start, start + this.itemsPerPage);
+    },
+
+    allSelected() {
+      return (
+        this.paginatedTeams.length > 0 &&
+        this.paginatedTeams.every((t) => this.selectedTeam.includes(t.team_id))
+      );
+    },
+  },
+
+  methods: {
+    ...mapActions({
+      fetchAllTeamUsers: "team/fetchAllTeamUsers",
+      createTeam: "team/createTeam",
+      addTeamUsers: "team/addTeamUsers",
+      setSearchQuery: "team/setSearchQuery",
+    }),
+
+    nextPage() {
+      if (this.currentPage < this.totalPages) this.currentPage++;
+    },
+
+    prevPage() {
+      if (this.currentPage > 1) this.currentPage--;
+    },
+
+    toggleSelectAll(e) {
+      this.selectedTeam = e.target.checked
+        ? this.paginatedTeams.map((t) => t.team_id)
+        : [];
+    },
+
+    async fetchData() {
+      try {
+        await this.fetchAllTeamUsers();
+      } catch (err) {
+        console.error("Failed to fetch team_user:", err);
+      }
+    },
+
+    handleCreateTeamSubmit(data) {
+      console.log(data);
+
+      let dataparam = {
+        teamName: data.teamName,
+        parentTeam: data.parentTeam.name,
+        selectedMembers: data.selectedMembers.map((member) => member.id),
+      };
+
+      this.createTeam(dataparam)
+        .then((createResult) => {
+          const createdTeamId =
+            createResult?.team?.id ||
+            createResult?.data?.id ||
+            createResult?.id;
+
+          if (createdTeamId && dataparam.selectedMembers.length) {
+            const addUsersPayload = {
+              team_id: createdTeamId,
+              user_ids: dataparam.selectedMembers,
+            };
+            return this.addTeamUsers(addUsersPayload);
+          }
+        })
+        .then(() => {
+          this.showCreateTeamForm = false;
+          return this.fetchData();
+        })
+        .catch((err) => {
+          console.error("Failed to create team:", err);
+          alert("Failed to create team. Please check API payload format.");
+        });
+      console.log(dataparam);
+
+      // try {
+      //   const createPayload = {
+      //     team_name: data.teamName,
+      //     parent_id: data.parentTeam ? data.parentTeam.id : null,
+      //   };
+
+      //   const createResult = await this.createTeam(createPayload);
+
+      //   const createdTeamId =
+      //     (createResult && createResult.team && createResult.team.id) ||
+      //     (createResult && createResult.data && createResult.data.id) ||
+      //     (createResult && createResult.id);
+
+      //   if (
+      //     createdTeamId &&
+      //     Array.isArray(data.selectedMembers) &&
+      //     data.selectedMembers.length
+      //   ) {
+      //     const addUsersPayload = {
+      //       team_id: createdTeamId,
+      //       user_ids: data.selectedMembers.map((member) => member.id),
+      //     };
+
+      //     await this.addTeamUsers(addUsersPayload);
+      //   }
+
+      //   this.showCreateTeamForm = false;
+      //   await this.fetchData();
+      // } catch (err) {
+      //   console.error("Failed to create team:", err);
+      //   alert("Failed to create team. Please check API payload format.");
+      // }
+    },
+  },
+
+  mounted() {
+    this.fetchData();
+  },
+
+
+  watch:{
+    teams(e){
+      console.log(e);
+    }
+
+
+  }
+};
 </script>
 
 <template>
@@ -261,6 +450,12 @@ onMounted(() => {
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
             </th>
+            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+              <div class="flex items-center gap-2">
+                Parent Name
+                <ChevronDown :size="16" class="text-gray-400" />
+              </div>
+            </th>
 
             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
               <div class="flex items-center gap-2">
@@ -302,6 +497,9 @@ onMounted(() => {
 
             <td class="px-6 py-4 font-medium text-gray-800">
               {{ team.team_name }}
+            </td>
+            <td class="px-6 py-4 font-medium text-gray-800">
+              {{ team.parent }}
             </td>
 
             <td class="px-6 py-4 text-dark-base">{{ team.total_users }}</td>

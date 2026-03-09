@@ -121,6 +121,7 @@
 <script>
 import { Mail, Eye, EyeOff, AlertCircle, ArrowRight } from "lucide-vue-next";
 import { mapGetters, mapActions } from "vuex";
+import { alertService } from "@/services/alertService";
 export default {
   name: "Login",
 
@@ -130,6 +131,7 @@ export default {
     EyeOff,
     AlertCircle,
     ArrowRight,
+    alertService,
   },
 
   data() {

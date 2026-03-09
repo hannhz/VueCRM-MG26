@@ -1,4 +1,4 @@
-<script setup>
+<!-- <script setup>
 import { ref } from "vue";
 import { X, ChevronDown } from "lucide-vue-next";
 import { useStore } from "vuex";
@@ -125,6 +125,140 @@ const handleReset = () => {
   };
   errorMsg.value = "";
   successMsg.value = "";
+};
+</script> -->
+
+<script>
+import { X, ChevronDown } from "lucide-vue-next";
+import { mapState, mapActions } from "vuex";
+
+export default {
+  name: "UserFormModal",
+
+  emits: ["close", "submit"],
+  components: {
+    X,
+    ChevronDown,
+  },
+
+  props: {
+    isOpen: {
+      type: Boolean,
+      default: false,
+    },
+  },
+
+  data() {
+    return {
+      // Options
+      teamOptions: [
+        { value: "", label: "Select Team" },
+        { value: "management", label: "Management" },
+        { value: "marketing", label: "Marketing" },
+        { value: "design", label: "Design" },
+        { value: "finance", label: "Finance" },
+        { value: "development", label: "Development" },
+        { value: "support", label: "Support" },
+      ],
+
+      staffLevelOptions: [
+        { value: "", label: "Select Staff Level" },
+        { value: "ExcecutiveLevel", label: "Excecutive Level" },
+        { value: "DirectorLevel", label: "Director Level" },
+        { value: "ManagerLevel", label: "Manager Level" },
+        { value: "Staff", label: "Staff" },
+        { value: "Other", label: "Other" },
+      ],
+
+      roleOptions: [
+        { value: "", label: "Select Role" },
+        { value: "super_admin", label: "Super Admin" },
+        { value: "admin", label: "Admin" },
+        { value: "manager", label: "Manager" },
+        { value: "marketing", label: "Marketing" },
+      ],
+
+      formData: {
+        name: "",
+        firstname: "",
+        lastname: "",
+        no_handphone: "",
+        nik: "",
+        email: "",
+        password: "",
+        primaryteam: "",
+        secondaryteam: "",
+        stafflevel: "",
+        role: "",
+      },
+
+      isSaving: false,
+      errorMsg: "",
+      successMsg: "",
+    };
+  },
+
+  computed: {
+    ...mapState({
+      token: (state) => state.auth.token,
+    }),
+  },
+
+  methods: {
+    ...mapActions({
+      insertUser: "users/insertuser",
+    }),
+
+    handleClose() {
+      this.$emit("close");
+    },
+
+    handleSubmit() {
+      this.isSaving = true;
+      this.errorMsg = "";
+      this.successMsg = "";
+      // Set name before submitting
+      this.formData.name = `${this.formData.firstname} ${this.formData.lastname}`.trim();
+
+      console.log("Submitting form with data:", this.formData);
+
+      this.insertUser(this.formData)
+        .then(() => {
+          this.successMsg = "User berhasil ditambahkan!";
+          alertService.success("User berhasil ditambahkan!");
+          emit("submit", this.formData);
+
+          this.handleReset();
+        })
+        .catch((err) => {
+          console.error("Error inserting user:", err);
+          this.errorMsg = err.message || "Failed to create user.";
+        })
+        .finally(() => {
+          this.isSaving = false;
+          this.handleClose();
+        });
+    },
+
+    handleReset() {
+      this.formData = {
+        name: "",
+        firstname: "",
+        lastname: "",
+        no_handphone: "",
+        nik: "",
+        email: "",
+        password: "",
+        primaryteam: "",
+        secondaryteam: "",
+        stafflevel: "",
+        role: "",
+      };
+
+      this.errorMsg = "";
+      this.successMsg = "";
+    },
+  },
 };
 </script>
 

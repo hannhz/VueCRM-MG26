@@ -1,4 +1,4 @@
-<script setup>
+<!-- <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { X, Search, ChevronDown, Check } from "lucide-vue-next";
 
@@ -137,6 +137,185 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener("mousedown", handleClickOutside);
 });
+</script> -->
+
+<script>
+import { X, Search, ChevronDown, Check } from "lucide-vue-next";
+import { useStore, mapActions, mapGetters } from "vuex";
+
+export default {
+  props: {
+    isOpen: {
+      type: Boolean,
+      default: false,
+    },
+  },
+
+  components: {
+    X,
+    Search,
+    ChevronDown,
+    Check,
+  },
+
+  data() {
+    return {
+      membersList: [
+        { id: 1, name: "Hanan Hafizhah", email: "hanan@mail.com" },
+        { id: 2, name: "Aulia Rahman", email: "aulia@mail.com" },
+        { id: 3, name: "Rizky Pratama", email: "rizky@mail.com" },
+        { id: 4, name: "Siti Lestari", email: "siti@mail.com" },
+        { id: 5, name: "Budi Santoso", email: "budi@mail.com" },
+        { id: 6, name: "Kevin Wijaya", email: "kevin@mail.com" },
+      ],
+
+      teamsList: [
+        { id: 1, name: "Management" },
+        { id: 2, name: "Marketing" },
+        { id: 3, name: "Design" },
+        { id: 4, name: "Finance" },
+        { id: 5, name: "Development" },
+        { id: 6, name: "Support" },
+      ],
+
+      formData: {
+        teamName: "",
+        parentTeam: null,
+        selectedMembers: [],
+      },
+
+      isDropdownOpen: false,
+      memberSearch: "",
+
+      isParentDropdownOpen: false,
+      parentSearch: "",
+
+      dropdownRef: null,
+      parentDropdownRef: null,
+    };
+  },
+
+  computed: {
+    ...mapGetters({
+      users: "users/allUsers",
+      isLoadingTable: "users/isLoading",
+      errorMsgTable: "users/error",
+    }),
+
+    filteredMembers() {
+      if (!this.memberSearch) return this.users;
+
+      return this.users.filter(
+        (m) =>
+          m.name.toLowerCase().includes(this.memberSearch.toLowerCase()) ||
+          m.email.toLowerCase().includes(this.memberSearch.toLowerCase()),
+      );
+    },
+
+    filteredTeams() {
+      if (!this.parentSearch) return this.teamsList;
+
+      return this.teamsList.filter((t) =>
+        t.name.toLowerCase().includes(this.parentSearch.toLowerCase()),
+      );
+    },
+  },
+
+  methods: {
+    ...mapActions({
+      fetchUsers: "users/fetchAllusers",
+    }),
+
+    fetchData() {
+      this.fetchUsers()
+        .then(() => {
+          console.log("Users fetched successfully");
+        })
+        .catch((err) => {
+          console.error("Failed to fetch users:", err);
+        });
+    },
+
+    selectParentTeam(team) {
+      this.formData.parentTeam = team;
+      this.isParentDropdownOpen = false;
+      this.parentSearch = "";
+    },
+
+    removeParentTeam() {
+      this.formData.parentTeam = null;
+    },
+
+    toggleMember(member) {
+      const index = this.formData.selectedMembers.findIndex(
+        (m) => m.id === member.id,
+      );
+
+      if (index === -1) {
+        this.formData.selectedMembers.push(member);
+      } else {
+        this.formData.selectedMembers.splice(index, 1);
+      }
+    },
+
+    isMemberSelected(id) {
+      return this.formData.selectedMembers.some((m) => m.id === id);
+    },
+
+    removeMember(id) {
+      this.formData.selectedMembers = this.formData.selectedMembers.filter(
+        (m) => m.id !== id,
+      );
+    },
+
+    handleClose() {
+      this.$emit("close");
+      this.isDropdownOpen = false;
+      this.memberSearch = "";
+    },
+
+    handleSubmit() {
+      this.$emit("submit", this.formData);
+      this.handleClose();
+    },
+
+    handleReset() {
+      this.formData = {
+        teamName: "",
+        parentTeam: null,
+        selectedMembers: [],
+      };
+
+      this.memberSearch = "";
+      this.parentSearch = "";
+    },
+
+    handleClickOutside(event) {
+      if (
+        this.$refs.dropdownRef &&
+        !this.$refs.dropdownRef.contains(event.target)
+      ) {
+        this.isDropdownOpen = false;
+      }
+
+      if (
+        this.$refs.parentDropdownRef &&
+        !this.$refs.parentDropdownRef.contains(event.target)
+      ) {
+        this.isParentDropdownOpen = false;
+      }
+    },
+  },
+
+  mounted() {
+    document.addEventListener("mousedown", this.handleClickOutside);
+    this.fetchData();
+  },
+
+  beforeDestroy() {
+    document.removeEventListener("mousedown", this.handleClickOutside);
+  },
+};
 </script>
 
 <template>

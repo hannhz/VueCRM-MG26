@@ -36,7 +36,7 @@ const totalUser = users.length;
           v-for="item in menuItems"
           :key="item.key"
           @click="activeTab = item.key"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg w-full text-left transition"
+          class="flex items-center gap-3 px-4 py-3 rounded-lg w-full text-left transition cursor-pointer"
           :class="[
             activeTab === item.key
               ? 'bg-gray-50/80 text-dark-base border-outline/50 shadow-sm font-semibold'

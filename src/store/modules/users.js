@@ -130,7 +130,7 @@ const actions = {
   insertuser(context, data) {
     const promise = new Promise(async (resolve, reject) => {
       try {
-        let network = await api.post("users/insertusr", data.formdata, {
+        let network = await api.post("userscrm/input", data, {
           headers: {
             Authorization: "Bearer " + cookies.get("token"),
           },
