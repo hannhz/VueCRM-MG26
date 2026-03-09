@@ -164,6 +164,7 @@ export default {
           <span class="text-sm text-sub-text"
             >{{ totalContacts.toLocaleString() }} Total Contacts</span
           >
+          <span v-if="isLoading" class="text-xs text-blue-500 animate-pulse ml-2">Loading data...</span>
         </div>
 
         <!-- Right Section: Action Buttons -->
@@ -355,39 +356,65 @@ export default {
         </div>
       </div>
 
-      <!-- Table Container with Horizontal Scroll -->
-      <div class="mt-4 border border-outline rounded-lg overflow-hidden relative min-h-[400px]">
-        <!-- Loading Overlay -->
-        <div v-if="isLoading" class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center">
-          <div class="flex flex-col items-center gap-2">
-            <RefreshCw class="animate-spin text-blue-950" :size="32" />
-            <span class="text-sm font-medium text-blue-950">Loading Contacts...</span>
-          </div>
-        </div>
-
+      <!-- Table Content -->
+      <div class="overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
+          <table class="w-full">
             <thead>
-              <tr class="bg-light-base border-b border-outline">
-                <th class="px-6 py-4 w-10">
-                  <input type="checkbox" class="rounded border-outline" />
+              <tr class="border-b border-gray-200">
+                <th class="px-6 py-4 text-left">
+                  <input type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300" />
                 </th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Name</th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Contact Info</th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Associated with</th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Status</th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Created/Update</th>
-                <th class="px-6 py-4 text-sm font-semibold text-gray-700">Owner</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  <div class="flex items-center gap-2">
+                    Contact Name
+                    <ChevronDown :size="16" class="text-gray-400" />
+                  </div>
+                </th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  <div class="flex items-center gap-2">
+                    Contact Info
+                    <ChevronDown :size="16" class="text-gray-400" />
+                  </div>
+                </th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  <div class="flex items-center gap-2">
+                    Associated with
+                    <ChevronDown :size="16" class="text-gray-400" />
+                  </div>
+                </th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  <div class="flex items-center gap-2">
+                    Status
+                    <ChevronDown :size="16" class="text-gray-400" />
+                  </div>
+                </th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  <div class="flex items-center gap-2">
+                    Created/Update
+                    <ChevronDown :size="16" class="text-gray-400" />
+                  </div>
+                </th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  <div class="flex items-center gap-2">
+                    Owner
+                    <ChevronDown :size="16" class="text-gray-400" />
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
               <!-- Empty State -->
               <tr v-if="paginatedContacts.length === 0 && !isLoading">
-                <td colspan="7" class="px-6 py-20 text-center">
+                <td colspan="7" class="px-6 py-20 text-center text-sub-text">
                   <div class="flex flex-col items-center gap-3">
-                    <Search :size="48" class="text-outline" />
-                    <p class="text-lg font-medium text-dark-base">No contacts found</p>
-                    <p class="text-sm text-sub-text">We couldn't find any contacts matching your criteria.</p>
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                      <Search :size="32" class="text-gray-400" />
+                    </div>
+                    <p class="text-lg font-medium">No contacts found</p>
+                    <p class="text-sm text-gray-400">
+                      We couldn't find any contacts matching your criteria.
+                    </p>
                     <button @click="showAddContactForm = true" class="mt-2 text-blue-600 font-medium hover:underline text-sm">+ Add Your First Contact</button>
                   </div>
                 </td>
@@ -397,18 +424,16 @@ export default {
               <tr
                 v-for="contact in paginatedContacts"
                 :key="contact.id"
-                class="border-b border-outline hover:bg-light-base/50 transition-colors group"
+                class="border-b border-gray-100 hover:bg-gray-50 transition"
               >
-                <td class="px-6 py-4 text-sm">
-                  <input type="checkbox" v-model="selectedIds" :value="contact.id" class="rounded border-outline" />
-                </td>
                 <td class="px-6 py-4">
-                  <div class="text-sm font-semibold text-dark-base">
-                    {{ contact.first_name }} {{ contact.last_name }}
-                  </div>
+                  <input type="checkbox" v-model="selectedIds" :value="contact.id" class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300" />
                 </td>
-                <td class="px-6 py-4">
-                  <div class="text-sm text-dark-base">{{ contact.email || '-' }}</div>
+                <td class="px-6 py-4 text-sm text-gray-800 font-medium">
+                  {{ contact.first_name }} {{ contact.last_name }}
+                </td>
+                <td class="px-6 py-4 text-sm text-dark-base">
+                  <div>{{ contact.email || '-' }}</div>
                   <div class="text-xs text-sub-text">{{ contact.telephone_1 || '-' }}</div>
                 </td>
                 <td class="px-6 py-4 text-sm text-dark-base">
@@ -418,16 +443,16 @@ export default {
                   <span
                     class="px-3 py-1 rounded-full text-xs font-medium"
                     :class="{
-                      'bg-green-100 text-green-700': contact.status?.toLowerCase() === 'active',
+                      'bg-green-100 text-green-700': contact.status?.toLowerCase() === 'active' || contact.status?.toLowerCase() === 'aktif',
                       'bg-yellow-100 text-yellow-700': contact.status?.toLowerCase() === 'pending',
-                      'bg-gray-100 text-gray-700': !contact.status || contact.status?.toLowerCase() === 'inactive',
+                      'bg-gray-100 text-gray-700': !contact.status || contact.status?.toLowerCase() === 'inactive' || contact.status?.toLowerCase() === 'non-aktif',
                     }"
                   >
                     {{ contact.status || 'Inactive' }}
                   </span>
                 </td>
-                <td class="px-6 py-4">
-                  <div class="text-xs text-dark-base">{{ formatDate(contact.updated_at || contact.created_at) }}</div>
+                <td class="px-6 py-4 text-sm text-dark-base">
+                  {{ formatDate(contact.updated_at || contact.created_at) }}
                 </td>
                 <td class="px-6 py-4 text-sm text-dark-base">
                   {{ contact.owner || '-' }}
