@@ -1,10 +1,12 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { useStore } from "vuex";
 
 import CreateCompanyForm from "./forms/CreateCompanyForm.vue";
 import BulkAddCompanyForm from "./forms/BulkAddCompanyForm.vue";
 import DetailForm from "./forms/DetailForm.vue";
+import DetailDataForm from "./forms/DetailDataForm.vue";
+import { alertService } from "@/services/alertService";
 
 import {
   Search,
@@ -41,9 +43,12 @@ const itemsPerPage = ref(10);
 const showCreateCompanyForm = ref(false);
 const showBulkAddForm = ref(false);
 const showDetailForm = ref(false);
+const showDetailDataForm = ref(false);
 const showDropdown = ref(false);
 const showDownloadDropdown = ref(false);
 const selectedIds = ref([]);
+const selectedCompany = ref(null);
+const isDetailDataSubmitting = ref(false);
 
 const toggleDownloadDropdown = () => {
   showDownloadDropdown.value = !showDownloadDropdown.value;
@@ -99,6 +104,56 @@ onBeforeUnmount(() =>
 const handleBulkAdd = () => {
   console.log("Bulk add clicked");
   showBulkAddForm.value = true;
+};
+
+const openCompanyDetail = (company) => {
+  selectedCompany.value = { ...company };
+  showDetailDataForm.value = true;
+};
+
+const closeDetailDataForm = () => {
+  showDetailDataForm.value = false;
+  selectedCompany.value = null;
+};
+
+const handleDetailDataSubmit = async (payload) => {
+  const companyId = selectedCompany.value?.id;
+
+  if (!companyId) {
+    alertService.error("ID company tidak ditemukan. Coba buka ulang detail data.");
+    return;
+  }
+
+  if (!payload?.company?.company_name?.trim()) {
+    alertService.error("Company Name wajib diisi.");
+    return;
+  }
+
+  isDetailDataSubmitting.value = true;
+
+  try {
+    const formdata = {
+      ...payload.company,
+      updated_at: new Date().toISOString(),
+    };
+
+    await store.dispatch("company/updatecompany", {
+      keyedit: companyId,
+      formdata,
+    });
+
+    alertService.success("Detail company berhasil diperbarui.");
+    closeDetailDataForm();
+  } catch (error) {
+    const backendMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message ||
+      "Gagal update company. Silakan coba lagi.";
+    alertService.error(backendMessage);
+  } finally {
+    isDetailDataSubmitting.value = false;
+  }
 };
 
 // Fetch data function untuk refresh
@@ -444,13 +499,15 @@ const handleDeleteCompanies = async () => {
             <tr
               v-for="company in companies"
               :key="company.id"
-              class="border-b border-gray-100 hover:bg-gray-50 transition"
+              class="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer"
+              @click="openCompanyDetail(company)"
             >
               <td class="px-6 py-4">
                 <input
                   type="checkbox"
                   :value="company.id"
                   v-model="selectedIds"
+                  @click.stop
                   class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
                 />
               </td>
@@ -518,6 +575,15 @@ const handleDeleteCompanies = async () => {
         showDetailForm = false;
       }
     "
+  />
+
+  <DetailDataForm
+    :isOpen="showDetailDataForm"
+    :company="selectedCompany"
+    :isSubmitting="isDetailDataSubmitting"
+    @close="closeDetailDataForm"
+    @back="closeDetailDataForm"
+    @submit="handleDetailDataSubmit"
   />
 </template>
 
