@@ -15,6 +15,10 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  contact: {
+    type: Object,
+    default: () => ({}),
+  },
 });
 
 const emit = defineEmits(["close", "submit", "back"]);

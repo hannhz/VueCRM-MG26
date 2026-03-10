@@ -14,22 +14,34 @@
         <div
           v-for="tab in tabsflmenu"
           :key="tab"
-          class="flex items-center gap-0.5 px-4 py-2 rounded-t-lg cursor-pointer whitespace-nowrap"
+          class="group relative flex items-center justify-center min-w-33 px-5 py-3 rounded-t-lg cursor-pointer whitespace-nowrap overflow-hidden transition-colors duration-150"
           :class="{
             'bg-dark-base text-white': tab.pathfile === selectedTab,
             'bg-dark-base/75 text-white': tab.pathfile !== selectedTab,
           }"
           @click="selectTab(tab)"
         >
-          {{ tab.CAPTION }}
-
-          <span
-            v-if="tab.CAPTION !== 'Dashboard'"
-            @click.stop="removeTab(tab)"
-            class="ml-1 hover:text-red-300 cursor-pointer"
-          >
-            ✕
+          <span class="block max-w-45 truncate text-center text-sm font-medium leading-none">
+            {{ tab.CAPTION }}
           </span>
+
+          <div
+            v-if="tab.CAPTION !== 'Dashboard'"
+            class="absolute inset-y-0 right-0 flex items-center pl-3 pr-1 bg-linear-to-l from-black/35 via-black/15 to-transparent transition-all duration-200"
+            :class="{
+              'opacity-100 pointer-events-auto translate-x-0': tab.pathfile === selectedTab,
+              'opacity-0 pointer-events-none translate-x-1 group-hover:opacity-100 group-hover:pointer-events-auto group-hover:translate-x-0': tab.pathfile !== selectedTab,
+            }"
+          >
+            <button
+              @click.stop="removeTab(tab)"
+              type="button"
+              class="flex h-5 w-5 items-center justify-center rounded-md text-xs text-white/80 transition-all duration-150 hover:cursor-pointer hover:bg-red-500/25 hover:text-red-200"
+              aria-label="Close tab"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       </div>
 

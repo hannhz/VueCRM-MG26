@@ -1,4 +1,4 @@
-<script setup>
+<!-- <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { useStore } from "vuex";
 
@@ -244,6 +244,267 @@ const handleDeleteCompanies = async () => {
       `Gagal menghapus company. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Silakan coba lagi."}`,
     );
   }
+};
+</script> -->
+
+<script>
+import { mapState, mapGetters, mapActions } from "vuex";
+
+import CreateCompanyForm from "./forms/CreateCompanyForm.vue";
+import BulkAddCompanyForm from "./forms/BulkAddCompanyForm.vue";
+import DetailForm from "./forms/DetailForm.vue";
+import DetailDataCompany from "./forms/DetailDataCompany.vue";
+import { alertService } from "@/services/alertService";
+import {
+  Search,
+  ChevronDown,
+  Download,
+  Edit,
+  Trash2,
+  Filter,
+  ChevronLeft,
+  FilePlus,
+  ChevronRight,
+  RefreshCw,
+  FolderPlus,
+  FileDown,
+  FolderDown,
+} from "lucide-vue-next";
+
+export default {
+  components: {
+    CreateCompanyForm,
+    BulkAddCompanyForm,
+    DetailForm,
+    DetailDataCompany,
+    Search,
+    ChevronDown,
+    Download,
+    Edit,
+    Trash2,
+    Filter,
+    ChevronLeft,
+    FilePlus,
+    ChevronRight,
+    RefreshCw,
+    FolderPlus,
+    FileDown,
+    FolderDown,
+  },
+
+  data() {
+    return {
+      currentPage: 1,
+      itemsPerPage: 10,
+      showCreateCompanyForm: false,
+      showBulkAddForm: false,
+      showDetailForm: false,
+      showDetailDataCompany: false,
+      showDropdown: false,
+      showDownloadDropdown: false,
+      selectedIds: [],
+      selectedCompany: null,
+      isDetailDataSubmitting: false,
+    };
+  },
+
+  computed: {
+    ...mapState({
+      searchQuery: (state) => state.company.searchQuery,
+    }),
+
+    ...mapGetters({
+      companies: "company/filteredCompanies",
+      isLoading: "company/isLoading",
+      error: "company/error",
+    }),
+
+    totalCompanies() {
+      return this.companies.length;
+    },
+
+    totalPages() {
+      return Math.max(1, Math.ceil(this.totalCompanies / this.itemsPerPage));
+    },
+
+    paginatedCompanies() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      return this.companies.slice(start, start + this.itemsPerPage);
+    },
+
+    downloadLabel() {
+      return this.selectedIds.length
+        ? `Download (${this.selectedIds.length})`
+        : "Download";
+    },
+
+    companiesStatusText() {
+      if (this.isLoading) return "Searching company...";
+      if (this.error) return `Error: ${this.error}`;
+      return `${this.totalCompanies.toLocaleString()} Total Companies`;
+    },
+
+    companiesStatusClass() {
+      if (this.isLoading) return "text-blue-600";
+      if (this.error) return "text-red-600";
+      return "text-sub-text";
+    },
+  },
+
+  watch: {
+    totalCompanies() {
+      if (this.currentPage > this.totalPages) {
+        this.currentPage = this.totalPages;
+      }
+    },
+  },
+
+  mounted() {
+    this.fetchAllcompany();
+
+    document.addEventListener("click", this.handleClickOutside);
+  },
+
+  beforeDestroy() {
+    document.removeEventListener("click", this.handleClickOutside);
+  },
+
+  methods: {
+    ...mapActions("company", [
+      "fetchAllcompany",
+      "updatecompany",
+      "deletecompany",
+    ]),
+
+    toggleDropdown() {
+      this.showDropdown = !this.showDropdown;
+    },
+
+    toggleDownloadDropdown() {
+      this.showDownloadDropdown = !this.showDownloadDropdown;
+    },
+
+    handleClickOutside(e) {
+      if (
+        !e.target.closest(".add-dropdown") &&
+        !e.target.closest(".download-dropdown")
+      ) {
+        this.showDropdown = false;
+        this.showDownloadDropdown = false;
+      }
+    },
+
+    nextPage() {
+      if (this.currentPage < this.totalPages) this.currentPage++;
+    },
+
+    prevPage() {
+      if (this.currentPage > 1) this.currentPage--;
+    },
+
+    openCompanyDetail(company) {
+      this.selectedCompany = { ...company };
+      this.showDetailDataCompany = true;
+    },
+
+    closeDetailDataCompany() {
+      this.selectedCompany = null;
+      this.showDetailDataCompany = false;
+    },
+
+    handleDetailDataCompanySubmit(payload) {
+      const companyId = this.selectedCompany?.id;
+      const companyName = payload?.company?.company_name?.trim();
+
+      if (!companyId) {
+        return alertService.error("ID company tidak ditemukan.");
+      }
+
+      if (!companyName) {
+        return alertService.error("Company Name wajib diisi.");
+      }
+
+      this.isDetailDataSubmitting = true;
+
+      this.updatecompany({
+        keyedit: companyId,
+        formdata: {
+          ...payload.company,
+          updated_at: new Date().toISOString(),
+        },
+      })
+        .then(() => {
+          alertService.success("Detail company berhasil diperbarui.");
+          this.closeDetailDataCompany();
+        })
+        .catch((error) => {
+          const message =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            "Gagal update company";
+
+          alertService.error(message);
+        })
+        .finally(() => {
+          this.isDetailDataSubmitting = false;
+        });
+    },
+
+    handleDeleteCompanies() {
+      if (!this.selectedIds.length) {
+        return alertService.warning("Pilih minimal satu company untuk dihapus");
+      }
+
+      alertService
+        .confirm(
+          "Hapus Company?",
+          `${this.selectedIds.length} company akan dihapus secara permanen.`,
+        )
+        .then((confirmDelete) => {
+          if (!confirmDelete) return;
+
+          const promises = this.selectedIds.map((id) => this.deletecompany(id));
+
+          return Promise.all(promises);
+        })
+        .then(() => {
+          this.selectedIds = [];
+          alertService.success("Company berhasil dihapus");
+        })
+        .catch((error) => {
+          const status = error?.response?.status;
+          const message =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message;
+
+          alertService.error(
+            `Gagal menghapus company ${status ? `(Status ${status})` : ""}. ${
+              message || ""
+            }`,
+          );
+        });
+    },
+
+    handleDownload() {
+      const target = this.selectedIds.length
+        ? `selected: ${this.selectedIds}`
+        : "all data";
+
+      console.log("Download", target);
+      this.showDownloadDropdown = false;
+    },
+
+    downloadAll() {
+      console.log("Download all data");
+      this.showDownloadDropdown = false;
+    },
+
+    handleBulkAdd() {
+      this.showBulkAddForm = true;
+    },
+  },
 };
 </script>
 

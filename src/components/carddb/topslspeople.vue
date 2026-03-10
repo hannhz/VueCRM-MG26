@@ -1,12 +1,40 @@
 <script setup>
-const salespeople = [
-  { name: "Ahmad", deals: "2.5K", won: "2.1K" },
-  { name: "Nur", deals: "1.5K", won: "1.1K" },
-  { name: "Fuady", deals: "550", won: "500" },
-  { name: "Hanan", deals: "196", won: "176" },
-  { name: "Hafizhah", deals: "230", won: "210" },
-  { name: "Zarkasi", deals: "180", won: "160" },
-];
+import { computed, onMounted } from "vue";
+import { useStore } from "vuex";
+
+const store = useStore();
+
+const allUsers = computed(() => store.getters["users/allUsers"] || []);
+const isLoading = computed(() => store.getters["users/isLoading"]);
+
+const getDisplayName = (user = {}) => {
+  const fullName =
+    user.name ||
+    user.username ||
+    user.user_name ||
+    [user.firstname || user.first_name, user.lastname || user.last_name]
+      .filter(Boolean)
+      .join(" ") ||
+    user.email ||
+    `User ${user.id || ""}`;
+
+  return String(fullName).trim();
+};
+
+const salespeople = computed(() =>
+  allUsers.value.slice(0, 8).map((user, index) => ({
+    id: user.id ?? index,
+    name: getDisplayName(user),
+    // Placeholder sementara sampai metrik deals/won siap dari backend.
+    deals: "-",
+    won: "-",
+  })),
+);
+
+onMounted(async () => {
+  if (allUsers.value.length > 0) return;
+  await store.dispatch("users/fetchAllusers").catch(() => null);
+});
 </script>
 
 <template>
@@ -28,10 +56,21 @@ const salespeople = [
     </div>
 
     <!-- List -->
-    <div class="space-y-2">
+    <div v-if="isLoading" class="py-6 text-center text-sm text-sub-text">
+      Loading users...
+    </div>
+
+    <div
+      v-else-if="salespeople.length === 0"
+      class="py-6 text-center text-sm text-sub-text"
+    >
+      No user data from database.
+    </div>
+
+    <div v-else class="space-y-2">
       <div
         v-for="(person, i) in salespeople"
-        :key="i"
+        :key="person.id"
         class="grid text-sm grid-cols-3 items-center px-3 py-2 rounded-lg transition hover:bg-gray-50"
       >
         <!-- Name -->

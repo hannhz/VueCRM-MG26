@@ -14,7 +14,74 @@ const Api = axios.create({
 });
 
 Api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    try {
+      const method = String(response?.config?.method || "").toLowerCase();
+      const isMutating =
+        method === "post" ||
+        method === "put" ||
+        method === "patch" ||
+        method === "delete";
+
+      if (isMutating) {
+        const rawUrl = String(response?.config?.url || "");
+        const endpoint = rawUrl
+          .replace(/^.*\/api(?:\/dev)?\//, "")
+          .replace(/^\/+/, "")
+          .split("?")[0];
+
+        const body = response?.config?.data
+          ? typeof response.config.data === "string"
+            ? JSON.parse(response.config.data)
+            : response.config.data
+          : {};
+
+        const choice = String(body?.choice || "").toLowerCase();
+        const operation = choice || (method === "delete" ? "d" : "u");
+
+        const operationMap = {
+          i: "Added",
+          u: "Updated",
+          d: "Deleted",
+        };
+
+        const entityRaw = endpoint.split("/")[0] || "data";
+        const entityMap = {
+          userscrm: "User",
+          deals: "Deal",
+          company: "Company",
+          contact: "Contact",
+          tasks: "Task",
+          team: "Team",
+          documents: "Document",
+        };
+
+        const entity = entityMap[entityRaw] || entityRaw;
+        const action = `${operationMap[operation] || "Updated"} ${entity}`;
+
+        const authUser = store?.state?.auth?.user || {};
+        const userName =
+          authUser?.name ||
+          [authUser?.firstname, authUser?.lastname].filter(Boolean).join(" ") ||
+          authUser?.email ||
+          "System";
+
+        const note = `- ${method.toUpperCase()} ${endpoint}`;
+
+        store.dispatch("activity/appendActivity", {
+          action,
+          user: userName,
+          note,
+          entity: entity.toLowerCase(),
+          operation,
+        });
+      }
+    } catch (e) {
+      // Never block API flow due to activity logging issues.
+    }
+
+    return response;
+  },
   (error) => {
     if (error.response && error.response.status === 401) {
       alertService

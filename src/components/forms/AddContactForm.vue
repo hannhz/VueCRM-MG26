@@ -182,7 +182,7 @@ export default {
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2">
-                First Name
+                First Name <span class="text-red-600">*</span>
               </label>
               <input
                 v-model="formData.first_name"
@@ -221,7 +221,7 @@ export default {
             </div>
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2">
-                Owner
+                Owner <span class="text-red-600">*</span>
               </label>
               <input
                 v-model="formData.owner"

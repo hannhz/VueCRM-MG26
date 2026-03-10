@@ -24,7 +24,7 @@ import {
 } from "lucide-vue-next";
 
 export default {
-  name: "ContactsPage",
+  name: "Contacts",
 
   components: {
     AddContactForm,
@@ -114,6 +114,8 @@ export default {
   methods: {
     ...mapActions({
       fetchAllContacts: "contacts/fetchAllContacts",
+      updateContact: "contacts/updateContact",
+      deleteContact: "contacts/deleteContact",
     }),
 
     fetchData() {
@@ -149,44 +151,81 @@ export default {
       this.selectedContact = null;
     },
 
-    async handleDetailDataContactSubmit(payload) {
+    // async handleDetailDataContactSubmit(payload) {
+    //   const contactId = this.selectedContact?.id;
+
+    //   if (!contactId) {
+    //     alertService.error(
+    //       "ID contact tidak ditemukan. Coba buka ulang detail data.",
+    //     );
+    //     return;
+    //   }
+
+    //   if (!payload?.contact?.first_name?.trim()) {
+    //     alertService.error("First Name wajib diisi.");
+    //     return;
+    //   }
+
+    //   this.isDetailDataSubmitting = true;
+
+    //   try {
+    //     const formdata = {
+    //       id: contactId,
+    //       ...payload.contact,
+    //       updated_at: new Date().toISOString(),
+    //     };
+
+    //     await this.$store.dispatch("contacts/updateContact", formdata);
+
+    //     alertService.success("Detail contact berhasil diperbarui.");
+    //     this.closeDetailDataContact();
+    //   } catch (error) {
+    //     const backendMessage =
+    //       error?.response?.data?.message ||
+    //       error?.response?.data?.error ||
+    //       error?.message ||
+    //       "Gagal update contact. Silakan coba lagi.";
+    //     alertService.error(backendMessage);
+    //   } finally {
+    //     this.isDetailDataSubmitting = false;
+    //   }
+    // },
+
+    handleDetailDataContactSubmit(payload) {
       const contactId = this.selectedContact?.id;
+      const firstName = payload?.contact?.first_name?.trim();
 
       if (!contactId) {
-        alertService.error(
-          "ID contact tidak ditemukan. Coba buka ulang detail data.",
-        );
-        return;
+        return alertService.error("ID contact tidak ditemukan.");
       }
 
-      if (!payload?.contact?.first_name?.trim()) {
-        alertService.error("First Name wajib diisi.");
-        return;
+      if (!firstName) {
+        return alertService.error("First Name wajib diisi.");
       }
 
       this.isDetailDataSubmitting = true;
 
-      try {
-        const formdata = {
-          id: contactId,
-          ...payload.contact,
-          updated_at: new Date().toISOString(),
-        };
+      this.updateContact({
+        id: contactId,
+        ...payload.contact,
+        updated_at: new Date().toISOString(),
+      })
+        .then(() => {
+          alertService.success("Detail contact berhasil diperbarui.");
+          this.closeDetailDataContact();
+        })
+        .catch((error) => {
+          const message =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            "Gagal update contact.";
 
-        await this.$store.dispatch("contacts/updateContact", formdata);
-
-        alertService.success("Detail contact berhasil diperbarui.");
-        this.closeDetailDataContact();
-      } catch (error) {
-        const backendMessage =
-          error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          error?.message ||
-          "Gagal update contact. Silakan coba lagi.";
-        alertService.error(backendMessage);
-      } finally {
-        this.isDetailDataSubmitting = false;
-      }
+          alertService.error(message);
+        })
+        .finally(() => {
+          this.isDetailDataSubmitting = false;
+        });
     },
 
     handleBulkAdd() {
@@ -227,38 +266,74 @@ export default {
       );
     },
 
-    async handleDeleteContacts() {
-      if (this.selectedIds.length === 0) {
-        alertService.warning("Pilih minimal satu contact untuk dihapus");
-        return;
+    // async handleDeleteContacts() {
+    //   if (this.selectedIds.length === 0) {
+    //     alertService.warning("Pilih minimal satu contact untuk dihapus");
+    //     return;
+    //   }
+
+    //   const confirmDelete = await alertService.confirm(
+    //     "Hapus Contact?",
+    //     `${this.selectedIds.length} contact akan dihapus secara permanen. Lanjutkan?`,
+    //   );
+
+    //   if (!confirmDelete) return;
+
+    //   try {
+    //     // Delete each selected contact
+    //     for (const id of this.selectedIds) {
+    //       await this.$store.dispatch("contacts/deleteContact", id);
+    //     }
+    //     // Clear selected IDs
+    //     this.selectedIds = [];
+    //     alertService.success("Contact berhasil dihapus");
+    //   } catch (error) {
+    //     console.error("Error deleting contacts:", error);
+    //     const status = error?.response?.status;
+    //     const backendMessage =
+    //       error?.response?.data?.message ||
+    //       error?.response?.data?.error ||
+    //       error?.message;
+    //     alertService.error(
+    //       `Gagal menghapus contact. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Silakan coba lagi."}`,
+    //     );
+    //   }
+    // },
+
+    handleDeleteContacts() {
+      if (!this.selectedIds.length) {
+        return alertService.warning("Pilih minimal satu contact untuk dihapus");
       }
 
-      const confirmDelete = await alertService.confirm(
-        "Hapus Contact?",
-        `${this.selectedIds.length} contact akan dihapus secara permanen. Lanjutkan?`,
-      );
+      alertService
+        .confirm(
+          "Hapus Contact?",
+          `${this.selectedIds.length} contact akan dihapus secara permanen.`,
+        )
+        .then((confirmDelete) => {
+          if (!confirmDelete) return;
 
-      if (!confirmDelete) return;
+          const promises = this.selectedIds.map((id) => this.deleteContact(id));
 
-      try {
-        // Delete each selected contact
-        for (const id of this.selectedIds) {
-          await this.$store.dispatch("contacts/deleteContact", id);
-        }
-        // Clear selected IDs
-        this.selectedIds = [];
-        alertService.success("Contact berhasil dihapus");
-      } catch (error) {
-        console.error("Error deleting contacts:", error);
-        const status = error?.response?.status;
-        const backendMessage =
-          error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          error?.message;
-        alertService.error(
-          `Gagal menghapus contact. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Silakan coba lagi."}`,
-        );
-      }
+          return Promise.all(promises);
+        })
+        .then(() => {
+          this.selectedIds = [];
+          alertService.success("Contact berhasil dihapus");
+        })
+        .catch((error) => {
+          const status = error?.response?.status;
+          const message =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message;
+
+          alertService.error(
+            `Gagal menghapus contact ${status ? `(Status ${status})` : ""}. ${
+              message || ""
+            }`,
+          );
+        });
     },
   },
 

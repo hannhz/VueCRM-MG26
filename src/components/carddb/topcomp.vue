@@ -1,24 +1,36 @@
 <script setup>
-const companies = [
-  {
-    name: "PT Maju Jaya Teknologi",
-    deals: 5,
-    value: "Rp 250 jt",
-    percent: "45%",
-  },
-  {
-    name: "PT Global Solusi Digital",
-    deals: 3,
-    value: "Rp 180 jt",
-    percent: "32%",
-  },
-  {
-    name: "CV Karya Nusantara",
-    deals: 4,
-    value: "Rp 90 jt",
-    percent: "21%",
-  },
-];
+import { computed, onMounted } from "vue";
+import { useStore } from "vuex";
+
+const store = useStore();
+
+const allCompanies = computed(() => store.getters["company/allcompany"] || []);
+const isLoading = computed(() => store.getters["company/isLoading"]);
+
+const getCompanyName = (company = {}) => {
+  return (
+    company.name ||
+    company.company_name ||
+    company.nama_perusahaan ||
+    `Company ${company.id || ""}`
+  );
+};
+
+const companies = computed(() =>
+  allCompanies.value.slice(0, 8).map((company, index) => ({
+    id: company.id ?? index,
+    name: getCompanyName(company),
+    // Placeholder sementara, nanti disesuaikan saat data metrik deal siap.
+    deals: "-",
+    value: "-",
+    percent: "-",
+  })),
+);
+
+onMounted(async () => {
+  if (allCompanies.value.length > 0) return;
+  await store.dispatch("company/fetchAllcompany").catch(() => null);
+});
 </script>
 
 <template>
@@ -40,10 +52,21 @@ const companies = [
     </div>
 
     <!-- Rows -->
-    <div class="mt-3 space-y-3">
+    <div v-if="isLoading" class="py-6 text-center text-sm text-sub-text">
+      Loading companies...
+    </div>
+
+    <div
+      v-else-if="companies.length === 0"
+      class="py-6 text-center text-sm text-sub-text"
+    >
+      No company data from database.
+    </div>
+
+    <div v-else class="mt-3 space-y-3">
       <div
         v-for="(company, i) in companies"
-        :key="i"
+        :key="company.id"
         class="grid grid-cols-[2fr_0.6fr_1.2fr_0.8fr] items-center text-sm"
       >
         <div class="font-medium text-gray-800">

@@ -1,19 +1,71 @@
 <script setup>
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
+import { useStore } from "vuex";
 
-const tasks = [
-  { name: "Fuady Ahmad", stats: [10, 9, 1, 3, 2] },
-  { name: "Hanan Zarkasi", stats: [9, 5, 1, 1, 2] },
-  { name: "Hyazuna Mii", stats: [2, 15, 7, 39, 55] },
-  { name: "Kevin Maulana", stats: [3, 4, 5, 10, 20] },
-  { name: "Andi Pratama", stats: [1, 2, 3, 4, 5] },
+const store = useStore();
+
+const allTasks = computed(() => store.getters["tasks/allTasks"] || []);
+const isLoading = computed(() => store.getters["tasks/isLoading"]);
+
+const statusOrder = [
+  "not_started",
+  "deferred",
+  "waiting",
+  "in_progress",
+  "completed",
 ];
 
-const sortedTasks = computed(() =>
-  [...tasks].sort((a, b) => b.stats[0] - a.stats[0]),
-);
+const normalizeStatus = (statusRaw) => {
+  const raw = String(statusRaw || "not_started")
+    .toLowerCase()
+    .replace(/\s+/g, "_");
 
-// warna dibalik: tua ➜ muda
+  if (raw.includes("progress")) return "in_progress";
+  if (raw.includes("wait")) return "waiting";
+  if (raw.includes("complete") || raw.includes("done")) return "completed";
+  if (raw.includes("defer")) return "deferred";
+  return "not_started";
+};
+
+const normalizedRows = computed(() => {
+  const groupedByAssignee = new Map();
+
+  allTasks.value.forEach((task) => {
+    const name = task.assignee || task.owner || task.user_name || "Unassigned";
+    const key = String(name).trim() || "Unassigned";
+    const status = normalizeStatus(task.status || task.stage);
+
+    if (!groupedByAssignee.has(key)) {
+      groupedByAssignee.set(key, {
+        name: key,
+        counts: {
+          not_started: 0,
+          deferred: 0,
+          waiting: 0,
+          in_progress: 0,
+          completed: 0,
+        },
+      });
+    }
+
+    groupedByAssignee.get(key).counts[status] += 1;
+  });
+
+  const mappedRows = [...groupedByAssignee.values()].map((row) => {
+    const stats = statusOrder.map((status) => row.counts[status] || 0);
+    const total = stats.reduce((sum, value) => sum + value, 0);
+    return {
+      name: row.name,
+      stats,
+      total,
+    };
+  });
+
+  return mappedRows.sort((a, b) => b.total - a.total).slice(0, 6);
+});
+
+const chartRows = computed(() => normalizedRows.value);
+
 const colors = [
   "bg-dark-base",
   "bg-deffered-color",
@@ -21,6 +73,16 @@ const colors = [
   "bg-progress-color",
   "bg-sub-text",
 ];
+
+const segmentWidth = (value, total) => {
+  if (!total) return "0%";
+  return `${(value / total) * 100}%`;
+};
+
+onMounted(async () => {
+  if (allTasks.value.length > 0) return;
+  await store.dispatch("tasks/fetchAllTasks").catch(() => null);
+});
 </script>
 
 <template>
@@ -40,9 +102,20 @@ const colors = [
     </div>
 
     <!-- Rows -->
-    <div class="space-y-4">
+    <div v-if="isLoading" class="py-6 text-center text-sm text-sub-text">
+      Loading task KPI...
+    </div>
+
+    <div
+      v-else-if="chartRows.length === 0"
+      class="py-6 text-center text-sm text-sub-text"
+    >
+      No task data from database.
+    </div>
+
+    <div v-else class="space-y-4">
       <div
-        v-for="(task, i) in tasks"
+        v-for="(task, i) in chartRows"
         :key="i"
         class="grid grid-cols-[180px_1fr_60px] items-center gap-4"
       >
@@ -60,15 +133,15 @@ const colors = [
               colors[index],
               'flex items-center justify-end text-white text-xs font-bold pr-2 border-r border-white',
             ]"
-            :style="{ width: val * 5 + '%' }"
+            :style="{ width: segmentWidth(val, task.total) }"
           >
-            {{ val }}
+            {{ val > 0 ? val : "" }}
           </div>
         </div>
 
         <!-- Total -->
         <p class="text-right text-sm text-dark-base">
-          {{ task.stats.reduce((a, b) => a + b, 0) }}
+          {{ task.total }}
         </p>
       </div>
     </div>

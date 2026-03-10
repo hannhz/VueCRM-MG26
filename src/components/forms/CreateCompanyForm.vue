@@ -182,7 +182,7 @@ const handleReset = () => {
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2"
-                >Company Name</label
+                >Company Name <span class="text-red-600">*</span></label
               >
               <input
                 v-model="formData.company_name"
@@ -194,7 +194,7 @@ const handleReset = () => {
             </div>
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2"
-                >Company Owner</label
+                >Company Owner <span class="text-red-600">*</span></label
               >
               <input
                 v-model="formData.company_owner"
@@ -222,7 +222,7 @@ const handleReset = () => {
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2"
-                >Email</label
+                >Email <span class="text-red-600">*</span></label
               >
               <input
                 v-model="formData.email"

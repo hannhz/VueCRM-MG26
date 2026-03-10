@@ -1,11 +1,45 @@
 <script setup>
-import {
-  Users,
-  Building2,
-  Briefcase,
-  ClipboardClock,
-  ArrowUp,
-} from "lucide-vue-next";
+import { computed, onMounted } from "vue";
+import { useStore } from "vuex";
+import { Users, Building2, Briefcase, ClipboardClock } from "lucide-vue-next";
+
+const store = useStore();
+
+const contactsTotal = computed(
+  () => store.getters["contacts/allContacts"]?.length || 0,
+);
+const companiesTotal = computed(
+  () => store.getters["company/allcompany"]?.length || 0,
+);
+const dealsTotal = computed(() => store.getters["deals/allDeals"]?.length || 0);
+const tasksTotal = computed(() => store.getters["tasks/allTasks"]?.length || 0);
+const isSummaryLoading = computed(
+  () =>
+    store.getters["contacts/isLoading"] ||
+    store.getters["company/isLoading"] ||
+    store.getters["deals/isLoading"] ||
+    store.getters["tasks/isLoading"],
+);
+
+const formatCount = (value) => {
+  return Intl.NumberFormat("en", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value || 0);
+};
+
+const displayCount = (value) => {
+  return isSummaryLoading.value ? "..." : formatCount(value);
+};
+
+onMounted(async () => {
+  await Promise.allSettled([
+    store.dispatch("contacts/fetchAllContacts"),
+    store.dispatch("company/fetchAllcompany"),
+    store.dispatch("deals/fetchAllDeals"),
+    store.dispatch("tasks/fetchAllTasks"),
+  ]);
+});
 </script>
 
 <template>
@@ -21,12 +55,9 @@ import {
         <!-- Text -->
         <div>
           <div class="flex items-left gap-4">
-            <h2 class="text-3xl font-bold text-dark-base">18.6K</h2>
-
-            <div class="flex items-center gap-1 text-good-green font-medium">
-              <ArrowUp :size="18" />
-              <span>18%</span>
-            </div>
+            <h2 class="text-3xl font-bold text-dark-base">
+              {{ displayCount(contactsTotal) }}
+            </h2>
           </div>
           <p class="text-sub-text text-sm mt-1">Total Contacts</p>
         </div>
@@ -45,14 +76,11 @@ import {
         <!-- Text -->
         <div>
           <div class="flex items-left gap-4">
-            <h2 class="text-3xl font-bold text-dark-base">18.6K</h2>
-
-            <div class="flex items-center gap-1 text-good-green font-medium">
-              <ArrowUp :size="18" />
-              <span>18%</span>
-            </div>
+            <h2 class="text-3xl font-bold text-dark-base">
+              {{ displayCount(companiesTotal) }}
+            </h2>
           </div>
-          <p class="text-sub-text text-sm mt-1">Total Contacts</p>
+          <p class="text-sub-text text-sm mt-1">Total Companies</p>
         </div>
       </div>
     </div>
@@ -69,14 +97,11 @@ import {
         <!-- Text -->
         <div>
           <div class="flex items-left gap-4">
-            <h2 class="text-3xl font-bold text-dark-base">18.6K</h2>
-
-            <div class="flex items-center gap-1 text-good-green font-medium">
-              <ArrowUp :size="18" />
-              <span>18%</span>
-            </div>
+            <h2 class="text-3xl font-bold text-dark-base">
+              {{ displayCount(dealsTotal) }}
+            </h2>
           </div>
-          <p class="text-sub-text text-sm mt-1">Total Contacts</p>
+          <p class="text-sub-text text-sm mt-1">Total Deals</p>
         </div>
       </div>
     </div>
@@ -93,14 +118,11 @@ import {
         <!-- Text -->
         <div>
           <div class="flex items-left gap-4">
-            <h2 class="text-3xl font-bold text-dark-base">18.6K</h2>
-
-            <div class="flex items-center gap-1 text-good-green font-medium">
-              <ArrowUp :size="18" />
-              <span>18%</span>
-            </div>
+            <h2 class="text-3xl font-bold text-dark-base">
+              {{ displayCount(tasksTotal) }}
+            </h2>
           </div>
-          <p class="text-sub-text text-sm mt-1">Total Contacts</p>
+          <p class="text-sub-text text-sm mt-1">Total Tasks</p>
         </div>
       </div>
     </div>

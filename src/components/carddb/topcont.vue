@@ -1,24 +1,37 @@
 <script setup>
-const contacts = [
-  {
-    name: "Andi Pratama",
-    deals: 5,
-    last: "1 day ago",
-    value: "Rp 120 jt",
-  },
-  {
-    name: "Kevin Maulana",
-    deals: 3,
-    last: "2 days ago",
-    value: "Rp 75 jt",
-  },
-  {
-    name: "Muhammad Haidar",
-    deals: 4,
-    last: "3 days ago",
-    value: "Rp 90 jt",
-  },
-];
+import { computed, onMounted } from "vue";
+import { useStore } from "vuex";
+
+const store = useStore();
+
+const allContacts = computed(() => store.getters["contacts/allContacts"] || []);
+const isLoading = computed(() => store.getters["contacts/isLoading"]);
+
+const getContactName = (contact = {}) => {
+  return (
+    contact.name ||
+    contact.contact_name ||
+    [contact.first_name, contact.last_name].filter(Boolean).join(" ") ||
+    contact.email ||
+    `Contact ${contact.id || ""}`
+  );
+};
+
+const contacts = computed(() =>
+  allContacts.value.slice(0, 8).map((contact, index) => ({
+    id: contact.id ?? index,
+    name: getContactName(contact),
+    // Placeholder sementara, nanti disesuaikan saat data metrik siap.
+    deals: "-",
+    last: "-",
+    value: "-",
+  })),
+);
+
+onMounted(async () => {
+  if (allContacts.value.length > 0) return;
+  await store.dispatch("contacts/fetchAllContacts").catch(() => null);
+});
 </script>
 
 <template>
@@ -40,10 +53,21 @@ const contacts = [
     </div>
 
     <!-- Rows -->
-    <div class="mt-3 space-y-3">
+    <div v-if="isLoading" class="py-6 text-center text-sm text-sub-text">
+      Loading contacts...
+    </div>
+
+    <div
+      v-else-if="contacts.length === 0"
+      class="py-6 text-center text-sm text-sub-text"
+    >
+      No contact data from database.
+    </div>
+
+    <div v-else class="mt-3 space-y-3">
       <div
         v-for="(contact, i) in contacts"
-        :key="i"
+        :key="contact.id"
         class="grid grid-cols-[2fr_0.7fr_1.2fr_1fr] items-center text-sm"
       >
         <div class="font-medium text-gray-800">

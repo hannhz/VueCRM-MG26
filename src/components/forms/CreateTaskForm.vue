@@ -120,7 +120,7 @@ const handleReset = () => {
           <!-- Name of Task -->
           <div>
             <label class="block text-sm font-medium text-dark-base mb-2"
-              >Name of Task</label
+              >Name of Task <span class="text-red-600">*</span></label
             >
             <input
               v-model="formData.task_name"
@@ -153,7 +153,7 @@ const handleReset = () => {
               <div class="w-px h-4 bg-outline mx-1"></div>
               <div class="relative flex items-center">
                 <select
-                  class="text-xs font-medium border-none bg-transparent text-sub-text focus:outline-none bg-white py-1 pl-1 pr-6 rounded cursor-pointer appearance-none"
+                  class="text-xs font-medium border-none bg-transparent text-sub-text focus:outline-none py-1 pl-1 pr-6 rounded cursor-pointer appearance-none"
                 >
                   <option>Format</option>
                 </select>
