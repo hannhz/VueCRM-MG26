@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref, watch } from "vue";
 import {
   X,
@@ -141,7 +141,8 @@ const getCompanyFormDefaults = (company = null) => ({
   deals: company?.deals || "",
   contact_association:
     company?.contact_association || company?.contactAssociation || "",
-  deals_association: company?.deals_association || company?.dealsAssociation || "",
+  deals_association:
+    company?.deals_association || company?.dealsAssociation || "",
 });
 
 const companyForm = ref(getCompanyFormDefaults());
@@ -523,13 +524,13 @@ const handleReset = () => {
                   type="button"
                   class="p-1 hover:bg-white rounded text-sub-text text-xs"
                 >
-                  ↩
+                  â†©
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-sub-text text-xs"
                 >
-                  ↪
+                  â†ª
                 </button>
                 <span class="text-outline mx-1">|</span>
                 <select
@@ -564,50 +565,50 @@ const handleReset = () => {
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  🔗
+                  ðŸ”—
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  ⚓
+                  âš“
                 </button>
                 <span class="text-outline mx-1">|</span>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  ≡
+                  â‰¡
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  ≡
+                  â‰¡
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  ≡
+                  â‰¡
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  ≡
+                  â‰¡
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  ☰
+                  â˜°
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  ☰
+                  â˜°
                 </button>
               </div>
               <!-- Editor area -->
@@ -702,13 +703,13 @@ const handleReset = () => {
                     type="button"
                     class="p-1 hover:bg-white rounded text-sub-text text-xs"
                   >
-                    ↩
+                    â†©
                   </button>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-sub-text text-xs"
                   >
-                    ↪
+                    â†ª
                   </button>
                   <span class="text-outline mx-1">|</span>
                   <select
@@ -742,50 +743,50 @@ const handleReset = () => {
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    🔗
+                    ðŸ”—
                   </button>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    ⚓
+                    âš“
                   </button>
                   <span class="text-outline mx-1">|</span>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    ≡
+                    â‰¡
                   </button>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    ≡
+                    â‰¡
                   </button>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    ≡
+                    â‰¡
                   </button>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    ≡
+                    â‰¡
                   </button>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    ☰
+                    â˜°
                   </button>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    ☰
+                    â˜°
                   </button>
                 </div>
                 <textarea
@@ -934,13 +935,13 @@ const handleReset = () => {
                   type="button"
                   class="p-1 hover:bg-white rounded text-sub-text text-xs"
                 >
-                  ↩
+                  â†©
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-sub-text text-xs"
                 >
-                  ↪
+                  â†ª
                 </button>
                 <span class="text-outline mx-1">|</span>
                 <select
@@ -974,50 +975,50 @@ const handleReset = () => {
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  🔗
+                  ðŸ”—
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  ⚓
+                  âš“
                 </button>
                 <span class="text-outline mx-1">|</span>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  ≡
+                  â‰¡
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  ≡
+                  â‰¡
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  ≡
+                  â‰¡
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  ≡
+                  â‰¡
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  ☰
+                  â˜°
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  ☰
+                  â˜°
                 </button>
               </div>
               <textarea
@@ -1064,7 +1065,7 @@ const handleReset = () => {
                       />
                     </svg>
                   </button>
-                  <!-- Dropdown list — terbuka ke ATAS -->
+                  <!-- Dropdown list â€” terbuka ke ATAS -->
                   <ul
                     v-if="docDropdownOpen"
                     class="absolute bottom-full left-0 right-0 mb-1 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden"
@@ -1135,7 +1136,7 @@ const handleReset = () => {
                         @click="removeDocFile(i)"
                         class="ml-2 text-sub-text hover:text-red-500 shrink-0"
                       >
-                        ✕
+                        âœ•
                       </button>
                     </li>
                   </ul>
@@ -1201,7 +1202,7 @@ const handleReset = () => {
   opacity: 0;
 }
 
-/* Slide from right — identik dengan AddContactForm */
+/* Slide from right â€” identik dengan AddContactForm */
 .slide-enter-active,
 .slide-leave-active {
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);

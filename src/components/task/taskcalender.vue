@@ -1,7 +1,8 @@
 <script setup>
 import { ref, computed } from "vue";
 import { useStore } from "vuex";
-import { Filter, Search, RefreshCw } from "lucide-vue-next";
+import { Filter, Search, RefreshCw, Trash } from "lucide-vue-next";
+import { alertService } from "@/services/alertService";
 
 const store = useStore();
 
@@ -11,7 +12,7 @@ const error = computed(() => store.getters["tasks/error"]);
 const allTasks = computed(() => store.getters["tasks/allTasks"] || []);
 
 const taskText = ref("");
-const emit = defineEmits(["add"]);
+const emit = defineEmits(["add", "viewDetail"]);
 
 /* =========================
    DATE STATE
@@ -41,6 +42,7 @@ const events = computed(() => {
       id: task.id,
       title: task.title || task.name || "Untitled Task",
       time: task.time || "",
+      rawTask: task,
     });
 
     return acc;
@@ -140,6 +142,33 @@ const selectedDateLabel = computed(() => {
   return new Date(selectedDate.value).toDateString();
 });
 
+function openTaskDetailFromCalendar(eventItem) {
+  emit("viewDetail", eventItem.rawTask || { id: eventItem.id });
+}
+
+async function handleDeleteTask(taskItem) {
+  const confirmDelete = await alertService.confirm(
+    "Hapus Task?",
+    "Task ini akan dihapus secara permanen. Lanjutkan?",
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    await store.dispatch("tasks/deleteTask", taskItem?.rawTask || taskItem);
+    alertService.success("Task berhasil dihapus");
+  } catch (error) {
+    console.error("Error deleting task:", error);
+    const status = error?.response?.status;
+    const backendMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message;
+    alertService.error(
+      `Gagal menghapus task. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Silakan coba lagi."}`,
+    );
+  }
+}
 </script>
 
 <template>
@@ -280,16 +309,30 @@ const selectedDateLabel = computed(() => {
           <li
             v-for="(event, index) in selectedEvents"
             :key="event.id || index"
-            class="p-3 border rounded-lg"
+            class="p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition flex items-start justify-between group"
+            @click="openTaskDetailFromCalendar(event)"
           >
-            <div class="font-medium">{{ event.title }}</div>
-            <div class="text-sm text-gray-500">{{ event.time }}</div>
+            <div class="flex-1 min-w-0">
+              <div class="font-medium">{{ event.title }}</div>
+              <div class="text-sm text-gray-500">{{ event.time }}</div>
+            </div>
+            <button
+              type="button"
+              @click.stop="handleDeleteTask(event)"
+              class="ml-2 p-1 rounded cursor-pointer hover:bg-red-100 text-gray-400 hover:text-red-600 transition opacity-0 group-hover:opacity-100"
+              title="Delete task"
+            >
+              <Trash :size="16" />
+            </button>
           </li>
         </ul>
       </div>
     </div>
 
-    <p v-if="error" class="px-6 py-3 text-sm text-red-600 border-t border-gray-100">
+    <p
+      v-if="error"
+      class="px-6 py-3 text-sm text-red-600 border-t border-gray-100"
+    >
       {{ error }}
     </p>
   </div>

@@ -47,13 +47,29 @@ const actions = {
   },
 
   createTeam(context, data) {
+    // Gunakan saveTeam dengan choice='i' untuk backward compatibility
+    const payload = {
+      choice: "i",
+      ...data,
+    };
+    return context.dispatch("saveTeam", payload);
+  },
+
+  saveTeam(context, formData) {
     const promise = new Promise(async (resolve, reject) => {
       try {
-        let network = await api.post("team/input", data, {
+        // Tentukan choice: 'i' untuk insert, 'u' untuk update
+        const choice = formData.choice || (formData.id ? "u" : "i");
+
+        const requestPayload = {
+          choice: choice,
+          ...formData,
+        };
+
+        let network = await api.post("team/input", requestPayload, {
           headers: {
             Authorization: "Bearer " + cookies.get("token"),
           },
-          // headers: { Authorization: "Bearer " + localStorage.getItem("token") },
         });
         resolve(network.data);
       } catch (error) {
@@ -63,6 +79,15 @@ const actions = {
     });
 
     return promise;
+  },
+
+  // Alias untuk update team (backward compatibility)
+  updateTeam(context, data) {
+    const payload = {
+      choice: "u",
+      ...data,
+    };
+    return context.dispatch("saveTeam", payload);
   },
 
   async addTeamUsers({ dispatch }, payload) {

@@ -30,6 +30,11 @@ const mutations = {
   SET_ERROR(state, error) {
     state.error = error;
   },
+  DELETE_CONTACT(state, contactId) {
+    state.contacts = state.contacts.filter(
+      (contact) => contact.id !== contactId,
+    );
+  },
 };
 
 const actions = {
@@ -69,9 +74,17 @@ const actions = {
     commit("SET_LOADING", true);
     commit("SET_ERROR", null);
 
+    // Tentukan choice: 'i' untuk insert (create), 'u' untuk update
+    const choice = contactData.id ? "u" : "i";
+
+    const requestPayload = {
+      choice: choice,
+      ...contactData,
+    };
+
     const promise = new Promise(async (resolve, reject) => {
       try {
-        const response = await api.post("contact/input", contactData, {
+        const response = await api.post("contact/input", requestPayload, {
           headers: {
             Authorization: "Bearer " + cookies.get("token"),
           },
@@ -84,7 +97,8 @@ const actions = {
 
     promise
       .then((data) => {
-        console.log("Contact created successfully:", data);
+        const operationType = choice === "i" ? "created" : "updated";
+        console.log(`Contact ${operationType} successfully:`, data);
         dispatch("fetchAllContacts");
         commit("SET_LOADING", false);
       })
@@ -95,6 +109,31 @@ const actions = {
       });
 
     return promise;
+  },
+
+  // Alias untuk update contact (backward compatibility)
+  updateContact({ dispatch }, contactData) {
+    return dispatch("createContact", contactData);
+  },
+
+  async deleteContact({ commit, dispatch }, contactId) {
+    const headers = {
+      Authorization: "Bearer " + cookies.get("token"),
+    };
+
+    try {
+      const response = await api.post(
+        "contact/input",
+        { choice: "d", id: contactId },
+        { headers },
+      );
+      commit("DELETE_CONTACT", contactId);
+      await dispatch("fetchAllContacts").catch(() => {});
+      return response.data;
+    } catch (error) {
+      await dispatch("fetchAllContacts").catch(() => {});
+      throw error;
+    }
   },
 
   setViewMode({ commit }, mode) {

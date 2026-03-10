@@ -128,22 +128,44 @@ const actions = {
   },
 
   insertuser(context, data) {
-    const promise = new Promise(async (resolve, reject) => {
-      try {
-        let network = await api.post("userscrm/input", data, {
-          headers: {
-            Authorization: "Bearer " + cookies.get("token"),
-          },
-          // headers: { Authorization: "Bearer " + localStorage.getItem("token") },
-        });
-        resolve(network.data);
-      } catch (error) {
-        reject(error);
-      }
-      context.dispatch("fetchAllusers");
-    });
+    // Gunakan saveUser dengan choice='i' untuk backward compatibility
+    const payload = {
+      choice: "i",
+      ...data,
+    };
+    return context.dispatch("saveUser", payload);
+  },
 
-    return promise;
+  async saveUser({ commit, dispatch }, formData) {
+    commit("SET_LOADING", true);
+    commit("SET_ERROR", null);
+
+    try {
+      const choice = formData.choice || (formData.id ? "u" : "i");
+      const requestPayload = {
+        ...formData,
+        choice,
+      };
+
+      const network = await api.post("userscrm/input", requestPayload, {
+        headers: {
+          Authorization: "Bearer " + cookies.get("token"),
+        },
+      });
+
+      // Keep table reactive after create/update.
+      if (requestPayload.id) {
+        commit("UPSERT_USER", requestPayload);
+      }
+
+      await dispatch("fetchAllusers").catch(() => {});
+      return network.data;
+    } catch (error) {
+      commit("SET_ERROR", error.message);
+      throw error;
+    } finally {
+      commit("SET_LOADING", false);
+    }
   },
 
   reguser(context, data) {
@@ -166,50 +188,41 @@ const actions = {
   },
 
   updateuser(context, data) {
-    const promise = new Promise(async (resolve, reject) => {
-      try {
-        let network = await api.post(
-          `users/updateusr?id=${data.keyedit}`,
-          data.formdata,
-          {
-            headers: {
-              Authorization:
-                "Bearer " + cookies.get("token") ??
-                localStorage.getItem("token"),
-            },
-            // headers: {
-            //   Authorization: "Bearer " + localStorage.getItem("token"),
-            // },
-          },
-        );
-        resolve(network.data);
-        context.dispatch("fetchAllusers");
-      } catch (error) {
-        reject(error);
-      }
-    });
-    return promise;
-
-    // promise.then((data) => {
-    //   console.log(data);
-    // });
+    // Gunakan saveUser dengan choice='u' untuk backward compatibility
+    const payload = {
+      choice: "u",
+      id: data.keyedit,
+      ...data.formdata,
+    };
+    return context.dispatch("saveUser", payload);
   },
 
-  deleteuser(context, data) {
-    return new Promise(async (resolve, reject) => {
-      try {
-        let network = await api.delete(`users/deleteusr?id=${data}`, {
-          headers: {
-            Authorization: "Bearer " + cookies.get("token"),
-          },
-          // headers: { Authorization: "Bearer " + localStorage.getItem("token") },
-        });
-        resolve(network.data);
-      } catch (error) {
-        reject(error);
-      }
-      context.dispatch("fetchAllusers");
-    });
+  async deleteuser({ commit, dispatch }, data) {
+    commit("SET_LOADING", true);
+    commit("SET_ERROR", null);
+
+    try {
+      const id = data?.id || data;
+      const payload = {
+        choice: "d",
+        id,
+      };
+
+      const network = await api.post("userscrm/input", payload, {
+        headers: {
+          Authorization: "Bearer " + cookies.get("token"),
+        },
+      });
+
+      commit("DELETE_USER", id);
+      await dispatch("fetchAllusers").catch(() => {});
+      return network.data;
+    } catch (error) {
+      commit("SET_ERROR", error.message);
+      throw error;
+    } finally {
+      commit("SET_LOADING", false);
+    }
   },
 
   updateprofile(context, data) {
@@ -283,6 +296,15 @@ const mutations = {
   },
   SET_VIEW_MODE(state, mode) {
     state.viewMode = mode;
+  },
+  DELETE_USER(state, userId) {
+    state.users = state.users.filter((user) => user.id !== userId);
+  },
+  UPSERT_USER(state, userData) {
+    const index = state.users.findIndex((user) => user.id === userData.id);
+    if (index >= 0) {
+      state.users.splice(index, 1, { ...state.users[index], ...userData });
+    }
   },
 };
 

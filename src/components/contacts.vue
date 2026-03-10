@@ -3,6 +3,8 @@ import { mapActions, mapGetters } from "vuex";
 import AddContactForm from "./forms/AddContactForm.vue";
 import BulkAddContactForm from "./forms/BulkAddContactForm.vue";
 import DetailForm from "./forms/DetailForm.vue";
+import DetailDataContact from "./forms/DetailDataContact.vue";
+import { alertService } from "@/services/alertService";
 
 import {
   Search,
@@ -28,6 +30,7 @@ export default {
     AddContactForm,
     BulkAddContactForm,
     DetailForm,
+    DetailDataContact,
     Search,
     ChevronDown,
     Download,
@@ -55,6 +58,8 @@ export default {
       selectedIds: [],
       selectedContact: null,
       showDetailForm: false,
+      showDetailDataContact: false,
+      isDetailDataSubmitting: false,
     };
   },
 
@@ -135,8 +140,53 @@ export default {
     },
 
     openContactDetail(contact) {
-      this.selectedContact = contact;
-      this.showDetailForm = true;
+      this.selectedContact = { ...contact };
+      this.showDetailDataContact = true;
+    },
+
+    closeDetailDataContact() {
+      this.showDetailDataContact = false;
+      this.selectedContact = null;
+    },
+
+    async handleDetailDataContactSubmit(payload) {
+      const contactId = this.selectedContact?.id;
+
+      if (!contactId) {
+        alertService.error(
+          "ID contact tidak ditemukan. Coba buka ulang detail data.",
+        );
+        return;
+      }
+
+      if (!payload?.contact?.first_name?.trim()) {
+        alertService.error("First Name wajib diisi.");
+        return;
+      }
+
+      this.isDetailDataSubmitting = true;
+
+      try {
+        const formdata = {
+          id: contactId,
+          ...payload.contact,
+          updated_at: new Date().toISOString(),
+        };
+
+        await this.$store.dispatch("contacts/updateContact", formdata);
+
+        alertService.success("Detail contact berhasil diperbarui.");
+        this.closeDetailDataContact();
+      } catch (error) {
+        const backendMessage =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          "Gagal update contact. Silakan coba lagi.";
+        alertService.error(backendMessage);
+      } finally {
+        this.isDetailDataSubmitting = false;
+      }
     },
 
     handleBulkAdd() {
@@ -176,6 +226,40 @@ export default {
         date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
       );
     },
+
+    async handleDeleteContacts() {
+      if (this.selectedIds.length === 0) {
+        alertService.warning("Pilih minimal satu contact untuk dihapus");
+        return;
+      }
+
+      const confirmDelete = await alertService.confirm(
+        "Hapus Contact?",
+        `${this.selectedIds.length} contact akan dihapus secara permanen. Lanjutkan?`,
+      );
+
+      if (!confirmDelete) return;
+
+      try {
+        // Delete each selected contact
+        for (const id of this.selectedIds) {
+          await this.$store.dispatch("contacts/deleteContact", id);
+        }
+        // Clear selected IDs
+        this.selectedIds = [];
+        alertService.success("Contact berhasil dihapus");
+      } catch (error) {
+        console.error("Error deleting contacts:", error);
+        const status = error?.response?.status;
+        const backendMessage =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message;
+        alertService.error(
+          `Gagal menghapus contact. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Silakan coba lagi."}`,
+        );
+      }
+    },
   },
 
   mounted() {
@@ -190,14 +274,18 @@ export default {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="flex flex-col h-full">
     <!-- Action Bar -->
-    <div class="bg-white rounded-lg shadow-sm p-4 border border-outline">
+    <div
+      class="bg-white rounded-lg shadow-sm p-4 border border-outline flex flex-col min-h-0 flex-1"
+    >
       <!-- Header with Title and Total -->
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-baseline gap-3">
           <h1 class="text-2xl font-bold text-dark-base">Contacts</h1>
-          <span class="text-sm" :class="contactsStatusClass">{{ contactsStatusText }}</span>
+          <span class="text-sm" :class="contactsStatusClass">{{
+            contactsStatusText
+          }}</span>
         </div>
 
         <!-- Right Section: Action Buttons -->
@@ -317,6 +405,7 @@ export default {
 
           <!-- Delete -->
           <button
+            @click="handleDeleteContacts"
             class="p-2 bg-white border border-red text-red rounded-lg hover:bg-red hover:text-white transition"
           >
             <Trash2 :size="18" />
@@ -394,7 +483,7 @@ export default {
       </div>
 
       <!-- Table Content -->
-      <div class="overflow-hidden relative">
+      <div class="mt-4 flex-1 min-h-0 overflow-auto relative">
         <!-- Loading Overlay -->
         <div
           v-if="isLoading"
@@ -411,39 +500,54 @@ export default {
             <thead>
               <tr class="border-b border-gray-200">
                 <th class="px-6 py-4 text-left">
-                  <input type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300" />
+                  <input
+                    type="checkbox"
+                    class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
+                  />
                 </th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                <th
+                  class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
+                >
                   <div class="flex items-center gap-2">
                     Contact Name
                     <ChevronDown :size="16" class="text-gray-400" />
                   </div>
                 </th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                <th
+                  class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
+                >
                   <div class="flex items-center gap-2">
                     Contact Info
                     <ChevronDown :size="16" class="text-gray-400" />
                   </div>
                 </th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                <th
+                  class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
+                >
                   <div class="flex items-center gap-2">
                     Associated with
                     <ChevronDown :size="16" class="text-gray-400" />
                   </div>
                 </th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                <th
+                  class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
+                >
                   <div class="flex items-center gap-2">
                     Status
                     <ChevronDown :size="16" class="text-gray-400" />
                   </div>
                 </th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                <th
+                  class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
+                >
                   <div class="flex items-center gap-2">
                     Created/Update
                     <ChevronDown :size="16" class="text-gray-400" />
                   </div>
                 </th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                <th
+                  class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
+                >
                   <div class="flex items-center gap-2">
                     Owner
                     <ChevronDown :size="16" class="text-gray-400" />
@@ -456,14 +560,21 @@ export default {
               <tr v-if="paginatedContacts.length === 0 && !isLoading">
                 <td colspan="7" class="px-6 py-20 text-center text-sub-text">
                   <div class="flex flex-col items-center gap-3">
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                    <div
+                      class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center"
+                    >
                       <Search :size="32" class="text-gray-400" />
                     </div>
                     <p class="text-lg font-medium">No contacts found</p>
                     <p class="text-sm text-gray-400">
                       We couldn't find any contacts matching your criteria.
                     </p>
-                    <button @click="showAddContactForm = true" class="mt-2 text-blue-600 font-medium hover:underline text-sm">+ Add Your First Contact</button>
+                    <button
+                      @click="showAddContactForm = true"
+                      class="mt-2 text-blue-600 font-medium hover:underline text-sm"
+                    >
+                      + Add Your First Contact
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -476,35 +587,48 @@ export default {
                 @click="openContactDetail(contact)"
               >
                 <td class="px-6 py-4" @click.stop>
-                  <input type="checkbox" v-model="selectedIds" :value="contact.id" class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300" />
+                  <input
+                    type="checkbox"
+                    v-model="selectedIds"
+                    :value="contact.id"
+                    class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
+                  />
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-800 font-medium">
                   {{ contact.first_name }} {{ contact.last_name }}
                 </td>
                 <td class="px-6 py-4 text-sm text-dark-base">
-                  <div>{{ contact.email || '-' }}</div>
-                  <div class="text-xs text-sub-text">{{ contact.telephone_1 || '-' }}</div>
+                  <div>{{ contact.email || "-" }}</div>
+                  <div class="text-xs text-sub-text">
+                    {{ contact.telephone_1 || "-" }}
+                  </div>
                 </td>
                 <td class="px-6 py-4 text-sm text-dark-base">
-                  {{ contact.companiesAssociation || contact.company || '-' }}
+                  {{ contact.companiesAssociation || contact.company || "-" }}
                 </td>
                 <td class="px-6 py-4">
                   <span
                     class="px-3 py-1 rounded-full text-xs font-medium"
                     :class="{
-                      'bg-green-100 text-green-700': contact.status?.toLowerCase() === 'active' || contact.status?.toLowerCase() === 'aktif',
-                      'bg-yellow-100 text-yellow-700': contact.status?.toLowerCase() === 'pending',
-                      'bg-gray-100 text-gray-700': !contact.status || contact.status?.toLowerCase() === 'inactive' || contact.status?.toLowerCase() === 'non-aktif',
+                      'bg-green-100 text-green-700':
+                        contact.status?.toLowerCase() === 'active' ||
+                        contact.status?.toLowerCase() === 'aktif',
+                      'bg-yellow-100 text-yellow-700':
+                        contact.status?.toLowerCase() === 'pending',
+                      'bg-gray-100 text-gray-700':
+                        !contact.status ||
+                        contact.status?.toLowerCase() === 'inactive' ||
+                        contact.status?.toLowerCase() === 'non-aktif',
                     }"
                   >
-                    {{ contact.status || 'Inactive' }}
+                    {{ contact.status || "Inactive" }}
                   </span>
                 </td>
                 <td class="px-6 py-4 text-sm text-dark-base">
                   {{ formatDate(contact.updated_at || contact.created_at) }}
                 </td>
                 <td class="px-6 py-4 text-sm text-dark-base">
-                  {{ contact.owner || '-' }}
+                  {{ contact.owner || "-" }}
                 </td>
               </tr>
             </tbody>
@@ -531,6 +655,16 @@ export default {
           showDetailForm = false;
         }
       "
+    />
+
+    <!-- Contact Data Detail Form (for row click) -->
+    <DetailDataContact
+      :isOpen="showDetailDataContact"
+      :contact="selectedContact"
+      :isSubmitting="isDetailDataSubmitting"
+      @close="closeDetailDataContact"
+      @back="closeDetailDataContact"
+      @submit="handleDetailDataContactSubmit"
     />
 
     <!-- Bulk Add Contact Form -->

@@ -118,7 +118,9 @@ function prevPage() {
 
 <template>
   <!-- Document List -->
-  <div class="bg-white rounded-lg shadow-sm border border-outline">
+  <div
+    class="bg-white rounded-lg shadow-sm border border-outline flex flex-col min-h-0 flex-1"
+  >
     <div class="p-4 border-b border-outline">
       <div
         class="flex items-center justify-between gap-4 flex-nowrap overflow-x-auto pb-1 scrollbar-hide"
@@ -241,108 +243,118 @@ function prevPage() {
     </div>
 
     <!-- Table -->
-    <div class="overflow-x-auto">
-      <table class="w-full">
-        <thead>
-          <tr class="border-b border-gray-200 bg-gray-50/50">
-            <th class="px-6 py-4 text-left">
-              <input
-                type="checkbox"
-                class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
-              />
-            </th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-              <div class="flex items-center gap-2">
-                Document Title
-                <ChevronDown :size="16" class="text-gray-400" />
-              </div>
-            </th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-              <div class="flex items-center gap-2">
-                Owner
-                <ChevronDown :size="16" class="text-gray-400" />
-              </div>
-            </th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-              <div class="flex items-center gap-2">
-                Created
-                <ChevronDown :size="16" class="text-gray-400" />
-              </div>
-            </th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-              <div class="flex items-center gap-2">
-                Update
-                <ChevronDown :size="16" class="text-gray-400" />
-              </div>
-            </th>
-            <th
-              class="px-6 py-4 text-center text-sm font-semibold text-gray-700 w-20"
-            >
-              Preview
-            </th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <!-- Empty State -->
-          <tr v-if="currentDocuments.length === 0">
-            <td colspan="5" class="px-6 py-20 text-center text-sub-text">
-              <div class="flex flex-col items-center gap-3">
-                <div
-                  class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center"
-                >
-                  <Search :size="32" class="text-gray-400" />
-                </div>
-                <p class="text-lg font-medium">No documents found</p>
-                <p class="text-sm text-gray-400">
-                  Start adding documents to see them here
-                </p>
-              </div>
-            </td>
-          </tr>
-
-          <!-- Sample rows -->
-          <tr
-            v-for="doc in currentDocuments"
-            :key="doc.id"
-            class="border-b border-gray-100 hover:bg-gray-50 transition"
-          >
-            <td class="px-6 py-4">
-              <input
-                type="checkbox"
-                :value="doc.id"
-                v-model="selectedIds"
-                class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
-              />
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-800 font-medium">
-              {{ doc.name }}
-            </td>
-            <td class="px-6 py-4 text-sm text-dark-base">
-              {{ doc.owner }}
-            </td>
-            <td class="px-6 py-4 text-sm text-dark-base">
-              {{ doc.created }}
-            </td>
-            <td class="px-6 py-4 text-sm text-dark-base">
-              {{ doc.update }}
-            </td>
-            <td class="px-6 py-4 text-center">
-              <button
-                class="p-1.5 border border-outline bg-white text-sub-text rounded-md shadow-sm hover:bg-sub-text hover:text-white transition group relative"
+    <div class="mt-4 flex-1 min-h-0 overflow-auto relative">
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-gray-200 bg-gray-50/50">
+              <th class="px-6 py-4 text-left">
+                <input
+                  type="checkbox"
+                  class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
+                />
+              </th>
+              <th
+                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
               >
-                <Eye :size="18" />
-                <!-- Mini Tooltip -->
-                <div
-                  class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-[10px] font-medium rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10"
-                >
-                  Preview Item
+                <div class="flex items-center gap-2">
+                  Document Title
+                  <ChevronDown :size="16" class="text-gray-400" />
                 </div>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              </th>
+              <th
+                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
+              >
+                <div class="flex items-center gap-2">
+                  Owner
+                  <ChevronDown :size="16" class="text-gray-400" />
+                </div>
+              </th>
+              <th
+                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
+              >
+                <div class="flex items-center gap-2">
+                  Created
+                  <ChevronDown :size="16" class="text-gray-400" />
+                </div>
+              </th>
+              <th
+                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
+              >
+                <div class="flex items-center gap-2">
+                  Update
+                  <ChevronDown :size="16" class="text-gray-400" />
+                </div>
+              </th>
+              <th
+                class="px-6 py-4 text-center text-sm font-semibold text-gray-700 w-20"
+              >
+                Preview
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <!-- Empty State -->
+            <tr v-if="currentDocuments.length === 0">
+              <td colspan="5" class="px-6 py-20 text-center text-sub-text">
+                <div class="flex flex-col items-center gap-3">
+                  <div
+                    class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center"
+                  >
+                    <Search :size="32" class="text-gray-400" />
+                  </div>
+                  <p class="text-lg font-medium">No documents found</p>
+                  <p class="text-sm text-gray-400">
+                    Start adding documents to see them here
+                  </p>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Sample rows -->
+            <tr
+              v-for="doc in currentDocuments"
+              :key="doc.id"
+              class="border-b border-gray-100 hover:bg-gray-50 transition"
+            >
+              <td class="px-6 py-4">
+                <input
+                  type="checkbox"
+                  :value="doc.id"
+                  v-model="selectedIds"
+                  class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
+                />
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-800 font-medium">
+                {{ doc.name }}
+              </td>
+              <td class="px-6 py-4 text-sm text-dark-base">
+                {{ doc.owner }}
+              </td>
+              <td class="px-6 py-4 text-sm text-dark-base">
+                {{ doc.created }}
+              </td>
+              <td class="px-6 py-4 text-sm text-dark-base">
+                {{ doc.update }}
+              </td>
+              <td class="px-6 py-4 text-center">
+                <button
+                  class="p-1.5 border border-outline bg-white text-sub-text rounded-md shadow-sm hover:bg-sub-text hover:text-white transition group relative"
+                >
+                  <Eye :size="18" />
+                  <!-- Mini Tooltip -->
+                  <div
+                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-[10px] font-medium rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10"
+                  >
+                    Preview Item
+                  </div>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>

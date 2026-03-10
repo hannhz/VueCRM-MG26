@@ -5,6 +5,8 @@ import draggable from "vuedraggable";
 import { Filter, Search } from "lucide-vue-next";
 import { alertService } from "@/services/alertService";
 
+const emit = defineEmits(["viewDetail"]);
+
 const store = useStore();
 
 // Access sidebar state from Vuex
@@ -18,9 +20,7 @@ const searchQuery = computed({
 });
 const error = computed(() => store.getters["tasks/error"]);
 const isSyncingStage = ref(false);
-const isDeletingTask = ref(false);
 const boards = ref([]);
-const trashItems = ref([]);
 
 const boardMeta = [
   { id: 1, key: "not_started", name: "Not Started" },
@@ -37,7 +37,8 @@ const normalizeStatus = (statusRaw) => {
 
   if (status.includes("progress")) return "in_progress";
   if (status.includes("wait")) return "waiting";
-  if (status.includes("complete") || status.includes("done")) return "completed";
+  if (status.includes("complete") || status.includes("done"))
+    return "completed";
   if (status.includes("defer")) return "deferred";
   return "not_started";
 };
@@ -60,6 +61,10 @@ const normalizeTask = (task) => ({
   priority: task.priority || "",
   raw: task,
 });
+
+const openTaskDetail = (task) => {
+  emit("viewDetail", task.raw || task);
+};
 
 const rebuildBoards = (rawTasks) => {
   const buckets = {
@@ -123,22 +128,24 @@ const handleBoardChange = async (event, targetBoard) => {
   }
 };
 
-const handleTrashChange = async (event) => {
-  if (!event?.added?.element) return;
+const deleteTask = async (task, event) => {
+  // Prevent opening task detail when clicking delete
+  event.stopPropagation();
 
-  const deletedTask = event.added.element;
-  isDeletingTask.value = true;
+  const confirmed = await alertService.confirm(
+    "Hapus Task?",
+    "Task ini akan dihapus secara permanen. Lanjutkan?",
+  );
+
+  if (!confirmed) return;
 
   try {
-    await store.dispatch("tasks/deleteTask", deletedTask.id);
-    trashItems.value = [];
+    await store.dispatch("tasks/deleteTask", task.raw || task);
     alertService.success("Task berhasil dihapus.");
-  } catch (err) {
-    trashItems.value = [];
     await store.dispatch("tasks/fetchAllTasks").catch(() => {});
+  } catch (err) {
+    console.error("Delete task error:", err);
     alertService.error("Gagal menghapus task. Coba lagi.");
-  } finally {
-    isDeletingTask.value = false;
   }
 };
 
@@ -150,18 +157,9 @@ watch(
   { immediate: true },
 );
 
-const isDragging = ref(false);
-
 const totalVisibleTasks = computed(() =>
   boards.value.reduce((total, board) => total + board.items.length, 0),
 );
-
-const draggingHint = computed(() => {
-  if (isDeletingTask.value) return "Deleting task...";
-  if (isSyncingStage.value) return "Syncing stage...";
-  if (isDragging.value) return "Drop card to move or delete";
-  return "";
-});
 </script>
 
 <template>
@@ -210,7 +208,9 @@ const draggingHint = computed(() => {
           </div>
         </div>
       </div>
-      <p class="text-xs text-sub-text mb-2">{{ totalVisibleTasks }} total tasks shown</p>
+      <p class="text-xs text-sub-text mb-2">
+        {{ totalVisibleTasks }} total tasks shown
+      </p>
       <!-- Kanban Board -->
       <div class="flex gap-4 overflow-x-auto pb-4">
         <div
@@ -231,15 +231,38 @@ const draggingHint = computed(() => {
             group="tasks"
             item-key="id"
             class="p-3 h-108 flex flex-col gap-3 min-h-50 overflow-y-auto"
-            @start="isDragging = true"
-            @end="isDragging = false"
             @change="(event) => handleBoardChange(event, col)"
           >
             <template #item="{ element }">
               <div
-                class="bg-white p-4 rounded shadow-sm border border-gray-200 cursor-move hover:border-blue-500 transition"
+                @click="openTaskDetail(element)"
+                class="bg-white p-4 rounded shadow-sm border border-gray-200 cursor-pointer hover:border-blue-500 transition relative group"
               >
-                <p class="text-sm font-medium text-gray-800 truncate">{{ element.title }}</p>
+                <!-- Delete Button -->
+                <button
+                  @click="deleteTask(element, $event)"
+                  class="absolute top-2 right-2 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Hapus task"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M19 7L5 7M10 11V17M14 11V17M9 7V4H15V7M6 7H18L17 20H7L6 7Z"
+                    />
+                  </svg>
+                </button>
+
+                <p class="text-sm font-medium text-gray-800 truncate pr-8">
+                  {{ element.title }}
+                </p>
 
                 <div class="mt-2">
                   <span
@@ -258,8 +281,12 @@ const draggingHint = computed(() => {
                   {{ element.associatedWith }}
                 </p>
 
-                <p class="text-xs text-gray-400 mt-1">Updated: {{ element.updatedAt }}</p>
-                <p class="text-xs text-gray-400 mt-1">Owner: {{ element.owner }}</p>
+                <p class="text-xs text-gray-400 mt-1">
+                  Updated: {{ element.updatedAt }}
+                </p>
+                <p class="text-xs text-gray-400 mt-1">
+                  Owner: {{ element.owner }}
+                </p>
               </div>
             </template>
           </draggable>
@@ -272,61 +299,12 @@ const draggingHint = computed(() => {
           </div>
         </div>
       </div>
-
-      <draggable
-        v-show="isDragging"
-        v-model="trashItems"
-        group="tasks"
-        item-key="id"
-        class="absolute bottom-0 left-0 w-full h-40 z-50"
-        @change="handleTrashChange"
-      >
-        <template #item>
-          <div class="hidden"></div>
-        </template>
-
-        <template #header>
-          <div class="absolute inset-0 pointer-events-none">
-            <div
-              class="absolute inset-0 bg-linear-to-t from-red-600/80 via-red-500/40 to-transparent"
-            ></div>
-
-            <div class="absolute inset-0 flex flex-col items-center justify-center">
-              <div
-                v-if="draggingHint"
-                class="mb-2 px-3 py-1 rounded bg-white/90 text-xs font-semibold text-slate-700"
-              >
-                {{ draggingHint }}
-              </div>
-              <div
-                class="w-16 h-16 rounded-full bg-white shadow-xl flex items-center justify-center border-4 border-red-500"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="w-7 h-7 text-red-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M19 7L5 7M10 11V17M14 11V17M9 7V4H15V7M6 7H18L17 20H7L6 7Z"
-                  />
-                </svg>
-              </div>
-
-              <p class="mt-2 text-white text-sm tracking-wide">
-                Drop to <span class="font-bold">DELETE</span>
-              </p>
-            </div>
-          </div>
-        </template>
-      </draggable>
     </div>
 
-    <p v-if="error" class="px-6 py-3 text-sm text-red-600 border-t border-gray-100">
+    <p
+      v-if="error"
+      class="px-6 py-3 text-sm text-red-600 border-t border-gray-100"
+    >
       {{ error }}
     </p>
   </div>

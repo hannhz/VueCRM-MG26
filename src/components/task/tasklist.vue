@@ -8,9 +8,11 @@ import {
   ChevronRight,
   ChevronDown,
   RefreshCw,
+  Trash,
 } from "lucide-vue-next";
-import TaskDetailDataForm from "@/components/forms/TaskDetailDataForm.vue";
 import { alertService } from "@/services/alertService";
+
+const emit = defineEmits(["viewDetail", "taskSelection"]);
 
 /* =========================
    QUICK ADD
@@ -108,9 +110,29 @@ function prevPage() {
 ========================= */
 
 const selectedTask = ref([]);
-const selectedTaskDetail = ref(null);
-const showTaskDetailForm = ref(false);
-const isTaskDetailSubmitting = ref(false);
+const isSyncingStage = ref(false);
+const updatingTaskId = ref(null);
+const openStageDropdown = ref(null);
+
+const stageOptions = [
+  { value: "not_started", label: "Not Started" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "waiting", label: "Waiting" },
+  { value: "completed", label: "Completed" },
+  { value: "deferred", label: "Deferred" },
+];
+
+const getStageLabel = (stage) =>
+  stageOptions.find((opt) => opt.value === stage)?.label || stage;
+
+const stageColor = (stage) => {
+  if (stage === "not_started") return "bg-slate-100 text-slate-700";
+  if (stage === "in_progress") return "bg-blue-100 text-blue-700";
+  if (stage === "waiting") return "bg-yellow-100 text-yellow-700";
+  if (stage === "completed") return "bg-emerald-100 text-emerald-700";
+  if (stage === "deferred") return "bg-red-100 text-red-700";
+  return "bg-slate-100 text-slate-700";
+};
 
 const allSelected = computed(
   () =>
@@ -122,6 +144,7 @@ function toggleSelectAll(e) {
   selectedTask.value = e.target.checked
     ? paginatedTasks.value.map((t) => t.id)
     : [];
+  emit("taskSelection", selectedTask.value);
 }
 
 function toggleSelect(id) {
@@ -130,60 +153,93 @@ function toggleSelect(id) {
   } else {
     selectedTask.value.push(id);
   }
+  emit("taskSelection", selectedTask.value);
 }
 
 function openTaskDetail(task) {
-  selectedTaskDetail.value = { ...task };
-  showTaskDetailForm.value = true;
+  emit("viewDetail", task);
 }
 
-function closeTaskDetail() {
-  selectedTaskDetail.value = null;
-  showTaskDetailForm.value = false;
+function clearSelection() {
+  selectedTask.value = [];
+  emit("taskSelection", []);
 }
 
-async function handleTaskDetailSubmit(payload) {
-  const taskId = selectedTaskDetail.value?.id || payload?.id;
-
-  if (!taskId) {
-    alertService.error("ID task tidak ditemukan. Coba buka ulang detail task.");
+async function handleDelete() {
+  if (selectedTask.value.length === 0) {
+    alertService.warning("Pilih minimal satu task untuk dihapus");
     return;
   }
 
-  if (!payload?.task_name?.trim()) {
-    alertService.error("Task name wajib diisi.");
+  const confirmDelete = await alertService.confirm(
+    "Hapus Task?",
+    `${selectedTask.value.length} task akan dihapus secara permanen. Lanjutkan?`,
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    // Delete each selected task
+    for (const taskId of selectedTask.value) {
+      const taskItem = allTasksData.value.find(
+        (task) => task.id === taskId,
+      ) || {
+        id: taskId,
+      };
+      await store.dispatch("tasks/deleteTask", taskItem);
+    }
+    alertService.success("Task berhasil dihapus");
+    // Clear selected tasks
+    clearSelection();
+  } catch (error) {
+    console.error("Error deleting tasks:", error);
+    const status = error?.response?.status;
+    const backendMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message;
+    alertService.error(
+      `Gagal menghapus task. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Silakan coba lagi."}`,
+    );
+  }
+}
+
+// Expose clearSelection untuk parent component
+defineExpose({
+  clearSelection,
+});
+
+async function handleChangeStage(task, newStage) {
+  if (task.status === newStage || task.stage === newStage) {
+    openStageDropdown.value = null;
     return;
   }
 
-  isTaskDetailSubmitting.value = true;
+  const previousStage = task.status || task.stage;
+  task.status = newStage;
+  task.stage = newStage;
+  updatingTaskId.value = task.id;
+  isSyncingStage.value = true;
+  openStageDropdown.value = null;
 
   try {
     await store.dispatch("tasks/updateTask", {
-      id: taskId,
+      id: task.id,
       formData: {
-        ...payload,
-        task_name: payload.task_name.trim(),
-        description: payload.description?.trim() || "",
-        assignee: payload.assignee?.trim() || "",
+        status: newStage,
       },
     });
 
-    await store.dispatch("tasks/fetchAllTasks");
-
-    alertService.success("Task berhasil diperbarui.");
-    closeTaskDetail();
+    alertService.success("Stage task berhasil diperbarui.");
   } catch (err) {
-    const backendMessage =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      err?.message ||
-      "Gagal update task. Silakan coba lagi.";
-    alertService.error(backendMessage);
+    task.status = previousStage;
+    task.stage = previousStage;
+    alertService.error("Gagal update stage task. Silakan coba lagi.");
   } finally {
-    isTaskDetailSubmitting.value = false;
+    isSyncingStage.value = false;
+    updatingTaskId.value = null;
   }
 }
-
 </script>
 
 <template>
@@ -200,6 +256,21 @@ async function handleTaskDetailSubmit(payload) {
             class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
           >
             <Filter :size="20" class="text-dark-base" />
+          </button>
+
+          <!-- Delete Btn -->
+          <button
+            type="button"
+            @click="handleDelete"
+            class="p-2 rounded-lg transition"
+            :class="
+              selectedTask.length > 0
+                ? 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
+                : 'bg-gray-200 text-gray-500 hover:bg-gray-300 cursor-not-allowed'
+            "
+            title="Delete selected tasks"
+          >
+            <Trash :size="20" />
           </button>
 
           <!-- Search -->
@@ -251,7 +322,10 @@ async function handleTaskDetailSubmit(payload) {
               @click="quickAdd"
               :disabled="isQuickAdding || !taskText.trim()"
               class="w-full sm:w-auto h-10 sm:h-9 px-6 bg-sub-text text-white text-sm font-semibold hover:bg-gray-700 transition flex items-center justify-center shrink-0"
-              :class="{ 'opacity-60 cursor-not-allowed': isQuickAdding || !taskText.trim() }"
+              :class="{
+                'opacity-60 cursor-not-allowed':
+                  isQuickAdding || !taskText.trim(),
+              }"
             >
               {{ isQuickAdding ? "Saving..." : "Quick Add" }}
             </button>
@@ -269,6 +343,8 @@ async function handleTaskDetailSubmit(payload) {
       <label class="flex items-center gap-2 text-sm text-sub-text">
         <input
           type="checkbox"
+          :checked="allSelected"
+          @change="toggleSelectAll"
           class="h-4 w-4 rounded border-gray-300 text-sub-text focus:ring-sub-text"
         />
         Select all filtered result
@@ -306,7 +382,7 @@ async function handleTaskDetailSubmit(payload) {
     </div>
 
     <!-- Table -->
-    <div class="overflow-hidden relative">
+    <div class="mt-4 flex-1 min-h-0 overflow-auto relative">
       <!-- Loading Overlay -->
       <div
         v-if="isLoading"
@@ -410,36 +486,105 @@ async function handleTaskDetailSubmit(payload) {
               <td class="px-6 py-4">
                 <input
                   type="checkbox"
-                  :value="task.id"
-                  v-model="selectedTask"
+                  :checked="selectedTask.includes(task.id)"
+                  @change="toggleSelect(task.id)"
                   @click.stop
                   class="w-4 h-4"
                 />
               </td>
 
               <td class="px-6 py-4">{{ task.title || task.name }}</td>
-              <td class="px-6 py-4">{{ task.stage || task.status || '-' }}</td>
-              <td class="px-6 py-4">{{ task.dueDate || task.time || '-' }}</td>
+              <td class="px-6 py-4" @click.stop>
+                <div class="relative">
+                  <button
+                    type="button"
+                    @click.stop="
+                      openStageDropdown =
+                        openStageDropdown === task.id ? null : task.id
+                    "
+                    :disabled="isSyncingStage && updatingTaskId === task.id"
+                    class="w-full px-3 py-1.5 rounded-md text-xs font-medium inline-flex items-center justify-between gap-2 border border-gray-200 transition hover:border-gray-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                    :class="[
+                      stageColor(task.status || task.stage),
+                      openStageDropdown === task.id
+                        ? 'ring-1 ring-sub-text border-sub-text'
+                        : '',
+                    ]"
+                  >
+                    <span>{{ getStageLabel(task.status || task.stage) }}</span>
+                    <ChevronDown
+                      :size="14"
+                      class="transition-transform"
+                      :class="openStageDropdown === task.id ? 'rotate-180' : ''"
+                    />
+                  </button>
+
+                  <Transition name="stage-dropdown">
+                    <div
+                      v-if="openStageDropdown === task.id"
+                      class="absolute top-full mt-1 left-0 right-0 bg-white border border-outline rounded-lg shadow-lg z-20 min-w-max"
+                      @click.stop
+                    >
+                      <div class="py-1">
+                        <button
+                          type="button"
+                          v-for="opt in stageOptions"
+                          :key="opt.value"
+                          @click.stop="handleChangeStage(task, opt.value)"
+                          :disabled="
+                            isSyncingStage && updatingTaskId === task.id
+                          "
+                          class="w-full text-left px-4 py-2 text-sm transition hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                          :class="
+                            (task.status || task.stage) === opt.value
+                              ? 'font-semibold bg-gray-50 text-sub-text'
+                              : 'text-gray-700'
+                          "
+                        >
+                          <span
+                            v-if="(task.status || task.stage) === opt.value"
+                            class="text-sub-text"
+                          >
+                            ✓
+                          </span>
+                          <span v-else class="w-3"></span>
+                          <span>{{ opt.label }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </Transition>
+                </div>
+              </td>
+              <td class="px-6 py-4">{{ task.dueDate || task.time || "-" }}</td>
               <td class="px-6 py-4">—</td>
               <td class="px-6 py-4">—</td>
-              <td class="px-6 py-4">{{ task.owner || task.assignee || '-' }}</td>
+              <td class="px-6 py-4">
+                {{ task.owner || task.assignee || "-" }}
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <p v-if="error" class="px-6 py-3 text-sm text-red-600 border-t border-gray-100">
+    <p
+      v-if="error"
+      class="px-6 py-3 text-sm text-red-600 border-t border-gray-100"
+    >
       {{ error }}
     </p>
-
-    <TaskDetailDataForm
-      :isOpen="showTaskDetailForm"
-      :task="selectedTaskDetail"
-      :isSubmitting="isTaskDetailSubmitting"
-      @close="closeTaskDetail"
-      @back="closeTaskDetail"
-      @submit="handleTaskDetailSubmit"
-    />
   </div>
 </template>
+
+<style scoped>
+.stage-dropdown-enter-active,
+.stage-dropdown-leave-active {
+  transition: all 0.18s ease;
+}
+
+.stage-dropdown-enter-from,
+.stage-dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+</style>

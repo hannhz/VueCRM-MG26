@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import {
   X,
   ChevronDown,
@@ -10,10 +10,18 @@ import {
   Mic,
 } from "lucide-vue-next";
 
-defineProps({
+const props = defineProps({
   isOpen: {
     type: Boolean,
     default: false,
+  },
+  isSubmitting: {
+    type: Boolean,
+    default: false,
+  },
+  deal: {
+    type: Object,
+    default: null,
   },
 });
 
@@ -77,6 +85,148 @@ const fileSourceOptions = [
   { value: "dropbox", label: "Dropbox" },
 ];
 
+const pipelineOptions = [
+  { value: "", label: "Select Data" },
+  { value: "new", label: "New" },
+  { value: "qualified", label: "Qualified" },
+  { value: "advanced", label: "Advanced" },
+  { value: "payment", label: "Payment" },
+  { value: "won", label: "Won" },
+  { value: "lost", label: "Lost" },
+];
+
+const currencyOptions = [
+  { value: "IDR", label: "IDR" },
+  { value: "USD", label: "USD" },
+  { value: "SGD", label: "SGD" },
+  { value: "EUR", label: "EUR" },
+];
+
+const ownerOptions = [
+  { value: "", label: "Select Owner" },
+  { value: "thomas", label: "Thomas Anree" },
+  { value: "alex", label: "Alex Graham" },
+  { value: "sarah", label: "Sarah Jenkins" },
+];
+
+const sourceOptions = [
+  { value: "", label: "Select Data" },
+  { value: "website", label: "Website" },
+  { value: "referral", label: "Referral" },
+  { value: "social_media", label: "Social Media" },
+  { value: "email_campaign", label: "Email Campaign" },
+  { value: "cold_call", label: "Cold Call" },
+  { value: "other", label: "Other" },
+];
+
+// Helper function to normalize pipeline/stage values from DB to Board format
+const normalizePipelineValue = (rawValue) => {
+  if (!rawValue) return "";
+  const val = String(rawValue).toLowerCase();
+
+  // Map database pipeline values to board stage values
+  const dbToBoard = {
+    negotiation: "advanced",
+    proposal: "payment",
+    closed_won: "won",
+    closed_lost: "lost",
+  };
+
+  return dbToBoard[val] || rawValue;
+};
+
+// Helper function to convert board stage to database pipeline value for submission
+const boardStageToDbPipeline = (boardStage) => {
+  if (!boardStage) return "";
+  const val = String(boardStage).toLowerCase();
+
+  // Map board stage values to database pipeline values
+  const boardToDb = {
+    advanced: "negotiation",
+    payment: "proposal",
+    won: "closed_won",
+    lost: "closed_lost",
+  };
+
+  return boardToDb[val] || boardStage;
+};
+
+// Helper function to normalize date format to yyyy-mm-dd
+const normalizeDateValue = (rawDate) => {
+  if (!rawDate || rawDate === "-") return "";
+
+  // If already in yyyy-mm-dd format or ISO format
+  const isoMatch = String(rawDate).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+
+  // Try to parse as Date object
+  try {
+    const date = new Date(rawDate);
+    if (!isNaN(date.getTime())) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  return "";
+};
+
+// Helper function to normalize amount/value
+const normalizeAmountValue = (rawAmount) => {
+  if (!rawAmount || rawAmount === "-") return "";
+
+  // Remove any non-numeric characters except dot and minus
+  const cleaned = String(rawAmount).replace(/[^\d.-]/g, "");
+  const parsed = parseFloat(cleaned);
+
+  return !isNaN(parsed) ? parsed : "";
+};
+
+const getDealFormDefaults = (deal = null) => ({
+  deal_name: deal?.deal_name || deal?.dealName || deal?.name || "",
+  pipeline: normalizePipelineValue(deal?.pipeline || deal?.stage || ""),
+  currency: deal?.currency || "IDR",
+  amount: normalizeAmountValue(
+    deal?.amount || deal?.amount_value || deal?.jumlah || "",
+  ),
+  expected_close_date: normalizeDateValue(
+    deal?.expected_close_date ||
+      deal?.expectedCloseDate ||
+      deal?.tertanggal ||
+      "",
+  ),
+  owner: deal?.owner || deal?.owner_name || "",
+  priority: deal?.priority || "",
+  source: deal?.source || "",
+  description: deal?.description || "",
+  contact_association:
+    deal?.contact_association ||
+    deal?.contactAssociation ||
+    deal?.contact ||
+    deal?.contact_name ||
+    "",
+  companies_association:
+    deal?.companies_association ||
+    deal?.companiesAssociation ||
+    deal?.company ||
+    deal?.company_name ||
+    "",
+});
+
+const dealForm = ref(getDealFormDefaults());
+
+watch(
+  () => props.deal,
+  (deal) => {
+    dealForm.value = getDealFormDefaults(deal);
+  },
+  { immediate: true },
+);
+
 const handleDocFileChange = (e) => {
   selectedDocFiles.value = Array.from(e.target.files);
 };
@@ -89,7 +239,15 @@ const handleClose = () => emit("close");
 const handleBack = () => emit("back");
 
 const handleSave = () => {
+  // Convert board stage values to database pipeline values before submitting
+  const dealDataForSubmit = {
+    ...dealForm.value,
+    pipeline: boardStageToDbPipeline(dealForm.value.pipeline),
+    stage: boardStageToDbPipeline(dealForm.value.pipeline),
+  };
+
   emit("submit", {
+    deal: dealDataForSubmit,
     note: noteContent.value,
     task: {
       name: taskName.value,
@@ -107,10 +265,10 @@ const handleSave = () => {
       files: selectedDocFiles.value,
     },
   });
-  handleClose();
 };
 
 const handleReset = () => {
+  dealForm.value = getDealFormDefaults(props.deal);
   noteContent.value = "";
   taskName.value = "";
   taskContent.value = "";
@@ -147,9 +305,12 @@ const handleReset = () => {
       <div
         class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
       >
-        <h2 class="text-xl font-bold text-dark-base">Add Contact / Details</h2>
+        <h2 class="text-xl font-bold text-dark-base">
+          {{ props.deal ? "Deal Details" : "Add Deal / Details" }}
+        </h2>
         <button
           @click="handleClose"
+          :disabled="props.isSubmitting"
           class="p-2 hover:bg-light-base rounded-lg transition-colors"
         >
           <X :size="20" class="text-sub-text" />
@@ -159,6 +320,175 @@ const handleReset = () => {
       <!-- Scrollable Content -->
       <div class="flex-1 overflow-y-auto min-h-0">
         <div class="p-6 pb-10 space-y-6">
+          <div class="border border-outline rounded-lg p-4 space-y-4">
+            <h3 class="text-sm font-semibold text-dark-base">Deal Info</h3>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2"
+                  >Deal Name</label
+                >
+                <input
+                  v-model="dealForm.deal_name"
+                  type="text"
+                  placeholder="Ex Partner Deal"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2"
+                  >Pipeline</label
+                >
+                <select
+                  v-model="dealForm.pipeline"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
+                >
+                  <option
+                    v-for="opt in pipelineOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2"
+                  >Currency</label
+                >
+                <select
+                  v-model="dealForm.currency"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
+                >
+                  <option
+                    v-for="opt in currencyOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2"
+                  >Amount / Value</label
+                >
+                <input
+                  v-model="dealForm.amount"
+                  type="number"
+                  placeholder="Amount/Value"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2"
+                  >Expected Close Date</label
+                >
+                <input
+                  v-model="dealForm.expected_close_date"
+                  type="date"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2"
+                  >Owner</label
+                >
+                <select
+                  v-model="dealForm.owner"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
+                >
+                  <option
+                    v-for="opt in ownerOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2"
+                  >Priority</label
+                >
+                <select
+                  v-model="dealForm.priority"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
+                >
+                  <option
+                    v-for="opt in priorityOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2"
+                  >Source</label
+                >
+                <select
+                  v-model="dealForm.source"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
+                >
+                  <option
+                    v-for="opt in sourceOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Description</label
+              >
+              <textarea
+                v-model="dealForm.description"
+                rows="3"
+                placeholder="Ex Lorem ipsum dolor sit"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm resize-none"
+              ></textarea>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Contact Association</label
+              >
+              <input
+                v-model="dealForm.contact_association"
+                type="text"
+                placeholder="Search by Name"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Companies Association</label
+              >
+              <input
+                v-model="dealForm.companies_association"
+                type="text"
+                placeholder="Search by Name"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
+            </div>
+          </div>
+
           <!-- NOTES SECTION -->
           <div>
             <button
@@ -833,6 +1163,7 @@ const handleReset = () => {
         <button
           type="button"
           @click="handleReset"
+          :disabled="props.isSubmitting"
           class="text-sm text-red font-medium hover:underline"
         >
           Reset
@@ -841,17 +1172,18 @@ const handleReset = () => {
           <button
             type="button"
             @click="handleBack"
-            class="px-6 py-2 border border-outline rounded-lg text-sub-text hover:bg-light-base transition-colors text-sm font-medium"
+            :disabled="props.isSubmitting"
+            class="px-4 py-2 text-sm font-medium text-sub-text hover:text-dark-base transition-colors"
           >
-            Cancel
+            Back
           </button>
           <button
             type="button"
             @click="handleSave"
-            class="flex items-center gap-2 px-5 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
+            :disabled="props.isSubmitting"
+            class="px-6 py-2 bg-dark-base hover:bg-dark-base/90 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save Contact
-            <ChevronDown :size="16" />
+            {{ props.isSubmitting ? "Saving..." : "Save" }}
           </button>
         </div>
       </div>
@@ -860,23 +1192,34 @@ const handleReset = () => {
 </template>
 
 <style scoped>
-/* Overlay */
 .overlay-enter-active,
 .overlay-leave-active {
   transition: opacity 0.3s ease;
 }
+
 .overlay-enter-from,
 .overlay-leave-to {
   opacity: 0;
 }
 
-/* Slide from right — identik dengan AddContactForm */
 .slide-enter-active,
 .slide-leave-active {
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s ease;
 }
+
 .slide-enter-from,
 .slide-leave-to {
   transform: translateX(100%);
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 </style>

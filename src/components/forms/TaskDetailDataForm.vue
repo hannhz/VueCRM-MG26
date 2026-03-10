@@ -38,7 +38,9 @@ const getFormDefaults = (task = null) => ({
   id: task?.id ?? task?.task_id ?? null,
   task_name: task?.title || task?.name || task?.task_name || "",
   description: task?.description || task?.task_content || "",
-  status: (task?.status || task?.stage || "not_started").toString().toLowerCase(),
+  status: (task?.status || task?.stage || "not_started")
+    .toString()
+    .toLowerCase(),
   priority: task?.priority || "",
   assignee: task?.owner || task?.assignee || task?.user_name || "",
   due_date: task?.dueDate || task?.due_date || task?.date || "",
@@ -95,7 +97,9 @@ const handleSave = () => {
       class="fixed top-0 right-0 h-screen w-full max-w-xl bg-white shadow-2xl z-50 flex flex-col"
       @click.stop
     >
-      <div class="border-b border-outline px-6 py-4 flex items-center justify-between">
+      <div
+        class="border-b border-outline px-6 py-4 flex items-center justify-between"
+      >
         <h2 class="text-xl font-bold text-dark-base">Task Detail</h2>
         <button
           @click="closePanel"
@@ -134,7 +138,11 @@ const handleSave = () => {
               v-model="form.status"
               class="w-full px-3 py-2 border border-outline rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-sub-text"
             >
-              <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
+              <option
+                v-for="opt in statusOptions"
+                :key="opt.value"
+                :value="opt.value"
+              >
                 {{ opt.label }}
               </option>
             </select>
@@ -157,7 +165,9 @@ const handleSave = () => {
           </div>
 
           <div class="space-y-2">
-            <label class="text-sm font-medium text-dark-base">Owner/Assignee</label>
+            <label class="text-sm font-medium text-dark-base"
+              >Owner/Assignee</label
+            >
             <input
               v-model="form.assignee"
               type="text"
@@ -186,7 +196,9 @@ const handleSave = () => {
         </div>
       </div>
 
-      <div class="border-t border-outline px-6 py-4 flex items-center justify-end gap-3">
+      <div
+        class="border-t border-outline px-6 py-4 flex items-center justify-end gap-3"
+      >
         <button
           @click="closePanel"
           :disabled="props.isSubmitting"

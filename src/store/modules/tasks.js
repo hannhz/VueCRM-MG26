@@ -3,53 +3,60 @@ import { useCookies } from "vue3-cookies";
 
 const { cookies } = useCookies();
 
+const normalizeTaskStatus = (statusRaw) => {
+  const status = String(statusRaw || "not_started")
+    .toLowerCase()
+    .replace(/\s+/g, "_");
+
+  if (status.includes("progress")) return "in_progress";
+  if (status.includes("wait")) return "waiting";
+  if (status.includes("complete") || status.includes("done"))
+    return "completed";
+  if (status.includes("defer")) return "deferred";
+  return "not_started";
+};
+
 const normalizeTask = (task = {}, index = 0) => {
-  const fallbackId = `${task?.title || task?.name || "task"}-${index}`;
-  const status = (task.status || task.stage || task.pipeline || "not_started")
-    .toString()
-    .toLowerCase();
+  const fallbackId = `${task?.task_name || task?.title || task?.name || "task"}-${index}`;
+  const status = normalizeTaskStatus(
+    task.status || task.stage || task.pipeline,
+  );
+  const taskName = task.task_name || task.title || task.name || "Untitled Task";
+  const description = task.description || task.task_content || "";
+  const assignee = task.assignee || task.owner || task.user_name || "";
+  const dueDate =
+    task.due_date ||
+    task.dueDate ||
+    task.date ||
+    task.deadline ||
+    task.start ||
+    null;
+  const taskTime = task.task_time || task.time || task.due_time || null;
+  const priority = task.priority || "";
 
   return {
     ...task,
-    id: task.id ?? task.task_id ?? fallbackId,
-    title: task.title || task.name || task.task_name || "Untitled Task",
-    description: task.description || task.task_content || "",
-    status,
-    stage: task.stage || task.status || status,
-    owner: task.owner || task.assignee || task.user_name || "-",
-    dueDate:
-      task.dueDate ||
-      task.due_date ||
-      task.date ||
-      task.deadline ||
-      task.start ||
-      null,
-    time: task.task_time || task.time || task.due_time || null,
-    priority: task.priority || "",
-  };
-};
-
-const mapCreateTaskPayload = (formData = {}) => {
-  const taskName = formData.task_name?.trim() || formData.taskName?.trim() || null;
-  const description =
-    formData.description?.trim() || formData.taskContent?.trim() || null;
-  const assignee = formData.assignee || formData.owner?.trim() || null;
-  const dueDate = formData.due_date || formData.dueDate || null;
-  const taskTime = formData.task_time || formData.time || null;
-
-  return {
+    id: task.id ?? task.task_id ?? task.id_task ?? fallbackId,
     task_name: taskName,
     description,
-    status: formData.status || "not_started",
-    assignee,
+    status,
+    assignee: assignee || "-",
     due_date: dueDate,
     task_time: taskTime,
-    priority: formData.priority || null,
+    priority,
+    // UI aliases so existing components keep working
+    title: taskName,
+    name: taskName,
+    stage: status,
+    owner: assignee || "-",
+    dueDate: dueDate,
+    time: taskTime,
   };
 };
 
-const mapUpdateTaskPayload = (formData = {}) => {
-  const taskName = formData.task_name?.trim() || formData.taskName?.trim() || null;
+const mapTaskPayload = (formData = {}) => {
+  const taskName =
+    formData.task_name?.trim() || formData.taskName?.trim() || null;
   const description =
     formData.description?.trim() || formData.taskContent?.trim() || null;
   const assignee = formData.assignee || formData.owner?.trim() || null;
@@ -59,7 +66,7 @@ const mapUpdateTaskPayload = (formData = {}) => {
   return {
     task_name: taskName,
     description,
-    status: formData.status || "not_started",
+    status: normalizeTaskStatus(formData.status || formData.stage),
     assignee,
     due_date: dueDate,
     task_time: taskTime,
@@ -157,6 +164,126 @@ export default {
       return promise;
     },
 
+    createtasknew({ commit }, formData) {
+      commit("SET_LOADING", true);
+      commit("SET_ERROR", null);
+      formData.choice = "i";
+
+      const promise = new Promise(async (resolve, reject) => {
+        try {
+          const response = await api.post("tasks/input", formData, {
+            headers: {
+              Authorization: "Bearer " + cookies.get("token"),
+            },
+          });
+          resolve(response.data);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      promise
+        .then((data) => {
+          commit("SET_LOADING", false);
+        })
+        .catch((error) => {
+          const status = error?.response?.status;
+          const serverMessage = error?.response?.data?.message;
+          commit(
+            "SET_ERROR",
+            serverMessage ||
+              (status
+                ? status === 404
+                  ? "Endpoint tasks tidak ditemukan di server (404)."
+                  : `Fetch tasks gagal (HTTP ${status})`
+                : error.message || "Failed to fetch tasks"),
+          );
+          commit("SET_LOADING", false);
+        });
+
+      return promise;
+    },
+
+    updatetasknew({ commit }, formData) {
+      commit("SET_LOADING", true);
+      commit("SET_ERROR", null);
+      formData.choice = "u";
+
+      const promise = new Promise(async (resolve, reject) => {
+        try {
+          const response = await api.post("tasks/input", formData, {
+            headers: {
+              Authorization: "Bearer " + cookies.get("token"),
+            },
+          });
+          resolve(response.data);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      promise
+        .then((data) => {
+          commit("SET_LOADING", false);
+        })
+        .catch((error) => {
+          const status = error?.response?.status;
+          const serverMessage = error?.response?.data?.message;
+          commit(
+            "SET_ERROR",
+            serverMessage ||
+              (status
+                ? status === 404
+                  ? "Endpoint tasks tidak ditemukan di server (404)."
+                  : `Fetch tasks gagal (HTTP ${status})`
+                : error.message || "Failed to fetch tasks"),
+          );
+          commit("SET_LOADING", false);
+        });
+
+      return promise;
+    },
+
+    deletetasknew({ commit }, formData) {
+      commit("SET_LOADING", true);
+      commit("SET_ERROR", null);
+      formData.choice = "d";
+
+      const promise = new Promise(async (resolve, reject) => {
+        try {
+          const response = await api.post("tasks/input", formData, {
+            headers: {
+              Authorization: "Bearer " + cookies.get("token"),
+            },
+          });
+          resolve(response.data);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      promise
+        .then((data) => {
+          commit("SET_LOADING", false);
+        })
+        .catch((error) => {
+          const status = error?.response?.status;
+          const serverMessage = error?.response?.data?.message;
+          commit(
+            "SET_ERROR",
+            serverMessage ||
+              (status
+                ? status === 404
+                  ? "Endpoint tasks tidak ditemukan di server (404)."
+                  : `Fetch tasks gagal (HTTP ${status})`
+                : error.message || "Failed to fetch tasks"),
+          );
+          commit("SET_LOADING", false);
+        });
+
+      return promise;
+    },
+
     async createTask({ commit, dispatch }, formData) {
       commit("SET_LOADING", true);
       commit("SET_ERROR", null);
@@ -164,7 +291,16 @@ export default {
       const headers = {
         Authorization: "Bearer " + cookies.get("token"),
       };
-      const payload = mapCreateTaskPayload(formData);
+
+      // Tentukan choice: 'i' untuk insert, 'u' untuk update
+      const choice = formData.id ? "u" : "i";
+
+      const mappedPayload = mapTaskPayload(formData);
+      const payload = {
+        choice: choice,
+        ...(choice === "u" ? { id: formData.id } : {}),
+        ...mappedPayload,
+      };
 
       try {
         const response = await api.post("tasks/input", payload, { headers });
@@ -173,7 +309,11 @@ export default {
           const createdTask =
             response?.data?.task || response?.data?.data || response?.data;
           if (createdTask) {
-            commit("ADD_TASK", normalizeTask(createdTask));
+            if (choice === "i") {
+              commit("ADD_TASK", normalizeTask(createdTask));
+            } else {
+              commit("UPDATE_TASK", normalizeTask(createdTask));
+            }
           }
         });
 
@@ -182,80 +322,91 @@ export default {
       } catch (error) {
         const status = error?.response?.status;
         const serverMessage = error?.response?.data?.message;
+        const operationType = choice === "i" ? "Create" : "Update";
         commit(
           "SET_ERROR",
           serverMessage ||
             (status
               ? status === 404
-                ? "Endpoint create task tidak ditemukan di server (404)."
-                : `Create task gagal (HTTP ${status})`
-              : error?.message || "Failed to create task"),
+                ? "Endpoint task tidak ditemukan di server (404)."
+                : `${operationType} task gagal (HTTP ${status})`
+              : error?.message ||
+                `Failed to ${operationType.toLowerCase()} task`),
         );
         commit("SET_LOADING", false);
         throw error;
       }
     },
 
-    async updateTask({ commit, dispatch }, payload = {}) {
+    async updateTask({ state, dispatch }, payload = {}) {
       const taskId = payload.id;
       if (!taskId) {
         throw new Error("Task ID is required");
       }
 
-      commit("SET_LOADING", true);
-      commit("SET_ERROR", null);
+      const existingTask = state.tasks.find((task) => task.id === taskId) || {};
+      const partialForm = payload.formData || {};
 
-      const headers = {
-        Authorization: "Bearer " + cookies.get("token"),
+      // Merge partial update with existing task data so update behaves like deals
+      const formData = {
+        id: taskId,
+        task_name:
+          partialForm.task_name ||
+          partialForm.taskName ||
+          existingTask.task_name ||
+          existingTask.title ||
+          existingTask.name ||
+          "",
+        description:
+          partialForm.description ??
+          partialForm.taskContent ??
+          existingTask.description ??
+          existingTask.task_content ??
+          "",
+        status:
+          partialForm.status ||
+          partialForm.stage ||
+          existingTask.status ||
+          existingTask.stage ||
+          "not_started",
+        assignee:
+          partialForm.assignee ??
+          partialForm.owner ??
+          existingTask.assignee ??
+          existingTask.owner ??
+          existingTask.user_name ??
+          "",
+        due_date:
+          partialForm.due_date ??
+          partialForm.dueDate ??
+          existingTask.due_date ??
+          existingTask.dueDate ??
+          existingTask.date ??
+          "",
+        task_time:
+          partialForm.task_time ??
+          partialForm.time ??
+          existingTask.task_time ??
+          existingTask.time ??
+          "",
+        priority: partialForm.priority ?? existingTask.priority ?? "",
       };
 
-      const body = mapUpdateTaskPayload(payload.formData || {});
-
-      const candidates = [
-        () => api.post(`tasks/updateusr?id=${taskId}`, body, { headers }),
-        () => api.post(`tasks/update?id=${taskId}`, body, { headers }),
-        () => api.post(`task/updateusr?id=${taskId}`, body, { headers }),
-        () => api.post(`task/update?id=${taskId}`, body, { headers }),
-        () => api.post("tasks/update", { id: taskId, ...body }, { headers }),
-        () => api.post("task/update", { id: taskId, ...body }, { headers }),
-      ];
-
-      let lastError = null;
-
-      for (const run of candidates) {
-        try {
-          const response = await run();
-
-          await dispatch("fetchAllTasks").catch(() => {
-            const updatedTask =
-              response?.data?.task || response?.data?.data || { id: taskId, ...body };
-            commit("UPDATE_TASK", normalizeTask(updatedTask));
-          });
-
-          commit("SET_LOADING", false);
-          return response?.data;
-        } catch (error) {
-          lastError = error;
-        }
-      }
-
-      const status = lastError?.response?.status;
-      const serverMessage = lastError?.response?.data?.message;
-      commit(
-        "SET_ERROR",
-        serverMessage ||
-          (status
-            ? status === 404
-              ? "Endpoint update task tidak ditemukan di server (404)."
-              : `Update task gagal (HTTP ${status})`
-            : lastError?.message || "Failed to update task"),
-      );
-      commit("SET_LOADING", false);
-      throw lastError || new Error("Failed to update task");
+      return dispatch("createTask", formData);
     },
 
-    async deleteTask({ commit, dispatch }, taskId) {
-      if (!taskId) {
+    async deleteTask({ commit, dispatch, state }, taskInput) {
+      const resolvedTask =
+        taskInput && typeof taskInput === "object"
+          ? taskInput
+          : state.tasks.find((task) => task.id === taskInput) || {
+              id: taskInput,
+            };
+
+      const resolvedId =
+        resolvedTask?.id ?? resolvedTask?.task_id ?? resolvedTask?.id_task;
+
+      if (!resolvedId) {
         throw new Error("Task ID is required");
       }
 
@@ -266,49 +417,39 @@ export default {
         Authorization: "Bearer " + cookies.get("token"),
       };
 
-      const candidates = [
-        () => api.delete(`tasks/deleteusr?id=${taskId}`, { headers }),
-        () => api.delete(`tasks/delete?id=${taskId}`, { headers }),
-        () => api.delete(`task/deleteusr?id=${taskId}`, { headers }),
-        () => api.delete(`task/delete?id=${taskId}`, { headers }),
-        () => api.post(`tasks/deleteusr?id=${taskId}`, {}, { headers }),
-        () => api.post(`tasks/delete?id=${taskId}`, {}, { headers }),
-        () => api.post(`task/deleteusr?id=${taskId}`, {}, { headers }),
-        () => api.post(`task/delete?id=${taskId}`, {}, { headers }),
-        () => api.post("tasks/delete", { id: taskId }, { headers }),
-        () => api.post("task/delete", { id: taskId }, { headers }),
-      ];
+      const deletePayload = {
+        choice: "d",
+        id: resolvedId,
+        task_id: resolvedId,
+        id_task: resolvedId,
+      };
 
-      let lastError = null;
+      try {
+        const response = await api.post("tasks/input", deletePayload, {
+          headers,
+        });
 
-      for (const run of candidates) {
-        try {
-          const response = await run();
+        await dispatch("fetchAllTasks").catch(() => {
+          commit("DELETE_TASK", resolvedId);
+        });
 
-          await dispatch("fetchAllTasks").catch(() => {
-            commit("DELETE_TASK", taskId);
-          });
-
-          commit("SET_LOADING", false);
-          return response?.data;
-        } catch (error) {
-          lastError = error;
-        }
+        commit("SET_LOADING", false);
+        return response?.data;
+      } catch (error) {
+        const status = error?.response?.status;
+        const serverMessage = error?.response?.data?.message;
+        commit(
+          "SET_ERROR",
+          serverMessage ||
+            (status
+              ? status === 404
+                ? "Endpoint delete task tidak ditemukan di server (404)."
+                : `Delete task gagal (HTTP ${status})`
+              : error?.message || "Failed to delete task"),
+        );
+        commit("SET_LOADING", false);
+        throw error;
       }
-
-      const status = lastError?.response?.status;
-      const serverMessage = lastError?.response?.data?.message;
-      commit(
-        "SET_ERROR",
-        serverMessage ||
-          (status
-            ? status === 404
-              ? "Endpoint delete task tidak ditemukan di server (404)."
-              : `Delete task gagal (HTTP ${status})`
-            : lastError?.message || "Failed to delete task"),
-      );
-      commit("SET_LOADING", false);
-      throw lastError || new Error("Failed to delete task");
     },
 
     setSearchQuery({ commit }, query) {

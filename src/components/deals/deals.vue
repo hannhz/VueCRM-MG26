@@ -5,6 +5,7 @@ import DealsCard from "./dealscard.vue";
 import DealsList from "./dealslist.vue";
 import CreateDealForm from "@/components/forms/CreateDealForm.vue";
 import BulkAddDealForm from "@/components/forms/BulkAddDealForm.vue";
+import DetailDataDeals from "@/components/forms/DetailDataDeals.vue";
 import { alertService } from "@/services/alertService";
 import {
   ChevronDown,
@@ -59,6 +60,9 @@ const selectedIds = ref([]);
 const showDownloadDropdown = ref(false);
 const showCreateDealForm = ref(false);
 const showBulkAddDealForm = ref(false);
+const showDetailDataDeals = ref(false);
+const selectedDeal = ref(null);
+const isDetailDataDealsSubmitting = ref(false);
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value;
@@ -108,6 +112,62 @@ const handleCreateDealSubmit = async (formData) => {
   }
 };
 
+const openDealDetail = (deal) => {
+  // Ambil data original dari store berdasarkan ID
+  const allDealsData = store.getters["deals/allDeals"] || [];
+  const originalDeal = allDealsData.find((d) => d.id === deal.id);
+
+  // Gunakan data original dari database, bukan data yang sudah di-normalize
+  selectedDeal.value = originalDeal ? { ...originalDeal } : { ...deal };
+  showDetailDataDeals.value = true;
+};
+
+const closeDetailDataDeals = () => {
+  showDetailDataDeals.value = false;
+  selectedDeal.value = null;
+};
+
+const handleDetailDataDealsSubmit = async (payload) => {
+  const dealId = selectedDeal.value?.id;
+
+  if (!dealId) {
+    alertService.error("ID deal tidak ditemukan. Coba buka ulang detail data.");
+    return;
+  }
+
+  if (!payload?.deal?.deal_name?.trim()) {
+    alertService.error("Deal Name wajib diisi.");
+    return;
+  }
+
+  isDetailDataDealsSubmitting.value = true;
+
+  try {
+    const formdata = {
+      ...payload.deal,
+      updated_at: new Date().toISOString(),
+    };
+
+    await store.dispatch("deals/updateDeal", {
+      keyedit: dealId,
+      formdata,
+    });
+
+    alertService.success("Detail deal berhasil diperbarui.");
+    closeDetailDataDeals();
+  } catch (error) {
+    const backendMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message ||
+      "Terjadi kesalahan saat memperbarui deal.";
+
+    alertService.error(backendMessage);
+  } finally {
+    isDetailDataDealsSubmitting.value = false;
+  }
+};
+
 // Lifecycle: Fetch deals on mount
 onMounted(() => {
   fetchData();
@@ -119,7 +179,9 @@ onMounted(() => {
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-baseline gap-3">
         <h1 class="text-2xl font-bold text-dark-base">Deals</h1>
-        <span class="text-sm" :class="dealsStatusClass">{{ dealsStatusText }}</span>
+        <span class="text-sm" :class="dealsStatusClass">{{
+          dealsStatusText
+        }}</span>
       </div>
 
       <!-- Action Button -->
@@ -275,8 +337,11 @@ onMounted(() => {
         </div>
       </div>
 
-      <DealsCard v-if="activeMode === 'card'" />
-      <DealsList v-else-if="activeMode === 'list'" />
+      <DealsCard v-if="activeMode === 'card'" @viewDetail="openDealDetail" />
+      <DealsList
+        v-else-if="activeMode === 'list'"
+        @viewDetail="openDealDetail"
+      />
     </div>
 
     <!-- Create Deal Form -->
@@ -291,6 +356,16 @@ onMounted(() => {
       :isOpen="showBulkAddDealForm"
       @close="showBulkAddDealForm = false"
       @submit="showBulkAddDealForm = false"
+    />
+
+    <!-- Detail Data Deals -->
+    <DetailDataDeals
+      :isOpen="showDetailDataDeals"
+      :deal="selectedDeal"
+      :isSubmitting="isDetailDataDealsSubmitting"
+      @close="closeDetailDataDeals"
+      @back="closeDetailDataDeals"
+      @submit="handleDetailDataDealsSubmit"
     />
   </div>
 </template>

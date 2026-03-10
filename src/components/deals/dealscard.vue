@@ -3,8 +3,11 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { useStore } from "vuex";
 import draggable from "vuedraggable";
 import { ChevronDown, Search, Filter } from "lucide-vue-next";
+import { alertService } from "@/services/alertService";
 
 const store = useStore();
+
+const emit = defineEmits(["viewDetail"]);
 
 // Access sidebar state from Vuex
 const isSidebarCollapsed = computed(
@@ -20,7 +23,6 @@ const isCurrencyOpen = ref(false);
 const pipelines = ["Sales Pipeline", "Marketing Pipeline", "Dev Pipeline"];
 const selectedPipeline = ref("Sales Pipeline");
 const isPipelineOpen = ref(false);
-const isDragging = ref(false);
 
 const boardMeta = [
   { id: 1, key: "new", title: "New" },
@@ -46,8 +48,18 @@ const normalizeStage = (rawStage) => {
   if (stage.includes("qual")) return "qualified";
   if (stage.includes("adv") || stage.includes("negot")) return "advanced";
   if (stage.includes("pay") || stage.includes("proposal")) return "payment";
-  if (stage.includes("won") || stage.includes("close_won") || stage.includes("closed_won")) return "won";
-  if (stage.includes("lost") || stage.includes("close_lost") || stage.includes("closed_lost")) return "lost";
+  if (
+    stage.includes("won") ||
+    stage.includes("close_won") ||
+    stage.includes("closed_won")
+  )
+    return "won";
+  if (
+    stage.includes("lost") ||
+    stage.includes("close_lost") ||
+    stage.includes("closed_lost")
+  )
+    return "lost";
   return "new";
 };
 
@@ -88,11 +100,26 @@ const rebuildBoards = (rawDeals) => {
   }));
 };
 
-// hapus item
-const deleteDeal = (item) => {
-  boards.value.forEach((b) => {
-    b.items = b.items.filter((i) => i.id !== item.id);
-  });
+// Delete deal with confirmation
+const deleteDeal = async (deal, event) => {
+  // Prevent opening deal detail when clicking delete
+  event.stopPropagation();
+
+  const confirmed = await alertService.confirm(
+    "Hapus Deal?",
+    "Deal ini akan dihapus secara permanen. Lanjutkan?",
+  );
+
+  if (!confirmed) return;
+
+  try {
+    await store.dispatch("deals/deleteDeal", deal.id);
+    alertService.success("Deal berhasil dihapus.");
+    await store.dispatch("deals/fetchAllDeals").catch(() => {});
+  } catch (err) {
+    console.error("Delete deal error:", err);
+    alertService.error("Gagal menghapus deal. Coba lagi.");
+  }
 };
 
 const handleBoardChange = async (event, targetBoard) => {
@@ -118,6 +145,10 @@ const handleBoardChange = async (event, targetBoard) => {
   } finally {
     isSyncingStage.value = false;
   }
+};
+
+const handleViewDetail = (deal) => {
+  emit("viewDetail", deal);
 };
 
 const stageClass = (stage) => {
@@ -147,7 +178,6 @@ watch(
 );
 
 onBeforeUnmount(() => {
-  isDragging.value = false;
   isCurrencyOpen.value = false;
   isPipelineOpen.value = false;
 
@@ -324,15 +354,36 @@ onBeforeUnmount(() => {
                 group="deals"
                 item-key="id"
                 class="flex-1 p-3 space-y-3 overflow-y-auto"
-                @start="isDragging = true"
-                @end="isDragging = false"
                 @change="(event) => handleBoardChange(event, board)"
               >
                 <template #item="{ element }">
                   <div
-                    class="bg-white p-4 rounded shadow-sm border border-gray-200 cursor-move hover:border-blue-500 transition"
+                    @click="handleViewDetail(element)"
+                    class="bg-white p-4 rounded shadow-sm border border-gray-200 cursor-pointer hover:border-blue-500 transition relative group"
                   >
-                    <p class="text-sm font-medium text-gray-800 truncate">
+                    <!-- Delete Button -->
+                    <button
+                      @click="deleteDeal(element, $event)"
+                      class="absolute top-2 right-2 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Hapus deal"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="w-3.5 h-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M19 7L5 7M10 11V17M14 11V17M9 7V4H15V7M6 7H18L17 20H7L6 7Z"
+                        />
+                      </svg>
+                    </button>
+
+                    <p class="text-sm font-medium text-gray-800 truncate pr-8">
                       {{ element.name }}
                     </p>
 
@@ -389,49 +440,6 @@ onBeforeUnmount(() => {
               class="pointer-events-none absolute top-0 right-0 h-full w-9 bg-linear-to-l from-white to-transparent"
             ></div>
           </div>
-        </div>
-      </div>
-      <!-- DANGER DELETE ZONE -->
-      <div
-        v-show="isDragging"
-        class="absolute bottom-0 left-0 w-full h-40 z-50 pointer-events-none"
-      >
-        <!-- gradient -->
-        <div
-          class="absolute inset-0 bg-linear-to-t from-red-600/80 via-red-500/40 to-transparent"
-        ></div>
-
-        <!-- center content -->
-        <div class="absolute inset-0 flex flex-col items-center justify-center">
-          <div
-            v-if="isSyncingStage"
-            class="mb-2 px-3 py-1 rounded bg-white/90 text-xs font-semibold text-slate-700"
-          >
-            Syncing to database...
-          </div>
-          <div
-            class="w-16 h-16 rounded-full bg-white shadow-xl flex items-center justify-center border-4 border-red-500"
-          >
-            <!-- trash icon -->
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="w-7 h-7 text-red-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M19 7L5 7M10 11V17M14 11V17M9 7V4H15V7M6 7H18L17 20H7L6 7Z"
-              />
-            </svg>
-          </div>
-
-          <p class="mt-2 text-white text-sm tracking-wide">
-            Drop to <span class="font-bold">DELETE</span>
-          </p>
         </div>
       </div>
     </div>

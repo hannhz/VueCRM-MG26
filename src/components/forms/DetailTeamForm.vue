@@ -142,7 +142,9 @@ const totalUsersLabel = computed(() => {
 
           <div>
             <p class="text-xs text-sub-text mb-1">Total Users</p>
-            <p class="text-sm font-semibold text-dark-base">{{ totalUsersLabel }}</p>
+            <p class="text-sm font-semibold text-dark-base">
+              {{ totalUsersLabel }}
+            </p>
           </div>
         </div>
 
@@ -159,7 +161,9 @@ const totalUsersLabel = computed(() => {
               class="px-3 py-2 rounded-lg bg-light-base border border-outline"
             >
               <p class="text-sm font-medium text-dark-base">{{ user.name }}</p>
-              <p v-if="user.email" class="text-xs text-sub-text">{{ user.email }}</p>
+              <p v-if="user.email" class="text-xs text-sub-text">
+                {{ user.email }}
+              </p>
             </li>
           </ul>
 

@@ -7,10 +7,13 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
-  Trash2,
+  Trash,
 } from "lucide-vue-next";
+import { alertService } from "@/services/alertService";
 
 const store = useStore();
+
+const emit = defineEmits(["viewDetail"]);
 
 // Get deals from Vuex store
 const allDeals = computed(() => store.getters["deals/filteredDeals"] || []);
@@ -22,6 +25,13 @@ const searchQuery = computed({
 const currentPage = ref(1);
 const totalDeals = ref(18600);
 const itemsPerPage = ref(10);
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(totalDeals.value / itemsPerPage.value)),
+);
+const paginatedDeals = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  return deals.value.slice(start, start + itemsPerPage.value);
+});
 
 const stageOptions = [
   { value: "new", label: "New" },
@@ -45,10 +55,56 @@ const deals = ref([]);
 
 const selectedDeals = ref([]);
 
-const deleteSelected = () => {
-  deals.value = deals.value.filter((deal) => !selectedDeals.value.includes(deal.id));
+const filteredDealIds = computed(() => deals.value.map((deal) => deal.id));
+
+const isAllFilteredSelected = computed(() => {
+  if (filteredDealIds.value.length === 0) return false;
+  return filteredDealIds.value.every((id) => selectedDeals.value.includes(id));
+});
+
+const toggleSelectAllFiltered = (event) => {
+  const shouldSelectAll = event?.target?.checked;
+
+  if (shouldSelectAll) {
+    selectedDeals.value = [...new Set(filteredDealIds.value)];
+    return;
+  }
+
   selectedDeals.value = [];
-  totalDeals.value = deals.value.length;
+};
+
+const deleteSelected = async () => {
+  if (selectedDeals.value.length === 0) {
+    alertService.warning("Pilih minimal satu deal untuk dihapus");
+    return;
+  }
+
+  const confirmDelete = await alertService.confirm(
+    "Hapus Deal?",
+    `${selectedDeals.value.length} deal akan dihapus secara permanen. Lanjutkan?`,
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    // Delete each selected deal
+    for (const dealId of selectedDeals.value) {
+      await store.dispatch("deals/deleteDeal", dealId);
+    }
+    // Clear selected deals
+    selectedDeals.value = [];
+    alertService.success("Deal berhasil dihapus");
+  } catch (error) {
+    console.error("Error deleting deals:", error);
+    const status = error?.response?.status;
+    const backendMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message;
+    alertService.error(
+      `Gagal menghapus deal. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Silakan coba lagi."}`,
+    );
+  }
 };
 
 // Data Mata Uang
@@ -66,8 +122,18 @@ const normalizeStage = (rawStage) => {
   if (stage.includes("qual")) return "qualified";
   if (stage.includes("adv") || stage.includes("negot")) return "advanced";
   if (stage.includes("pay") || stage.includes("proposal")) return "payment";
-  if (stage.includes("won") || stage.includes("close_won") || stage.includes("closed_won")) return "won";
-  if (stage.includes("lost") || stage.includes("close_lost") || stage.includes("closed_lost")) return "lost";
+  if (
+    stage.includes("won") ||
+    stage.includes("close_won") ||
+    stage.includes("closed_won")
+  )
+    return "won";
+  if (
+    stage.includes("lost") ||
+    stage.includes("close_lost") ||
+    stage.includes("closed_lost")
+  )
+    return "lost";
   return "new";
 };
 
@@ -123,6 +189,10 @@ const stageColor = (stage) => {
   return "bg-slate-100 text-slate-700";
 };
 
+const handleViewDetail = (deal) => {
+  emit("viewDetail", deal);
+};
+
 //handled add deal form
 const handleAddDeal = (dealData) => {
   // Logic untuk save deal data ke API atau state
@@ -148,6 +218,20 @@ watch(
   },
   { immediate: true },
 );
+
+watch([itemsPerPage, totalDeals], () => {
+  if (currentPage.value > totalPages.value) {
+    currentPage.value = totalPages.value;
+  }
+});
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value++;
+};
+
+const prevPage = () => {
+  if (currentPage.value > 1) currentPage.value--;
+};
 </script>
 <style scoped>
 .stage-dropdown-enter-active,
@@ -183,6 +267,21 @@ watch(
             <Filter :size="20" class="text-dark-base" />
           </button>
 
+          <!-- Delete Btn -->
+          <button
+            type="button"
+            @click="deleteSelected"
+            class="p-2 rounded-lg transition"
+            :class="
+              selectedDeals.length > 0
+                ? 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
+                : 'bg-gray-200 text-gray-500 hover:bg-gray-300 cursor-not-allowed'
+            "
+            title="Delete selected deals"
+          >
+            <Trash :size="20" />
+          </button>
+
           <!-- Search -->
           <input
             v-model="searchQuery"
@@ -201,32 +300,20 @@ watch(
           <!-- Show -->
           <div class="flex items-center gap-2">
             <span class="text-sm text-dark-base">Show</span>
-            <select class="px-3 py-2 border border-outline rounded-lg text-sm">
-              <option>10</option>
-              <option>25</option>
-              <option>50</option>
-              <option>100</option>
+            <select
+              v-model.number="itemsPerPage"
+              class="px-3 py-2 border border-outline rounded-lg text-sm"
+            >
+              <option :value="10">10</option>
+              <option :value="25">25</option>
+              <option :value="50">50</option>
+              <option :value="100">100</option>
             </select>
           </div>
         </div>
 
         <!-- Currency n pipeline -->
         <div class="flex items-center gap-4 text-sm font-medium text-slate-600">
-          <!-- DELETE BUTTON (muncul saat ada selection) -->
-          <button
-            v-if="selectedDeals.length"
-            @click="deleteSelected"
-            class="flex items-center gap-2 px-3 py-1.5 rounded-md border border-red-400 bg-red-50 text-red-700 font-semibold hover:bg-red-100 hover:border-red-500 transition"
-          >
-            <Trash2 :size="16" />
-            DELETE ({{ selectedDeals.length }})
-          </button>
-
-          <!-- Divider -->
-          <div
-            v-if="selectedDeals.length"
-            class="hidden sm:block w-px h-5 bg-outline"
-          ></div>
           <!-- Currency Dropdown -->
           <div class="relative">
             <button
@@ -317,6 +404,8 @@ watch(
       <label class="flex items-center gap-2 text-sm text-sub-text">
         <input
           type="checkbox"
+          :checked="isAllFilteredSelected"
+          @change="toggleSelectAllFiltered"
           class="h-4 w-4 rounded border-gray-300 text-sub-text focus:ring-sub-text"
         />
         Select all filtered result
@@ -325,6 +414,7 @@ watch(
       <!-- PUSH KANAN -->
       <div class="ml-auto flex items-center gap-3 text-sm text-sub-text">
         <button
+          @click="prevPage"
           class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
           :disabled="currentPage === 1"
         >
@@ -335,15 +425,18 @@ watch(
 
         <input
           type="number"
-          v-model="currentPage"
+          v-model.number="currentPage"
           min="1"
+          :max="totalPages"
           class="w-12 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-sub-text"
         />
 
-        <span>of {{ Math.ceil(totalDeals / itemsPerPage) }}</span>
+        <span>of {{ totalPages }}</span>
 
         <button
+          @click="nextPage"
           class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
+          :disabled="currentPage === totalPages"
         >
           <ChevronRight :size="18" class="text-sub-text" />
         </button>
@@ -351,7 +444,7 @@ watch(
     </div>
 
     <!-- Table -->
-    <div class="overflow-hidden">
+    <div class="flex-1 min-h-0 overflow-auto">
       <!-- Table -->
       <div class="overflow-x-auto">
         <table class="w-full">
@@ -360,16 +453,8 @@ watch(
               <th class="px-6 py-4 text-left">
                 <input
                   type="checkbox"
-                  @change="
-                    (e) => {
-                      selectedDeals = e.target.checked
-                        ? deals.map((d) => d.id)
-                        : [];
-                    }
-                  "
-                  :checked="
-                    selectedDeals.length === deals.length && deals.length > 0
-                  "
+                  :checked="isAllFilteredSelected"
+                  @change="toggleSelectAllFiltered"
                   class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
                 />
               </th>
@@ -446,9 +531,10 @@ watch(
 
             <!-- Data Rows -->
             <tr
-              v-for="deal in deals"
+              v-for="deal in paginatedDeals"
               :key="deal.id"
-              class="border-b border-gray-100 hover:bg-gray-50 transition"
+              @click="handleViewDetail(deal)"
+              class="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer"
             >
               <td class="px-6 py-4">
                 <input
@@ -468,7 +554,7 @@ watch(
                   <!-- Stage Button -->
                   <button
                     type="button"
-                    @click="
+                    @click.stop="
                       openStageDropdown =
                         openStageDropdown === deal.id ? null : deal.id
                     "

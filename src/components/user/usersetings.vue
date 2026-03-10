@@ -118,6 +118,7 @@ import {
 
 import CreateUserForm from "../forms/CreateUserForm.vue";
 import { mapGetters, mapActions, mapState } from "vuex";
+import { alertService } from "@/services/alertService";
 
 export default {
   name: "UsersTable",
@@ -138,7 +139,7 @@ export default {
       showCreateUserForm: false,
 
       // pagination
-      itemsPerPage: 5,
+      itemsPerPage: 10,
       currentPage: 1,
 
       // checkbox
@@ -215,6 +216,7 @@ export default {
   methods: {
     ...mapActions({
       fetchUsers: "users/fetchAllusers",
+      deleteUser: "users/deleteuser",
     }),
 
     fetchData() {
@@ -239,6 +241,39 @@ export default {
     prevPage() {
       if (this.currentPage > 1) this.currentPage--;
     },
+
+    async handleDeleteUsers() {
+      if (this.selectedIds.length === 0) {
+        await alertService.toastWarning(
+          "Pilih minimal satu user untuk dihapus",
+        );
+        return;
+      }
+
+      const confirmDelete = await alertService.confirm(
+        `${this.selectedIds.length} user akan dihapus permanen. Lanjutkan?`,
+        "Hapus User?",
+      );
+
+      if (!confirmDelete?.isConfirmed) return;
+
+      try {
+        const idsToDelete = [...this.selectedIds];
+        for (const id of idsToDelete) {
+          await this.deleteUser(id);
+        }
+        this.selectedIds = [];
+        await alertService.success("User berhasil dihapus");
+      } catch (error) {
+        console.error("Failed deleting users:", error);
+        const backendMessage =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          "Silakan coba lagi.";
+        await alertService.error(`Gagal menghapus user. ${backendMessage}`);
+      }
+    },
   },
 
   mounted() {
@@ -254,7 +289,9 @@ export default {
 
 <template>
   <!-- Document List -->
-  <div class="bg-white rounded-lg shadow-sm border border-outline">
+  <div
+    class="bg-white rounded-lg shadow-sm border border-outline flex flex-col min-h-0 flex-1"
+  >
     <div class="p-4 border-b border-outline">
       <div class="flex items-center justify-between gap-4 flex-wrap">
         <!-- Left Section: Filter + Search + Show -->
@@ -327,7 +364,9 @@ export default {
 
           <!-- Delete -->
           <button
+            @click="handleDeleteUsers"
             class="p-2 bg-white border border-red text-red rounded-lg hover:bg-red hover:text-white transition"
+            :disabled="isLoadingTable"
           >
             <Trash2 :size="18" />
           </button>
@@ -379,7 +418,7 @@ export default {
     </div>
 
     <!-- Table -->
-    <div class="relative overflow-x-auto">
+    <div class="mt-4 flex-1 min-h-0 overflow-auto relative">
       <!-- Loading Overlay -->
       <div
         v-if="isLoadingTable"

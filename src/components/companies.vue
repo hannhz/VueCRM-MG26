@@ -1,11 +1,11 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { useStore } from "vuex";
 
 import CreateCompanyForm from "./forms/CreateCompanyForm.vue";
 import BulkAddCompanyForm from "./forms/BulkAddCompanyForm.vue";
 import DetailForm from "./forms/DetailForm.vue";
-import DetailDataForm from "./forms/DetailDataForm.vue";
+import DetailDataCompany from "./forms/DetailDataCompany.vue";
 import { alertService } from "@/services/alertService";
 
 import {
@@ -40,10 +40,17 @@ const error = computed(() => store.getters["company/error"]);
 const currentPage = ref(1);
 const totalCompanies = computed(() => companies.value.length); // Dynamically compute from actual data
 const itemsPerPage = ref(10);
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(totalCompanies.value / itemsPerPage.value)),
+);
+const paginatedCompanies = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  return companies.value.slice(start, start + itemsPerPage.value);
+});
 const showCreateCompanyForm = ref(false);
 const showBulkAddForm = ref(false);
 const showDetailForm = ref(false);
-const showDetailDataForm = ref(false);
+const showDetailDataCompany = ref(false);
 const showDropdown = ref(false);
 const showDownloadDropdown = ref(false);
 const selectedIds = ref([]);
@@ -126,21 +133,37 @@ const handleBulkAdd = () => {
   showBulkAddForm.value = true;
 };
 
-const openCompanyDetail = (company) => {
-  selectedCompany.value = { ...company };
-  showDetailDataForm.value = true;
+watch([itemsPerPage, totalCompanies], () => {
+  if (currentPage.value > totalPages.value) {
+    currentPage.value = totalPages.value;
+  }
+});
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value++;
 };
 
-const closeDetailDataForm = () => {
-  showDetailDataForm.value = false;
+const prevPage = () => {
+  if (currentPage.value > 1) currentPage.value--;
+};
+
+const openCompanyDetail = (company) => {
+  selectedCompany.value = { ...company };
+  showDetailDataCompany.value = true;
+};
+
+const closeDetailDataCompany = () => {
+  showDetailDataCompany.value = false;
   selectedCompany.value = null;
 };
 
-const handleDetailDataSubmit = async (payload) => {
+const handleDetailDataCompanySubmit = async (payload) => {
   const companyId = selectedCompany.value?.id;
 
   if (!companyId) {
-    alertService.error("ID company tidak ditemukan. Coba buka ulang detail data.");
+    alertService.error(
+      "ID company tidak ditemukan. Coba buka ulang detail data.",
+    );
     return;
   }
 
@@ -163,7 +186,7 @@ const handleDetailDataSubmit = async (payload) => {
     });
 
     alertService.success("Detail company berhasil diperbarui.");
-    closeDetailDataForm();
+    closeDetailDataCompany();
   } catch (error) {
     const backendMessage =
       error?.response?.data?.message ||
@@ -191,12 +214,13 @@ const fetchData = () => {
 // Delete selected companies
 const handleDeleteCompanies = async () => {
   if (selectedIds.value.length === 0) {
-    alert("Please select at least one company to delete");
+    alertService.warning("Pilih minimal satu company untuk dihapus");
     return;
   }
 
-  const confirmDelete = confirm(
-    `Are you sure you want to delete ${selectedIds.value.length} company(ies)? This action cannot be undone.`,
+  const confirmDelete = await alertService.confirm(
+    "Hapus Company?",
+    `${selectedIds.value.length} company akan dihapus secara permanen. Lanjutkan?`,
   );
 
   if (!confirmDelete) return;
@@ -208,7 +232,7 @@ const handleDeleteCompanies = async () => {
     }
     // Clear selected IDs
     selectedIds.value = [];
-    console.log("Companies deleted successfully");
+    alertService.success("Company berhasil dihapus");
   } catch (error) {
     console.error("Error deleting companies:", error);
     const status = error?.response?.status;
@@ -216,8 +240,8 @@ const handleDeleteCompanies = async () => {
       error?.response?.data?.message ||
       error?.response?.data?.error ||
       error?.message;
-    alert(
-      `Failed to delete company. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Please try again."}`,
+    alertService.error(
+      `Gagal menghapus company. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Silakan coba lagi."}`,
     );
   }
 };
@@ -225,7 +249,9 @@ const handleDeleteCompanies = async () => {
 
 <template>
   <!-- Action Bar -->
-  <div class="bg-white rounded-lg shadow-sm h-147 p-4 border border-outline">
+  <div
+    class="bg-white rounded-lg shadow-sm h-147 p-4 border border-outline flex flex-col overflow-hidden"
+  >
     <!-- Header with Title and Total -->
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-baseline gap-3">
@@ -395,6 +421,7 @@ const handleDeleteCompanies = async () => {
       <!-- PUSH KANAN -->
       <div class="ml-auto flex items-center gap-3 text-sm text-sub-text">
         <button
+          @click="prevPage"
           class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
           :disabled="currentPage === 1"
         >
@@ -405,15 +432,18 @@ const handleDeleteCompanies = async () => {
 
         <input
           type="number"
-          v-model="currentPage"
+          v-model.number="currentPage"
           min="1"
+          :max="totalPages"
           class="w-12 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-sub-text"
         />
 
-        <span>of {{ Math.ceil(totalCompanies / itemsPerPage) }}</span>
+        <span>of {{ totalPages }}</span>
 
         <button
+          @click="nextPage"
           class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
+          :disabled="currentPage === totalPages"
         >
           <ChevronRight :size="18" class="text-sub-text" />
         </button>
@@ -421,7 +451,7 @@ const handleDeleteCompanies = async () => {
     </div>
 
     <!-- Table -->
-    <div class="overflow-hidden relative">
+    <div class="mt-4 flex-1 min-h-0 overflow-auto relative">
       <!-- Loading Overlay -->
       <div
         v-if="isLoading"
@@ -514,7 +544,7 @@ const handleDeleteCompanies = async () => {
 
             <!-- Sample rows - will be populated with actual data -->
             <tr
-              v-for="company in companies"
+              v-for="company in paginatedCompanies"
               :key="company.id"
               class="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer"
               @click="openCompanyDetail(company)"
@@ -594,13 +624,13 @@ const handleDeleteCompanies = async () => {
     "
   />
 
-  <DetailDataForm
-    :isOpen="showDetailDataForm"
+  <DetailDataCompany
+    :isOpen="showDetailDataCompany"
     :company="selectedCompany"
     :isSubmitting="isDetailDataSubmitting"
-    @close="closeDetailDataForm"
-    @back="closeDetailDataForm"
-    @submit="handleDetailDataSubmit"
+    @close="closeDetailDataCompany"
+    @back="closeDetailDataCompany"
+    @submit="handleDetailDataCompanySubmit"
   />
 </template>
 

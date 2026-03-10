@@ -131,6 +131,7 @@ const handleReset = () => {
 <script>
 import { X, ChevronDown } from "lucide-vue-next";
 import { mapState, mapActions } from "vuex";
+import { alertService } from "@/services/alertService";
 
 export default {
   name: "UserFormModal",
@@ -208,6 +209,8 @@ export default {
   methods: {
     ...mapActions({
       insertUser: "users/insertuser",
+      updateUser: "users/updateuser",
+      deleteUser: "users/deleteuser",
     }),
 
     getUserFormDefaults(user = null) {
@@ -230,31 +233,74 @@ export default {
       this.$emit("close");
     },
 
-    handleSubmit() {
+    async handleSubmit() {
       this.isSaving = true;
       this.errorMsg = "";
       this.successMsg = "";
       // Set name before submitting
-      this.formData.name = `${this.formData.firstname} ${this.formData.lastname}`.trim();
+      this.formData.name =
+        `${this.formData.firstname} ${this.formData.lastname}`.trim();
 
-      console.log("Submitting form with data:", this.formData);
+      try {
+        if (this.user?.id) {
+          const updateFormData = { ...this.formData };
+          if (!updateFormData.password) {
+            delete updateFormData.password;
+          }
 
-      this.insertUser(this.formData)
-        .then(() => {
+          await this.updateUser({
+            keyedit: this.user.id,
+            formdata: updateFormData,
+          });
+          this.successMsg = "User berhasil diperbarui!";
+          await alertService.success("User berhasil diperbarui!");
+        } else {
+          await this.insertUser(this.formData);
           this.successMsg = "User berhasil ditambahkan!";
-          alertService.success("User berhasil ditambahkan!");
-          emit("submit", this.formData);
+          await alertService.success("User berhasil ditambahkan!");
+        }
 
-          this.handleReset();
-        })
-        .catch((err) => {
-          console.error("Error inserting user:", err);
-          this.errorMsg = err.message || "Failed to create user.";
-        })
-        .finally(() => {
-          this.isSaving = false;
-          this.handleClose();
-        });
+        this.$emit("submit", this.formData);
+        this.handleReset();
+        this.handleClose();
+      } catch (err) {
+        console.error("Error saving user:", err);
+        this.errorMsg =
+          err?.response?.data?.message || err.message || "Failed to save user.";
+      } finally {
+        this.isSaving = false;
+      }
+    },
+
+    async handleDelete() {
+      if (!this.user?.id || this.isSaving) return;
+
+      const confirmDelete = await alertService.confirm(
+        "User ini akan dihapus permanen. Lanjutkan?",
+        "Hapus User?",
+      );
+
+      if (!confirmDelete?.isConfirmed) return;
+
+      this.isSaving = true;
+      this.errorMsg = "";
+      this.successMsg = "";
+
+      try {
+        await this.deleteUser(this.user.id);
+        this.successMsg = "User berhasil dihapus!";
+        await alertService.success("User berhasil dihapus!");
+        this.$emit("submit", { deletedId: this.user.id });
+        this.handleClose();
+      } catch (err) {
+        console.error("Error deleting user:", err);
+        this.errorMsg =
+          err?.response?.data?.message ||
+          err.message ||
+          "Failed to delete user.";
+      } finally {
+        this.isSaving = false;
+      }
     },
 
     handleReset() {
@@ -410,7 +456,7 @@ export default {
                 type="password"
                 placeholder="Password"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                required
+                :required="!user || !user.id"
               />
             </div>
           </div>
@@ -524,13 +570,24 @@ export default {
       <div
         class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
       >
-        <button
-          type="button"
-          @click="handleReset"
-          class="text-sm text-red font-medium hover:underline"
-        >
-          Reset
-        </button>
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            @click="handleReset"
+            class="text-sm text-red font-medium hover:underline"
+          >
+            Reset
+          </button>
+          <button
+            v-if="user && user.id"
+            type="button"
+            @click="handleDelete"
+            :disabled="isSaving"
+            class="px-4 py-2 border border-red text-red rounded-lg hover:bg-red hover:text-white transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Delete
+          </button>
+        </div>
         <div class="flex gap-3">
           <button
             type="button"
@@ -540,7 +597,6 @@ export default {
             Cancel
           </button>
           <button
-            @click="handleSubmit"
             type="submit"
             form="addUserForm"
             :disabled="isSaving"

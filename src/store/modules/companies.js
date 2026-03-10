@@ -143,11 +143,26 @@ const actions = {
   },
 
   insertcompany(context, data) {
+    // Gunakan saveCompany dengan choice='i' untuk backward compatibility
+    const payload = {
+      choice: "i",
+      ...data.formdata,
+    };
+    return context.dispatch("saveCompany", payload);
+  },
+
+  saveCompany(context, formData) {
     const promise = new Promise(async (resolve, reject) => {
       try {
-        // endpoint untuk menambah company seharusnya "company/input"
-        // path "company/insertusr" ternyata tidak ada sehingga menghasilkan 404
-        let network = await api.post("company/input", data.formdata, {
+        // Tentukan choice: 'i' untuk insert, 'u' untuk update
+        const choice = formData.choice || (formData.id ? "u" : "i");
+
+        const requestPayload = {
+          choice: choice,
+          ...formData,
+        };
+
+        let network = await api.post("company/input", requestPayload, {
           headers: {
             Authorization: "Bearer " + cookies.get("token"),
           },
@@ -183,33 +198,13 @@ const actions = {
   },
 
   updatecompany(context, data) {
-    const promise = new Promise(async (resolve, reject) => {
-      try {
-        let network = await api.post(
-          `company/updateusr?id=${data.keyedit}`,
-          data.formdata,
-          {
-            headers: {
-              Authorization:
-                "Bearer " + cookies.get("token") ??
-                localStorage.getItem("token"),
-            },
-            // headers: {
-            //   Authorization: "Bearer " + localStorage.getItem("token"),
-            // },
-          },
-        );
-        resolve(network.data);
-        context.dispatch("fetchAllcompany");
-      } catch (error) {
-        reject(error);
-      }
-    });
-    return promise;
-
-    // promise.then((data) => {
-    //   console.log(data);
-    // });
+    // Gunakan saveCompany dengan choice='u' untuk backward compatibility
+    const payload = {
+      choice: "u",
+      id: data.keyedit,
+      ...data.formdata,
+    };
+    return context.dispatch("saveCompany", payload);
   },
 
   async deletecompany(context, data) {
@@ -217,30 +212,18 @@ const actions = {
       Authorization: "Bearer " + cookies.get("token"),
     };
 
-    const candidates = [
-      () => api.delete(`company/deleteusr?id=${data}`, { headers }),
-      () => api.delete(`company/delete?id=${data}`, { headers }),
-      () => api.delete(`company/deletecompany?id=${data}`, { headers }),
-      () => api.post(`company/deleteusr?id=${data}`, {}, { headers }),
-      () => api.post(`company/delete?id=${data}`, {}, { headers }),
-      () => api.post("company/delete", { id: data }, { headers }),
-      () => api.post("company/deletecompany", { id: data }, { headers }),
-    ];
-
-    let lastError = null;
-
-    for (const run of candidates) {
-      try {
-        const response = await run();
-        context.dispatch("fetchAllcompany");
-        return response.data;
-      } catch (error) {
-        lastError = error;
-      }
+    try {
+      const response = await api.post(
+        "company/input",
+        { choice: "d", id: data },
+        { headers },
+      );
+      await context.dispatch("fetchAllcompany");
+      return response.data;
+    } catch (error) {
+      await context.dispatch("fetchAllcompany");
+      throw error;
     }
-
-    context.dispatch("fetchAllcompany");
-    throw lastError || new Error("Failed to delete company");
   },
 
   updateprofile(context, data) {

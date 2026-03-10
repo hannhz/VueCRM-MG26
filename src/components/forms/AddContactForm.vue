@@ -416,7 +416,6 @@ export default {
               Add Another Deal
             </button>
           </div>
-
         </form>
       </div>
 

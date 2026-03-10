@@ -160,7 +160,6 @@ export default {
       teams: "team/allTeamUsers",
       isLoading: "team/isLoading",
       error: "team/error",
-
     }),
 
     searchQuery: {
@@ -309,14 +308,11 @@ export default {
     this.fetchData();
   },
 
-
-  watch:{
-    teams(e){
+  watch: {
+    teams(e) {
       console.log(e);
-    }
-
-
-  }
+    },
+  },
 };
 </script>
 
@@ -533,10 +529,7 @@ export default {
               {{ team.parent }}
             </td>
 
-            <td
-              class="px-6 py-4 text-dark-base"
-              @click="openTeamDetail(team)"
-            >
+            <td class="px-6 py-4 text-dark-base" @click="openTeamDetail(team)">
               {{ team.total_users }}
             </td>
 

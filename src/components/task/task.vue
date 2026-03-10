@@ -4,7 +4,6 @@ import { useStore } from "vuex";
 import {
   ChevronDown,
   Download,
-  Trash,
   FolderDown,
   FileDown,
   FilePlus,
@@ -19,6 +18,8 @@ import TaskList from "./tasklist.vue";
 import TaskCalender from "./taskcalender.vue";
 import TaskCard from "./taskcard.vue";
 import CreateTaskForm from "@/components/forms/CreateTaskForm.vue";
+import TaskDetailDataForm from "@/components/forms/TaskDetailDataForm.vue";
+import { alertService } from "@/services/alertService";
 
 const store = useStore();
 
@@ -51,6 +52,9 @@ const tasksStatusClass = computed(() => {
 const showDropdown = ref(false);
 const showDownloadDropdown = ref(false);
 const showCreateTaskForm = ref(false);
+const showTaskDetailForm = ref(false);
+const selectedTaskDetail = ref(null);
+const isTaskDetailSubmitting = ref(false);
 
 function toggleDropdown() {
   showDropdown.value = !showDropdown.value;
@@ -70,10 +74,6 @@ function downloadAll() {
 
 function handleDownload() {
   console.log("Download Selected Tasks");
-}
-
-function handleDelete() {
-  console.log("Delete selected tasks");
 }
 
 // Keep local UI mode in sync with Vuex for consistency across task subviews.
@@ -103,6 +103,58 @@ const handleCreateTask = async (formData) => {
   }
 };
 
+function openTaskDetail(task) {
+  selectedTaskDetail.value = { ...task };
+  showTaskDetailForm.value = true;
+}
+
+function closeTaskDetail() {
+  selectedTaskDetail.value = null;
+  showTaskDetailForm.value = false;
+}
+
+async function handleTaskDetailSubmit(payload) {
+  const taskId = selectedTaskDetail.value?.id || payload?.id;
+
+  if (!taskId) {
+    alertService.error("ID task tidak ditemukan. Coba buka ulang detail task.");
+    return;
+  }
+
+  if (!payload?.task_name?.trim()) {
+    alertService.error("Task name wajib diisi.");
+    return;
+  }
+
+  isTaskDetailSubmitting.value = true;
+
+  try {
+    await store.dispatch("tasks/updateTask", {
+      id: taskId,
+      formData: {
+        ...payload,
+        task_name: payload.task_name.trim(),
+        description: payload.description?.trim() || "",
+        assignee: payload.assignee?.trim() || "",
+      },
+    });
+
+    await store.dispatch("tasks/fetchAllTasks");
+
+    alertService.success("Task berhasil diperbarui.");
+    closeTaskDetail();
+  } catch (err) {
+    const backendMessage =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err?.message ||
+      "Gagal update task. Silakan coba lagi.";
+    alertService.error(backendMessage);
+  } finally {
+    isTaskDetailSubmitting.value = false;
+  }
+}
+
 // Lifecycle: Fetch tasks on mount
 onMounted(() => {
   fetchData();
@@ -113,7 +165,9 @@ onMounted(() => {
   <div class="flex items-center justify-between mb-4">
     <div class="flex items-baseline gap-3">
       <h1 class="text-2xl font-bold text-dark-base">Tasks</h1>
-      <span class="text-sm" :class="tasksStatusClass">{{ tasksStatusText }}</span>
+      <span class="text-sm" :class="tasksStatusClass">{{
+        tasksStatusText
+      }}</span>
     </div>
 
     <!-- Action Button -->
@@ -224,14 +278,6 @@ onMounted(() => {
         <span class="text-sm font-medium">Bulk Edit</span>
       </button>
 
-      <!--- Delete Mode -->
-      <button
-        @click="handleDelete"
-        class="flex items-center justify-center px-4 py-2 h-10 rounded-lg border transition bg-white text-sub-text border-outline hover:bg-red hover:text-white hover:border-red"
-      >
-        <Trash :size="18" :stroke-width="2" />
-      </button>
-
       <!-- List Mode -->
       <button
         @click="setMode('list')"
@@ -278,21 +324,13 @@ onMounted(() => {
   </div>
 
   <!-- Konten berdasarkan mode -->
-  <div class="mt-4 relative">
-    <!-- Loading Overlay -->
-    <div
-      v-if="isLoading"
-      class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center rounded-lg"
-    >
-      <div class="flex flex-col items-center gap-3">
-        <RefreshCw class="animate-spin text-blue-950" :size="32" />
-        <p class="text-sm text-sub-text font-medium">Loading tasks...</p>
-      </div>
-    </div>
-
-    <TaskList v-if="activeMode === 'list'" />
-    <TaskCalender v-else-if="activeMode === 'calendar'" />
-    <TaskCard v-else-if="activeMode === 'grid'" />
+  <div class="mt-4">
+    <TaskList v-if="activeMode === 'list'" @viewDetail="openTaskDetail" />
+    <TaskCalender
+      v-else-if="activeMode === 'calendar'"
+      @viewDetail="openTaskDetail"
+    />
+    <TaskCard v-else-if="activeMode === 'grid'" @viewDetail="openTaskDetail" />
   </div>
 
   <!-- Create Task Form -->
@@ -300,5 +338,14 @@ onMounted(() => {
     :isOpen="showCreateTaskForm"
     @close="showCreateTaskForm = false"
     @submit="handleCreateTask"
+  />
+
+  <TaskDetailDataForm
+    :isOpen="showTaskDetailForm"
+    :task="selectedTaskDetail"
+    :isSubmitting="isTaskDetailSubmitting"
+    @close="closeTaskDetail"
+    @back="closeTaskDetail"
+    @submit="handleTaskDetailSubmit"
   />
 </template>
