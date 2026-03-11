@@ -62,15 +62,29 @@ const mapTaskPayload = (formData = {}) => {
   const assignee = formData.assignee || formData.owner?.trim() || null;
   const dueDate = formData.due_date || formData.dueDate || null;
   const taskTime = formData.task_time || formData.time || null;
+  const now = new Date().toISOString();
+  const createdAt = formData.created_at || now;
+  const updatedAt = now;
 
   return {
     task_name: taskName,
+    name: taskName,
     description,
+    task_content: description,
     status: normalizeTaskStatus(formData.status || formData.stage),
+    stage: normalizeTaskStatus(formData.status || formData.stage),
     assignee,
+    owner: assignee,
     due_date: dueDate,
+    dueDate: dueDate,
+    date: dueDate,
+    deadline: dueDate,
     task_time: taskTime,
+    due_time: taskTime,
+    time: taskTime,
     priority: formData.priority || null,
+    created_at: createdAt,
+    updated_at: updatedAt,
   };
 };
 
@@ -296,10 +310,16 @@ export default {
       const choice = formData.id ? "u" : "i";
 
       const mappedPayload = mapTaskPayload(formData);
+      const now = new Date().toISOString();
       const payload = {
         choice: choice,
         ...(choice === "u" ? { id: formData.id } : {}),
         ...mappedPayload,
+        created_at:
+          choice === "i"
+            ? formData.created_at || mappedPayload.created_at || now
+            : formData.created_at || undefined,
+        updated_at: now,
       };
 
       try {

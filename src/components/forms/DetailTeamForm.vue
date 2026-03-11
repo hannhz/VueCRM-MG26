@@ -11,19 +11,183 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  apiPayload: {
+    type: Object,
+    default: null,
+  },
 });
 
 const emit = defineEmits(["close"]);
 
-const getNormalizedUsers = (team) => {
+const toComparableId = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  return String(value);
+};
+
+const getTeamId = (team) =>
+  toComparableId(
+    team?.team_id ?? team?.teamid ?? team?.id ?? team?.id_team ?? null,
+  );
+
+const getUsersFromViewRows = (team, apiPayload) => {
   if (!team || typeof team !== "object") return [];
+
+  const currentTeamId = getTeamId(team);
+  const rowCandidates = [
+    apiPayload?.teams,
+    apiPayload?.data?.teams,
+    apiPayload?.rows,
+    apiPayload?.data,
+  ];
+
+  for (const candidate of rowCandidates) {
+    if (!Array.isArray(candidate)) continue;
+
+    const users = candidate
+      .filter((row) => row && typeof row === "object")
+      .filter((row) => {
+        const rowTeamId = toComparableId(
+          row.team_id ?? row.teamid ?? row.id_team,
+        );
+        if (!currentTeamId || !rowTeamId) return false;
+        return rowTeamId === currentTeamId;
+      })
+      .map((row, index) => {
+        const userId = toComparableId(
+          row.user_id ?? row.userid ?? row.id_user ?? row.id,
+        );
+        if (!userId) return null;
+
+        const fullName = [row.firstname, row.lastname]
+          .filter((part) => typeof part === "string" && part.trim())
+          .join(" ")
+          .trim();
+
+        const name =
+          row.name ||
+          row.full_name ||
+          row.username ||
+          fullName ||
+          row.email ||
+          `User ID ${userId}`;
+
+        return {
+          id: userId,
+          name,
+          email: row.email || "",
+          _order: index,
+        };
+      })
+      .filter(Boolean);
+
+    if (!users.length) continue;
+
+    // Deduplicate by user id while keeping the first-seen order.
+    const uniqueUsers = [];
+    const seenIds = new Set();
+    for (const user of users) {
+      if (seenIds.has(user.id)) continue;
+      seenIds.add(user.id);
+      uniqueUsers.push(user);
+    }
+
+    return uniqueUsers;
+  }
+
+  return [];
+};
+
+const parseUserIds = (value) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => toComparableId(item?.user_id ?? item?.id ?? item))
+      .filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((item) => toComparableId(item.trim()))
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
+const getLinkedUserIds = (team, apiPayload) => {
+  if (!team || typeof team !== "object") return new Set();
+
+  const currentTeamId = getTeamId(team);
+  const relationCandidates = [
+    team.user_team,
+    team.team_users,
+    team.team_user,
+    apiPayload?.user_team,
+    apiPayload?.team_users,
+    apiPayload?.team_user,
+    apiPayload?.relations,
+  ];
+  const userIds = new Set();
+
+  for (const candidate of relationCandidates) {
+    if (!Array.isArray(candidate)) continue;
+
+    for (const row of candidate) {
+      if (!row || typeof row !== "object") continue;
+
+      const relationTeamId = toComparableId(
+        row.team_id ?? row.teamid ?? row.teamId ?? row.id_team,
+      );
+      const relationUserId = toComparableId(
+        row.user_id ?? row.userid ?? row.userId ?? row.id_user ?? row.id,
+      );
+
+      if (!relationUserId) continue;
+
+      if (currentTeamId && relationTeamId && relationTeamId !== currentTeamId) {
+        continue;
+      }
+
+      userIds.add(relationUserId);
+    }
+  }
+
+  const inlineUserIdCandidates = [
+    team.user_ids,
+    team.users_id,
+    team.member_ids,
+    team.members_id,
+    team.user_id,
+    team.member_id,
+  ];
+
+  for (const candidate of inlineUserIdCandidates) {
+    for (const userId of parseUserIds(candidate)) {
+      userIds.add(userId);
+    }
+  }
+
+  return userIds;
+};
+
+const getNormalizedUsers = (team, apiPayload) => {
+  if (!team || typeof team !== "object") return [];
+
+  const usersFromViewRows = getUsersFromViewRows(team, apiPayload);
+  if (usersFromViewRows.length) return usersFromViewRows;
+
+  const linkedUserIds = getLinkedUserIds(team, apiPayload);
+  const shouldFilterByLinkedIds = linkedUserIds.size > 0;
 
   const arrayCandidates = [
     team.users,
-    team.team_users,
     team.members,
     team.user_list,
-    team.user_team,
+    team.member_list,
+    apiPayload?.users,
+    apiPayload?.members,
+    apiPayload?.user_list,
+    apiPayload?.member_list,
   ];
 
   for (const candidate of arrayCandidates) {
@@ -32,15 +196,23 @@ const getNormalizedUsers = (team) => {
     return candidate
       .map((item, index) => {
         if (typeof item === "string") {
+          if (shouldFilterByLinkedIds) return null;
           return { id: index, name: item, email: "" };
         }
 
         if (!item || typeof item !== "object") return null;
 
+        const userId = toComparableId(item.id ?? item.user_id ?? item.userId);
+
+        if (shouldFilterByLinkedIds) {
+          if (!userId || !linkedUserIds.has(userId)) return null;
+        }
+
         const name =
           item.name ||
           item.full_name ||
           item.username ||
+          [item.firstname, item.lastname].filter(Boolean).join(" ").trim() ||
           item.firstname ||
           item.first_name ||
           item.email ||
@@ -49,7 +221,7 @@ const getNormalizedUsers = (team) => {
         const email = item.email || "";
 
         return {
-          id: item.id || item.user_id || index,
+          id: userId || index,
           name,
           email,
         };
@@ -67,6 +239,8 @@ const getNormalizedUsers = (team) => {
   for (const candidate of stringCandidates) {
     if (typeof candidate !== "string" || !candidate.trim()) continue;
 
+    if (shouldFilterByLinkedIds) continue;
+
     return candidate
       .split(",")
       .map((name, index) => ({
@@ -77,10 +251,20 @@ const getNormalizedUsers = (team) => {
       .filter((item) => item.name);
   }
 
+  if (shouldFilterByLinkedIds) {
+    return Array.from(linkedUserIds).map((userId) => ({
+      id: userId,
+      name: `User ID ${userId}`,
+      email: "",
+    }));
+  }
+
   return [];
 };
 
-const usersInTeam = computed(() => getNormalizedUsers(props.team));
+const usersInTeam = computed(() =>
+  getNormalizedUsers(props.team, props.apiPayload),
+);
 
 const totalUsersLabel = computed(() => {
   if (!props.team) return 0;
@@ -161,6 +345,7 @@ const totalUsersLabel = computed(() => {
               class="px-3 py-2 rounded-lg bg-light-base border border-outline"
             >
               <p class="text-sm font-medium text-dark-base">{{ user.name }}</p>
+              <p class="text-xs text-sub-text">ID: {{ user.id }}</p>
               <p v-if="user.email" class="text-xs text-sub-text">
                 {{ user.email }}
               </p>

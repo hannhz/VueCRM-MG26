@@ -11,6 +11,32 @@ const normalizeNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const normalizeAssociationId = (value) => {
+  if (value === "" || value === null || value === undefined) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : value;
+};
+
+const resolveDealId = (responseData, fallbackId = null) => {
+  const candidates = [
+    responseData?.deal?.id,
+    responseData?.data?.id,
+    responseData?.id,
+    responseData?.deal_id,
+    fallbackId,
+  ];
+
+  return (
+    candidates.find(
+      (candidate) =>
+        candidate !== "" && candidate !== null && candidate !== undefined,
+    ) || null
+  );
+};
+
 const mapCreateDealPayload = (formData = {}) => {
   const normalizedAmount = normalizeNumber(formData.amount);
 
@@ -182,6 +208,11 @@ export default {
         priority: existingDeal?.priority || null,
         source: existingDeal?.source || null,
         stage: apiStageValue,
+
+        // TAMBAHKAN INI untuk companiesAssociation dan contactAssociation
+        companyassoc: existingDeal?.companyassoc || [],
+        contactassoc:
+          existingDeal?.contactassoc || existingDeal?.dealsassoc || [],
       };
 
       try {
@@ -224,12 +255,16 @@ export default {
         priority: payload.priority,
         source: payload.source,
         stage: payload.stage,
+        companyassoc: formData.companyassoc || [],
+        contactassoc: formData.contactassoc || formData.dealsassoc || [],
       };
 
       try {
         const response = await api.post("deals/input", requestPayload, {
           headers,
         });
+
+        const savedDealId = resolveDealId(response.data, formData.id || null);
 
         await dispatch("fetchAllDeals").catch(() => {
           const createdDeal = response?.data?.deal || response?.data?.data;

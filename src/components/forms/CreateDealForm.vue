@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import { X, Plus, ChevronDown, Paperclip } from "lucide-vue-next";
 import ContactDetailForm from "./DetailForm.vue";
@@ -35,12 +35,38 @@ const currencyOptions = [
   { value: "EUR", label: "EUR" },
 ];
 
-const ownerOptions = [
-  { value: "", label: "Select Owner" },
-  { value: "thomas", label: "Thomas Anree" },
-  { value: "alex", label: "Alex Graham" },
-  { value: "sarah", label: "Sarah Jenkins" },
-];
+const userOptions = computed(() => {
+  const users = store.getters["users/allUsers"] || [];
+  return [
+    { value: "", label: "Select Owner" },
+    ...users.map((u) => ({
+      value: u.name || u.username || u.id,
+      label: u.name || u.username || "Unknown",
+    })),
+  ];
+});
+
+const contactOptions = computed(() => {
+  const contacts = store.getters["contacts/allContacts"] || [];
+  return [
+    { value: "", label: "Select Contact" },
+    ...contacts.map((c) => ({
+      value: c.id,
+      label: [c.first_name, c.last_name].filter(Boolean).join(" ") || "Unknown",
+    })),
+  ];
+});
+
+const companyOptions = computed(() => {
+  const companies = store.getters["company/allcompany"] || [];
+  return [
+    { value: "", label: "Select Company" },
+    ...companies.map((c) => ({
+      value: c.id,
+      label: c.company_name || c.name || "Unknown",
+    })),
+  ];
+});
 
 const priorityOptions = [
   { value: "", label: "Select Data" },
@@ -58,6 +84,12 @@ const sourceOptions = [
   { value: "cold_call", label: "Cold Call" },
   { value: "other", label: "Other" },
 ];
+
+onMounted(() => {
+  store.dispatch("users/fetchAllusers");
+  store.dispatch("contacts/fetchAllContacts");
+  store.dispatch("company/fetchAllcompany");
+});
 
 const showOptional = ref(false);
 const showDetailForm = ref(false);
@@ -95,8 +127,8 @@ const formData = ref({
   source: "",
   description: "",
   documents: null,
-  contactAssociation: "",
-  companiesAssociation: "",
+  contactassoc: "",
+  companyassoc: "",
 });
 
 const handleFileChange = (e) => {
@@ -113,7 +145,35 @@ const handleSubmit = async () => {
   isSavingBeforeDetail.value = true;
 
   try {
-    await store.dispatch("deals/createDeal", formData.value);
+    // Ensure associations are sent as arrays for backend compatibility
+    const submissionData = {
+      ...formData.value,
+      contactassoc: formData.value.contactassoc
+        ? [formData.value.contactassoc]
+        : [],
+      companyassoc: formData.value.companyassoc
+        ? [formData.value.companyassoc]
+        : [],
+    };
+
+    console.log("Submitting Deal Payload:", submissionData);
+
+    const response = await store.dispatch("deals/createDeal", submissionData);
+
+    // Check if backend returned 'gagal' even with status 201
+    if (response?.msg === "gagal") {
+      await alertService.error(
+        "Server returned 'gagal'. Please check the payload or choice parameter.",
+      );
+      return;
+    }
+
+    if (response?.success === false) {
+      await alertService.error(response?.message || "Failed to save deal");
+      return;
+    }
+
+    await alertService.toastSuccess(response?.msg || "Deal saved successfully");
     showDetailForm.value = true;
   } catch (error) {
     const message =
@@ -142,8 +202,8 @@ const handleReset = () => {
     source: "",
     description: "",
     documents: null,
-    contactAssociation: "",
-    companiesAssociation: "",
+    contactassoc: "",
+    companyassoc: "",
   };
   showOptional.value = false;
 };
@@ -282,7 +342,7 @@ const handleReset = () => {
                   class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
                   <option
-                    v-for="opt in ownerOptions"
+                    v-for="opt in userOptions"
                     :key="opt.value"
                     :value="opt.value"
                   >
@@ -488,12 +548,18 @@ const handleReset = () => {
               >Contact Association</label
             >
             <div class="relative">
-              <input
-                v-model="formData.contactAssociation"
-                type="text"
-                placeholder="Search by Name"
-                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
+              <select
+                v-model="formData.contactassoc"
+                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+              >
+                <option
+                  v-for="opt in contactOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </option>
+              </select>
               <ChevronDown
                 :size="16"
                 class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
@@ -515,12 +581,18 @@ const handleReset = () => {
               >Companies Association</label
             >
             <div class="relative">
-              <input
-                v-model="formData.companiesAssociation"
-                type="text"
-                placeholder="Search by Name"
-                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
+              <select
+                v-model="formData.companyassoc"
+                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+              >
+                <option
+                  v-for="opt in companyOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </option>
+              </select>
               <ChevronDown
                 :size="16"
                 class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"

@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { useStore } from "vuex";
 import { ArrowRight, X, Plus, ChevronDown } from "lucide-vue-next";
 import AddContactQuickForm from "./AddContactQuickForm.vue";
 
@@ -11,6 +12,35 @@ defineProps({
 });
 
 const emit = defineEmits(["close", "submit"]);
+
+const store = useStore();
+
+const contactOptions = computed(() => {
+  const contacts = store.getters["contacts/allContacts"] || [];
+  return [
+    { value: "", label: "Select Contact" },
+    ...contacts.map((c) => ({
+      value: c.id,
+      label: `${c.first_name} ${c.last_name}`.trim() || c.name || "Unknown",
+    })),
+  ];
+});
+
+const dealOptions = computed(() => {
+  const deals = store.getters["deals/allDeals"] || [];
+  return [
+    { value: "", label: "Select Deal" },
+    ...deals.map((d) => ({
+      value: d.id,
+      label: d.deal_name || d.name || "Unknown",
+    })),
+  ];
+});
+
+onMounted(() => {
+  store.dispatch("contacts/fetchAllContacts");
+  store.dispatch("deals/fetchAllDeals");
+});
 
 const industryOptions = [
   { value: "", label: "Select Industry" },
@@ -58,14 +88,23 @@ const formData = ref({
   posCode: "",
   source: "",
   type: "",
-  deals: "",
-  contactAssociation: "",
+  dealsassoc: "",
+  contactassoc: "",
 });
 
 const handleClose = () => emit("close");
 
 const handleSubmit = () => {
-  emit("submit", formData.value);
+  // Map fields to match standard naming and wrap associations in arrays
+  const submissionData = {
+    ...formData.value,
+    dealsassoc: formData.value.dealsassoc ? [formData.value.dealsassoc] : [],
+    contactassoc: formData.value.contactassoc
+      ? [formData.value.contactassoc]
+      : [],
+  };
+
+  emit("submit", submissionData);
   handleClose();
 };
 </script>
@@ -314,14 +353,26 @@ const handleSubmit = () => {
               </div>
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Deals</label
+                  >Deals Association</label
                 >
-                <input
-                  v-model="formData.deals"
-                  type="text"
-                  placeholder="Search Deals"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
+                <div class="relative">
+                  <select
+                    v-model="formData.dealsassoc"
+                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                  >
+                    <option
+                      v-for="opt in dealOptions"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                  <ChevronDown
+                    :size="16"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                  />
+                </div>
               </div>
             </div>
 
@@ -331,12 +382,18 @@ const handleSubmit = () => {
                 >Contact Association</label
               >
               <div class="relative">
-                <input
-                  v-model="formData.contactAssociation"
-                  type="text"
-                  placeholder="Search by Name"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
+                <select
+                  v-model="formData.contactassoc"
+                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                >
+                  <option
+                    v-for="opt in contactOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
+                </select>
                 <ChevronDown
                   :size="16"
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"

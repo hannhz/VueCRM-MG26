@@ -149,6 +149,7 @@ export default {
       showCreateTeamForm: false,
       showTeamDetailForm: false,
       selectedTeamDetail: null,
+      teamApiPayload: null,
       currentPage: 1,
       itemsPerPage: 5,
       selectedTeam: [],
@@ -219,7 +220,8 @@ export default {
 
     async fetchData() {
       try {
-        await this.fetchAllTeamUsers();
+        const result = await this.fetchAllTeamUsers();
+        this.teamApiPayload = result || null;
       } catch (err) {
         console.error("Failed to fetch team_user:", err);
       }
@@ -477,9 +479,6 @@ export default {
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
             </th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-              Action
-            </th>
           </tr>
         </thead>
 
@@ -532,16 +531,6 @@ export default {
             <td class="px-6 py-4 text-dark-base" @click="openTeamDetail(team)">
               {{ team.total_users }}
             </td>
-
-            <td class="px-6 py-4" @click.stop>
-              <button
-                type="button"
-                class="px-3 py-1.5 text-xs font-medium rounded-lg border border-outline text-sub-text hover:bg-light-base"
-                @click="openTeamDetail(team)"
-              >
-                View Detail
-              </button>
-            </td>
           </tr>
         </tbody>
       </table>
@@ -558,6 +547,7 @@ export default {
   <DetailTeamForm
     :isOpen="showTeamDetailForm"
     :team="selectedTeamDetail"
+    :apiPayload="teamApiPayload"
     @close="closeTeamDetail"
   />
 </template>

@@ -21,7 +21,9 @@
           }"
           @click="selectTab(tab)"
         >
-          <span class="block max-w-45 truncate text-center text-sm font-medium leading-none">
+          <span
+            class="block max-w-45 truncate text-center text-sm font-medium leading-none"
+          >
             {{ tab.CAPTION }}
           </span>
 
@@ -29,8 +31,10 @@
             v-if="tab.CAPTION !== 'Dashboard'"
             class="absolute inset-y-0 right-0 flex items-center pl-3 pr-1 bg-linear-to-l from-black/35 via-black/15 to-transparent transition-all duration-200"
             :class="{
-              'opacity-100 pointer-events-auto translate-x-0': tab.pathfile === selectedTab,
-              'opacity-0 pointer-events-none translate-x-1 group-hover:opacity-100 group-hover:pointer-events-auto group-hover:translate-x-0': tab.pathfile !== selectedTab,
+              'opacity-100 pointer-events-auto translate-x-0':
+                tab.pathfile === selectedTab,
+              'opacity-0 pointer-events-none translate-x-1 group-hover:opacity-100 group-hover:pointer-events-auto group-hover:translate-x-0':
+                tab.pathfile !== selectedTab,
             }"
           >
             <button

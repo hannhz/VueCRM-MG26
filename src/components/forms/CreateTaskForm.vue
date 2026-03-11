@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
+import { useStore } from "vuex";
 import {
   X,
   ChevronDown,
@@ -22,6 +23,8 @@ import {
   RotateCw,
 } from "lucide-vue-next";
 
+const store = useStore();
+
 defineProps({
   isOpen: {
     type: Boolean,
@@ -31,12 +34,23 @@ defineProps({
 
 const emit = defineEmits(["close", "submit"]);
 
+const getCurrentUserName = () => {
+  const userSignin = store.getters["users/usersignin"];
+  return (
+    userSignin?.name ||
+    userSignin?.username ||
+    userSignin?.user?.name ||
+    userSignin?.user?.username ||
+    ""
+  );
+};
+
 // Form Data
 const formData = ref({
   task_name: "",
   description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
   status: "",
-  assignee: "",
+  assignee: getCurrentUserName(),
   due_date: "",
   task_time: "",
   priority: "",
@@ -49,11 +63,16 @@ const statusOptions = [
   { value: "done", label: "Done" },
 ];
 
-const assigneeOptions = [
-  { value: "", label: "Select Data" },
-  { value: "thomas", label: "Thomas Anree" },
-  { value: "abdul", label: "Abdul" },
-];
+const assigneeOptions = computed(() => {
+  const users = store.getters["users/allUsers"] || [];
+  return [
+    { value: "", label: "Select Data" },
+    ...users.map((user) => ({
+      value: user.name || user.username || user.id,
+      label: user.name || user.username || "Unknown",
+    })),
+  ];
+});
 
 const priorityOptions = [
   { value: "", label: "Select Data" },
@@ -74,12 +93,32 @@ const handleReset = () => {
     task_name: "",
     description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
     status: "",
-    assignee: "",
+    assignee: getCurrentUserName(),
     due_date: "",
     task_time: "",
     priority: "",
   };
 };
+
+onMounted(async () => {
+  await Promise.allSettled([
+    store.dispatch("users/fetchAllusers"),
+    store.dispatch("users/getusersignin"),
+  ]);
+
+  if (!formData.value.assignee) {
+    formData.value.assignee = getCurrentUserName();
+  }
+});
+
+watch(
+  () => store.getters["users/usersignin"],
+  () => {
+    if (!formData.value.assignee) {
+      formData.value.assignee = getCurrentUserName();
+    }
+  },
+);
 </script>
 
 <template>

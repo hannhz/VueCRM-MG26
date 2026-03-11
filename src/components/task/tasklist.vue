@@ -63,6 +63,8 @@ async function quickAdd() {
     await store.dispatch("tasks/createTask", {
       taskName,
       owner: getLoggedInName(),
+      dueDate: new Date().toISOString(),
+      created_at: new Date().toISOString(),
     });
 
     taskText.value = "";
@@ -557,7 +559,9 @@ async function handleChangeStage(task, newStage) {
               </td>
               <td class="px-6 py-4">{{ task.dueDate || task.time || "-" }}</td>
               <td class="px-6 py-4">—</td>
-              <td class="px-6 py-4">—</td>
+              <td class="px-6 py-4">
+                {{ task.created_at || task.createdAt || "-" }}
+              </td>
               <td class="px-6 py-4">
                 {{ task.owner || task.assignee || "-" }}
               </td>

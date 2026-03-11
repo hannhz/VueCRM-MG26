@@ -372,6 +372,7 @@ export default {
   methods: {
     ...mapActions("company", [
       "fetchAllcompany",
+      "fetchcompanybyid",
       "updatecompany",
       "deletecompany",
     ]),
@@ -402,9 +403,40 @@ export default {
       if (this.currentPage > 1) this.currentPage--;
     },
 
-    openCompanyDetail(company) {
-      this.selectedCompany = { ...company };
-      this.showDetailDataCompany = true;
+    async openCompanyDetail(company) {
+      const companyId = company?.id;
+
+      if (!companyId) {
+        alertService.error("ID company tidak ditemukan.");
+        return;
+      }
+
+      this.isDetailDataSubmitting = true;
+
+      try {
+        const response = await this.fetchcompanybyid(companyId);
+        const companyDetail =
+          response?.data?.company ||
+          response?.data?.data ||
+          response?.data ||
+          response?.company ||
+          response?.companies ||
+          company;
+
+        this.selectedCompany = { ...company, ...companyDetail };
+        this.showDetailDataCompany = true;
+      } catch (error) {
+        this.selectedCompany = { ...company };
+        this.showDetailDataCompany = true;
+
+        const message =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Gagal mengambil detail terbaru dari server. Menampilkan data yang tersedia.";
+        alertService.warning(message);
+      } finally {
+        this.isDetailDataSubmitting = false;
+      }
     },
 
     closeDetailDataCompany() {
@@ -503,6 +535,21 @@ export default {
 
     handleBulkAdd() {
       this.showBulkAddForm = true;
+    },
+
+    fetchData() {
+      this.showDropdown = false;
+      this.showDownloadDropdown = false;
+
+      return this.fetchAllcompany().catch((error) => {
+        const message =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          "Gagal refresh data company";
+
+        alertService.error(message);
+      });
     },
   },
 };

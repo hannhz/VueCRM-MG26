@@ -144,6 +144,8 @@ import { X, Search, ChevronDown, Check } from "lucide-vue-next";
 import { useStore, mapActions, mapGetters } from "vuex";
 
 export default {
+  emits: ["close", "submit"],
+
   props: {
     isOpen: {
       type: Boolean,

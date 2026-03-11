@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "vuex";
 import { X, Plus, ChevronDown } from "lucide-vue-next";
 import AddDealForm from "./AddDealForm.vue";
@@ -50,11 +50,47 @@ const typeOptions = [
   { value: "vendor", label: "Vendor" },
 ];
 
-const dealsOptions = [
-  { value: "", label: "Select Deals" },
-  { value: "deal_1", label: "Deal 1" },
-  { value: "deal_2", label: "Deal 2" },
-];
+const contactOptions = computed(() => {
+  const contacts = store.getters["contacts/allContacts"] || [];
+  return [
+    { value: "", label: "Select Contact" },
+    ...contacts.map((c) => ({
+      value: c.id,
+      label: `${c.first_name} ${c.last_name}`.trim() || c.name || "Unknown",
+    })),
+  ];
+});
+
+const dealOptions = computed(() => {
+  const deals = store.getters["deals/allDeals"] || [];
+  return [
+    { value: "", label: "Select Deal" },
+    ...deals.map((d) => ({
+      value: d.id,
+      label: d.deal_name || d.name || "Unknown",
+    })),
+  ];
+});
+
+const fetchAssociationOptions = async () => {
+  await Promise.allSettled([
+    store.dispatch("contacts/fetchAllContacts"),
+    store.dispatch("deals/fetchAllDeals"),
+  ]);
+};
+
+onMounted(() => {
+  fetchAssociationOptions();
+});
+
+watch(
+  () => props.isOpen,
+  (isOpen) => {
+    if (isOpen) {
+      fetchAssociationOptions();
+    }
+  },
+);
 
 const formData = ref({
   company_name: "",
@@ -71,15 +107,24 @@ const formData = ref({
   pos_code: "",
   source: "",
   type: "",
-  //deals: "",
-  //contact_association: "",
-  //deals_association: "",
+  dealsassoc: "",
+  contactassoc: "",
 });
 
 const showAddDealForm = ref(false);
 const showAddContactQuickForm = ref(false);
 
 const handleClose = () => emit("close");
+
+const handleDealFormSubmit = async () => {
+  showAddDealForm.value = false;
+  await fetchAssociationOptions();
+};
+
+const handleContactQuickSubmit = async () => {
+  showAddContactQuickForm.value = false;
+  await fetchAssociationOptions();
+};
 
 const handleSubmit = async () => {
   // Validasi input
@@ -94,6 +139,10 @@ const handleSubmit = async () => {
     // Tambahkan timestamps sebelum kirim
     const dataToSubmit = {
       ...formData.value,
+      dealsassoc: formData.value.dealsassoc ? [formData.value.dealsassoc] : [],
+      contactassoc: formData.value.contactassoc
+        ? [formData.value.contactassoc]
+        : [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -138,9 +187,8 @@ const handleReset = () => {
     pos_code: "",
     source: "",
     type: "",
-    //deals: "",
-    //contact_association: "",
-    //deals_association: "",
+    dealsassoc: "",
+    contactassoc: "",
   };
 };
 </script>
@@ -372,53 +420,28 @@ const handleReset = () => {
             </div>
           </div>
 
-          <!-- Type & Deals -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Type</label
+          <!-- Type -->
+          <div>
+            <label class="block text-sm font-medium text-dark-base mb-2"
+              >Type</label
+            >
+            <div class="relative">
+              <select
+                v-model="formData.type"
+                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
               >
-              <div class="relative">
-                <select
-                  v-model="formData.type"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                <option
+                  v-for="opt in typeOptions"
+                  :key="opt.value"
+                  :value="opt.value"
                 >
-                  <option
-                    v-for="opt in typeOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                />
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Deals</label
-              >
-              <div class="relative">
-                <select
-                  v-model="formData.deals"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                >
-                  <option
-                    v-for="opt in dealsOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                />
-              </div>
+                  {{ opt.label }}
+                </option>
+              </select>
+              <ChevronDown
+                :size="16"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+              />
             </div>
           </div>
 
@@ -428,12 +451,18 @@ const handleReset = () => {
               >Contact Association</label
             >
             <div class="relative">
-              <input
-                v-model="formData.contactAssociation"
-                type="text"
-                placeholder="Search by Name"
-                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
+              <select
+                v-model="formData.contactassoc"
+                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+              >
+                <option
+                  v-for="opt in contactOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </option>
+              </select>
               <ChevronDown
                 :size="16"
                 class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
@@ -455,12 +484,18 @@ const handleReset = () => {
               >Deals Association</label
             >
             <div class="relative">
-              <input
-                v-model="formData.dealsAssociation"
-                type="text"
-                placeholder="Search by Name"
-                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
+              <select
+                v-model="formData.dealsassoc"
+                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+              >
+                <option
+                  v-for="opt in dealOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </option>
+              </select>
               <ChevronDown
                 :size="16"
                 class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
@@ -521,14 +556,14 @@ const handleReset = () => {
   <AddDealForm
     :isOpen="showAddDealForm"
     @close="showAddDealForm = false"
-    @submit="showAddDealForm = false"
+    @submit="handleDealFormSubmit"
   />
 
   <!-- Add Contact Quick Form -->
   <AddContactQuickForm
     :isOpen="showAddContactQuickForm"
     @close="showAddContactQuickForm = false"
-    @submit="showAddContactQuickForm = false"
+    @submit="handleContactQuickSubmit"
   />
 </template>
 

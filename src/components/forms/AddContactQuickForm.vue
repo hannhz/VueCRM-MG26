@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { useStore } from "vuex";
 import { ArrowRight, X, ChevronDown } from "lucide-vue-next";
 
 defineProps({
@@ -10,6 +11,35 @@ defineProps({
 });
 
 const emit = defineEmits(["close", "submit"]);
+
+const store = useStore();
+
+const companyOptions = computed(() => {
+  const companies = store.getters["company/allcompany"] || [];
+  return [
+    { value: "", label: "Select Company" },
+    ...companies.map((c) => ({
+      value: c.id,
+      label: c.company_name || c.name || "Unknown",
+    })),
+  ];
+});
+
+const dealOptions = computed(() => {
+  const deals = store.getters["deals/allDeals"] || [];
+  return [
+    { value: "", label: "Select Deal" },
+    ...deals.map((d) => ({
+      value: d.id,
+      label: d.deal_name || d.name || "Unknown",
+    })),
+  ];
+});
+
+onMounted(() => {
+  store.dispatch("company/fetchAllcompany");
+  store.dispatch("deals/fetchAllDeals");
+});
 
 const sourceOptions = [
   { value: "", label: "Select Data" },
@@ -44,12 +74,23 @@ const formData = ref({
   city: "",
   posCode: "",
   source: "",
+  companyassoc: "",
+  dealsassoc: "",
 });
 
 const handleClose = () => emit("close");
 
 const handleSubmit = () => {
-  emit("submit", formData.value);
+  // Map fields to match standard contact naming and wrap associations in arrays
+  const submissionData = {
+    ...formData.value,
+    companyassoc: formData.value.companyassoc
+      ? [formData.value.companyassoc]
+      : [],
+    dealsassoc: formData.value.dealsassoc ? [formData.value.dealsassoc] : [],
+  };
+
+  emit("submit", submissionData);
   handleClose();
 };
 </script>
@@ -288,6 +329,56 @@ const handleSubmit = () => {
                     class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
                   />
                 </div>
+              </div>
+            </div>
+
+            <!-- Companies Association -->
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Companies Association</label
+              >
+              <div class="relative">
+                <select
+                  v-model="formData.companyassoc"
+                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                >
+                  <option
+                    v-for="opt in companyOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
+                </select>
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
+              </div>
+            </div>
+
+            <!-- Deals Association -->
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Deals Association</label
+              >
+              <div class="relative">
+                <select
+                  v-model="formData.dealsassoc"
+                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                >
+                  <option
+                    v-for="opt in dealOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
+                </select>
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
               </div>
             </div>
           </form>

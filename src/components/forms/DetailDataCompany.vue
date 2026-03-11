@@ -1,5 +1,6 @@
 ﻿<script setup>
-import { ref, watch } from "vue";
+import { ref, watch, computed, onMounted } from "vue";
+import { useStore } from "vuex";
 import {
   X,
   ChevronDown,
@@ -26,6 +27,50 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["close", "submit", "back"]);
+
+const store = useStore();
+
+const ownerOptions = computed(() => {
+  const users = store.getters["users/allUsers"] || [];
+
+  return [
+    { value: "", label: "Select Owner" },
+    ...users.map((user) => ({
+      value: user.name || user.username || user.id,
+      label: user.name || user.username || "Unknown",
+    })),
+  ];
+});
+
+const contactOptions = computed(() => {
+  const contacts = store.getters["contacts/allContacts"] || [];
+  return [
+    { value: "", label: "Select Contact" },
+    ...contacts.map((c) => ({
+      value: c.id,
+      label: `${c.first_name} ${c.last_name}`.trim() || c.name || "Unknown",
+    })),
+  ];
+});
+
+const dealOptions = computed(() => {
+  const deals = store.getters["deals/allDeals"] || [];
+  return [
+    { value: "", label: "Select Deal" },
+    ...deals.map((d) => ({
+      value: d.id,
+      label: d.deal_name || d.name || "Unknown",
+    })),
+  ];
+});
+
+const fetchReferenceData = async () => {
+  await Promise.allSettled([
+    store.dispatch("users/fetchAllusers"),
+    store.dispatch("contacts/fetchAllContacts"),
+    store.dispatch("deals/fetchAllDeals"),
+  ]);
+};
 
 // Section toggles
 const showNotes = ref(true);
@@ -56,11 +101,31 @@ const statusOptions = [
   { value: "done", label: "Done" },
 ];
 
-const assigneeOptions = [
-  { value: "", label: "Select Data" },
-  { value: "thomas", label: "Thomas Anree" },
-  { value: "abdul", label: "Abdul" },
-];
+const assigneeOptions = computed(() => {
+  const users = store.getters["users/allUsers"] || [];
+  return [
+    { value: "", label: "Select Data" },
+    ...users.map((user) => ({
+      value: user.name || user.username || user.id,
+      label: user.name || user.username || "Unknown",
+    })),
+  ];
+});
+
+const associatedWithOptions = computed(() => {
+  const contacts = store.getters["contacts/allContacts"] || [];
+  return [
+    { value: "", label: "Select Contact" },
+    ...contacts.map((contact) => ({
+      value: contact.id,
+      label:
+        `${contact.first_name || ""} ${contact.last_name || ""}`.trim() ||
+        contact.name ||
+        contact.email ||
+        "Unknown",
+    })),
+  ];
+});
 
 const priorityOptions = [
   { value: "", label: "Select Data" },
@@ -117,11 +182,46 @@ const typeOptions = [
   { value: "vendor", label: "Vendor" },
 ];
 
-const dealsOptions = [
-  { value: "", label: "Select Deals" },
-  { value: "deal_1", label: "Deal 1" },
-  { value: "deal_2", label: "Deal 2" },
-];
+const getAssociationCandidate = (...values) => {
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      const firstValue = value.find(
+        (item) => item !== "" && item !== null && item !== undefined,
+      );
+      if (firstValue !== undefined) {
+        return firstValue;
+      }
+      continue;
+    }
+
+    if (value !== "" && value !== null && value !== undefined) {
+      return value;
+    }
+  }
+
+  return "";
+};
+
+const resolveAssociationValue = (candidate, options) => {
+  if (candidate === "" || candidate === null || candidate === undefined) {
+    return "";
+  }
+
+  const normalizedCandidate = String(candidate).trim();
+  const matchedOption = options.find(
+    (option) => String(option.value) === normalizedCandidate,
+  );
+
+  if (matchedOption) {
+    return matchedOption.value;
+  }
+
+  const matchedByLabel = options.find(
+    (option) => option.label === normalizedCandidate,
+  );
+
+  return matchedByLabel?.value || candidate;
+};
 
 const getCompanyFormDefaults = (company = null) => ({
   company_name: company?.company_name || "",
@@ -138,21 +238,90 @@ const getCompanyFormDefaults = (company = null) => ({
   pos_code: company?.pos_code || company?.posCode || "",
   source: company?.source || "",
   type: company?.type || "",
-  deals: company?.deals || "",
-  contact_association:
-    company?.contact_association || company?.contactAssociation || "",
-  deals_association:
-    company?.deals_association || company?.dealsAssociation || "",
+  dealsassoc: getAssociationCandidate(
+    company?.dealsassoc,
+    company?.dealsAssociation,
+    company?.deals_id,
+    company?.deal_id,
+    company?.deal,
+  ),
+  contactassoc: getAssociationCandidate(
+    company?.contactassoc,
+    company?.contactAssociation,
+    company?.contacts_id,
+    company?.contact_id,
+    company?.contact,
+  ),
 });
 
 const companyForm = ref(getCompanyFormDefaults());
+
+const syncTaskAssociatedContact = (company = props.company) => {
+  taskAssociatedContact.value = resolveAssociationValue(
+    getAssociationCandidate(
+      taskAssociatedContact.value,
+      company?.contactassoc,
+      company?.contactAssociation,
+      company?.contacts_id,
+      company?.contact_id,
+      company?.contact,
+    ),
+    associatedWithOptions.value,
+  );
+};
+
+const syncAssociationValues = (company = props.company) => {
+  if (!company) {
+    return;
+  }
+
+  companyForm.value.dealsassoc = resolveAssociationValue(
+    getAssociationCandidate(
+      companyForm.value.dealsassoc,
+      company?.dealsassoc,
+      company?.dealsAssociation,
+      company?.deals_id,
+      company?.deal_id,
+      company?.deal,
+    ),
+    dealOptions.value,
+  );
+
+  companyForm.value.contactassoc = resolveAssociationValue(
+    getAssociationCandidate(
+      companyForm.value.contactassoc,
+      company?.contactassoc,
+      company?.contactAssociation,
+      company?.contacts_id,
+      company?.contact_id,
+      company?.contact,
+    ),
+    contactOptions.value,
+  );
+};
 
 watch(
   () => props.company,
   (company) => {
     companyForm.value = getCompanyFormDefaults(company);
+    syncAssociationValues(company);
+    syncTaskAssociatedContact(company);
   },
   { immediate: true },
+);
+
+watch([dealOptions, contactOptions, associatedWithOptions], () => {
+  syncAssociationValues();
+  syncTaskAssociatedContact();
+});
+
+watch(
+  () => props.isOpen,
+  (isOpen) => {
+    if (isOpen) {
+      fetchReferenceData();
+    }
+  },
 );
 
 const handleDocFileChange = (e) => {
@@ -167,8 +336,19 @@ const handleClose = () => emit("close");
 const handleBack = () => emit("back");
 
 const handleSave = () => {
+  // Map fields to match standard naming and wrap associations in arrays
+  const submissionData = {
+    ...companyForm.value,
+    dealsassoc: companyForm.value.dealsassoc
+      ? [companyForm.value.dealsassoc]
+      : [],
+    contactassoc: companyForm.value.contactassoc
+      ? [companyForm.value.contactassoc]
+      : [],
+  };
+
   emit("submit", {
-    company: { ...companyForm.value },
+    company: submissionData,
     note: noteContent.value,
     task: {
       name: taskName.value,
@@ -198,11 +378,15 @@ const handleReset = () => {
   taskDueDate.value = "";
   taskTime.value = "";
   taskPriority.value = "";
-  taskAssociatedContact.value = "";
+  syncTaskAssociatedContact(props.company);
   docDescription.value = "";
   docFileSource.value = "";
   selectedDocFiles.value = [];
 };
+
+onMounted(() => {
+  fetchReferenceData();
+});
 </script>
 
 <template>
@@ -260,12 +444,24 @@ const handleReset = () => {
                 <label class="block text-sm font-medium text-dark-base mb-2"
                   >Company Owner</label
                 >
-                <input
-                  v-model="companyForm.company_owner"
-                  type="text"
-                  placeholder="Ex Abdul"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
+                <div class="relative">
+                  <select
+                    v-model="companyForm.company_owner"
+                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                  >
+                    <option
+                      v-for="opt in ownerOptions"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                  <ChevronDown
+                    :size="16"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                  />
+                </div>
               </div>
             </div>
 
@@ -436,22 +632,29 @@ const handleReset = () => {
                   </option>
                 </select>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Deals</label
-                >
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Deals Association</label
+              >
+              <div class="relative">
                 <select
-                  v-model="companyForm.deals"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
+                  v-model="companyForm.dealsassoc"
+                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
                   <option
-                    v-for="opt in dealsOptions"
+                    v-for="opt in dealOptions"
                     :key="opt.value"
                     :value="opt.value"
                   >
                     {{ opt.label }}
                   </option>
                 </select>
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
               </div>
             </div>
 
@@ -459,24 +662,24 @@ const handleReset = () => {
               <label class="block text-sm font-medium text-dark-base mb-2"
                 >Contact Association</label
               >
-              <input
-                v-model="companyForm.contact_association"
-                type="text"
-                placeholder="Search by Name"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Deals Association</label
-              >
-              <input
-                v-model="companyForm.deals_association"
-                type="text"
-                placeholder="Search by Name"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
+              <div class="relative">
+                <select
+                  v-model="companyForm.contactassoc"
+                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                >
+                  <option
+                    v-for="opt in contactOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
+                </select>
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
+              </div>
             </div>
           </div>
 
@@ -872,6 +1075,24 @@ const handleReset = () => {
                 >
                   <option
                     v-for="opt in priorityOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="px-4 pb-4">
+                <label class="block text-sm font-medium text-dark-base mb-2"
+                  >Associated with</label
+                >
+                <select
+                  v-model="taskAssociatedContact"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
+                >
+                  <option
+                    v-for="opt in associatedWithOptions"
                     :key="opt.value"
                     :value="opt.value"
                   >

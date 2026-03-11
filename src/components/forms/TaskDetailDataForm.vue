@@ -1,6 +1,9 @@
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, computed, onMounted } from "vue";
+import { useStore } from "vuex";
 import { X } from "lucide-vue-next";
+
+const store = useStore();
 
 const props = defineProps({
   isOpen: {
@@ -33,6 +36,17 @@ const priorityOptions = [
   { value: "medium", label: "Medium" },
   { value: "high", label: "High" },
 ];
+
+const assigneeOptions = computed(() => {
+  const users = store.getters["users/allUsers"] || [];
+  return [
+    { value: "", label: "Select Data" },
+    ...users.map((user) => ({
+      value: user.name || user.username || user.id,
+      label: user.name || user.username || "Unknown",
+    })),
+  ];
+});
 
 const getFormDefaults = (task = null) => ({
   id: task?.id ?? task?.task_id ?? null,
@@ -80,6 +94,10 @@ const handleSave = () => {
     task_time: form.value.task_time,
   });
 };
+
+onMounted(() => {
+  store.dispatch("users/fetchAllusers");
+});
 </script>
 
 <template>
@@ -168,12 +186,18 @@ const handleSave = () => {
             <label class="text-sm font-medium text-dark-base"
               >Owner/Assignee</label
             >
-            <input
+            <select
               v-model="form.assignee"
-              type="text"
-              class="w-full px-3 py-2 border border-outline rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
-              placeholder="Input owner"
-            />
+              class="w-full px-3 py-2 border border-outline rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-sub-text"
+            >
+              <option
+                v-for="opt in assigneeOptions"
+                :key="opt.value"
+                :value="opt.value"
+              >
+                {{ opt.label }}
+              </option>
+            </select>
           </div>
 
           <div class="space-y-2">
