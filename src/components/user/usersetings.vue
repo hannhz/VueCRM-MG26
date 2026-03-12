@@ -293,9 +293,9 @@ export default {
     class="bg-white rounded-lg shadow-sm border border-outline flex flex-col min-h-0 flex-1"
   >
     <div class="p-4 border-b border-outline">
-      <div class="flex items-center justify-between gap-4 flex-wrap">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <!-- Left Section: Filter + Search + Show -->
-        <div class="flex items-center gap-3">
+        <div class="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
           <!-- Filter Icon -->
           <button
             class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition shadow-sm bg-white"
@@ -304,11 +304,11 @@ export default {
           </button>
 
           <!-- Search Input -->
-          <div class="relative">
+          <div class="relative w-full sm:w-auto">
             <input
               type="text"
               placeholder="Search by Name"
-              class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              class="w-full rounded-lg border border-outline bg-white py-2 pl-3 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-sub-text sm:w-64"
             />
           </div>
 
@@ -335,12 +335,14 @@ export default {
         </div>
 
         <!-- Right Section: Action Buttons -->
-        <div class="flex items-center gap-2">
+        <div
+          class="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2"
+        >
           <!-- Refresh Button -->
           <button
             @click="fetchData"
             :disabled="isLoadingTable"
-            class="p-2 border border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
+            class="h-9 w-9 rounded-lg border border-outline bg-white p-2 transition-all hover:bg-light-base active:scale-95 disabled:opacity-50 sm:h-10 sm:w-10"
             title="Refresh Data"
           >
             <RefreshCcw
@@ -355,17 +357,17 @@ export default {
             <button
               @click="showCreateUserForm = true"
               type="button"
-              class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+              class="flex h-9 w-9 items-center justify-center gap-2 rounded-lg border border-outline bg-white px-2 py-2 text-sub-text transition hover:bg-sub-text hover:text-white sm:h-10 sm:w-auto sm:px-4"
             >
               <span class="text-lg font-semibold">+</span>
-              <span class="text-sm font-medium">Add User</span>
+              <span class="hidden text-sm font-medium md:inline">Add User</span>
             </button>
           </div>
 
           <!-- Delete -->
           <button
             @click="handleDeleteUsers"
-            class="p-2 bg-white border border-red text-red rounded-lg hover:bg-red hover:text-white transition"
+            class="h-9 w-9 rounded-lg border border-red bg-white p-2 text-red transition hover:bg-red hover:text-white sm:h-10 sm:w-10"
             :disabled="isLoadingTable"
           >
             <Trash2 :size="18" />
@@ -387,7 +389,9 @@ export default {
       </label>
 
       <!-- PUSH KANAN -->
-      <div class="ml-auto flex items-center gap-3 text-sm text-sub-text">
+      <div
+        class="flex w-full items-center justify-end gap-3 text-sm text-sub-text sm:w-auto sm:ml-auto"
+      >
         <button
           @click="prevPage"
           class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"

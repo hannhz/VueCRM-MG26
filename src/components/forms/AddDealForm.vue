@@ -1,8 +1,10 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
+import { useStore } from "vuex";
 import { ArrowRight, X } from "lucide-vue-next";
+import { alertService } from "@/services/alertService";
 
-defineProps({
+const props = defineProps({
   isOpen: {
     type: Boolean,
     default: false,
@@ -10,6 +12,8 @@ defineProps({
 });
 
 const emit = defineEmits(["close", "submit"]);
+const store = useStore();
+const isSubmitting = ref(false);
 
 const pipelineOptions = [
   { value: "", label: "Select Data" },
@@ -28,12 +32,30 @@ const currencyOptions = [
   { value: "SGD", label: "SGD" },
 ];
 
-const ownerOptions = [
-  { value: "", label: "Select Owner" },
-  { value: "thomas", label: "Thomas Anree" },
-  { value: "abdul", label: "Abdul" },
-  { value: "other", label: "Other" },
-];
+const ownerOptions = computed(() => {
+  const users = store.getters["users/allUsers"] || [];
+  return [
+    { value: "", label: "Select Owner" },
+    ...users.map((u) => ({
+      value: u.name || u.username || u.id,
+      label: u.name || u.username || "Unknown",
+    })),
+  ];
+});
+
+const currentUserName = computed(() => {
+  const signedInUser =
+    store.getters["users/usersignin"] || store.state.auth?.user || null;
+  const fullName = [
+    signedInUser?.first_name || signedInUser?.firstname,
+    signedInUser?.last_name || signedInUser?.lastname,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return signedInUser?.name || signedInUser?.username || fullName || "";
+});
 
 const priorityOptions = [
   { value: "", label: "Select Data" },
@@ -74,6 +96,32 @@ const formData = ref({
 
 const selectedFiles = ref([]);
 
+const fetchReferenceData = async () => {
+  await Promise.allSettled([
+    store.dispatch("users/getusersignin"),
+    store.dispatch("users/fetchAllusers"),
+  ]);
+};
+
+const applyDefaultOwner = () => {
+  if (!formData.value.owner && currentUserName.value) {
+    formData.value.owner = currentUserName.value;
+  }
+};
+
+onMounted(() => {
+  fetchReferenceData().finally(applyDefaultOwner);
+});
+
+watch(
+  () => props.isOpen,
+  (isOpen) => {
+    if (isOpen) {
+      fetchReferenceData().finally(applyDefaultOwner);
+    }
+  },
+);
+
 const handleFileChange = (e) => {
   selectedFiles.value = Array.from(e.target.files);
 };
@@ -84,9 +132,50 @@ const removeFile = (index) => {
 
 const handleClose = () => emit("close");
 
-const handleSubmit = () => {
-  emit("submit", formData.value);
-  handleClose();
+const handleSubmit = async () => {
+  if (!formData.value.dealName.trim()) {
+    alertService.error("Deal Name wajib diisi!");
+    return;
+  }
+
+  if (isSubmitting.value) {
+    return;
+  }
+
+  isSubmitting.value = true;
+
+  try {
+    const submissionData = {
+      ...formData.value,
+      owner: formData.value.owner || currentUserName.value || "",
+    };
+
+    const response = await store.dispatch("deals/createDeal", submissionData);
+
+    if (response?.msg === "gagal") {
+      await alertService.error(
+        "Server returned 'gagal'. Please check the payload or choice parameter.",
+      );
+      return;
+    }
+
+    if (response?.success === false) {
+      await alertService.error(response?.message || "Failed to save deal");
+      return;
+    }
+
+    await alertService.toastSuccess(response?.msg || "Deal saved successfully");
+    emit("submit", response);
+    handleClose();
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Gagal menambah deal. Silakan coba lagi.";
+    await alertService.toastError(message);
+  } finally {
+    isSubmitting.value = false;
+  }
 };
 </script>
 
@@ -406,9 +495,10 @@ const handleSubmit = () => {
           <button
             type="button"
             @click="handleSubmit"
+            :disabled="isSubmitting"
             class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
           >
-            Add Deal
+            {{ isSubmitting ? "Saving..." : "Add Deal" }}
           </button>
           <button
             type="button"

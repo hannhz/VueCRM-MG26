@@ -4,6 +4,50 @@ import { useCookies } from "vue3-cookies";
 
 const { cookies } = useCookies();
 
+const extractCompaniesArray = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.companies)) return payload.companies;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.data?.data)) return payload.data.data;
+  return [];
+};
+
+const extractPaginationMeta = (payload) => {
+  const container =
+    payload?.data && !Array.isArray(payload.data) ? payload.data : payload;
+
+  const currentPage = Number(container?.current_page);
+  const lastPage = Number(container?.last_page);
+
+  if (!Number.isFinite(currentPage) || !Number.isFinite(lastPage)) {
+    return null;
+  }
+
+  return {
+    currentPage,
+    lastPage,
+  };
+};
+
+const dedupeCompaniesById = (companies) => {
+  const seen = new Set();
+
+  return companies.filter((company) => {
+    const key = String(company?.id ?? company?.company_id ?? "");
+
+    if (!key) {
+      return true;
+    }
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+};
+
 const state = {
   company: [],
   companyignin: null,
@@ -54,7 +98,33 @@ const actions = {
           // headers: { Authorization: "Bearer " + localStorage.getItem("token") },
         });
 
-        resolve(network.data);
+        const firstPayload = network.data;
+        let companies = extractCompaniesArray(firstPayload);
+
+        const paginationMeta = extractPaginationMeta(firstPayload);
+
+        if (paginationMeta && paginationMeta.lastPage > 1) {
+          for (let page = 2; page <= paginationMeta.lastPage; page += 1) {
+            const pageResponse = await api.getbydata(
+              "company",
+              { page },
+              {
+                headers: {
+                  Authorization: "Bearer " + cookies.get("token"),
+                },
+              },
+            );
+
+            companies = companies.concat(
+              extractCompaniesArray(pageResponse.data),
+            );
+          }
+        }
+
+        resolve({
+          raw: firstPayload,
+          companies: dedupeCompaniesById(companies),
+        });
       } catch (error) {
         reject(error);
       }
@@ -62,7 +132,8 @@ const actions = {
 
     promise
       .then((data) => {
-        commit("setcompany", data.companies || data);
+        const companiesData = data.companies || extractCompaniesArray(data.raw);
+        commit("setcompany", companiesData);
         commit("SET_LOADING", false);
       })
       .catch((error) => {
@@ -118,9 +189,12 @@ const actions = {
   },
 
   fetchcompanybyid(context, id) {
+    let data = {
+      id: id,
+    };
     const promise = new Promise(async (resolve, reject) => {
       try {
-        let network = api.get("fetchcompanybyid/" + id, {
+        let network = api.getbydata("company/fetchcompanybyid", data, {
           headers: {
             Authorization: "Bearer " + cookies.get("token"),
           },
@@ -167,12 +241,14 @@ const actions = {
             Authorization: "Bearer " + cookies.get("token"),
           },
         });
+
+        // Refresh daftar HANYA setelah sukses dan tunggu sampai selesai
+        await context.dispatch("fetchAllcompany");
+
         resolve(network.data);
       } catch (error) {
         reject(error);
       }
-      // refresh daftar setelah sukses/atau gagal
-      context.dispatch("fetchAllcompany");
     });
 
     return promise;

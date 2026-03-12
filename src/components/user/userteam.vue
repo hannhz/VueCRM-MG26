@@ -1,122 +1,3 @@
-<!-- <script setup>
-import { ref, computed, onMounted } from "vue";
-import { useStore } from "vuex";
-import {
-  Filter,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  Trash2,
-  RefreshCw,
-} from "lucide-vue-next";
-import CreateTeamForm from "../forms/CreateTeamForm.vue";
-import DetailTeamForm from "../forms/DetailTeamForm.vue";
-import DetailTeamForm from "../forms/DetailTeamForm.vue";
-import DetailTeamForm from "../forms/DetailTeamForm.vue";
-import DetailTeamForm from "../forms/DetailTeamForm.vue";
-
-const store = useStore();
-
-const teams = computed(() => store.getters["team/filteredTeamUsers"]);
-const isLoading = computed(() => store.getters["team/isLoading"]);
-const error = computed(() => store.getters["team/error"]);
-
-const showCreateTeamForm = ref(false);
-
-const searchQuery = computed({
-  get: () => store.state.team.searchQuery,
-  set: (value) => store.dispatch("team/setSearchQuery", value),
-});
-
-const filteredTeams = computed(() => {
-  return teams.value;
-});
-
-/* =========================
-   PAGINATION
-========================= */
-const currentPage = ref(1);
-const itemsPerPage = ref(5);
-
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(filteredTeams.value.length / itemsPerPage.value)),
-);
-
-const paginatedTeams = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value;
-  return filteredTeams.value.slice(start, start + itemsPerPage.value);
-});
-
-function nextPage() {
-  if (currentPage.value < totalPages.value) currentPage.value++;
-}
-
-function prevPage() {
-  if (currentPage.value > 1) currentPage.value--;
-}
-
-/* =========================
-   SELECT TEAM
-========================= */
-const selectedTeam = ref([]);
-
-const allSelected = computed(
-  () =>
-    paginatedTeams.value.length > 0 &&
-    paginatedTeams.value.every((t) => selectedTeam.value.includes(t.team_id)),
-);
-
-function toggleSelectAll(e) {
-  selectedTeam.value = e.target.checked
-    ? paginatedTeams.value.map((t) => t.team_id)
-    : [];
-}
-
-const fetchData = async () => {
-  try {
-    await store.dispatch("team/fetchAllTeamUsers");
-  } catch (err) {
-    console.error("Failed to fetch team_user:", err);
-  }
-};
-
-const handleCreateTeamSubmit = async (data) => {
-  try {
-    const createPayload = {
-      team_name: data.teamName,
-      parent_id: data.parentTeam?.id || null,
-    };
-
-    const createResult = await store.dispatch("team/createTeam", createPayload);
-    const createdTeamId =
-      createResult?.team?.id || createResult?.data?.id || createResult?.id;
-
-    if (
-      createdTeamId &&
-      Array.isArray(data.selectedMembers) &&
-      data.selectedMembers.length
-    ) {
-      const addUsersPayload = {
-        team_id: createdTeamId,
-        user_ids: data.selectedMembers.map((member) => member.id),
-      };
-      await store.dispatch("team/addTeamUsers", addUsersPayload);
-    }
-
-    showCreateTeamForm.value = false;
-    await fetchData();
-  } catch (err) {
-    console.error("Failed to create team:", err);
-    alert("Failed to create team. Please check API payload format.");
-  }
-};
-
-onMounted(() => {
-  fetchData();
-});
-</script> -->
-
 <script>
 import { mapGetters, mapState, mapActions } from "vuex";
 import {
@@ -130,6 +11,7 @@ import {
 } from "lucide-vue-next";
 import CreateTeamForm from "../forms/CreateTeamForm.vue";
 import DetailTeamForm from "../forms/DetailTeamForm.vue";
+import { alertService } from "@/services/alertService";
 
 export default {
   components: {
@@ -191,7 +73,9 @@ export default {
     allSelected() {
       return (
         this.paginatedTeams.length > 0 &&
-        this.paginatedTeams.every((t) => this.selectedTeam.includes(t.team_id))
+        this.paginatedTeams.every((t) =>
+          this.selectedTeam.includes(this.getTeamId(t)),
+        )
       );
     },
   },
@@ -200,6 +84,7 @@ export default {
     ...mapActions({
       fetchAllTeamUsers: "team/fetchAllTeamUsers",
       createTeam: "team/createTeam",
+      deleteTeam: "team/deleteTeam",
       addTeamUsers: "team/addTeamUsers",
       setSearchQuery: "team/setSearchQuery",
     }),
@@ -212,9 +97,15 @@ export default {
       if (this.currentPage > 1) this.currentPage--;
     },
 
+    getTeamId(team) {
+      if (!team) return null;
+      const id = team.team_id ?? team.teamid ?? team.id ?? team.id_team;
+      return id !== undefined && id !== null ? String(id) : "";
+    },
+
     toggleSelectAll(e) {
       this.selectedTeam = e.target.checked
-        ? this.paginatedTeams.map((t) => t.team_id)
+        ? this.paginatedTeams.map((t) => this.getTeamId(t))
         : [];
     },
 
@@ -235,6 +126,42 @@ export default {
     closeTeamDetail() {
       this.showTeamDetailForm = false;
       this.selectedTeamDetail = null;
+    },
+
+    async handleDeleteSelectedTeams() {
+      if (!this.selectedTeam.length) {
+        return alertService.validationError(
+          "Pilih tim yang ingin dihapus terlebih dahulu.",
+        );
+      }
+
+      const confirm = await alertService.confirmDelete(
+        `${this.selectedTeam.length} tim`,
+      );
+      if (!confirm.isConfirmed) return;
+
+      try {
+        // Use sequential deletion to avoid 429 and DB locks
+        for (const id of this.selectedTeam) {
+          if (id) {
+            await this.deleteTeam(id);
+          }
+        }
+
+        this.selectedTeam = [];
+        alertService.success("Tim berhasil dihapus");
+        await this.fetchData();
+      } catch (err) {
+        console.error("Failed to delete teams:", err);
+        // Look for error message in state if not in err object (some actions commit errors to state)
+        const serverError = this.$store.state.team.error;
+        const errorMessage =
+          serverError ||
+          err.response?.data?.message ||
+          err.message ||
+          "Gagal menghapus tim.";
+        alertService.error(errorMessage, "Penghapusan Gagal");
+      }
     },
 
     handleCreateTeamSubmit(data) {
@@ -324,9 +251,9 @@ export default {
   >
     <!-- ACTION BAR -->
     <div class="p-4 border-b border-outline">
-      <div class="flex items-center justify-between flex-wrap gap-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <!-- LEFT -->
-        <div class="flex items-center gap-3">
+        <div class="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
           <!-- Filter -->
           <button
             class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
@@ -335,12 +262,12 @@ export default {
           </button>
 
           <!-- Search -->
-          <div class="relative">
+          <div class="relative w-full sm:w-auto">
             <input
               v-model="searchQuery"
               type="text"
               placeholder="Search team..."
-              class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              class="w-full rounded-lg border border-outline bg-white py-2 pl-3 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-sub-text sm:w-64"
             />
           </div>
 
@@ -365,11 +292,13 @@ export default {
         </div>
 
         <!-- Right Section: Action Buttons -->
-        <div class="flex items-center gap-2">
+        <div
+          class="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2"
+        >
           <button
             @click="fetchData"
             :disabled="isLoading"
-            class="p-2 border border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
+            class="h-9 w-9 rounded-lg border border-outline bg-white p-2 transition-all hover:bg-light-base active:scale-95 disabled:opacity-50 sm:h-10 sm:w-10"
             title="Refresh Data"
           >
             <RefreshCw
@@ -383,16 +312,18 @@ export default {
             <button
               @click="showCreateTeamForm = true"
               type="button"
-              class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+              class="flex h-9 w-9 items-center justify-center gap-2 rounded-lg border border-outline bg-white px-2 py-2 text-sub-text transition hover:bg-sub-text hover:text-white sm:h-10 sm:w-auto sm:px-4"
             >
               <span class="text-lg font-semibold">+</span>
-              <span class="text-sm font-medium">Add Team</span>
+              <span class="hidden text-sm font-medium md:inline">Add Team</span>
             </button>
           </div>
 
           <!-- Delete -->
           <button
-            class="p-2 bg-white border border-red text-red rounded-lg hover:bg-red hover:text-white transition"
+            @click="handleDeleteSelectedTeams"
+            :disabled="!selectedTeam.length || isLoading"
+            class="h-9 w-9 rounded-lg border border-red bg-white p-2 text-red transition hover:bg-red hover:text-white sm:h-10 sm:w-10 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Trash2 :size="18" />
           </button>
@@ -412,7 +343,9 @@ export default {
         Select all team
       </label>
 
-      <div class="ml-auto flex items-center gap-3 text-sm text-sub-text">
+      <div
+        class="flex w-full items-center justify-end gap-3 text-sm text-sub-text sm:w-auto sm:ml-auto"
+      >
         <button
           @click="prevPage"
           :disabled="currentPage === 1"
@@ -499,14 +432,14 @@ export default {
           <!-- ROWS -->
           <tr
             v-for="team in paginatedTeams"
-            :key="team.team_id"
+            :key="getTeamId(team)"
             class="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer"
             @click="openTeamDetail(team)"
           >
             <td class="px-6 py-4">
               <input
                 type="checkbox"
-                :value="team.team_id"
+                :value="getTeamId(team)"
                 v-model="selectedTeam"
                 @click.stop
                 class="w-4 h-4"

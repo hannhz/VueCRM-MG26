@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref, watch, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import {
@@ -9,6 +9,8 @@ import {
   MapPin,
   Camera,
   Mic,
+  Search,
+  Check,
 } from "lucide-vue-next";
 
 const props = defineProps({
@@ -30,46 +32,35 @@ const emit = defineEmits(["close", "submit", "back"]);
 
 const store = useStore();
 
-const ownerOptions = computed(() => {
-  const users = store.getters["users/allUsers"] || [];
-
-  return [
-    { value: "", label: "Select Owner" },
-    ...users.map((user) => ({
-      value: user.name || user.username || user.id,
-      label: user.name || user.username || "Unknown",
-    })),
-  ];
-});
-
 const contactOptions = computed(() => {
-  const contacts = store.getters["contacts/allContacts"] || [];
-  return [
-    { value: "", label: "Select Contact" },
-    ...contacts.map((c) => ({
-      value: c.id,
-      label: `${c.first_name} ${c.last_name}`.trim() || c.name || "Unknown",
-    })),
-  ];
+  return store.getters["contacts/allContacts"] || [];
 });
 
 const dealOptions = computed(() => {
-  const deals = store.getters["deals/allDeals"] || [];
-  return [
-    { value: "", label: "Select Deal" },
-    ...deals.map((d) => ({
-      value: d.id,
-      label: d.deal_name || d.name || "Unknown",
-    })),
-  ];
+  return store.getters["deals/allDeals"] || [];
 });
 
 const fetchReferenceData = async () => {
-  await Promise.allSettled([
-    store.dispatch("users/fetchAllusers"),
-    store.dispatch("contacts/fetchAllContacts"),
-    store.dispatch("deals/fetchAllDeals"),
-  ]);
+  const promises = [];
+
+  if (!store.getters["users/usersignin"]) {
+    promises.push(store.dispatch("users/getusersignin"));
+  }
+
+  // Only fetch if store is empty to reduce 429 errors
+  if ((store.getters["users/allUsers"] || []).length === 0) {
+    promises.push(store.dispatch("users/fetchAllusers"));
+  }
+  if ((store.getters["contacts/allContacts"] || []).length === 0) {
+    promises.push(store.dispatch("contacts/fetchAllContacts"));
+  }
+  if ((store.getters["deals/allDeals"] || []).length === 0) {
+    promises.push(store.dispatch("deals/fetchAllDeals"));
+  }
+
+  if (promises.length > 0) {
+    await Promise.allSettled(promises);
+  }
 };
 
 // Section toggles
@@ -112,20 +103,56 @@ const assigneeOptions = computed(() => {
   ];
 });
 
+const ownerOptions = computed(() => {
+  const users = store.getters["users/allUsers"] || [];
+  return [
+    { value: "", label: "Select Owner" },
+    ...users.map((user) => ({
+      value: user.name || user.username || user.id,
+      label: user.name || user.username || "Unknown",
+    })),
+  ];
+});
+
+const currentUserName = computed(() => {
+  const signedInUser =
+    store.getters["users/usersignin"] || store.state.auth?.user || null;
+  const fullName = [
+    signedInUser?.first_name || signedInUser?.firstname,
+    signedInUser?.last_name || signedInUser?.lastname,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return signedInUser?.name || signedInUser?.username || fullName || "";
+});
+
 const associatedWithOptions = computed(() => {
   const contacts = store.getters["contacts/allContacts"] || [];
   return [
     { value: "", label: "Select Contact" },
     ...contacts.map((contact) => ({
       value: contact.id,
-      label:
-        `${contact.first_name || ""} ${contact.last_name || ""}`.trim() ||
-        contact.name ||
-        contact.email ||
-        "Unknown",
+      label: getDisplayNameFromContact(contact),
     })),
   ];
 });
+
+const getDisplayNameFromContact = (contact) => {
+  if (!contact) return "Unknown";
+  return (
+    `${contact.first_name || ""} ${contact.last_name || ""}`.trim() ||
+    contact.name ||
+    contact.email ||
+    "Unknown"
+  );
+};
+
+const getDisplayNameFromDeal = (deal) => {
+  if (!deal) return "Unknown";
+  return deal.deal_name || deal.name || "Unknown";
+};
 
 const priorityOptions = [
   { value: "", label: "Select Data" },
@@ -182,92 +209,125 @@ const typeOptions = [
   { value: "vendor", label: "Vendor" },
 ];
 
-const getAssociationCandidate = (...values) => {
-  for (const value of values) {
-    if (Array.isArray(value)) {
-      const firstValue = value.find(
-        (item) => item !== "" && item !== null && item !== undefined,
-      );
-      if (firstValue !== undefined) {
-        return firstValue;
-      }
-      continue;
-    }
-
-    if (value !== "" && value !== null && value !== undefined) {
-      return value;
-    }
+const getAssociationCandidates = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => {
+        if (typeof v === "object" && v !== null) {
+          return (
+            v.id ??
+            v.deal_id ??
+            v.contact_id ??
+            v.id_deal ??
+            v.id_contact ??
+            v.userid ??
+            v.id_user
+          );
+        }
+        return v;
+      })
+      .filter((v) => v !== "" && v !== null && v !== undefined);
   }
-
-  return "";
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [value];
 };
 
-const resolveAssociationValue = (candidate, options) => {
-  if (candidate === "" || candidate === null || candidate === undefined) {
-    return "";
-  }
+const resolveAssociationValues = (candidates, options) => {
+  if (!candidates || !Array.isArray(candidates) || !options) return [];
 
-  const normalizedCandidate = String(candidate).trim();
-  const matchedOption = options.find(
-    (option) => String(option.value) === normalizedCandidate,
-  );
+  return candidates
+    .map((candidate) => {
+      const normalizedCandidate = String(candidate).trim();
+      if (!normalizedCandidate) return null;
 
-  if (matchedOption) {
-    return matchedOption.value;
-  }
+      // Find by ID match
+      const matchedOption = options.find((option) => {
+        const optId = String(
+          option.id ??
+            option.value ??
+            option.deal_id ??
+            option.contact_id ??
+            "",
+        ).trim();
+        return optId === normalizedCandidate;
+      });
+      if (matchedOption) return matchedOption.id || matchedOption.value;
 
-  const matchedByLabel = options.find(
-    (option) => option.label === normalizedCandidate,
-  );
-
-  return matchedByLabel?.value || candidate;
+      // Fallback: search by name/label match
+      const matchedByLabel = options.find((option) => {
+        const label = String(
+          option.name ?? option.deal_name ?? option.label ?? "",
+        )
+          .trim()
+          .toLowerCase();
+        return label === normalizedCandidate.toLowerCase();
+      });
+      return matchedByLabel ? matchedByLabel.id || matchedByLabel.value : null;
+    })
+    .filter((v) => v !== null && v !== undefined);
 };
 
-const getCompanyFormDefaults = (company = null) => ({
-  company_name: company?.company_name || "",
-  company_owner: company?.company_owner || "",
-  description: company?.description || "",
-  email: company?.email || "",
-  telephone: company?.telephone || "",
-  website: company?.website || "",
-  industry: company?.industry || "",
-  address: company?.address || "",
-  city: company?.city || "",
-  province: company?.province || "",
-  country: company?.country || "",
-  pos_code: company?.pos_code || company?.posCode || "",
-  source: company?.source || "",
-  type: company?.type || "",
-  dealsassoc: getAssociationCandidate(
-    company?.dealsassoc,
-    company?.dealsAssociation,
-    company?.deals_id,
-    company?.deal_id,
-    company?.deal,
-  ),
-  contactassoc: getAssociationCandidate(
-    company?.contactassoc,
-    company?.contactAssociation,
-    company?.contacts_id,
-    company?.contact_id,
-    company?.contact,
-  ),
-});
+const getCompanyFormDefaults = (company = null) => {
+  const deals = getAssociationCandidates(
+    company?.dealsassoc ||
+      company?.dealsAssociation ||
+      company?.deals_id ||
+      company?.deal_id ||
+      company?.deal,
+  );
+
+  const contacts = getAssociationCandidates(
+    company?.contactassoc ||
+      company?.contactAssociation ||
+      company?.contacts_id ||
+      company?.contact_id ||
+      company?.contact,
+  );
+
+  return {
+    company_name: company?.company_name || "",
+    company_owner: company?.company_owner || "",
+    owner: company?.owner || currentUserName.value || "",
+    description: company?.description || "",
+    email: company?.email || "",
+    telephone: company?.telephone || "",
+    website: company?.website || "",
+    industry: company?.industry || "",
+    address: company?.address || "",
+    city: company?.city || "",
+    province: company?.province || "",
+    country: company?.country || "",
+    pos_code: company?.pos_code || company?.posCode || "",
+    source: company?.source || "",
+    type: company?.type || "",
+    dealsassoc: deals,
+    contactassoc: contacts,
+  };
+};
 
 const companyForm = ref(getCompanyFormDefaults());
 
 const syncTaskAssociatedContact = (company = props.company) => {
-  taskAssociatedContact.value = resolveAssociationValue(
-    getAssociationCandidate(
-      taskAssociatedContact.value,
-      company?.contactassoc,
-      company?.contactAssociation,
-      company?.contacts_id,
-      company?.contact_id,
+  const candidates = getAssociationCandidates(
+    taskAssociatedContact.value ||
+      company?.contactassoc ||
+      company?.contactAssociation ||
+      company?.contacts_id ||
+      company?.contact_id ||
       company?.contact,
-    ),
+  );
+
+  const resolved = resolveAssociationValues(
+    candidates,
     associatedWithOptions.value,
   );
+  taskAssociatedContact.value = resolved.length > 0 ? resolved[0] : "";
 };
 
 const syncAssociationValues = (company = props.company) => {
@@ -275,37 +335,147 @@ const syncAssociationValues = (company = props.company) => {
     return;
   }
 
-  companyForm.value.dealsassoc = resolveAssociationValue(
-    getAssociationCandidate(
-      companyForm.value.dealsassoc,
-      company?.dealsassoc,
-      company?.dealsAssociation,
-      company?.deals_id,
-      company?.deal_id,
-      company?.deal,
-    ),
+  const dealsCandidates = getAssociationCandidates(
+    companyForm.value.dealsassoc.length > 0
+      ? companyForm.value.dealsassoc
+      : company?.dealsassoc ||
+          company?.dealsAssociation ||
+          company?.deals_id ||
+          company?.deal_id ||
+          company?.deal,
+  );
+
+  companyForm.value.dealsassoc = resolveAssociationValues(
+    dealsCandidates,
     dealOptions.value,
   );
 
-  companyForm.value.contactassoc = resolveAssociationValue(
-    getAssociationCandidate(
-      companyForm.value.contactassoc,
-      company?.contactassoc,
-      company?.contactAssociation,
-      company?.contacts_id,
-      company?.contact_id,
-      company?.contact,
-    ),
+  const contactCandidates = getAssociationCandidates(
+    companyForm.value.contactassoc.length > 0
+      ? companyForm.value.contactassoc
+      : company?.contactassoc ||
+          company?.contactAssociation ||
+          company?.contacts_id ||
+          company?.contact_id ||
+          company?.contact,
+  );
+
+  companyForm.value.contactassoc = resolveAssociationValues(
+    contactCandidates,
     contactOptions.value,
   );
 };
 
+// Dropdown State for Contacts
+const isContactDropdownOpen = ref(false);
+const contactSearch = ref("");
+const contactDropdownRef = ref(null);
+
+const filteredContacts = computed(() => {
+  if (!contactSearch.value) return contactOptions.value;
+  return contactOptions.value.filter(
+    (c) =>
+      `${c.first_name} ${c.last_name}`
+        .toLowerCase()
+        .includes(contactSearch.value.toLowerCase()) ||
+      c.email?.toLowerCase().includes(contactSearch.value.toLowerCase()),
+  );
+});
+
+// Dropdown State for Deals
+const isDealDropdownOpen = ref(false);
+const dealSearch = ref("");
+const dealDropdownRef = ref(null);
+
+const filteredDeals = computed(() => {
+  if (!dealSearch.value) return dealOptions.value;
+  return dealOptions.value.filter((d) =>
+    (d.deal_name || d.name)
+      ?.toLowerCase()
+      .includes(dealSearch.value.toLowerCase()),
+  );
+});
+
+const toggleContact = (contact) => {
+  const contactId = String(contact.id).trim();
+  const index = companyForm.value.contactassoc.findIndex(
+    (id) => String(id).trim() === contactId,
+  );
+  if (index === -1) {
+    companyForm.value.contactassoc.push(contactId);
+  } else {
+    companyForm.value.contactassoc.splice(index, 1);
+  }
+};
+
+const isContactSelected = (id) => {
+  const normalizedId = String(id).trim();
+  return companyForm.value.contactassoc.some(
+    (assocId) => String(assocId).trim() === normalizedId,
+  );
+};
+
+const selectedContacts = computed(() => {
+  return contactOptions.value.filter((c) => {
+    const contactId = String(c.id).trim();
+    return companyForm.value.contactassoc.some(
+      (id) => String(id).trim() === contactId,
+    );
+  });
+});
+
+const toggleDeal = (deal) => {
+  const dealId = String(deal.id).trim();
+  const index = companyForm.value.dealsassoc.findIndex(
+    (id) => String(id).trim() === dealId,
+  );
+  if (index === -1) {
+    companyForm.value.dealsassoc.push(dealId);
+  } else {
+    companyForm.value.dealsassoc.splice(index, 1);
+  }
+};
+
+const isDealSelected = (id) => {
+  const normalizedId = String(id).trim();
+  return companyForm.value.dealsassoc.some(
+    (assocId) => String(assocId).trim() === normalizedId,
+  );
+};
+
+const selectedDeals = computed(() => {
+  return dealOptions.value.filter((d) => {
+    const dealId = String(d.id).trim();
+    return companyForm.value.dealsassoc.some(
+      (id) => String(id).trim() === dealId,
+    );
+  });
+});
+
+const handleClickOutside = (event) => {
+  if (
+    contactDropdownRef.value &&
+    !contactDropdownRef.value.contains(event.target)
+  ) {
+    isContactDropdownOpen.value = false;
+  }
+  if (dealDropdownRef.value && !dealDropdownRef.value.contains(event.target)) {
+    isDealDropdownOpen.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener("mousedown", handleClickOutside);
+});
+
 watch(
   () => props.company,
   (company) => {
-    companyForm.value = getCompanyFormDefaults(company);
-    syncAssociationValues(company);
-    syncTaskAssociatedContact(company);
+    if (company) {
+      companyForm.value = getCompanyFormDefaults(company);
+      syncAssociationValues(company);
+      syncTaskAssociatedContact(company);
+    }
   },
   { immediate: true },
 );
@@ -336,15 +506,15 @@ const handleClose = () => emit("close");
 const handleBack = () => emit("back");
 
 const handleSave = () => {
-  // Map fields to match standard naming and wrap associations in arrays
+  // Map fields to match standard naming and wrap associations in comma-separated strings
+  const form = { ...companyForm.value };
+  delete form.owner; // Remove redundant field to match SP exactly
+
   const submissionData = {
-    ...companyForm.value,
-    dealsassoc: companyForm.value.dealsassoc
-      ? [companyForm.value.dealsassoc]
-      : [],
-    contactassoc: companyForm.value.contactassoc
-      ? [companyForm.value.contactassoc]
-      : [],
+    ...form,
+    id: props.company?.id,
+    dealsassoc: (companyForm.value.dealsassoc || []).join(","),
+    contactassoc: (companyForm.value.contactassoc || []).join(","),
   };
 
   emit("submit", {
@@ -384,9 +554,7 @@ const handleReset = () => {
   selectedDocFiles.value = [];
 };
 
-onMounted(() => {
-  fetchReferenceData();
-});
+// Remove redundant onMounted
 </script>
 
 <template>
@@ -444,24 +612,12 @@ onMounted(() => {
                 <label class="block text-sm font-medium text-dark-base mb-2"
                   >Company Owner</label
                 >
-                <div class="relative">
-                  <select
-                    v-model="companyForm.company_owner"
-                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                  >
-                    <option
-                      v-for="opt in ownerOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                  <ChevronDown
-                    :size="16"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                  />
-                </div>
+                <input
+                  v-model="companyForm.company_owner"
+                  type="text"
+                  placeholder="Ex Abdul"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                />
               </div>
             </div>
 
@@ -632,53 +788,192 @@ onMounted(() => {
                   </option>
                 </select>
               </div>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Deals Association</label
-              >
-              <div class="relative">
-                <select
-                  v-model="companyForm.dealsassoc"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2"
+                  >Owner</label
                 >
-                  <option
-                    v-for="opt in dealOptions"
-                    :key="opt.value"
-                    :value="opt.value"
+                <div class="relative">
+                  <select
+                    v-model="companyForm.owner"
+                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                   >
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                />
+                    <option
+                      v-for="opt in ownerOptions"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                  <ChevronDown
+                    :size="16"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                  />
+                </div>
               </div>
             </div>
 
-            <div>
+            <div class="relative" ref="dealDropdownRef">
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Deals Association</label
+              >
+              <div
+                @click="isDealDropdownOpen = !isDealDropdownOpen"
+                class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-10.5 bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
+              >
+                <div
+                  v-if="companyForm.dealsassoc.length === 0"
+                  class="text-gray-400 text-sm"
+                >
+                  Search and select deals
+                </div>
+                <div
+                  v-for="deal in selectedDeals"
+                  :key="deal.id"
+                  class="flex items-center gap-1 bg-light-base px-2 py-1 rounded text-xs font-medium text-dark-base border border-outline"
+                  @click.stop
+                >
+                  {{ getDisplayNameFromDeal(deal) }}
+                  <X
+                    :size="12"
+                    class="cursor-pointer hover:text-red"
+                    @click="toggleDeal(deal)"
+                  />
+                </div>
+                <ChevronDown :size="16" class="ml-auto text-sub-text" />
+              </div>
+
+              <!-- Dropdown Menu -->
+              <div
+                v-if="isDealDropdownOpen"
+                class="absolute z-50 w-full mt-1 bg-white border border-outline rounded-lg shadow-xl flex flex-col max-h-64"
+              >
+                <div class="p-2 border-b border-outline">
+                  <div class="relative">
+                    <Search
+                      :size="14"
+                      class="absolute left-3 top-1/2 -translate-y-1/2 text-sub-text"
+                    />
+                    <input
+                      v-model="dealSearch"
+                      type="text"
+                      placeholder="Search deals"
+                      class="w-full pl-9 pr-3 py-2 bg-light-base/50 border border-outline rounded text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
+                      @click.stop
+                    />
+                  </div>
+                </div>
+                <div class="flex-1 overflow-y-auto py-1">
+                  <div
+                    v-for="deal in filteredDeals"
+                    :key="deal.id"
+                    @click="toggleDeal(deal)"
+                    class="px-4 py-2 hover:bg-light-base cursor-pointer flex items-center justify-between text-sm transition"
+                  >
+                    <div class="flex flex-col">
+                      <span class="font-medium text-dark-base">{{
+                        getDisplayNameFromDeal(deal)
+                      }}</span>
+                      <span class="text-xs text-sub-text">{{
+                        deal.description || "No description"
+                      }}</span>
+                    </div>
+                    <div
+                      v-if="isDealSelected(deal.id)"
+                      class="w-5 h-5 bg-dark-base rounded-full flex items-center justify-center"
+                    >
+                      <Check :size="12" class="text-white" />
+                    </div>
+                  </div>
+                  <div
+                    v-if="filteredDeals.length === 0"
+                    class="px-4 py-6 text-center text-sm text-sub-text"
+                  >
+                    No deals found
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="relative" ref="contactDropdownRef">
               <label class="block text-sm font-medium text-dark-base mb-2"
                 >Contact Association</label
               >
-              <div class="relative">
-                <select
-                  v-model="companyForm.contactassoc"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+              <div
+                @click="isContactDropdownOpen = !isContactDropdownOpen"
+                class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-10.5 bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
+              >
+                <div
+                  v-if="companyForm.contactassoc.length === 0"
+                  class="text-gray-400 text-sm"
                 >
-                  <option
-                    v-for="opt in contactOptions"
-                    :key="opt.value"
-                    :value="opt.value"
+                  Search and select contacts
+                </div>
+                <div
+                  v-for="contact in selectedContacts"
+                  :key="contact.id"
+                  class="flex items-center gap-1 bg-light-base px-2 py-1 rounded text-xs font-medium text-dark-base border border-outline"
+                  @click.stop
+                >
+                  {{ getDisplayNameFromContact(contact) }}
+                  <X
+                    :size="12"
+                    class="cursor-pointer hover:text-red"
+                    @click="toggleContact(contact)"
+                  />
+                </div>
+                <ChevronDown :size="16" class="ml-auto text-sub-text" />
+              </div>
+
+              <!-- Dropdown Menu -->
+              <div
+                v-if="isContactDropdownOpen"
+                class="absolute z-50 w-full mt-1 bg-white border border-outline rounded-lg shadow-xl flex flex-col max-h-64"
+              >
+                <div class="p-2 border-b border-outline">
+                  <div class="relative">
+                    <Search
+                      :size="14"
+                      class="absolute left-3 top-1/2 -translate-y-1/2 text-sub-text"
+                    />
+                    <input
+                      v-model="contactSearch"
+                      type="text"
+                      placeholder="Search by name or email"
+                      class="w-full pl-9 pr-3 py-2 bg-light-base/50 border border-outline rounded text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
+                      @click.stop
+                    />
+                  </div>
+                </div>
+                <div class="flex-1 overflow-y-auto py-1">
+                  <div
+                    v-for="contact in filteredContacts"
+                    :key="contact.id"
+                    @click="toggleContact(contact)"
+                    class="px-4 py-2 hover:bg-light-base cursor-pointer flex items-center justify-between text-sm transition"
                   >
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                />
+                    <div class="flex flex-col">
+                      <span class="font-medium text-dark-base">{{
+                        getDisplayNameFromContact(contact)
+                      }}</span>
+                      <span class="text-xs text-sub-text">{{
+                        contact.email
+                      }}</span>
+                    </div>
+                    <div
+                      v-if="isContactSelected(contact.id)"
+                      class="w-5 h-5 bg-dark-base rounded-full flex items-center justify-center"
+                    >
+                      <Check :size="12" class="text-white" />
+                    </div>
+                  </div>
+                  <div
+                    v-if="filteredContacts.length === 0"
+                    class="px-4 py-6 text-center text-sm text-sub-text"
+                  >
+                    No contacts found
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1423,7 +1718,19 @@ onMounted(() => {
   opacity: 0;
 }
 
-/* Slide from right â€” identik dengan AddContactForm */
+/* Custom scrollbar for dropdown */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
+}
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+/* Slide from right — identik dengan AddContactForm */
 .slide-enter-active,
 .slide-leave-active {
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);

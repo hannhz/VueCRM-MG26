@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "vuex";
 import { ArrowRight, X, ChevronDown } from "lucide-vue-next";
+import { alertService } from "@/services/alertService";
 
-defineProps({
+const props = defineProps({
   isOpen: {
     type: Boolean,
     default: false,
@@ -13,6 +14,7 @@ defineProps({
 const emit = defineEmits(["close", "submit"]);
 
 const store = useStore();
+const isSubmitting = ref(false);
 
 const companyOptions = computed(() => {
   const companies = store.getters["company/allcompany"] || [];
@@ -36,10 +38,58 @@ const dealOptions = computed(() => {
   ];
 });
 
-onMounted(() => {
-  store.dispatch("company/fetchAllcompany");
-  store.dispatch("deals/fetchAllDeals");
+const ownerOptions = computed(() => {
+  const users = store.getters["users/allUsers"] || [];
+  return [
+    { value: "", label: "Select Owner" },
+    ...users.map((user) => ({
+      value: user.name || user.username || user.id,
+      label: user.name || user.username || "Unknown",
+    })),
+  ];
 });
+
+const currentUserName = computed(() => {
+  const signedInUser =
+    store.getters["users/usersignin"] || store.state.auth?.user || null;
+  const fullName = [
+    signedInUser?.first_name || signedInUser?.firstname,
+    signedInUser?.last_name || signedInUser?.lastname,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return signedInUser?.name || signedInUser?.username || fullName || "";
+});
+
+const fetchAssociationOptions = async () => {
+  await Promise.allSettled([
+    store.dispatch("users/getusersignin"),
+    store.dispatch("company/fetchAllcompany"),
+    store.dispatch("deals/fetchAllDeals"),
+    store.dispatch("users/fetchAllusers"),
+  ]);
+};
+
+const applyDefaultOwner = () => {
+  if (!formData.value.owner && currentUserName.value) {
+    formData.value.owner = currentUserName.value;
+  }
+};
+
+onMounted(() => {
+  fetchAssociationOptions().finally(applyDefaultOwner);
+});
+
+watch(
+  () => props.isOpen,
+  (isOpen) => {
+    if (isOpen) {
+      fetchAssociationOptions().finally(applyDefaultOwner);
+    }
+  },
+);
 
 const sourceOptions = [
   { value: "", label: "Select Data" },
@@ -80,18 +130,61 @@ const formData = ref({
 
 const handleClose = () => emit("close");
 
-const handleSubmit = () => {
-  // Map fields to match standard contact naming and wrap associations in arrays
-  const submissionData = {
-    ...formData.value,
-    companyassoc: formData.value.companyassoc
-      ? [formData.value.companyassoc]
-      : [],
-    dealsassoc: formData.value.dealsassoc ? [formData.value.dealsassoc] : [],
-  };
+const handleSubmit = async () => {
+  if (!formData.value.firstName.trim()) {
+    alertService.error("First Name wajib diisi.");
+    return;
+  }
 
-  emit("submit", submissionData);
-  handleClose();
+  if (isSubmitting.value) {
+    return;
+  }
+
+  isSubmitting.value = true;
+
+  try {
+    const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    const payload = {
+      first_name: formData.value.firstName.trim(),
+      last_name: formData.value.lastName?.trim() || "",
+      job_title: formData.value.jobTitle?.trim() || "",
+      owner: formData.value.owner || currentUserName.value || "",
+      email: formData.value.email?.trim() || "",
+      status: formData.value.status?.trim() || "",
+      telephone_1: formData.value.telephone?.trim() || "",
+      telephone_2: formData.value.mobile?.trim() || "",
+      address: formData.value.address?.trim() || "",
+      country: formData.value.country?.trim() || "",
+      province: formData.value.province?.trim() || "",
+      city: formData.value.city?.trim() || "",
+      pos_code: formData.value.posCode?.trim() || "",
+      source: formData.value.source || "",
+      companyassoc: formData.value.companyassoc
+        ? [formData.value.companyassoc]
+        : [],
+      dealsassoc: formData.value.dealsassoc ? [formData.value.dealsassoc] : [],
+      created_at: now,
+      updated_at: now,
+    };
+
+    const response = await store.dispatch("contacts/createContact", payload);
+    await alertService.toastSuccess(
+      response?.msg || "Contact berhasil ditambahkan",
+    );
+
+    emit("submit", response);
+    handleClose();
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message ||
+      "Gagal menambah contact";
+    await alertService.toastError(message);
+  } finally {
+    isSubmitting.value = false;
+  }
 };
 </script>
 
@@ -180,12 +273,24 @@ const handleSubmit = () => {
                 <label class="block text-sm font-medium text-dark-base mb-2"
                   >Owner <span class="text-red-600">*</span></label
                 >
-                <input
-                  v-model="formData.owner"
-                  type="text"
-                  placeholder="Owner"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
+                <div class="relative">
+                  <select
+                    v-model="formData.owner"
+                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                  >
+                    <option
+                      v-for="opt in ownerOptions"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                  <ChevronDown
+                    :size="16"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                  />
+                </div>
               </div>
             </div>
 
@@ -391,9 +496,10 @@ const handleSubmit = () => {
           <button
             type="button"
             @click="handleSubmit"
+            :disabled="isSubmitting"
             class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
           >
-            Add Contact
+            {{ isSubmitting ? "Saving..." : "Add Contact" }}
           </button>
           <button
             type="button"

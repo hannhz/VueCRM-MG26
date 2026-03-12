@@ -1,8 +1,8 @@
 <template>
   <header
-    class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-30"
+    class="z-30 flex min-h-16 w-full flex-wrap items-center justify-between gap-3 bg-white px-4 py-2 shadow-sm sm:px-6"
   >
-    <div class="relative w-72">
+    <div class="relative w-full sm:w-72">
       <Search class="absolute left-3 top-2.5 text-gray-400" :size="18" />
       <input
         type="text"
@@ -11,7 +11,7 @@
       />
     </div>
 
-    <div class="flex items-center gap-4">
+    <div class="flex w-full items-center justify-end gap-3 sm:w-auto sm:gap-4">
       <!-- Notification Bell -->
       <button
         class="p-2 text-gray-400 hover:bg-gray-100 rounded-full relative transition-colors"

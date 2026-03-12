@@ -27,8 +27,63 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["close", "submit", "back"]);
-
 const store = useStore();
+
+const companyOptions = computed(() => {
+  const companies = store.getters["company/allcompany"] || [];
+  return [
+    { value: "", label: "Select Company" },
+    ...companies.map((company) => ({
+      value: company.id,
+      label: company.company_name || company.name || "Unknown",
+    })),
+  ];
+});
+
+const dealOptions = computed(() => {
+  const deals = store.getters["deals/allDeals"] || [];
+  return [
+    { value: "", label: "Select Deal" },
+    ...deals.map((deal) => ({
+      value: deal.id,
+      label: deal.deal_name || deal.name || "Unknown",
+    })),
+  ];
+});
+
+const ownerOptions = computed(() => {
+  const users = store.getters["users/allUsers"] || [];
+  return [
+    { value: "", label: "Select Owner" },
+    ...users.map((user) => ({
+      value: user.name || user.username || user.id,
+      label: user.name || user.username || "Unknown",
+    })),
+  ];
+});
+
+const currentUserName = computed(() => {
+  const signedInUser =
+    store.getters["users/usersignin"] || store.state.auth?.user || null;
+  const fullName = [
+    signedInUser?.first_name || signedInUser?.firstname,
+    signedInUser?.last_name || signedInUser?.lastname,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return signedInUser?.name || signedInUser?.username || fullName || "";
+});
+
+const fetchAssociationOptions = async () => {
+  await Promise.allSettled([
+    store.dispatch("users/getusersignin"),
+    store.dispatch("users/fetchAllusers"),
+    store.dispatch("company/fetchAllcompany"),
+    store.dispatch("deals/fetchAllDeals"),
+  ]);
+};
 
 // Section toggles
 const showNotes = ref(true);
@@ -59,64 +114,11 @@ const statusOptions = [
   { value: "done", label: "Done" },
 ];
 
-const assigneeOptions = computed(() => {
-  const users = store.getters["users/allUsers"] || [];
-  return [
-    { value: "", label: "Select Data" },
-    ...users.map((user) => ({
-      value: user.name || user.username || user.id,
-      label: user.name || user.username || "Unknown",
-    })),
-  ];
-});
-
-const companyOptions = computed(() => {
-  const companies = store.getters["company/allcompany"] || [];
-  return [
-    { value: "", label: "Select Company" },
-    ...companies.map((company) => ({
-      value: company.id,
-      label: company.company_name || company.name || "Unknown",
-    })),
-  ];
-});
-
-const dealOptions = computed(() => {
-  const deals = store.getters["deals/allDeals"] || [];
-  return [
-    { value: "", label: "Select Deal" },
-    ...deals.map((deal) => ({
-      value: deal.id,
-      label: deal.deal_name || deal.name || "Unknown",
-    })),
-  ];
-});
-
-const associatedWithOptions = computed(() => {
-  const contacts = store.getters["contacts/allContacts"] || [];
-  return [
-    { value: "", label: "Select Contact" },
-    ...contacts.map((contact) => ({
-      value: contact.id,
-      label:
-        `${contact.first_name || ""} ${contact.last_name || ""}`.trim() ||
-        contact.name ||
-        contact.email ||
-        "Unknown",
-    })),
-  ];
-});
-
-const ownerOptions = computed(() => {
-  const users = store.getters["users/allUsers"] || [];
-  return [
-    { value: "", label: "Select Owner" },
-    ...users.map((user) => ({
-      value: user.name || user.username || user.id,
-      label: user.name || user.username || "Unknown",
-    })),
-  ];
-});
+const assigneeOptions = [
+  { value: "", label: "Select Data" },
+  { value: "thomas", label: "Thomas Anree" },
+  { value: "abdul", label: "Abdul" },
+];
 
 const priorityOptions = [
   { value: "", label: "Select Data" },
@@ -160,16 +162,6 @@ const statusContactOptions = [
   { value: "pending", label: "Pending" },
 ];
 
-const fetchReferenceData = async () => {
-  await Promise.allSettled([
-    store.dispatch("users/fetchAllusers"),
-    store.dispatch("users/getusersignin"),
-    store.dispatch("contacts/fetchAllContacts"),
-    store.dispatch("company/fetchAllcompany"),
-    store.dispatch("deals/fetchAllDeals"),
-  ]);
-};
-
 const getAssociationCandidate = (...values) => {
   for (const value of values) {
     if (Array.isArray(value)) {
@@ -196,26 +188,26 @@ const resolveAssociationValue = (candidate, options) => {
   }
 
   const normalizedCandidate = String(candidate).trim();
-  const matchedOption = options.find(
+  const matchedByValue = options.find(
     (option) => String(option.value) === normalizedCandidate,
   );
 
-  if (matchedOption) {
-    return matchedOption.value;
+  if (matchedByValue) {
+    return matchedByValue.value;
   }
 
   const matchedByLabel = options.find(
     (option) => option.label === normalizedCandidate,
   );
 
-  return matchedByLabel?.value || candidate;
+  return matchedByLabel?.value || "";
 };
 
 const getContactFormDefaults = (contact = null) => ({
   first_name: contact?.first_name || "",
   last_name: contact?.last_name || "",
   job_title: contact?.job_title || "",
-  owner: contact?.owner || "",
+  owner: contact?.owner || currentUserName.value || "",
   email: contact?.email || "",
   status: contact?.status || "",
   telephone_1: contact?.telephone_1 || "",
@@ -232,6 +224,7 @@ const getContactFormDefaults = (contact = null) => ({
     contact?.company_id,
     contact?.companies_id,
     contact?.company,
+    contact?.company_name,
   ),
   dealsAssociation: getAssociationCandidate(
     contact?.dealsassoc,
@@ -239,69 +232,36 @@ const getContactFormDefaults = (contact = null) => ({
     contact?.deal_id,
     contact?.deals_id,
     contact?.deal,
+    contact?.deal_name,
   ),
 });
 
 const contactForm = ref(getContactFormDefaults());
 
-const syncContactAssociations = (contact = props.contact) => {
-  contactForm.value.companiesAssociation = resolveAssociationValue(
-    getAssociationCandidate(
-      contactForm.value.companiesAssociation,
-      contact?.companyassoc,
-      contact?.companiesAssociation,
-      contact?.company_id,
-      contact?.companies_id,
-      contact?.company,
-    ),
-    companyOptions.value,
-  );
-
-  contactForm.value.dealsAssociation = resolveAssociationValue(
-    getAssociationCandidate(
-      contactForm.value.dealsAssociation,
-      contact?.dealsassoc,
-      contact?.dealsAssociation,
-      contact?.deal_id,
-      contact?.deals_id,
-      contact?.deal,
-    ),
-    dealOptions.value,
-  );
-};
-
-const syncTaskAssociatedContact = (contact = props.contact) => {
-  taskAssociatedContact.value = resolveAssociationValue(
-    getAssociationCandidate(
-      taskAssociatedContact.value,
-      contact?.id,
-      contact?.contact_id,
-      contact?.contacts_id,
-    ),
-    associatedWithOptions.value,
-  );
-};
-
 watch(
   () => props.contact,
   (contact) => {
     contactForm.value = getContactFormDefaults(contact);
-    syncContactAssociations(contact);
-    syncTaskAssociatedContact(contact);
   },
   { immediate: true },
 );
 
-watch([companyOptions, dealOptions, associatedWithOptions], () => {
-  syncContactAssociations();
-  syncTaskAssociatedContact();
+watch([companyOptions, dealOptions], () => {
+  contactForm.value.companiesAssociation = resolveAssociationValue(
+    contactForm.value.companiesAssociation,
+    companyOptions.value,
+  );
+  contactForm.value.dealsAssociation = resolveAssociationValue(
+    contactForm.value.dealsAssociation,
+    dealOptions.value,
+  );
 });
 
 watch(
   () => props.isOpen,
   (isOpen) => {
     if (isOpen) {
-      fetchReferenceData();
+      fetchAssociationOptions();
     }
   },
 );
@@ -359,14 +319,14 @@ const handleReset = () => {
   taskDueDate.value = "";
   taskTime.value = "";
   taskPriority.value = "";
-  syncTaskAssociatedContact(props.contact);
+  taskAssociatedContact.value = "";
   docDescription.value = "";
   docFileSource.value = "";
   selectedDocFiles.value = [];
 };
 
 onMounted(() => {
-  fetchReferenceData();
+  fetchAssociationOptions();
 });
 </script>
 
@@ -1058,24 +1018,6 @@ onMounted(() => {
                 >
                   <option
                     v-for="opt in priorityOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
-              </div>
-
-              <div class="px-4 pb-4">
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Associated with</label
-                >
-                <select
-                  v-model="taskAssociatedContact"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
-                >
-                  <option
-                    v-for="opt in associatedWithOptions"
                     :key="opt.value"
                     :value="opt.value"
                   >

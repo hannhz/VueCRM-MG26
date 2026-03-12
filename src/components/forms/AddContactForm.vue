@@ -57,8 +57,8 @@ export default {
         city: "",
         pos_code: "",
         source: "",
-        companyassoc: "",
-        dealsassoc: "",
+        companiesAssociation: "",
+        dealsAssociation: "",
         created_at: "",
         updated_at: "",
       },
@@ -71,97 +71,13 @@ export default {
   computed: {
     ...mapGetters({
       isLoading: "contacts/isLoading",
-      allUsers: "users/allUsers",
-      signedInUser: "users/usersignin",
     }),
-
-    ownerOptions() {
-      return [
-        { value: "", label: "Select Owner" },
-        ...(this.allUsers || []).map((user) => ({
-          value: user.name || user.username || user.id,
-          label: user.name || user.username || "Unknown",
-        })),
-      ];
-    },
-
-    companyOptions() {
-      const companies = this.$store.getters["company/allcompany"] || [];
-      return [
-        { value: "", label: "Select Company" },
-        ...companies.map((c) => ({
-          value: c.id,
-          label: c.company_name || c.name || "Unknown",
-        })),
-      ];
-    },
-
-    dealOptions() {
-      const deals = this.$store.getters["deals/allDeals"] || [];
-      return [
-        { value: "", label: "Select Deal" },
-        ...deals.map((d) => ({
-          value: d.id,
-          label: d.deal_name || d.name || "Unknown",
-        })),
-      ];
-    },
-  },
-
-  watch: {
-    isOpen: {
-      immediate: true,
-      async handler(value) {
-        if (!value) {
-          return;
-        }
-
-        await this.initializeData();
-        this.applyDefaultOwner();
-      },
-    },
-
-    signedInUser() {
-      if (this.isOpen && !this.formData.owner) {
-        this.applyDefaultOwner();
-      }
-    },
   },
 
   methods: {
     ...mapActions({
       saveContact: "contacts/createContact",
-      fetchAllusers: "users/fetchAllusers",
-      getusersignin: "users/getusersignin",
-      fetchAllcompany: "company/fetchAllcompany",
-      fetchAllDeals: "deals/fetchAllDeals",
     }),
-
-    async initializeData() {
-      await Promise.allSettled([
-        this.fetchAllusers(),
-        this.getusersignin(),
-        this.fetchAllcompany(),
-        this.fetchAllDeals(),
-      ]);
-    },
-
-    getCurrentUserName() {
-      return (
-        this.signedInUser?.name ||
-        this.signedInUser?.username ||
-        this.signedInUser?.user?.name ||
-        this.signedInUser?.user?.username ||
-        ""
-      );
-    },
-
-    applyDefaultOwner() {
-      const currentUserName = this.getCurrentUserName();
-      if (!this.formData.owner && currentUserName) {
-        this.formData.owner = currentUserName;
-      }
-    },
 
     handleClose() {
       this.$emit("close");
@@ -174,18 +90,12 @@ export default {
       this.formData.updated_at = now;
 
       // Extract only database fields to avoid 500 error from unexpected fields
-      const { companyassoc, dealsassoc, ...payload } = this.formData;
+      const { companiesAssociation, dealsAssociation, ...payload } =
+        this.formData;
 
-      // Wrap associations in arrays for backend compatibility
-      const finalPayload = {
-        ...payload,
-        companyassoc: companyassoc ? [companyassoc] : [],
-        dealsassoc: dealsassoc ? [dealsassoc] : [],
-      };
+      console.log("Submitting contact with payload:", payload);
 
-      console.log("Submitting contact with payload:", finalPayload);
-
-      this.saveContact(finalPayload)
+      this.saveContact(payload)
         .then((response) => {
           console.log("Contact saved successfully in component:", response);
           toast.success("Contact saved successfully!");
@@ -210,7 +120,7 @@ export default {
         first_name: "",
         last_name: "",
         job_title: "",
-        owner: this.getCurrentUserName(),
+        owner: "",
         email: "",
         telephone_1: "",
         telephone_2: "",
@@ -221,8 +131,8 @@ export default {
         city: "",
         pos_code: "",
         source: "",
-        companyassoc: "",
-        dealsassoc: "",
+        companiesAssociation: "",
+        dealsAssociation: "",
         created_at: "",
         updated_at: "",
       };
@@ -313,24 +223,12 @@ export default {
               <label class="block text-sm font-medium text-dark-base mb-2">
                 Owner <span class="text-red-600">*</span>
               </label>
-              <div class="relative">
-                <select
-                  v-model="formData.owner"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                >
-                  <option
-                    v-for="opt in ownerOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                />
-              </div>
+              <input
+                v-model="formData.owner"
+                type="text"
+                placeholder="Owner"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
             </div>
           </div>
 
@@ -482,24 +380,12 @@ export default {
             <label class="block text-sm font-medium text-dark-base mb-2">
               Companies Association
             </label>
-            <div class="relative">
-              <select
-                v-model="formData.companyassoc"
-                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-              >
-                <option
-                  v-for="opt in companyOptions"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
-                  {{ opt.label }}
-                </option>
-              </select>
-              <ChevronDown
-                :size="16"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-              />
-            </div>
+            <input
+              v-model="formData.companiesAssociation"
+              type="text"
+              placeholder="Search by Name"
+              class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+            />
             <button
               type="button"
               @click="showAddCompanyForm = true"
@@ -515,24 +401,12 @@ export default {
             <label class="block text-sm font-medium text-dark-base mb-2">
               Deals Association
             </label>
-            <div class="relative">
-              <select
-                v-model="formData.dealsassoc"
-                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-              >
-                <option
-                  v-for="opt in dealOptions"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
-                  {{ opt.label }}
-                </option>
-              </select>
-              <ChevronDown
-                :size="16"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-              />
-            </div>
+            <input
+              v-model="formData.dealsAssociation"
+              type="text"
+              placeholder="Search by Name"
+              class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+            />
             <button
               type="button"
               @click="showAddDealForm = true"

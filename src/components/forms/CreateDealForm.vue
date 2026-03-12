@@ -1,8 +1,8 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "vuex";
 import { X, Plus, ChevronDown, Paperclip } from "lucide-vue-next";
-import ContactDetailForm from "./DetailForm.vue";
+import ContactDetailForm from "./DetailFormDuplicate.vue";
 import AddCompanyForm from "./AddCompanyForm.vue";
 import AddContactQuickForm from "./AddContactQuickForm.vue";
 import { alertService } from "@/services/alertService";
@@ -46,6 +46,26 @@ const userOptions = computed(() => {
   ];
 });
 
+const currentUserName = computed(() => {
+  const signedInUser =
+    store.getters["users/usersignin"] || store.state.auth?.user || null;
+  const fullName = [
+    signedInUser?.first_name || signedInUser?.firstname,
+    signedInUser?.last_name || signedInUser?.lastname,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return signedInUser?.name || signedInUser?.username || fullName || "";
+});
+
+const applyDefaultOwner = () => {
+  if (!formData.value.owner && currentUserName.value) {
+    formData.value.owner = currentUserName.value;
+  }
+};
+
 const contactOptions = computed(() => {
   const contacts = store.getters["contacts/allContacts"] || [];
   return [
@@ -86,10 +106,24 @@ const sourceOptions = [
 ];
 
 onMounted(() => {
+  store.dispatch("users/getusersignin");
   store.dispatch("users/fetchAllusers");
   store.dispatch("contacts/fetchAllContacts");
   store.dispatch("company/fetchAllcompany");
+  applyDefaultOwner();
 });
+
+watch(
+  () => props.isOpen,
+  (isOpen) => {
+    if (isOpen) {
+      Promise.allSettled([
+        store.dispatch("users/getusersignin"),
+        store.dispatch("users/fetchAllusers"),
+      ]).finally(applyDefaultOwner);
+    }
+  },
+);
 
 const showOptional = ref(false);
 const showDetailForm = ref(false);
@@ -138,6 +172,15 @@ const handleFileChange = (e) => {
 const handleClose = () => emit("close");
 
 const handleSubmit = async () => {
+  if (!formData.value.dealName.trim()) {
+    await alertService.toastError("Deal Name wajib diisi.");
+    return;
+  }
+
+  showDetailForm.value = true;
+};
+
+const handleDetailSubmit = async (detailPayload) => {
   if (isSavingBeforeDetail.value) {
     return;
   }
@@ -145,9 +188,9 @@ const handleSubmit = async () => {
   isSavingBeforeDetail.value = true;
 
   try {
-    // Ensure associations are sent as arrays for backend compatibility
     const submissionData = {
       ...formData.value,
+      owner: formData.value.owner || currentUserName.value || "",
       contactassoc: formData.value.contactassoc
         ? [formData.value.contactassoc]
         : [],
@@ -156,11 +199,10 @@ const handleSubmit = async () => {
         : [],
     };
 
-    console.log("Submitting Deal Payload:", submissionData);
+    console.log("Submitting Deal Payload:", submissionData, detailPayload);
 
     const response = await store.dispatch("deals/createDeal", submissionData);
 
-    // Check if backend returned 'gagal' even with status 201
     if (response?.msg === "gagal") {
       await alertService.error(
         "Server returned 'gagal'. Please check the payload or choice parameter.",
@@ -174,20 +216,28 @@ const handleSubmit = async () => {
     }
 
     await alertService.toastSuccess(response?.msg || "Deal saved successfully");
-    showDetailForm.value = true;
+    emit("submit", response);
+    showDetailForm.value = false;
+    handleClose();
   } catch (error) {
     const message =
       error?.response?.data?.message ||
       error?.message ||
-      "Gagal menyimpan deal sebelum membuka detail";
+      "Gagal menyimpan deal";
     await alertService.toastError(message);
   } finally {
     isSavingBeforeDetail.value = false;
   }
 };
 
-const handleDetailSubmit = () => {
-  handleClose();
+const handleAddCompanySubmit = async () => {
+  showAddCompanyForm.value = false;
+  await store.dispatch("company/fetchAllcompany");
+};
+
+const handleAddContactQuickSubmit = async () => {
+  showAddContactQuickForm.value = false;
+  await store.dispatch("contacts/fetchAllContacts");
 };
 
 const handleReset = () => {
@@ -197,7 +247,7 @@ const handleReset = () => {
     currency: "IDR",
     amount: "",
     expectedCloseDate: "",
-    owner: "",
+    owner: currentUserName.value || "",
     priority: "",
     source: "",
     description: "",
@@ -646,6 +696,10 @@ const handleReset = () => {
   <!-- Contact Detail Form -->
   <ContactDetailForm
     :isOpen="showDetailForm"
+    title="Create Deal / Details"
+    saveButtonText="Save Deal"
+    entityType="deal"
+    :isSaving="isSavingBeforeDetail"
     @close="showDetailForm = false"
     @back="showDetailForm = false"
     @submit="handleDetailSubmit"
@@ -655,14 +709,14 @@ const handleReset = () => {
   <AddCompanyForm
     :isOpen="showAddCompanyForm"
     @close="showAddCompanyForm = false"
-    @submit="showAddCompanyForm = false"
+    @submit="handleAddCompanySubmit"
   />
 
   <!-- Add Contact Quick Form -->
   <AddContactQuickForm
     :isOpen="showAddContactQuickForm"
     @close="showAddContactQuickForm = false"
-    @submit="showAddContactQuickForm = false"
+    @submit="handleAddContactQuickSubmit"
   />
 </template>
 

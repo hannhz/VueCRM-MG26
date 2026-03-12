@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed, onMounted } from "vue";
+import { ref, watch, computed } from "vue";
 import { useStore } from "vuex";
 import {
   X,
@@ -119,6 +119,20 @@ const ownerOptions = computed(() => {
       label: u.name || u.username || "Unknown",
     })),
   ];
+});
+
+const currentUserName = computed(() => {
+  const signedInUser =
+    store.getters["users/usersignin"] || store.state.auth?.user || null;
+  const fullName = [
+    signedInUser?.first_name || signedInUser?.firstname,
+    signedInUser?.last_name || signedInUser?.lastname,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return signedInUser?.name || signedInUser?.username || fullName || "";
 });
 
 const contactOptions = computed(() => {
@@ -309,10 +323,56 @@ const getDealFormDefaults = (deal = null) => ({
 
 const dealForm = ref(getDealFormDefaults());
 
+const loadReferenceData = async () => {
+  const requests = [];
+
+  if (!store.getters["users/usersignin"]) {
+    requests.push(store.dispatch("users/getusersignin").catch(() => null));
+  }
+
+  if ((store.getters["users/allUsers"] || []).length === 0) {
+    requests.push(store.dispatch("users/fetchAllusers").catch(() => null));
+  }
+
+  if ((store.getters["contacts/allContacts"] || []).length === 0) {
+    requests.push(
+      store.dispatch("contacts/fetchAllContacts").catch(() => null),
+    );
+  }
+
+  if ((store.getters["company/allcompany"] || []).length === 0) {
+    requests.push(store.dispatch("company/fetchAllcompany").catch(() => null));
+  }
+
+  if (requests.length > 0) {
+    await Promise.allSettled(requests);
+  }
+};
+
+watch(
+  currentUserName,
+  (name) => {
+    if (name && !dealForm.value.owner) {
+      dealForm.value.owner = name;
+    }
+  },
+  { immediate: true },
+);
+
 watch(
   [() => props.deal, contactOptions, companyOptions],
   ([deal]) => {
     dealForm.value = getDealFormDefaults(deal);
+  },
+  { immediate: true },
+);
+
+watch(
+  () => props.isOpen,
+  (isOpen) => {
+    if (isOpen) {
+      loadReferenceData();
+    }
   },
   { immediate: true },
 );
@@ -374,12 +434,6 @@ const handleReset = () => {
   docFileSource.value = "";
   selectedDocFiles.value = [];
 };
-
-onMounted(() => {
-  store.dispatch("users/fetchAllusers");
-  store.dispatch("contacts/fetchAllContacts");
-  store.dispatch("company/fetchAllcompany");
-});
 </script>
 
 <template>

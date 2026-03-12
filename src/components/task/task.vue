@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "vuex";
+import { useRoute } from "vue-router";
 import {
   ChevronDown,
   Download,
@@ -22,6 +23,7 @@ import TaskDetailDataForm from "@/components/forms/TaskDetailDataForm.vue";
 import { alertService } from "@/services/alertService";
 
 const store = useStore();
+const route = useRoute();
 
 // Get tasks from Vuex store
 const allTasks = computed(() => store.getters["tasks/filteredTasks"] || []);
@@ -159,11 +161,31 @@ async function handleTaskDetailSubmit(payload) {
 onMounted(() => {
   fetchData();
 });
+
+watch(
+  () => route.path,
+  (path) => {
+    if (path.endsWith("/taskcard")) {
+      store.dispatch("tasks/setViewMode", "grid");
+      return;
+    }
+
+    if (path.endsWith("/taskcalender")) {
+      store.dispatch("tasks/setViewMode", "calendar");
+      return;
+    }
+
+    if (path.includes("/crmAdmin/task")) {
+      store.dispatch("tasks/setViewMode", "list");
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
-  <div class="flex items-center justify-between mb-4">
-    <div class="flex items-baseline gap-3">
+  <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+    <div class="flex min-w-0 items-baseline gap-3">
       <h1 class="text-2xl font-bold text-dark-base">Tasks</h1>
       <span class="text-sm" :class="tasksStatusClass">{{
         tasksStatusText
@@ -171,12 +193,14 @@ onMounted(() => {
     </div>
 
     <!-- Action Button -->
-    <div class="flex items-center gap-2 ml-auto">
+    <div
+      class="ml-auto flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2"
+    >
       <!-- Refresh Button -->
       <button
         @click="fetchData"
         :disabled="isLoading"
-        class="p-2 border bg-white border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
+        class="h-9 w-9 rounded-lg border border-outline bg-white p-2 transition-all hover:bg-light-base active:scale-95 disabled:opacity-50 sm:h-10 sm:w-10"
         title="Refresh Data"
       >
         <RefreshCw
@@ -191,13 +215,13 @@ onMounted(() => {
         <button
           type="button"
           @click="toggleDropdown"
-          class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+          class="flex h-9 w-9 items-center justify-center gap-2 rounded-lg border border-outline bg-white px-2 py-2 text-sub-text transition hover:bg-sub-text hover:text-white sm:h-10 sm:w-auto sm:px-4"
         >
           <span class="text-lg font-semibold">+</span>
-          <span class="text-sm font-medium">Add New</span>
+          <span class="hidden text-sm font-medium md:inline">Add New</span>
           <ChevronDown
             :size="16"
-            class="transition-transform duration-200"
+            class="hidden transition-transform duration-200 md:inline"
             :class="{ 'rotate-180': showDropdown }"
           />
         </button>
@@ -236,13 +260,13 @@ onMounted(() => {
         <button
           type="button"
           @click="toggleDownloadDropdown"
-          class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+          class="flex h-9 w-9 items-center justify-center gap-2 rounded-lg border border-outline bg-white px-2 py-2 text-sub-text transition hover:bg-sub-text hover:text-white sm:h-10 sm:w-auto sm:px-4"
         >
           <Download :size="18" />
-          <span class="text-sm font-medium">Download</span>
+          <span class="hidden text-sm font-medium md:inline">Download</span>
           <ChevronDown
             :size="16"
-            class="transition-transform duration-200"
+            class="hidden transition-transform duration-200 md:inline"
             :class="{ 'rotate-180': showDownloadDropdown }"
           />
         </button>
@@ -272,10 +296,10 @@ onMounted(() => {
 
       <!-- Bulk Edit -->
       <button
-        class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+        class="flex h-9 w-9 items-center justify-center gap-2 rounded-lg border border-outline bg-white px-2 py-2 text-sub-text transition hover:bg-sub-text hover:text-white sm:h-10 sm:w-auto sm:px-4"
       >
         <Edit :size="18" />
-        <span class="text-sm font-medium">Bulk Edit</span>
+        <span class="hidden text-sm font-medium md:inline">Bulk Edit</span>
       </button>
 
       <!-- List Mode -->

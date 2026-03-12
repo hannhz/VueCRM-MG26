@@ -254,7 +254,7 @@ import CreateCompanyForm from "./forms/CreateCompanyForm.vue";
 import BulkAddCompanyForm from "./forms/BulkAddCompanyForm.vue";
 import DetailForm from "./forms/DetailForm.vue";
 import DetailDataCompany from "./forms/DetailDataCompany.vue";
-import { alertService } from "@/services/alertService";
+import { alertService, alertServicenew } from "@/services/alertService";
 import {
   Search,
   ChevronDown,
@@ -317,6 +317,8 @@ export default {
       companies: "company/filteredCompanies",
       isLoading: "company/isLoading",
       error: "company/error",
+      allContacts: "contacts/allContacts",
+      allDeals: "deals/allDeals",
     }),
 
     totalCompanies() {
@@ -361,6 +363,8 @@ export default {
 
   mounted() {
     this.fetchAllcompany();
+    this.fetchAllContacts();
+    this.fetchAllDeals();
 
     document.addEventListener("click", this.handleClickOutside);
   },
@@ -376,6 +380,117 @@ export default {
       "updatecompany",
       "deletecompany",
     ]),
+    ...mapActions("contacts", ["fetchAllContacts"]),
+    ...mapActions("deals", ["fetchAllDeals"]),
+
+    getDisplayNameFromContact(contact) {
+      return (
+        `${contact?.first_name || ""} ${contact?.last_name || ""}`.trim() ||
+        contact?.name ||
+        contact?.email ||
+        "Unknown"
+      );
+    },
+
+    getAssociationCandidates(...values) {
+      const candidates = [];
+
+      values.forEach((value) => {
+        if (Array.isArray(value)) {
+          value.forEach((item) => {
+            if (item !== "" && item !== null && item !== undefined) {
+              candidates.push(item);
+            }
+          });
+          return;
+        }
+
+        if (value !== "" && value !== null && value !== undefined) {
+          if (typeof value === "string" && value.includes(",")) {
+            value
+              .split(",")
+              .map((s) => s.trim())
+              .forEach((s) => {
+                if (s) candidates.push(s);
+              });
+          } else {
+            candidates.push(value);
+          }
+        }
+      });
+
+      return [...new Set(candidates.map((item) => String(item).trim()))].filter(
+        Boolean,
+      );
+    },
+
+    resolveAssociationLabels(candidates, options) {
+      const normalizedOptions = options.map((option) => ({
+        value: String(option.value),
+        label: String(option.label),
+        labelLower: String(option.label).toLowerCase(),
+      }));
+
+      const labels = candidates.map((candidate) => {
+        const normalizedCandidate = String(candidate).trim();
+        const candidateLower = normalizedCandidate.toLowerCase();
+
+        const byValue = normalizedOptions.find(
+          (option) => option.value === normalizedCandidate,
+        );
+        if (byValue) return byValue.label;
+
+        const byLabel = normalizedOptions.find(
+          (option) => option.labelLower === candidateLower,
+        );
+        if (byLabel) return byLabel.label;
+
+        return normalizedCandidate;
+      });
+
+      return [...new Set(labels)].filter(Boolean);
+    },
+
+    getAssociatedContactLabels(company) {
+      const contactCandidates = this.getAssociationCandidates(
+        company?.contactassoc,
+        company?.contactAssociation,
+        company?.contacts_id,
+        company?.contact_id,
+        company?.contact,
+        company?.contact_name,
+      );
+
+      const contactOptions = (this.allContacts || []).map((contact) => ({
+        value: contact.id,
+        label: this.getDisplayNameFromContact(contact),
+      }));
+
+      const labels = this.resolveAssociationLabels(
+        contactCandidates,
+        contactOptions,
+      );
+      return labels.length ? labels : ["-"];
+    },
+
+    getAssociatedDealLabels(company) {
+      const dealCandidates = this.getAssociationCandidates(
+        company?.dealsassoc,
+        company?.dealsAssociation,
+        company?.deals_id,
+        company?.deal_id,
+        company?.deal,
+        company?.deal_name,
+      );
+
+      const dealOptions = (this.allDeals || []).map((deal) => ({
+        value: deal.id,
+        label: deal.deal_name || deal.name || "Unknown",
+      }));
+
+      const labels = this.resolveAssociationLabels(dealCandidates, dealOptions);
+      return labels.length ? labels : ["-"];
+    },
 
     toggleDropdown() {
       this.showDropdown = !this.showDropdown;
@@ -561,8 +676,8 @@ export default {
     class="bg-white rounded-lg shadow-sm h-147 p-4 border border-outline flex flex-col overflow-hidden"
   >
     <!-- Header with Title and Total -->
-    <div class="flex items-center justify-between mb-4">
-      <div class="flex items-baseline gap-3">
+    <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+      <div class="flex min-w-0 items-baseline gap-3">
         <h1 class="text-2xl font-bold text-dark-base">Companies</h1>
         <span class="text-sm" :class="companiesStatusClass">
           {{ companiesStatusText }}
@@ -570,12 +685,14 @@ export default {
       </div>
 
       <!-- Right Section: Action Buttons -->
-      <div class="flex items-center gap-2">
+      <div
+        class="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2"
+      >
         <!-- Refresh Button -->
         <button
           @click="fetchData"
           :disabled="isLoading"
-          class="p-2 border border-outline rounded-lg hover:bg-light-base transition-all active:scale-95 disabled:opacity-50"
+          class="h-9 w-9 rounded-lg border border-outline bg-white p-2 transition-all hover:bg-light-base active:scale-95 disabled:opacity-50 sm:h-10 sm:w-10"
           title="Refresh Data"
         >
           <RefreshCw
@@ -589,13 +706,13 @@ export default {
           <button
             type="button"
             @click="toggleDropdown"
-            class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+            class="flex h-9 w-9 items-center justify-center gap-2 rounded-lg border border-outline bg-white px-2 py-2 text-sub-text transition hover:bg-sub-text hover:text-white sm:h-10 sm:w-auto sm:px-4"
           >
             <span class="text-lg font-semibold">+</span>
-            <span class="text-sm font-medium">Add New</span>
+            <span class="hidden text-sm font-medium md:inline">Add New</span>
             <ChevronDown
               :size="16"
-              class="transition-transform duration-200"
+              class="hidden transition-transform duration-200 md:inline"
               :class="{ 'rotate-180': showDropdown }"
             />
           </button>
@@ -634,13 +751,13 @@ export default {
           <button
             type="button"
             @click="toggleDownloadDropdown"
-            class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+            class="flex h-9 w-9 items-center justify-center gap-2 rounded-lg border border-outline bg-white px-2 py-2 text-sub-text transition hover:bg-sub-text hover:text-white sm:h-10 sm:w-auto sm:px-4"
           >
             <Download :size="18" />
-            <span class="text-sm font-medium">Download</span>
+            <span class="hidden text-sm font-medium md:inline">Download</span>
             <ChevronDown
               :size="16"
-              class="transition-transform duration-200"
+              class="hidden transition-transform duration-200 md:inline"
               :class="{ 'rotate-180': showDownloadDropdown }"
             />
           </button>
@@ -670,24 +787,24 @@ export default {
 
         <!-- Bulk Edit -->
         <button
-          class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition"
+          class="flex h-9 w-9 items-center justify-center gap-2 rounded-lg border border-outline bg-white px-2 py-2 text-sub-text transition hover:bg-sub-text hover:text-white sm:h-10 sm:w-auto sm:px-4"
         >
           <Edit :size="18" />
-          <span class="text-sm font-medium">Bulk Edit</span>
+          <span class="hidden text-sm font-medium md:inline">Bulk Edit</span>
         </button>
 
         <!-- Delete -->
         <button
           @click="handleDeleteCompanies"
-          class="p-2 bg-white border border-red text-red rounded-lg hover:bg-red hover:text-white transition"
+          class="h-9 w-9 rounded-lg border border-red bg-white p-2 text-red transition hover:bg-red hover:text-white sm:h-10 sm:w-10"
         >
           <Trash2 :size="18" />
         </button>
       </div>
     </div>
-    <div class="flex items-center justify-between gap-4">
+    <div class="flex flex-wrap items-center gap-3">
       <!-- Left Section: Filter + Search + Show -->
-      <div class="flex items-center gap-3">
+      <div class="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
         <!-- Filter Icon -->
         <button
           class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
@@ -696,12 +813,12 @@ export default {
         </button>
 
         <!-- Search Input -->
-        <div class="relative">
+        <div class="relative w-full sm:w-auto">
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Search by Name"
-            class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+            class="w-full rounded-lg border border-outline bg-white py-2 pl-3 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-sub-text sm:w-64"
           />
         </div>
 
@@ -727,7 +844,9 @@ export default {
         </div>
       </div>
       <!-- PUSH KANAN -->
-      <div class="ml-auto flex items-center gap-3 text-sm text-sub-text">
+      <div
+        class="flex w-full items-center justify-end gap-3 text-sm text-sub-text sm:w-auto sm:ml-auto"
+      >
         <button
           @click="prevPage"
           class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
@@ -872,8 +991,15 @@ export default {
               <td class="px-6 py-4 text-sm text-dark-base">
                 {{ company.website }}
               </td>
-              <td class="px-6 py-4 text-sm text-dark-base">
-                {{ company.email }}
+              <td class="px-6 py-4 text-sm text-dark-base leading-5">
+                <div>
+                  <span class="font-medium"></span>
+                  {{ getAssociatedContactLabels(company).join(", ") }}
+                </div>
+                <div>
+                  <span class="font-medium"></span>
+                  {{ getAssociatedDealLabels(company).join(", ") }}
+                </div>
               </td>
               <td class="px-6 py-4">
                 {{ company.type }}
@@ -899,7 +1025,7 @@ export default {
       (data) => {
         console.log('Company added:', data);
         showCreateCompanyForm = false;
-        showDetailForm = true;
+        showDetailForm = false;
       }
     "
   />

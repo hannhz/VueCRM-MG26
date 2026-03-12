@@ -10,10 +10,26 @@ import {
   Mic,
 } from "lucide-vue-next";
 
-defineProps({
+const props = defineProps({
   isOpen: {
     type: Boolean,
     default: false,
+  },
+  title: {
+    type: String,
+    default: "Add Contact / Details",
+  },
+  saveButtonText: {
+    type: String,
+    default: "Save",
+  },
+  isSaving: {
+    type: Boolean,
+    default: false,
+  },
+  entityType: {
+    type: String,
+    default: "contact",
   },
 });
 
@@ -89,7 +105,12 @@ const handleClose = () => emit("close");
 const handleBack = () => emit("back");
 
 const handleSave = () => {
+  if (props.isSaving) {
+    return;
+  }
+
   emit("submit", {
+    entityType: props.entityType,
     note: noteContent.value,
     task: {
       name: taskName.value,
@@ -107,7 +128,6 @@ const handleSave = () => {
       files: selectedDocFiles.value,
     },
   });
-  handleClose();
 };
 
 const handleReset = () => {
@@ -147,7 +167,7 @@ const handleReset = () => {
       <div
         class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
       >
-        <h2 class="text-xl font-bold text-dark-base">Add Contact / Details</h2>
+        <h2 class="text-xl font-bold text-dark-base">{{ props.title }}</h2>
         <button
           @click="handleClose"
           class="p-2 hover:bg-light-base rounded-lg transition-colors"
@@ -848,9 +868,11 @@ const handleReset = () => {
           <button
             type="button"
             @click="handleSave"
+            :disabled="props.isSaving"
             class="flex items-center gap-2 px-5 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
+            :class="{ 'opacity-60 cursor-not-allowed': props.isSaving }"
           >
-            Save Contact
+            {{ props.isSaving ? "Saving..." : props.saveButtonText }}
             <ChevronDown :size="16" />
           </button>
         </div>

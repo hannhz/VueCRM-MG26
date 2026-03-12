@@ -17,7 +17,7 @@ const getCompanyName = (company = {}) => {
 };
 
 const companies = computed(() =>
-  allCompanies.value.slice(0, 8).map((company, index) => ({
+  allCompanies.value.slice(0, 5).map((company, index) => ({
     id: company.id ?? index,
     name: getCompanyName(company),
     // Placeholder sementara, nanti disesuaikan saat data metrik deal siap.

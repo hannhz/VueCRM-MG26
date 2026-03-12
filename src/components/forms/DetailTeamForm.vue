@@ -1,289 +1,533 @@
-<script setup>
-import { computed } from "vue";
-import { X, Users } from "lucide-vue-next";
+<script>
+import { mapGetters, mapActions } from "vuex";
+import { X, Users, ChevronDown, Check, Search } from "lucide-vue-next";
+import { alertService } from "@/services/alertService";
 
-const props = defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false,
+export default {
+  name: "TeamUsersModal",
+
+  components: {
+    X,
+    Users,
+    ChevronDown,
+    Check,
+    Search,
   },
-  team: {
-    type: Object,
-    default: null,
+
+  emits: ["close"],
+
+  props: {
+    isOpen: {
+      type: Boolean,
+      default: false,
+    },
+    team: {
+      type: Object,
+      default: function () {
+        return null;
+      },
+    },
+    apiPayload: {
+      type: Object,
+      default: function () {
+        return null;
+      },
+    },
   },
-  apiPayload: {
-    type: Object,
-    default: null,
+
+  data() {
+    return {
+      editForm: {
+        team_name: "",
+        parent_id: null,
+        selectedMembers: [], // New state for member selection
+      },
+      isParentDropdownOpen: false,
+      parentSearch: "",
+
+      // Member Selection State
+      isDropdownOpen: false,
+      memberSearch: "",
+
+      dropdownRef: null,
+      parentDropdownRef: null,
+
+      // References
+      teamsList: [],
+    };
   },
-});
 
-const emit = defineEmits(["close"]);
+  computed: {
+    ...mapGetters({
+      allusersteam: "team/allusersteam",
+      allTeams: "team/allTeamUsers",
+      users: "users/allUsers", // Map users
+    }),
+    usersInTeam: function () {
+      return this.getNormalizedUsers(this.team, this.apiPayload);
+    },
 
-const toComparableId = (value) => {
-  if (value === null || value === undefined || value === "") return null;
-  return String(value);
-};
-
-const getTeamId = (team) =>
-  toComparableId(
-    team?.team_id ?? team?.teamid ?? team?.id ?? team?.id_team ?? null,
-  );
-
-const getUsersFromViewRows = (team, apiPayload) => {
-  if (!team || typeof team !== "object") return [];
-
-  const currentTeamId = getTeamId(team);
-  const rowCandidates = [
-    apiPayload?.teams,
-    apiPayload?.data?.teams,
-    apiPayload?.rows,
-    apiPayload?.data,
-  ];
-
-  for (const candidate of rowCandidates) {
-    if (!Array.isArray(candidate)) continue;
-
-    const users = candidate
-      .filter((row) => row && typeof row === "object")
-      .filter((row) => {
-        const rowTeamId = toComparableId(
-          row.team_id ?? row.teamid ?? row.id_team,
-        );
-        if (!currentTeamId || !rowTeamId) return false;
-        return rowTeamId === currentTeamId;
-      })
-      .map((row, index) => {
-        const userId = toComparableId(
-          row.user_id ?? row.userid ?? row.id_user ?? row.id,
-        );
-        if (!userId) return null;
-
-        const fullName = [row.firstname, row.lastname]
-          .filter((part) => typeof part === "string" && part.trim())
-          .join(" ")
-          .trim();
-
-        const name =
-          row.name ||
-          row.full_name ||
-          row.username ||
-          fullName ||
-          row.email ||
-          `User ID ${userId}`;
-
-        return {
-          id: userId,
-          name,
-          email: row.email || "",
-          _order: index,
-        };
-      })
-      .filter(Boolean);
-
-    if (!users.length) continue;
-
-    // Deduplicate by user id while keeping the first-seen order.
-    const uniqueUsers = [];
-    const seenIds = new Set();
-    for (const user of users) {
-      if (seenIds.has(user.id)) continue;
-      seenIds.add(user.id);
-      uniqueUsers.push(user);
-    }
-
-    return uniqueUsers;
-  }
-
-  return [];
-};
-
-const parseUserIds = (value) => {
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => toComparableId(item?.user_id ?? item?.id ?? item))
-      .filter(Boolean);
-  }
-
-  if (typeof value === "string") {
-    return value
-      .split(",")
-      .map((item) => toComparableId(item.trim()))
-      .filter(Boolean);
-  }
-
-  return [];
-};
-
-const getLinkedUserIds = (team, apiPayload) => {
-  if (!team || typeof team !== "object") return new Set();
-
-  const currentTeamId = getTeamId(team);
-  const relationCandidates = [
-    team.user_team,
-    team.team_users,
-    team.team_user,
-    apiPayload?.user_team,
-    apiPayload?.team_users,
-    apiPayload?.team_user,
-    apiPayload?.relations,
-  ];
-  const userIds = new Set();
-
-  for (const candidate of relationCandidates) {
-    if (!Array.isArray(candidate)) continue;
-
-    for (const row of candidate) {
-      if (!row || typeof row !== "object") continue;
-
-      const relationTeamId = toComparableId(
-        row.team_id ?? row.teamid ?? row.teamId ?? row.id_team,
+    filteredMembers() {
+      if (!this.memberSearch) return this.users;
+      return (this.users || []).filter(
+        (m) =>
+          (m.name || "")
+            .toLowerCase()
+            .includes(this.memberSearch.toLowerCase()) ||
+          (m.email || "")
+            .toLowerCase()
+            .includes(this.memberSearch.toLowerCase()),
       );
-      const relationUserId = toComparableId(
-        row.user_id ?? row.userid ?? row.userId ?? row.id_user ?? row.id,
-      );
+    },
 
-      if (!relationUserId) continue;
+    totalUsersLabel: function () {
+      if (!this.team) return 0;
 
-      if (currentTeamId && relationTeamId && relationTeamId !== currentTeamId) {
-        continue;
+      var totalFromApi = Number(this.team.total_users);
+
+      if (!isNaN(totalFromApi) && totalFromApi >= 0) {
+        return totalFromApi;
       }
 
-      userIds.add(relationUserId);
-    }
-  }
+      return this.usersInTeam.length;
+    },
 
-  const inlineUserIdCandidates = [
-    team.user_ids,
-    team.users_id,
-    team.member_ids,
-    team.members_id,
-    team.user_id,
-    team.member_id,
-  ];
+    filteredParentTeams() {
+      const teams = this.allTeams || [];
+      const currentId = this.getTeamId(this.team);
 
-  for (const candidate of inlineUserIdCandidates) {
-    for (const userId of parseUserIds(candidate)) {
-      userIds.add(userId);
-    }
-  }
+      return teams
+        .filter((t) => this.getTeamId(t) !== currentId) // Prevent selecting self as parent
+        .filter((t) => {
+          if (!this.parentSearch) return true;
+          return (t.team_name || "")
+            .toLowerCase()
+            .includes(this.parentSearch.toLowerCase());
+        });
+    },
 
-  return userIds;
-};
+    parentName() {
+      const parentId = this.editForm.parent_id;
+      if (!parentId) return "None";
+      const parent = (this.allTeams || []).find(
+        (t) => this.getTeamId(t) === String(parentId),
+      );
+      return parent ? parent.team_name : "Unknown";
+    },
+  },
 
-const getNormalizedUsers = (team, apiPayload) => {
-  if (!team || typeof team !== "object") return [];
+  methods: {
+    ...mapActions({
+      fetchUsersteam: "team/fetchUsersteam",
+      saveTeam: "team/saveTeam",
+    }),
+    syncSelectedMembers(users) {
+      if (Array.isArray(users)) {
+        this.editForm.selectedMembers = users
+          .map((user) => ({
+            id: this.getUserId(user),
+            name: user.name || user.username || "Unknown",
+            email: user.email || "",
+          }))
+          .filter((m) => m.id);
+      }
+    },
+    close: function () {
+      this.$emit("close");
+      this.isDropdownOpen = false;
+      this.isParentDropdownOpen = false;
+    },
 
-  const usersFromViewRows = getUsersFromViewRows(team, apiPayload);
-  if (usersFromViewRows.length) return usersFromViewRows;
+    toComparableId: function (value) {
+      if (value === null || value === undefined || value === "") return null;
+      return String(value);
+    },
 
-  const linkedUserIds = getLinkedUserIds(team, apiPayload);
-  const shouldFilterByLinkedIds = linkedUserIds.size > 0;
+    getTeamId: function (team) {
+      if (!team) return null;
+      const id = team.team_id ?? team.teamid ?? team.id ?? team.id_team;
+      return id !== undefined && id !== null ? String(id) : "";
+    },
 
-  const arrayCandidates = [
-    team.users,
-    team.members,
-    team.user_list,
-    team.member_list,
-    apiPayload?.users,
-    apiPayload?.members,
-    apiPayload?.user_list,
-    apiPayload?.member_list,
-  ];
+    getUserId: function (user) {
+      if (!user) return null;
+      const id = user.user_id ?? user.userid ?? user.id ?? user.id_user;
+      return id !== undefined && id !== null ? String(id) : "";
+    },
 
-  for (const candidate of arrayCandidates) {
-    if (!Array.isArray(candidate)) continue;
+    getUsersFromViewRows: function (team, apiPayload) {
+      if (!team || typeof team !== "object") return [];
 
-    return candidate
-      .map((item, index) => {
-        if (typeof item === "string") {
-          if (shouldFilterByLinkedIds) return null;
-          return { id: index, name: item, email: "" };
+      var currentTeamId = this.getTeamId(team);
+
+      var rowCandidates = [
+        apiPayload && apiPayload.teams,
+        apiPayload && apiPayload.data && apiPayload.data.teams,
+        apiPayload && apiPayload.rows,
+        apiPayload && apiPayload.data,
+      ];
+
+      for (var i = 0; i < rowCandidates.length; i++) {
+        var candidate = rowCandidates[i];
+
+        if (!Array.isArray(candidate)) continue;
+
+        var users = candidate
+          .filter(function (row) {
+            return row && typeof row === "object";
+          })
+          .filter(
+            function (row) {
+              var rowTeamId = this.toComparableId(
+                row.team_id || row.teamid || row.id_team,
+              );
+
+              if (!currentTeamId || !rowTeamId) return false;
+
+              return rowTeamId === currentTeamId;
+            }.bind(this),
+          )
+          .map(
+            function (row, index) {
+              var userId = this.toComparableId(
+                row.user_id || row.userid || row.id_user || row.id,
+              );
+
+              if (!userId) return null;
+
+              var fullName = [row.firstname, row.lastname]
+                .filter(function (part) {
+                  return typeof part === "string" && part.trim();
+                })
+                .join(" ")
+                .trim();
+
+              var name =
+                row.name ||
+                row.full_name ||
+                row.username ||
+                fullName ||
+                row.email ||
+                "User ID " + userId;
+
+              return {
+                id: userId,
+                name: name,
+                email: row.email || "",
+                _order: index,
+              };
+            }.bind(this),
+          )
+          .filter(Boolean);
+
+        if (!users.length) continue;
+
+        var uniqueUsers = [];
+        var seenIds = {};
+
+        for (var j = 0; j < users.length; j++) {
+          var user = users[j];
+
+          if (seenIds[user.id]) continue;
+
+          seenIds[user.id] = true;
+          uniqueUsers.push(user);
         }
 
-        if (!item || typeof item !== "object") return null;
+        return uniqueUsers;
+      }
 
-        const userId = toComparableId(item.id ?? item.user_id ?? item.userId);
+      return [];
+    },
 
-        if (shouldFilterByLinkedIds) {
-          if (!userId || !linkedUserIds.has(userId)) return null;
+    parseUserIds: function (value) {
+      if (Array.isArray(value)) {
+        return value
+          .map(
+            function (item) {
+              if (typeof item === "object") {
+                return this.toComparableId(item.user_id || item.id);
+              }
+              return this.toComparableId(item);
+            }.bind(this),
+          )
+          .filter(Boolean);
+      }
+
+      if (typeof value === "string") {
+        return value
+          .split(",")
+          .map(
+            function (item) {
+              return this.toComparableId(item.trim());
+            }.bind(this),
+          )
+          .filter(Boolean);
+      }
+
+      return [];
+    },
+
+    getLinkedUserIds: function (team, apiPayload) {
+      if (!team || typeof team !== "object") return new Set();
+
+      var currentTeamId = this.getTeamId(team);
+
+      var relationCandidates = [
+        team.user_team,
+        team.team_users,
+        team.team_user,
+        apiPayload && apiPayload.user_team,
+        apiPayload && apiPayload.team_users,
+        apiPayload && apiPayload.team_user,
+        apiPayload && apiPayload.relations,
+      ];
+
+      var userIds = new Set();
+
+      for (var i = 0; i < relationCandidates.length; i++) {
+        var candidate = relationCandidates[i];
+
+        if (!Array.isArray(candidate)) continue;
+
+        for (var j = 0; j < candidate.length; j++) {
+          var row = candidate[j];
+
+          if (!row || typeof row !== "object") continue;
+
+          var relationTeamId = this.toComparableId(
+            row.team_id || row.teamid || row.teamId || row.id_team,
+          );
+
+          var relationUserId = this.toComparableId(
+            row.user_id || row.userid || row.userId || row.id_user || row.id,
+          );
+
+          if (!relationUserId) continue;
+
+          if (
+            currentTeamId &&
+            relationTeamId &&
+            relationTeamId !== currentTeamId
+          ) {
+            continue;
+          }
+
+          userIds.add(relationUserId);
         }
+      }
 
-        const name =
-          item.name ||
-          item.full_name ||
-          item.username ||
-          [item.firstname, item.lastname].filter(Boolean).join(" ").trim() ||
-          item.firstname ||
-          item.first_name ||
-          item.email ||
-          "Unknown User";
+      var inlineUserIdCandidates = [
+        team.user_ids,
+        team.users_id,
+        team.member_ids,
+        team.members_id,
+        team.user_id,
+        team.member_id,
+      ];
 
-        const email = item.email || "";
+      for (var k = 0; k < inlineUserIdCandidates.length; k++) {
+        var candidateIds = this.parseUserIds(inlineUserIdCandidates[k]);
 
-        return {
-          id: userId || index,
-          name,
-          email,
+        for (var x = 0; x < candidateIds.length; x++) {
+          userIds.add(candidateIds[x]);
+        }
+      }
+
+      return userIds;
+    },
+
+    getNormalizedUsers: function (team, apiPayload) {
+      if (!team || typeof team !== "object") return [];
+
+      var usersFromViewRows = this.getUsersFromViewRows(team, apiPayload);
+
+      if (usersFromViewRows.length) return usersFromViewRows;
+
+      var linkedUserIds = this.getLinkedUserIds(team, apiPayload);
+
+      var shouldFilterByLinkedIds = linkedUserIds.size > 0;
+
+      var arrayCandidates = [
+        team.users,
+        team.members,
+        team.user_list,
+        team.member_list,
+        apiPayload && apiPayload.users,
+        apiPayload && apiPayload.members,
+        apiPayload && apiPayload.user_list,
+        apiPayload && apiPayload.member_list,
+      ];
+
+      for (var i = 0; i < arrayCandidates.length; i++) {
+        var candidate = arrayCandidates[i];
+
+        if (!Array.isArray(candidate)) continue;
+
+        return candidate
+          .map(
+            function (item, index) {
+              if (typeof item === "string") {
+                if (shouldFilterByLinkedIds) return null;
+
+                return { id: index, name: item, email: "" };
+              }
+
+              if (!item || typeof item !== "object") return null;
+
+              var userId = this.toComparableId(
+                item.id || item.user_id || item.userId,
+              );
+
+              if (shouldFilterByLinkedIds) {
+                if (!userId || !linkedUserIds.has(userId)) return null;
+              }
+
+              var name =
+                item.name ||
+                item.full_name ||
+                item.username ||
+                ((item.firstname || "") + " " + (item.lastname || "")).trim() ||
+                item.email ||
+                "Unknown User";
+
+              return {
+                id: userId || index,
+                name: name,
+                email: item.email || "",
+              };
+            }.bind(this),
+          )
+          .filter(Boolean);
+      }
+
+      return [];
+    },
+
+    selectParent(team) {
+      this.editForm.parent_id = this.getTeamId(team);
+      this.isParentDropdownOpen = false;
+      this.parentSearch = "";
+    },
+
+    // Member Selection Methods
+    toggleMember(member) {
+      const index = this.editForm.selectedMembers.findIndex(
+        (m) => String(m.id) === String(member.id),
+      );
+      if (index === -1) {
+        this.editForm.selectedMembers.push({
+          id: member.id,
+          name: member.name,
+          email: member.email,
+        });
+      } else {
+        this.editForm.selectedMembers.splice(index, 1);
+      }
+    },
+
+    isMemberSelected(id) {
+      return this.editForm.selectedMembers.some(
+        (m) => String(m.id) === String(id),
+      );
+    },
+
+    removeMember(id) {
+      this.editForm.selectedMembers = this.editForm.selectedMembers.filter(
+        (m) => String(m.id) !== String(id),
+      );
+    },
+
+    async handleUpdate() {
+      try {
+        const payload = {
+          id: this.getTeamId(this.team),
+          teamName: this.editForm.team_name,
+          parentTeam: this.parentName === "None" ? "" : this.parentName,
+          selectedMembers: this.editForm.selectedMembers.map((m) => m.id),
         };
-      })
-      .filter(Boolean);
-  }
 
-  const stringCandidates = [
-    team.user_names,
-    team.users_name,
-    team.member_names,
-    team.members_name,
-  ];
+        const result = await this.saveTeam(payload);
 
-  for (const candidate of stringCandidates) {
-    if (typeof candidate !== "string" || !candidate.trim()) continue;
+        // After successful update, if we added members, we might need to refresh usersteam
+        // But saveTeam already dispatches fetchAllTeamUsers.
+        // We actually want to refresh the local members list too.
+        if (this.editForm.selectedMembers.length > 0) {
+          this.fetchUsersteam({ idteam: payload.id });
+          this.editForm.selectedMembers = []; // Reset after addition
+        }
 
-    if (shouldFilterByLinkedIds) continue;
+        alertService.success("Team updated successfully");
+      } catch (err) {
+        console.error("Failed to update team:", err);
+        alertService.error("Failed to update team");
+      }
+    },
 
-    return candidate
-      .split(",")
-      .map((name, index) => ({
-        id: index,
-        name: name.trim(),
-        email: "",
-      }))
-      .filter((item) => item.name);
-  }
+    handleClickOutside(event) {
+      if (
+        this.$refs.dropdownRef &&
+        !this.$refs.dropdownRef.contains(event.target)
+      ) {
+        this.isDropdownOpen = false;
+      }
 
-  if (shouldFilterByLinkedIds) {
-    return Array.from(linkedUserIds).map((userId) => ({
-      id: userId,
-      name: `User ID ${userId}`,
-      email: "",
-    }));
-  }
+      if (
+        this.$refs.parentDropdownRef &&
+        !this.$refs.parentDropdownRef.contains(event.target)
+      ) {
+        this.isParentDropdownOpen = false;
+      }
+    },
+  },
 
-  return [];
+  watch: {
+    team(e, oldE) {
+      if (e != null) {
+        const teamId = this.getTeamId(e);
+        const oldTeamId = this.getTeamId(oldE);
+
+        if (teamId) {
+          this.fetchUsersteam({ idteam: teamId });
+        }
+
+        // Auto-populate edit form when team changes
+        this.editForm.team_name = e.team_name || "";
+
+        // Reset and prepopulate if team ID actually changed
+        if (teamId !== oldTeamId) {
+          this.editForm.selectedMembers = [];
+          // If we already have users in store for this team, prepopulate immediately
+          if (Array.isArray(this.allusersteam)) {
+            this.syncSelectedMembers(this.allusersteam);
+          }
+        }
+
+        this.editForm.parent_id =
+          e.parent_id || e.parentTeam?.id || e.parent_team_id || null;
+      }
+    },
+    allusersteam(e) {
+      this.syncSelectedMembers(e);
+    },
+  },
+
+  mounted() {
+    this.$store.dispatch("users/fetchAllusers");
+    document.addEventListener("mousedown", this.handleClickOutside);
+  },
+
+  beforeUnmount() {
+    document.removeEventListener("mousedown", this.handleClickOutside);
+  },
 };
-
-const usersInTeam = computed(() =>
-  getNormalizedUsers(props.team, props.apiPayload),
-);
-
-const totalUsersLabel = computed(() => {
-  if (!props.team) return 0;
-
-  const totalFromApi = Number(props.team.total_users);
-  if (!Number.isNaN(totalFromApi) && totalFromApi >= 0) {
-    return totalFromApi;
-  }
-
-  return usersInTeam.value.length;
-});
 </script>
-
 <template>
   <Transition name="overlay">
     <div
       v-if="isOpen"
       class="fixed inset-0 bg-sub-text/80 z-40 transition-all duration-300"
-      @click="emit('close')"
+      @click="$emit('close')"
     ></div>
   </Transition>
 
@@ -297,12 +541,14 @@ const totalUsersLabel = computed(() => {
         class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
       >
         <h2 class="text-xl font-bold text-dark-base">Team Detail</h2>
-        <button
-          @click="emit('close')"
-          class="p-2 hover:bg-light-base rounded-lg transition-colors"
-        >
-          <X :size="20" class="text-sub-text" />
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            @click="close"
+            class="p-2 hover:bg-light-base rounded-lg transition-colors"
+          >
+            <X :size="20" class="text-sub-text" />
+          </button>
+        </div>
       </div>
 
       <div class="flex-1 overflow-y-auto p-6 space-y-6">
@@ -312,23 +558,168 @@ const totalUsersLabel = computed(() => {
           <div class="grid grid-cols-2 gap-4">
             <div>
               <p class="text-xs text-sub-text mb-1">Team Name</p>
-              <p class="text-sm font-medium text-dark-base">
-                {{ team?.team_name || "-" }}
-              </p>
+              <div>
+                <input
+                  v-model="editForm.team_name"
+                  type="text"
+                  class="w-full px-3 py-2 border border-outline rounded-lg text-sm focus:ring-1 focus:ring-sub-text outline-none"
+                />
+              </div>
             </div>
             <div>
               <p class="text-xs text-sub-text mb-1">Parent Name</p>
-              <p class="text-sm font-medium text-dark-base">
-                {{ team?.parent || team?.parent_name || "-" }}
-              </p>
+              <div class="relative" ref="parentDropdownRef">
+                <div
+                  @click="isParentDropdownOpen = !isParentDropdownOpen"
+                  class="w-full px-3 py-2 border border-outline rounded-lg flex items-center justify-between cursor-pointer bg-white"
+                >
+                  <span class="text-sm">{{ parentName }}</span>
+                  <ChevronDown :size="14" class="text-sub-text" />
+                </div>
+
+                <div
+                  v-if="isParentDropdownOpen"
+                  class="absolute z-50 w-full mt-1 bg-white border border-outline rounded-lg shadow-xl max-h-48 overflow-y-auto"
+                >
+                  <div class="p-2 border-b border-outline">
+                    <div class="relative">
+                      <Search
+                        :size="12"
+                        class="absolute left-2 top-1/2 -translate-y-1/2 text-sub-text"
+                      />
+                      <input
+                        v-model="parentSearch"
+                        type="text"
+                        placeholder="Search..."
+                        class="w-full pl-7 pr-2 py-1 bg-light-base border border-outline rounded text-xs outline-none"
+                        @click.stop
+                      />
+                    </div>
+                  </div>
+                  <div class="py-1">
+                    <div
+                      @click="
+                        editForm.parent_id = null;
+                        isParentDropdownOpen = false;
+                      "
+                      class="px-4 py-2 hover:bg-light-base cursor-pointer text-xs"
+                    >
+                      None
+                    </div>
+                    <div
+                      v-for="t in filteredParentTeams"
+                      :key="getTeamId(t)"
+                      @click="selectParent(t)"
+                      class="px-4 py-2 hover:bg-light-base cursor-pointer flex items-center justify-between text-xs"
+                    >
+                      <span>{{ t.team_name }}</span>
+                      <Check
+                        v-if="editForm.parent_id === getTeamId(t)"
+                        :size="12"
+                        class="text-dark-base"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div>
-            <p class="text-xs text-sub-text mb-1">Total Users</p>
-            <p class="text-sm font-semibold text-dark-base">
-              {{ totalUsersLabel }}
-            </p>
+          <!-- Add Team Member (Searchable Dropdown) -->
+          <div class="relative" ref="dropdownRef">
+            <p class="text-xs text-sub-text mb-1">Add Team Member</p>
+
+            <div
+              @click="isDropdownOpen = !isDropdownOpen"
+              class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-10 bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
+            >
+              <div
+                v-if="editForm.selectedMembers.length === 0"
+                class="text-gray-400 text-sm"
+              >
+                Search and select members
+              </div>
+              <div
+                v-for="member in editForm.selectedMembers"
+                :key="member.id"
+                class="flex items-center gap-1 bg-light-base px-2 py-1 rounded text-xs font-medium text-dark-base border border-outline"
+                @click.stop
+              >
+                {{ member.name }}
+                <X
+                  :size="12"
+                  class="cursor-pointer hover:text-red"
+                  @click="removeMember(member.id)"
+                />
+              </div>
+              <ChevronDown :size="14" class="ml-auto text-sub-text" />
+            </div>
+
+            <!-- Dropdown Menu -->
+            <div
+              v-if="isDropdownOpen"
+              class="absolute z-50 w-full mt-1 bg-white border border-outline rounded-lg shadow-xl flex flex-col max-h-64"
+            >
+              <div class="p-2 border-b border-outline">
+                <div class="relative">
+                  <Search
+                    :size="14"
+                    class="absolute left-3 top-1/2 -translate-y-1/2 text-sub-text"
+                  />
+                  <input
+                    v-model="memberSearch"
+                    type="text"
+                    placeholder="Search by name or email"
+                    class="w-full pl-9 pr-3 py-2 bg-light-base/50 border border-outline rounded text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
+                    @click.stop
+                  />
+                </div>
+              </div>
+              <div class="flex-1 overflow-y-auto py-1">
+                <div
+                  v-for="member in filteredMembers"
+                  :key="member.id"
+                  @click="toggleMember(member)"
+                  class="px-4 py-2 hover:bg-light-base cursor-pointer flex items-center justify-between text-sm transition"
+                >
+                  <div class="flex flex-col">
+                    <span class="font-medium text-dark-base">{{
+                      member.name
+                    }}</span>
+                    <span class="text-xs text-sub-text">{{
+                      member.email
+                    }}</span>
+                  </div>
+                  <div
+                    v-if="isMemberSelected(member.id)"
+                    class="w-5 h-5 bg-dark-base rounded-full flex items-center justify-center"
+                  >
+                    <Check :size="12" class="text-white" />
+                  </div>
+                </div>
+                <div
+                  v-if="filteredMembers.length === 0"
+                  class="px-4 py-6 text-center text-sm text-sub-text"
+                >
+                  No members found
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs text-sub-text mb-1">Total Users</p>
+              <p class="text-sm font-semibold text-dark-base">
+                {{ totalUsersLabel }}
+              </p>
+            </div>
+            <button
+              @click="handleUpdate"
+              class="px-4 py-2 bg-dark-base text-white rounded-lg text-sm font-bold hover:bg-dark-hover transition-colors"
+            >
+              Update Team
+            </button>
           </div>
         </div>
 
@@ -338,14 +729,14 @@ const totalUsersLabel = computed(() => {
             <h3 class="text-sm font-semibold text-dark-base">Users In Team</h3>
           </div>
 
-          <ul v-if="usersInTeam.length" class="space-y-2">
+          <ul v-if="allusersteam" class="space-y-2">
             <li
-              v-for="user in usersInTeam"
-              :key="user.id"
+              v-for="user in allusersteam"
+              :key="user.userid"
               class="px-3 py-2 rounded-lg bg-light-base border border-outline"
             >
               <p class="text-sm font-medium text-dark-base">{{ user.name }}</p>
-              <p class="text-xs text-sub-text">ID: {{ user.id }}</p>
+              <p class="text-xs text-sub-text">ID: {{ user.userid }}</p>
               <p v-if="user.email" class="text-xs text-sub-text">
                 {{ user.email }}
               </p>

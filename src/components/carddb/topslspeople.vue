@@ -22,7 +22,7 @@ const getDisplayName = (user = {}) => {
 };
 
 const salespeople = computed(() =>
-  allUsers.value.slice(0, 8).map((user, index) => ({
+  allUsers.value.slice(0, 5).map((user, index) => ({
     id: user.id ?? index,
     name: getDisplayName(user),
     // Placeholder sementara sampai metrik deals/won siap dari backend.

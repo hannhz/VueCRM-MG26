@@ -10,6 +10,10 @@ export const alertServicenew = {
     alert(`${title}: ${message}`);
     return Promise.resolve();
   },
+  warning(message, title = "Warning") {
+    alert(`${title}: ${message}`);
+    return Promise.resolve();
+  },
   error(message, title = "Error") {
     alert(`${title}: ${message}`);
     return Promise.resolve();

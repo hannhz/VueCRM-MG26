@@ -18,7 +18,7 @@ const getContactName = (contact = {}) => {
 };
 
 const contacts = computed(() =>
-  allContacts.value.slice(0, 8).map((contact, index) => ({
+  allContacts.value.slice(0, 5).map((contact, index) => ({
     id: contact.id ?? index,
     name: getContactName(contact),
     // Placeholder sementara, nanti disesuaikan saat data metrik siap.

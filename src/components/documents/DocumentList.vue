@@ -122,11 +122,9 @@ function prevPage() {
     class="bg-white rounded-lg shadow-sm border border-outline flex flex-col min-h-0 flex-1"
   >
     <div class="p-4 border-b border-outline">
-      <div
-        class="flex items-center justify-between gap-4 flex-nowrap overflow-x-auto pb-1 scrollbar-hide"
-      >
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <!-- Left Section: Filter + Search + Show -->
-        <div class="flex items-center gap-3 shrink-0">
+        <div class="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
           <!-- Filter Icon -->
           <button
             class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition shrink-0"
@@ -135,7 +133,7 @@ function prevPage() {
           </button>
 
           <!-- Search Input -->
-          <div class="relative shrink-0">
+          <div class="relative w-full sm:w-auto">
             <Search
               :size="16"
               class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -143,12 +141,12 @@ function prevPage() {
             <input
               type="text"
               placeholder="Search by Name"
-              class="pl-9 pr-4 py-2 bg-white border border-outline rounded-lg w-40 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm transition-all"
+              class="w-full rounded-lg border border-outline bg-white py-2 pl-9 pr-4 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-sub-text sm:w-40"
             />
           </div>
 
           <!-- Show Dropdown -->
-          <div class="flex items-center gap-2 shrink-0">
+          <div class="flex items-center gap-2">
             <span class="text-sm text-dark-base">Show</span>
             <select
               v-model="itemsPerPage"
@@ -163,22 +161,26 @@ function prevPage() {
         </div>
 
         <!-- Right Section: Action Buttons -->
-        <div class="flex items-center gap-3 shrink-0">
+        <div
+          class="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2"
+        >
           <!-- Add New -->
-          <div class="relative inline-block add-dropdown shrink-0">
+          <div class="relative inline-block add-dropdown">
             <button
               type="button"
-              class="flex items-center gap-2 px-4 py-2 h-10 bg-white text-sub-text rounded-lg border border-outline hover:bg-sub-text hover:text-white transition shadow-sm"
+              class="flex h-9 w-9 items-center justify-center gap-2 rounded-lg border border-outline bg-white px-2 py-2 text-sub-text shadow-sm transition hover:bg-sub-text hover:text-white sm:h-10 sm:w-auto sm:px-4"
             >
               <span class="text-lg font-semibold">+</span>
-              <span class="text-sm font-medium">Add Documents</span>
+              <span class="hidden text-sm font-medium md:inline"
+                >Add Documents</span
+              >
             </button>
           </div>
 
           <!-- Download PDF -->
           <button
             :disabled="selectedIds.length === 0"
-            class="flex items-center gap-2 px-4 py-2 h-10 border rounded-lg transition shadow-sm shrink-0"
+            class="flex h-9 w-9 items-center justify-center gap-2 rounded-lg border px-2 py-2 shadow-sm transition sm:h-10 sm:w-auto sm:px-4"
             :class="[
               selectedIds.length === 0
                 ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
@@ -186,12 +188,15 @@ function prevPage() {
             ]"
           >
             <FileText :size="18" />
-            <span class="text-sm font-medium uppercase text-[10px]">PDF</span>
+            <span
+              class="hidden text-sm font-medium uppercase text-[10px] md:inline"
+              >PDF</span
+            >
           </button>
 
           <!-- Delete -->
           <button
-            class="p-2.5 bg-white border border-red text-red rounded-lg hover:bg-red hover:text-white transition shrink-0"
+            class="h-9 w-9 rounded-lg border border-red bg-white p-2 text-red transition hover:bg-red hover:text-white sm:h-10 sm:w-10"
           >
             <Trash2 :size="18" />
           </button>
@@ -200,7 +205,9 @@ function prevPage() {
     </div>
 
     <!--- filter select n page -->
-    <div class="px-6 py-4 flex items-center border-b border-outline">
+    <div
+      class="flex flex-wrap items-center border-b border-outline px-6 py-4 gap-3"
+    >
       <!-- KIRI -->
       <label class="flex items-center gap-2 text-sm text-sub-text">
         <input
@@ -212,7 +219,9 @@ function prevPage() {
       </label>
 
       <!-- PUSH KANAN -->
-      <div class="ml-auto flex items-center gap-3 text-sm text-sub-text">
+      <div
+        class="flex w-full items-center justify-end gap-3 text-sm text-sub-text sm:w-auto sm:ml-auto"
+      >
         <button
           @click="prevPage"
           class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useStore } from "vuex";
 import draggable from "vuedraggable";
 import { Filter, Search } from "lucide-vue-next";
@@ -9,10 +9,6 @@ const emit = defineEmits(["viewDetail"]);
 
 const store = useStore();
 
-// Access sidebar state from Vuex
-const isSidebarCollapsed = computed(
-  () => store.getters["settingsfe/isSidebarCollapsed"],
-);
 const allTasks = computed(() => store.getters["tasks/filteredTasks"] || []);
 const searchQuery = computed({
   get: () => store.getters["tasks/searchQuery"] || "",
@@ -157,6 +153,10 @@ watch(
   { immediate: true },
 );
 
+onMounted(async () => {
+  await store.dispatch("tasks/fetchAllTasks").catch(() => {});
+});
+
 const totalVisibleTasks = computed(() =>
   boards.value.reduce((total, board) => total + board.items.length, 0),
 );
@@ -164,10 +164,7 @@ const totalVisibleTasks = computed(() =>
 
 <template>
   <div
-    :class="[
-      'bg-white rounded-lg shadow-sm h-147 border border-outline flex flex-col overflow-hidden',
-      isSidebarCollapsed ? 'max-w-352' : 'max-w-310',
-    ]"
+    class="w-full bg-white rounded-lg shadow-sm h-147 border border-outline flex flex-col overflow-hidden"
   >
     <!-- Action Bar -->
     <div class="pt-4 pr-4 pl-4">

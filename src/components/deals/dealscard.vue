@@ -6,7 +6,6 @@ import { ChevronDown, Search, Filter } from "lucide-vue-next";
 import { alertService } from "@/services/alertService";
 
 const store = useStore();
-
 const emit = defineEmits(["viewDetail"]);
 
 // Access sidebar state from Vuex
@@ -23,6 +22,7 @@ const isCurrencyOpen = ref(false);
 const pipelines = ["Sales Pipeline", "Marketing Pipeline", "Dev Pipeline"];
 const selectedPipeline = ref("Sales Pipeline");
 const isPipelineOpen = ref(false);
+const isDragging = ref(false);
 
 const boardMeta = [
   { id: 1, key: "new", title: "New" },
@@ -31,6 +31,69 @@ const boardMeta = [
   { id: 4, key: "payment", title: "Payment" },
   { id: 5, key: "won", title: "Won" },
   { id: 6, key: "lost", title: "Lost" },
+];
+
+const fallbackDeals = [
+  {
+    id: 1,
+    name: "TechFlow Solutions",
+    stage: "new",
+    jumlah: "Main Enterprise",
+    tertanggal: "2023-10-20",
+    contact: "John Doe",
+    company: "Meta Tech",
+    updatedAt: "2023-10-24",
+    owner: "Alex Graham",
+    value: 500000,
+  },
+  {
+    id: 2,
+    name: "Client B",
+    stage: "qualified",
+    jumlah: "SMB Plan",
+    tertanggal: "2023-10-18",
+    contact: "Maya Putri",
+    company: "Binar Corp",
+    updatedAt: "2023-10-25",
+    owner: "Dita Rahma",
+    value: 300000,
+  },
+  {
+    id: 3,
+    name: "Client C",
+    stage: "advanced",
+    jumlah: "Pro Package",
+    tertanggal: "2023-10-17",
+    contact: "Rizky Anwar",
+    company: "Nusantara Labs",
+    updatedAt: "2023-10-26",
+    owner: "Fahmi Yusuf",
+    value: 450000,
+  },
+  {
+    id: 4,
+    name: "Client D",
+    stage: "payment",
+    jumlah: "Starter",
+    tertanggal: "2023-10-16",
+    contact: "Lisa Wijaya",
+    company: "Skyline ID",
+    updatedAt: "2023-10-23",
+    owner: "Anita Dewi",
+    value: 200000,
+  },
+  {
+    id: 5,
+    name: "Client E",
+    stage: "won",
+    jumlah: "Annual Contract",
+    tertanggal: "2023-10-21",
+    contact: "Budi Santoso",
+    company: "Garuda Digital",
+    updatedAt: "2023-10-27",
+    owner: "Salsa Putri",
+    value: 750000,
+  },
 ];
 
 const boards = ref([]);
@@ -48,18 +111,8 @@ const normalizeStage = (rawStage) => {
   if (stage.includes("qual")) return "qualified";
   if (stage.includes("adv") || stage.includes("negot")) return "advanced";
   if (stage.includes("pay") || stage.includes("proposal")) return "payment";
-  if (
-    stage.includes("won") ||
-    stage.includes("close_won") ||
-    stage.includes("closed_won")
-  )
-    return "won";
-  if (
-    stage.includes("lost") ||
-    stage.includes("close_lost") ||
-    stage.includes("closed_lost")
-  )
-    return "lost";
+  if (stage.includes("won") || stage.includes("close_won")) return "won";
+  if (stage.includes("lost") || stage.includes("close_lost")) return "lost";
   return "new";
 };
 
@@ -67,7 +120,7 @@ const normalizeDeal = (deal) => ({
   id: deal.id,
   name: deal.name || deal.dealName || deal.deal_name || "Untitled Deal",
   stage: normalizeStage(deal.stage || deal.pipeline),
-  jumlah: deal.jumlah || deal.amount_value || deal.amount || "-",
+  jumlah: deal.jumlah || deal.amount || "-",
   tertanggal:
     deal.tertanggal ||
     deal.expectedCloseDate ||
@@ -77,7 +130,7 @@ const normalizeDeal = (deal) => ({
   company: deal.company || deal.company_name || "-",
   updatedAt: deal.updatedAt || deal.updated_at || "-",
   owner: deal.owner || deal.owner_name || "-",
-  value: Number(deal.value || deal.amount_value || deal.amount || 0),
+  value: Number(deal.value || deal.amount || 0),
 });
 
 const rebuildBoards = (rawDeals) => {
@@ -100,9 +153,8 @@ const rebuildBoards = (rawDeals) => {
   }));
 };
 
-// Delete deal with confirmation
 const deleteDeal = async (deal, event) => {
-  // Prevent opening deal detail when clicking delete
+  // Prevent opening deal detail when clicking delete.
   event.stopPropagation();
 
   const confirmed = await alertService.confirm(
@@ -114,11 +166,11 @@ const deleteDeal = async (deal, event) => {
 
   try {
     await store.dispatch("deals/deleteDeal", deal.id);
-    alertService.success("Deal berhasil dihapus.");
+    await alertService.success("Deal berhasil dihapus.");
     await store.dispatch("deals/fetchAllDeals").catch(() => {});
-  } catch (err) {
-    console.error("Delete deal error:", err);
-    alertService.error("Gagal menghapus deal. Coba lagi.");
+  } catch (error) {
+    console.error("Delete deal error:", error);
+    await alertService.error("Gagal menghapus deal. Coba lagi.");
   }
 };
 
@@ -147,10 +199,6 @@ const handleBoardChange = async (event, targetBoard) => {
   }
 };
 
-const handleViewDetail = (deal) => {
-  emit("viewDetail", deal);
-};
-
 const stageClass = (stage) => {
   if (stage === "new") return "bg-slate-100 text-slate-700";
   if (stage === "qualified") return "bg-green-100 text-green-700";
@@ -161,23 +209,31 @@ const stageClass = (stage) => {
   return "bg-slate-100 text-slate-700";
 };
 
+const handleViewDetail = (deal) => {
+  if (isDragging.value) return;
+  emit("viewDetail", deal);
+};
+
 onMounted(async () => {
-  try {
-    await store.dispatch("deals/fetchAllDeals");
-  } catch (error) {
-    rebuildBoards([]);
-  }
+  await store.dispatch("deals/fetchAllDeals").catch(() => {
+    rebuildBoards(fallbackDeals);
+  });
 });
 
 watch(
   allDeals,
   (deals) => {
+    if (!deals.length) {
+      rebuildBoards(fallbackDeals);
+      return;
+    }
     rebuildBoards(deals);
   },
   { immediate: true },
 );
 
 onBeforeUnmount(() => {
+  isDragging.value = false;
   isCurrencyOpen.value = false;
   isPipelineOpen.value = false;
 
@@ -354,14 +410,15 @@ onBeforeUnmount(() => {
                 group="deals"
                 item-key="id"
                 class="flex-1 p-3 space-y-3 overflow-y-auto"
+                @start="isDragging = true"
+                @end="isDragging = false"
                 @change="(event) => handleBoardChange(event, board)"
               >
                 <template #item="{ element }">
                   <div
+                    class="bg-white p-4 rounded shadow-sm border border-gray-200 cursor-move hover:border-blue-500 transition relative group"
                     @click="handleViewDetail(element)"
-                    class="bg-white p-4 rounded shadow-sm border border-gray-200 cursor-pointer hover:border-blue-500 transition relative group"
                   >
-                    <!-- Delete Button -->
                     <button
                       @click="deleteDeal(element, $event)"
                       class="absolute top-2 right-2 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
@@ -383,7 +440,7 @@ onBeforeUnmount(() => {
                       </svg>
                     </button>
 
-                    <p class="text-sm font-medium text-gray-800 truncate pr-8">
+                    <p class="text-sm font-medium text-gray-800 truncate">
                       {{ element.name }}
                     </p>
 
