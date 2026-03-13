@@ -106,9 +106,12 @@ export default {
 
     UPDATE_DEAL(state, payload) {
       const { dealId, updatedData } = payload;
-      const index = state.deals.findIndex((deal) => deal.id === dealId);
+      const index = state.deals.findIndex((deal) => String(deal.id) === String(dealId));
       if (index !== -1) {
-        state.deals[index] = { ...state.deals[index], ...updatedData };
+        // Create new array to trigger Vue 3 reactivity
+        const newDeals = [...state.deals];
+        newDeals[index] = { ...newDeals[index], ...updatedData };
+        state.deals = newDeals;
       }
     },
 
@@ -179,6 +182,37 @@ export default {
       return promise;
     },
 
+    fetchDealById({ commit }, id) {
+      commit("SET_LOADING", true);
+      const promise = new Promise(async (resolve, reject) => {
+        try {
+          const response = await api.get(
+            `deals/fetchdealsbyid?id=${id}`,
+            {
+              headers: {
+                Authorization: "Bearer " + cookies.get("token"),
+              },
+            },
+          );
+          resolve(response.data);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      promise
+        .then((data) => {
+          commit("SET_LOADING", false);
+          return data;
+        })
+        .catch((error) => {
+          commit("SET_LOADING", false);
+          throw error;
+        });
+
+      return promise;
+    },
+
     async updateDealStage({ commit, state }, payload) {
       const { dealId, newStage } = payload;
       const pipelineValue = mapBoardStageToPipeline(newStage);
@@ -230,69 +264,62 @@ export default {
       }
     },
 
-    async createDeal({ commit, dispatch }, formData) {
+    async saveDeal({ dispatch, commit }, formData) {
       commit("SET_LOADING", true);
       commit("SET_ERROR", null);
 
-      const payload = mapCreateDealPayload(formData);
-      const headers = {
-        Authorization: "Bearer " + cookies.get("token"),
-      };
+      const promise = new Promise(async (resolve, reject) => {
+        try {
+          // Tentukan choice: 'i' untuk insert, 'u' untuk update
+          const choice = formData.choice || (formData.id ? "u" : "i");
 
-      // Menentukan choice: 'i' untuk insert (create), 'u' untuk update
-      const choice = formData.id ? "u" : "i";
+          const requestPayload = {
+            choice: choice,
+            ...formData,
+          };
 
-      // Payload sesuai pattern TaskController
-      const requestPayload = {
-        choice: choice,
-        id: formData.id || null,
-        deal_name: payload.deal_name,
-        pipeline: payload.pipeline,
-        currency: payload.currency,
-        amount_value: payload.amount_value,
-        expected_close_date: payload.expected_close_date,
-        owner: payload.owner,
-        priority: payload.priority,
-        source: payload.source,
-        stage: payload.stage,
-        companyassoc: formData.companyassoc || [],
-        contactassoc: formData.contactassoc || formData.dealsassoc || [],
-      };
+          const response = await api.post("deals/input", requestPayload, {
+            headers: {
+              Authorization: "Bearer " + cookies.get("token"),
+            },
+          });
 
-      try {
-        const response = await api.post("deals/input", requestPayload, {
-          headers,
+          // Refresh daftar HANYA setelah sukses dan tunggu sampai selesai
+          await dispatch("fetchAllDeals");
+
+          resolve(response.data);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      promise
+        .then(() => {
+          commit("SET_LOADING", false);
+        })
+        .catch((error) => {
+          const status = error?.response?.status;
+          const serverMessage = error?.response?.data?.message;
+          commit(
+            "SET_ERROR",
+            serverMessage ||
+              (status
+                ? `Save deal gagal (HTTP ${status})`
+                : error?.message || "Failed to save deal"),
+          );
+          commit("SET_LOADING", false);
         });
 
-        const savedDealId = resolveDealId(response.data, formData.id || null);
+      return promise;
+    },
 
-        await dispatch("fetchAllDeals").catch(() => {
-          const createdDeal = response?.data?.deal || response?.data?.data;
-          if (createdDeal) {
-            if (choice === "i") {
-              commit("ADD_DEAL", createdDeal);
-            }
-          }
-        });
-        commit("SET_LOADING", false);
-        return response.data;
-      } catch (error) {
-        const status = error?.response?.status;
-        const serverMessage = error?.response?.data?.message;
-        const operationType = choice === "i" ? "Create" : "Update";
-        commit(
-          "SET_ERROR",
-          serverMessage ||
-            (status
-              ? status === 404
-                ? "Endpoint input deal tidak ditemukan di server (404)."
-                : `${operationType} deal gagal (HTTP ${status})`
-              : error?.message ||
-                `Failed to ${operationType.toLowerCase()} deal in API.`),
-        );
-        commit("SET_LOADING", false);
-        throw error;
-      }
+    createDeal({ dispatch }, formData) {
+      // Gunakan saveDeal dengan choice='i' untuk backward compatibility
+      const payload = {
+        choice: "i",
+        ...formData,
+      };
+      return dispatch("saveDeal", payload);
     },
 
     // Backward compatibility for older callers that still dispatch `deals/input`.
@@ -300,66 +327,20 @@ export default {
       return dispatch("createDeal", formData);
     },
 
-    async updateDeal({ commit, dispatch }, payload) {
+    async updateDeal({ dispatch }, payload) {
       const { keyedit, formdata } = payload;
 
-      commit("SET_LOADING", true);
-      commit("SET_ERROR", null);
-
-      const headers = {
-        Authorization: "Bearer " + cookies.get("token"),
-      };
-
-      // Payload untuk update deal
+      // Gunakan saveDeal dengan choice='u' untuk backward compatibility
       const requestPayload = {
         choice: "u",
         id: keyedit,
-        deal_name: formdata.deal_name,
-        pipeline: formdata.pipeline,
-        currency: formdata.currency || "IDR",
-        amount_value: formdata.amount || formdata.amount_value,
-        expected_close_date: formdata.expected_close_date,
-        owner: formdata.owner,
-        priority: formdata.priority,
-        source: formdata.source,
-        stage: formdata.stage || formdata.pipeline,
-        description: formdata.description,
+        ...formdata,
+        // Backend strictly requires amount_value
+        amount_value:
+          formdata.amount !== undefined ? formdata.amount : formdata.amount_value,
       };
 
-      try {
-        const response = await api.post("deals/input", requestPayload, {
-          headers,
-        });
-
-        // Update local state
-        commit("UPDATE_DEAL", {
-          dealId: keyedit,
-          updatedData: {
-            ...formdata,
-            id: keyedit,
-            stage: formdata.stage || formdata.pipeline,
-            pipeline: formdata.pipeline,
-          },
-        });
-
-        // Optionally refresh from server
-        await dispatch("fetchAllDeals").catch(() => {});
-
-        commit("SET_LOADING", false);
-        return response.data;
-      } catch (error) {
-        const status = error?.response?.status;
-        const serverMessage = error?.response?.data?.message;
-        commit(
-          "SET_ERROR",
-          serverMessage ||
-            (status
-              ? `Update deal gagal (HTTP ${status})`
-              : error?.message || "Failed to update deal"),
-        );
-        commit("SET_LOADING", false);
-        throw error;
-      }
+      return dispatch("saveDeal", requestPayload);
     },
 
     async deleteDeal({ commit, dispatch }, dealId) {

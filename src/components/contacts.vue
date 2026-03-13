@@ -300,11 +300,30 @@ export default {
 
       this.isDetailDataSubmitting = true;
 
-      this.updateContact({
-        id: contactId,
+      // Format updated_at: YYYY-MM-DD HH:mm:ss (match AddContactForm pattern)
+      const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+      // Flatten payload to match backend expectation for choice: 'u'
+      // This follows the "DetailDataCompany-style" emission but ensures contact logic works
+      const formdata = {
         ...payload.contact,
-        updated_at: new Date().toISOString(),
-      })
+        id: contactId,
+        updated_at: now,
+
+        // Notes, Tasks, & Docs (Flattened for backend)
+        notes: payload.note,
+        task_name: payload.task?.name,
+        desktask: payload.task?.content,
+        statustask: payload.task?.status,
+        assignee: payload.task?.assignee,
+        due_date: payload.task?.dueDate,
+        task_time: payload.task?.time,
+        prioritytask: payload.task?.priority,
+        associated_contact: payload.task?.associatedContact,
+        docs: payload.docs?.description,
+      };
+
+      this.updateContact(formdata)
         .then(() => {
           alertService.success("Detail contact berhasil diperbarui.");
           this.closeDetailDataContact();

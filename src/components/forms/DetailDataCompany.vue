@@ -69,15 +69,11 @@ const showTasks = ref(true);
 const showDocs = ref(true);
 
 // Notes
-const noteContent = ref(
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-);
+const noteContent = ref("");
 
 // Tasks
 const taskName = ref("");
-const taskContent = ref(
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-);
+const taskContent = ref("");
 const taskStatus = ref("");
 const taskAssignee = ref("");
 const taskDueDate = ref("");
@@ -162,9 +158,7 @@ const priorityOptions = [
 ];
 
 // Docs
-const docDescription = ref(
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-);
+const docDescription = ref("");
 const docFileSource = ref("");
 const docDropdownOpen = ref(false);
 const docDropdownRef = ref(null);
@@ -273,39 +267,60 @@ const resolveAssociationValues = (candidates, options) => {
     .filter((v) => v !== null && v !== undefined);
 };
 
+const resolveUserValue = (candidate, options) => {
+  if (!candidate || !options) return "";
+  const normalizedCandidate = String(candidate).trim().toLowerCase();
+  
+  const match = options.find(opt => 
+    String(opt.value).trim().toLowerCase() === normalizedCandidate ||
+    String(opt.label).trim().toLowerCase() === normalizedCandidate
+  );
+  
+  return match ? match.value : candidate;
+};
+
 const getCompanyFormDefaults = (company = null) => {
+  // Extract actual company data if it's wrapped in the response format
+  const data = (company && company.companies && company.companies.length > 0) 
+    ? company.companies[0] 
+    : company;
+
   const deals = getAssociationCandidates(
-    company?.dealsassoc ||
-      company?.dealsAssociation ||
-      company?.deals_id ||
-      company?.deal_id ||
-      company?.deal,
+    data?.dealsassoc ||
+      company?.dealsassoc || // Check wrapper too
+      data?.dealsAssociation ||
+      data?.deals_id ||
+      data?.deal_id ||
+      data?.deals || // Handle 'deals' field from user JSON
+      data?.deal
   );
 
   const contacts = getAssociationCandidates(
-    company?.contactassoc ||
-      company?.contactAssociation ||
-      company?.contacts_id ||
-      company?.contact_id ||
-      company?.contact,
+    data?.contactassoc ||
+      company?.contactassoc || // Check wrapper too
+      data?.contactAssociation ||
+      data?.contacts_id ||
+      data?.contact_id ||
+      data?.contact || // Handle 'contact' field from user JSON
+      data?.contact
   );
 
   return {
-    company_name: company?.company_name || "",
-    company_owner: company?.company_owner || "",
-    owner: company?.owner || currentUserName.value || "",
-    description: company?.description || "",
-    email: company?.email || "",
-    telephone: company?.telephone || "",
-    website: company?.website || "",
-    industry: company?.industry || "",
-    address: company?.address || "",
-    city: company?.city || "",
-    province: company?.province || "",
-    country: company?.country || "",
-    pos_code: company?.pos_code || company?.posCode || "",
-    source: company?.source || "",
-    type: company?.type || "",
+    company_name: data?.company_name || "",
+    company_owner: data?.company_owner || "",
+    owner: data?.owner || currentUserName.value || "",
+    description: data?.description || "",
+    email: data?.email || "",
+    telephone: data?.telephone || "",
+    website: data?.website || "",
+    industry: data?.industry || "",
+    address: data?.address || "",
+    city: data?.city || "",
+    province: data?.province || "",
+    country: data?.country || "",
+    pos_code: data?.pos_code || data?.posCode || "",
+    source: data?.source || "",
+    type: data?.type || "",
     dealsassoc: deals,
     contactassoc: contacts,
   };
@@ -335,14 +350,21 @@ const syncAssociationValues = (company = props.company) => {
     return;
   }
 
+  // Handle wrapped response format
+  const data = (company && company.companies && company.companies.length > 0) 
+    ? company.companies[0] 
+    : company;
+
   const dealsCandidates = getAssociationCandidates(
     companyForm.value.dealsassoc.length > 0
       ? companyForm.value.dealsassoc
-      : company?.dealsassoc ||
-          company?.dealsAssociation ||
-          company?.deals_id ||
-          company?.deal_id ||
-          company?.deal,
+      : company?.dealsassoc || // Check wrapper root (for associations array)
+          data?.dealsassoc ||
+          data?.dealsAssociation ||
+          data?.deals_id ||
+          data?.deals || // From user JSON
+          data?.deal_id ||
+          data?.deal,
   );
 
   companyForm.value.dealsassoc = resolveAssociationValues(
@@ -353,11 +375,13 @@ const syncAssociationValues = (company = props.company) => {
   const contactCandidates = getAssociationCandidates(
     companyForm.value.contactassoc.length > 0
       ? companyForm.value.contactassoc
-      : company?.contactassoc ||
-          company?.contactAssociation ||
-          company?.contacts_id ||
-          company?.contact_id ||
-          company?.contact,
+      : company?.contactassoc || // Check wrapper root
+          data?.contactassoc ||
+          data?.contactAssociation ||
+          data?.contacts_id ||
+          data?.contact || // From user JSON
+          data?.contact_id ||
+          data?.contact,
   );
 
   companyForm.value.contactassoc = resolveAssociationValues(
@@ -468,6 +492,37 @@ onMounted(() => {
   document.addEventListener("mousedown", handleClickOutside);
 });
 
+const syncAdditionalData = (company) => {
+  if (!company) return;
+
+  // Handle wrapped response format
+  const data = (company && company.companies && company.companies.length > 0) 
+    ? company.companies[0] 
+    : company;
+
+  // Notes mapping
+  noteContent.value = data.notes || "";
+
+  // Tasks mapping
+  taskName.value = data.task_name || "";
+  taskContent.value = data.desktask || data.task_content || "";
+  taskStatus.value = data.status || "";
+  taskAssignee.value = resolveUserValue(data.assignee, assigneeOptions.value);
+  taskDueDate.value = data.due_date || "";
+  
+  // Format task_time: HH:mm:ss.SSSSSSS -> HH:mm
+  if (data.task_time) {
+    taskTime.value = data.task_time.split('.')[0].substring(0, 5);
+  } else {
+    taskTime.value = "";
+  }
+  
+  taskPriority.value = data.priority || "";
+
+  // Docs mapping
+  docDescription.value = data.docs || "";
+};
+
 watch(
   () => props.company,
   (company) => {
@@ -475,15 +530,20 @@ watch(
       companyForm.value = getCompanyFormDefaults(company);
       syncAssociationValues(company);
       syncTaskAssociatedContact(company);
+      syncAdditionalData(company);
     }
   },
   { immediate: true },
 );
 
-watch([dealOptions, contactOptions, associatedWithOptions], () => {
-  syncAssociationValues();
-  syncTaskAssociatedContact();
-});
+watch(
+  [dealOptions, contactOptions, associatedWithOptions, assigneeOptions],
+  () => {
+    syncAssociationValues();
+    syncTaskAssociatedContact();
+    syncAdditionalData(props.company);
+  },
+);
 
 watch(
   () => props.isOpen,
@@ -507,11 +567,8 @@ const handleBack = () => emit("back");
 
 const handleSave = () => {
   // Map fields to match standard naming and wrap associations in comma-separated strings
-  const form = { ...companyForm.value };
-  delete form.owner; // Remove redundant field to match SP exactly
-
   const submissionData = {
-    ...form,
+    ...companyForm.value,
     id: props.company?.id,
     dealsassoc: (companyForm.value.dealsassoc || []).join(","),
     contactassoc: (companyForm.value.contactassoc || []).join(","),
@@ -540,19 +597,26 @@ const handleSave = () => {
 
 const handleReset = () => {
   companyForm.value = getCompanyFormDefaults(props.company);
-  noteContent.value = "";
-  taskName.value = "";
-  taskContent.value = "";
-  taskStatus.value = "";
-  taskAssignee.value = "";
-  taskDueDate.value = "";
-  taskTime.value = "";
-  taskPriority.value = "";
+  syncAdditionalData(props.company);
   syncTaskAssociatedContact(props.company);
-  docDescription.value = "";
   docFileSource.value = "";
   selectedDocFiles.value = [];
 };
+
+watch(
+  currentUserName,
+  (name) => {
+    if (name) {
+      if (!companyForm.value.owner) {
+        companyForm.value.owner = name;
+      }
+      if (!taskAssignee.value) {
+        taskAssignee.value = resolveUserValue(name, assigneeOptions.value);
+      }
+    }
+  },
+  { immediate: true },
+);
 
 // Remove redundant onMounted
 </script>
@@ -1378,23 +1442,7 @@ const handleReset = () => {
                 </select>
               </div>
 
-              <div class="px-4 pb-4">
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Associated with</label
-                >
-                <select
-                  v-model="taskAssociatedContact"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
-                >
-                  <option
-                    v-for="opt in associatedWithOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
-              </div>
+              
             </div>
           </div>
 

@@ -136,9 +136,24 @@ const handleDetailDataDealsSubmit = async (payload) => {
   isDetailDataDealsSubmitting.value = true;
 
   try {
+    const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+
     const formdata = {
       ...payload.deal,
-      updated_at: new Date().toISOString(),
+      id: dealId,
+      updated_at: now,
+
+      // Notes, Tasks, & Docs (Flattened for backend compatibility)
+      notes: payload.note,
+      task_name: payload.task?.name,
+      desktask: payload.task?.content,
+      statustask: payload.task?.status,
+      assignee: payload.task?.assignee,
+      due_date: payload.task?.dueDate,
+      task_time: payload.task?.time,
+      prioritytask: payload.task?.priority,
+      associated_contact: payload.task?.associatedContact,
+      docs: payload.docs?.description,
     };
 
     await store.dispatch("deals/updateDeal", {

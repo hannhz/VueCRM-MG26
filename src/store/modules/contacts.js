@@ -177,6 +177,36 @@ const actions = {
   setViewMode({ commit }, mode) {
     commit("SET_VIEW_MODE", mode);
   },
+
+  fetchContactById({ commit }, contactId) {
+    commit("SET_LOADING", true);
+    commit("SET_ERROR", null);
+
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const response = await api.get(`contact/fetchcontactbyid?id=${contactId}`, {
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
+          },
+        });
+        resolve(response.data);
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    promise
+      .then((data) => {
+        commit("SET_LOADING", false);
+      })
+      .catch((error) => {
+        console.error("Vuex fetchContactById error:", error);
+        commit("SET_ERROR", error.message);
+        commit("SET_LOADING", false);
+      });
+
+    return promise;
+  },
 };
 
 export default {
