@@ -48,7 +48,9 @@ const userOptions = computed(() => {
 
 const selectedUsername = computed(() => {
   const users = store.getters["users/usersList"] || [];
-  const selectedUser = users.find((user) => user.email === selectedUserEmail.value);
+  const selectedUser = users.find(
+    (user) => user.email === selectedUserEmail.value,
+  );
 
   const fromStore =
     selectedUser?.username ||
@@ -77,7 +79,9 @@ const dbTopLevelMenus = computed(() => {
 });
 
 const effectiveMenuNames = computed(() => {
-  return dbTopLevelMenus.value.length > 0 ? dbTopLevelMenus.value : projectMenus;
+  return dbTopLevelMenus.value.length > 0
+    ? dbTopLevelMenus.value
+    : projectMenus;
 });
 
 function fallbackIconByMenu(menuName) {
@@ -104,7 +108,9 @@ function resolveNonEmptyIcon(row = {}) {
 
   if (caption) {
     const matched = dbmenu2.find((item) => {
-      const itemCaption = String(item?.CAPTION || item?.NamaCaption || item?.caption || "").trim();
+      const itemCaption = String(
+        item?.CAPTION || item?.NamaCaption || item?.caption || "",
+      ).trim();
       return itemCaption.toLowerCase() === caption.toLowerCase();
     });
 
@@ -149,7 +155,9 @@ function syncMenuPermissions(menuNames) {
 
   menuPermissions.value = menuNames.map((menu, index) => {
     const existing = previousByMenu.get(menu);
-    return existing ? { ...existing, id: index + 1 } : buildDefaultPermission(menu, index + 1);
+    return existing
+      ? { ...existing, id: index + 1 }
+      : buildDefaultPermission(menu, index + 1);
   });
 }
 
@@ -197,128 +205,320 @@ function normalizePermissionRows(rawRows) {
         accessLevel: Number(row.ACCESS ?? row.access ?? 0),
         hasaccess: toBool(row.HASACCESS ?? row.hasaccess, true),
         akses: toBool(row.HASACCESS ?? row.hasaccess ?? row.akses, true),
-        tambah: toBool(row.tambah ?? row.TAMBAH ?? row.add ?? row.can_add, true),
-        hapus: toBool(row.hapus ?? row.HAPUS ?? row.delete ?? row.can_delete, true),
-        koreksi: toBool(row.koreksi ?? row.KOREKSI ?? row.edit ?? row.can_edit, true),
+        tambah: toBool(
+          row.tambah ?? row.TAMBAH ?? row.add ?? row.can_add,
+          true,
+        ),
+        hapus: toBool(
+          row.hapus ?? row.HAPUS ?? row.delete ?? row.can_delete,
+          true,
+        ),
+        koreksi: toBool(
+          row.koreksi ?? row.KOREKSI ?? row.edit ?? row.can_edit,
+          true,
+        ),
         export: toBool(row.export ?? row.EXPORT ?? row.can_export, false),
         status: Number(row.Status ?? row.status ?? 0),
         flagkrm: row.FLAGKRM ?? row.flagkrm ?? null,
         imageIndex: Number(row.ImageIndex ?? row.imageIndex ?? -1),
         l1lama: Number(row.L1lama ?? row.l1lama ?? 0),
-        accesslama: Number(row.ACCESSlama ?? row.ACCESSlar ?? row.accesslama ?? row.accesslar ?? 0),
+        accesslama: Number(
+          row.ACCESSlama ??
+            row.ACCESSlar ??
+            row.accesslama ??
+            row.accesslar ??
+            0,
+        ),
       };
     })
     .filter(Boolean);
 }
 
-async function loadPermissionFromApi() {
+const loadPermissionFromApi = () => {
   isLoadingPermission.value = true;
-  try {
-    const response = await api.post(
-      "berkas/getflmenu",
-      { username: selectedUsername.value },
-      {
-        headers: apiHeaders,
-      },
-    );
 
-    const body = response?.data || {};
+  store
+    .dispatch("userpermisions/loadPermissions", { username: selectedUsername.value })
 
-    const rawRows = body.data || body.rows || body.permissions || body.flmenu || body.dbmenu2 || [];
+    .then((body) => {
+      // console.log( "Permission data loaded for user:", selectedUsername.value, body);
+      const rawRows =
+        body.data ||
+        body.rows ||
+        body.permissions ||
+        body.flmenu ||
+        body.dbmenu2 ||
+        [];
 
-    const normalizedRows = normalizePermissionRows(rawRows);
-    if (normalizedRows.length > 0) {
-      menuPermissions.value = normalizedRows;
-    } else {
-      syncMenuPermissions(effectiveMenuNames.value);
-    }
+      const normalizedRows = normalizePermissionRows(rawRows);
 
-    const apiUsers = body.users || body.user_options || [];
-    if (Array.isArray(apiUsers) && apiUsers.length > 0) {
-      const parsedUsers = apiUsers
-        .map((item) => (typeof item === "string" ? item : item?.email))
-        .filter((email) => typeof email === "string" && email.trim() !== "");
-
-      if (parsedUsers.length > 0 && !parsedUsers.includes(selectedUserEmail.value)) {
-        selectedUserEmail.value = parsedUsers[0];
+      if (normalizedRows.length > 0) {
+        menuPermissions.value = normalizedRows;
+      } else {
+        syncMenuPermissions(effectiveMenuNames.value);
       }
-    }
 
-    const apiProfiles = body.profiles || body.authority_profiles || [];
-    if (Array.isArray(apiProfiles) && apiProfiles.length > 0) {
-      const parsedProfiles = apiProfiles
-        .map((item) => (typeof item === "string" ? item : item?.name || item?.label))
-        .filter((name) => typeof name === "string" && name.trim() !== "");
+      /* ===== USERS ===== */
 
-      if (parsedProfiles.length > 0) {
-        authorityProfiles.value = [...new Set(parsedProfiles)];
-        if (!authorityProfiles.value.includes(selectedProfile.value)) {
-          selectedProfile.value = authorityProfiles.value[0];
+      const apiUsers = body.users || body.user_options || [];
+
+      if (Array.isArray(apiUsers) && apiUsers.length > 0) {
+        const parsedUsers = apiUsers
+          .map((item) =>
+            typeof item === "string" ? item : item?.email
+          )
+          .filter((email) => email?.trim());
+
+        if (
+          parsedUsers.length > 0 &&
+          !parsedUsers.includes(selectedUserEmail.value)
+        ) {
+          selectedUserEmail.value = parsedUsers[0];
         }
       }
-    }
-  } catch (error) {
-    syncMenuPermissions(effectiveMenuNames.value);
-    const status = error?.response?.status;
-    const backendMessage =
-      error?.response?.data?.message || error?.response?.data?.error || "";
-    const message =
-      status === 500
-        ? `Server error 500 on getflmenu${backendMessage ? `: ${backendMessage}` : ""}`
-        : backendMessage || "Failed to load permission data.";
-    alertService.toastError(message);
-  } finally {
-    isLoadingPermission.value = false;
-  }
-}
 
-async function savePermissionToApi(options = {}) {
-  const { silent = false } = options;
+      /* ===== PROFILES ===== */
 
-  isSavingPermission.value = true;
-  try {
-    // Backend saveedit expects raw array from $request->all(), not wrapped object.
-    const payload = menuPermissions.value.map((row) => ({
-      username: selectedUsername.value,
-      id: String(row.menuid ?? row.id ?? ""),
-      akses: row.akses ? 1 : 0,
-      tambah: row.tambah ? 1 : 0,
-      hapus: row.hapus ? 1 : 0,
-      koreksi: row.koreksi ? 1 : 0,
-      export: row.export ? 1 : 0,
-      L0: String(row.L0 ?? "0"),
-      Parent: String(row.Parent ?? "0"),
-      CAPTION: row.caption || row.name || row.menu || "",
-      icon: resolveNonEmptyIcon(row),
-      pathfile: row.pathfile || "",
-      ACCESS: Number.isFinite(row.accessLevel) ? row.accessLevel : 0,
-      HASACCESS: row.akses ? 1 : 0,
-      FLAGKRM: row.flagkrm,
-      Status: Number.isFinite(row.status) ? row.status : 0,
-      ImageIndex: Number.isFinite(row.imageIndex) ? row.imageIndex : -1,
-      L1lama: Number.isFinite(row.l1lama) ? row.l1lama : 0,
-      ACCESSlama: Number.isFinite(row.accesslama) ? row.accesslama : 0,
-    }));
+      const apiProfiles =
+        body.profiles || body.authority_profiles || [];
 
-    await api.post("berkas/saveedit", payload, {
-      headers: apiHeaders,
+      if (Array.isArray(apiProfiles) && apiProfiles.length > 0) {
+        const parsedProfiles = apiProfiles
+          .map((item) =>
+            typeof item === "string"
+              ? item
+              : item?.name || item?.label
+          )
+          .filter((name) => name?.trim());
+
+        if (parsedProfiles.length > 0) {
+          authorityProfiles.value = [
+            ...new Set(parsedProfiles),
+          ];
+
+          if (
+            !authorityProfiles.value.includes(
+              selectedProfile.value
+            )
+          ) {
+            selectedProfile.value =
+              authorityProfiles.value[0];
+          }
+        }
+      }
+    })
+
+    .catch((error) => {
+      syncMenuPermissions(effectiveMenuNames.value);
+
+      const status = error?.response?.status;
+
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "";
+
+      const message =
+        status === 500
+          ? `Server error 500 on getflmenu${
+              backendMessage ? `: ${backendMessage}` : ""
+            }`
+          : backendMessage ||
+            "Failed to load permission data.";
+
+      alertService.toastError(message);
+    })
+
+    .finally(() => {
+      isLoadingPermission.value = false;
     });
-    if (!silent) {
-      alertService.toastSuccess("Permission changes saved successfully.");
-    }
-  } catch (error) {
-    const status = error?.response?.status;
-    const backendMessage =
-      error?.response?.data?.message || error?.response?.data?.error || "";
-    const message =
-      status === 500
-        ? `Server error 500 on saveedit${backendMessage ? `: ${backendMessage}` : ""}`
-        : backendMessage || "Failed to save permission data.";
-    alertService.toastError(message);
-  } finally {
-    isSavingPermission.value = false;
-  }
-}
+};
+
+const savePermissionToApi = ({ silent = false } = {}) => {
+  // isSavingPermission.value = true;
+
+  const payload = menuPermissions.value.map((row) => ({
+    username: selectedUserEmail.value,
+    id: String(row.menuid ?? row.id ?? ""),
+    akses: row.akses ? 1 : 0,
+    tambah: row.tambah ? 1 : 0,
+    hapus: row.hapus ? 1 : 0,
+    koreksi: row.koreksi ? 1 : 0,
+    export: row.export ? 1 : 0,
+    L0: String(row.L0 ?? "0"),
+    Parent: String(row.Parent ?? "0"),
+    CAPTION: row.caption || row.name || row.menu || "",
+    icon: resolveNonEmptyIcon(row),
+    pathfile: row.pathfile || "",
+    ACCESS: Number.isFinite(row.accessLevel)
+      ? row.accessLevel
+      : 0,
+    HASACCESS: row.akses ? 1 : 0,
+    FLAGKRM: row.flagkrm,
+    Status: Number.isFinite(row.status)
+      ? row.status
+      : 0,
+    ImageIndex: Number.isFinite(row.imageIndex)
+      ? row.imageIndex
+      : -1,
+    L1lama: Number.isFinite(row.l1lama)
+      ? row.l1lama
+      : 0,
+    ACCESSlama: Number.isFinite(row.accesslama)
+      ? row.accesslama
+      : 0,
+  }));
+
+  console.log("Saving permissions for user:", selectedUserEmail.value, payload);
+
+  store
+    .dispatch("userpermisions/savePermissions", payload)
+
+    .then((data) => {
+      console.log(
+        "Permission data saved for user:",
+        selectedUserEmail.value,
+        data,
+      );
+      if (!silent) {
+        alertService.toastSuccess(
+          "Permission changes saved successfully."
+        );
+      }
+    })
+
+    .catch((error) => {
+      const status = error?.response?.status;
+
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "";
+
+      const message =
+        status === 500
+          ? `Server error 500 on saveedit${
+              backendMessage ? `: ${backendMessage}` : ""
+            }`
+          : backendMessage ||
+            "Failed to save permission data.";
+
+      alertService.toastError(message);
+    })
+
+    .finally(() => {
+      isSavingPermission.value = false;
+    });
+};
+
+// async function loadPermissionFromApi() {
+//   isLoadingPermission.value = true;
+//   try {
+//     const response = await api.post(
+//       "berkas/getflmenu",
+//       { username: selectedUsername.value },
+//       {
+//         headers: apiHeaders,
+//       },
+//     );
+
+//     const body = response?.data || {};
+
+//     const rawRows = body.data || body.rows || body.permissions || body.flmenu || body.dbmenu2 || [];
+
+//     const normalizedRows = normalizePermissionRows(rawRows);
+//     if (normalizedRows.length > 0) {
+//       menuPermissions.value = normalizedRows;
+//     } else {
+//       syncMenuPermissions(effectiveMenuNames.value);
+//     }
+
+//     const apiUsers = body.users || body.user_options || [];
+//     if (Array.isArray(apiUsers) && apiUsers.length > 0) {
+//       const parsedUsers = apiUsers
+//         .map((item) => (typeof item === "string" ? item : item?.email))
+//         .filter((email) => typeof email === "string" && email.trim() !== "");
+
+//       if (parsedUsers.length > 0 && !parsedUsers.includes(selectedUserEmail.value)) {
+//         selectedUserEmail.value = parsedUsers[0];
+//       }
+//     }
+
+//     const apiProfiles = body.profiles || body.authority_profiles || [];
+//     if (Array.isArray(apiProfiles) && apiProfiles.length > 0) {
+//       const parsedProfiles = apiProfiles
+//         .map((item) => (typeof item === "string" ? item : item?.name || item?.label))
+//         .filter((name) => typeof name === "string" && name.trim() !== "");
+
+//       if (parsedProfiles.length > 0) {
+//         authorityProfiles.value = [...new Set(parsedProfiles)];
+//         if (!authorityProfiles.value.includes(selectedProfile.value)) {
+//           selectedProfile.value = authorityProfiles.value[0];
+//         }
+//       }
+//     }
+//   } catch (error) {
+//     syncMenuPermissions(effectiveMenuNames.value);
+//     const status = error?.response?.status;
+//     const backendMessage =
+//       error?.response?.data?.message || error?.response?.data?.error || "";
+//     const message =
+//       status === 500
+//         ? `Server error 500 on getflmenu${backendMessage ? `: ${backendMessage}` : ""}`
+//         : backendMessage || "Failed to load permission data.";
+//     alertService.toastError(message);
+//   } finally {
+//     isLoadingPermission.value = false;
+//   }
+// }
+
+// async function savePermissionToApi(options = {}) {
+//   const { silent = false } = options;
+
+//   isSavingPermission.value = true;
+//   try {
+//     // Backend saveedit expects raw array from $request->all(), not wrapped object.
+//     const payload = menuPermissions.value.map((row) => ({
+//       username: selectedUsername.value,
+//       id: String(row.menuid ?? row.id ?? ""),
+//       akses: row.akses ? 1 : 0,
+//       tambah: row.tambah ? 1 : 0,
+//       hapus: row.hapus ? 1 : 0,
+//       koreksi: row.koreksi ? 1 : 0,
+//       export: row.export ? 1 : 0,
+//       L0: String(row.L0 ?? "0"),
+//       Parent: String(row.Parent ?? "0"),
+//       CAPTION: row.caption || row.name || row.menu || "",
+//       icon: resolveNonEmptyIcon(row),
+//       pathfile: row.pathfile || "",
+//       ACCESS: Number.isFinite(row.accessLevel) ? row.accessLevel : 0,
+//       HASACCESS: row.akses ? 1 : 0,
+//       FLAGKRM: row.flagkrm,
+//       Status: Number.isFinite(row.status) ? row.status : 0,
+//       ImageIndex: Number.isFinite(row.imageIndex) ? row.imageIndex : -1,
+//       L1lama: Number.isFinite(row.l1lama) ? row.l1lama : 0,
+//       ACCESSlama: Number.isFinite(row.accesslama) ? row.accesslama : 0,
+//     }));
+
+//     await api.post("berkas/saveedit", payload, {
+//       headers: apiHeaders,
+//     });
+//     if (!silent) {
+//       alertService.toastSuccess("Permission changes saved successfully.");
+//     }
+//   } catch (error) {
+//     const status = error?.response?.status;
+//     const backendMessage =
+//       error?.response?.data?.message || error?.response?.data?.error || "";
+//     const message =
+//       status === 500
+//         ? `Server error 500 on saveedit${backendMessage ? `: ${backendMessage}` : ""}`
+//         : backendMessage || "Failed to save permission data.";
+//     alertService.toastError(message);
+//   } finally {
+//     isSavingPermission.value = false;
+//   }
+// }
 
 function queueAutoSave() {
   if (isLoadingPermission.value) return;
@@ -332,9 +532,13 @@ function queueAutoSave() {
   }, 200);
 }
 
-watch(effectiveMenuNames, (menuNames) => {
-  syncMenuPermissions(menuNames);
-}, { immediate: true });
+watch(
+  effectiveMenuNames,
+  (menuNames) => {
+    syncMenuPermissions(menuNames);
+  },
+  { immediate: true },
+);
 
 watch([selectedUserEmail, selectedProfile], () => {
   loadPermissionFromApi();
@@ -365,12 +569,16 @@ const visiblePermissions = computed(() => {
 </script>
 
 <template>
-  <section class="bg-white rounded-xl border border-outline shadow-sm overflow-hidden">
+  <section
+    class="bg-white rounded-xl border border-outline shadow-sm overflow-hidden"
+  >
     <div class="p-4 border-b border-outline">
       <div class="flex flex-wrap items-end justify-between gap-3">
         <div class="flex min-w-0 flex-wrap items-end gap-2 sm:gap-3">
           <div class="w-full sm:w-64">
-            <label class="mb-1 block text-sm font-medium text-sub-text">Select User:</label>
+            <label class="mb-1 block text-sm font-medium text-sub-text"
+              >Select User:</label
+            >
             <select
               v-model="selectedUserEmail"
               class="w-full rounded-lg border border-outline bg-white py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
@@ -382,12 +590,18 @@ const visiblePermissions = computed(() => {
           </div>
 
           <div class="w-full sm:w-56">
-            <label class="mb-1 block text-sm font-medium text-sub-text">Authority Profile:</label>
+            <label class="mb-1 block text-sm font-medium text-sub-text"
+              >Authority Profile:</label
+            >
             <select
               v-model="selectedProfile"
               class="w-full rounded-lg border border-outline bg-white py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
             >
-              <option v-for="profile in authorityProfiles" :key="profile" :value="profile">
+              <option
+                v-for="profile in authorityProfiles"
+                :key="profile"
+                :value="profile"
+              >
                 {{ profile }}
               </option>
             </select>
@@ -426,20 +640,46 @@ const visiblePermissions = computed(() => {
       >
         <div class="flex flex-col items-center gap-3">
           <RefreshCcw :size="32" class="animate-spin text-sub-text" />
-          <p class="text-sm font-medium text-sub-text">Loading permissions...</p>
+          <p class="text-sm font-medium text-sub-text">
+            Loading permissions...
+          </p>
         </div>
       </div>
 
       <table class="w-full">
         <thead>
           <tr class="border-b border-gray-200 bg-gray-50/50">
-            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Menu</th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Username</th>
-            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">Access</th>
-            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">Add</th>
-            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">Delete</th>
-            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">Edit</th>
-            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">Export</th>
+            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+              Menu
+            </th>
+            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+              Username
+            </th>
+            <th
+              class="px-6 py-4 text-center text-sm font-semibold text-gray-700"
+            >
+              Access
+            </th>
+            <th
+              class="px-6 py-4 text-center text-sm font-semibold text-gray-700"
+            >
+              Add
+            </th>
+            <th
+              class="px-6 py-4 text-center text-sm font-semibold text-gray-700"
+            >
+              Delete
+            </th>
+            <th
+              class="px-6 py-4 text-center text-sm font-semibold text-gray-700"
+            >
+              Edit
+            </th>
+            <th
+              class="px-6 py-4 text-center text-sm font-semibold text-gray-700"
+            >
+              Export
+            </th>
           </tr>
         </thead>
 
@@ -456,19 +696,44 @@ const visiblePermissions = computed(() => {
               {{ selectedUserEmail }}
             </td>
             <td class="px-6 py-3 text-center">
-              <input v-model="row.akses" @change="queueAutoSave" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300" />
+              <input
+                v-model="row.akses"
+                @change="queueAutoSave"
+                type="checkbox"
+                class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
+              />
             </td>
             <td class="px-6 py-3 text-center">
-              <input v-model="row.tambah" @change="queueAutoSave" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300" />
+              <input
+                v-model="row.tambah"
+                @change="queueAutoSave"
+                type="checkbox"
+                class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
+              />
             </td>
             <td class="px-6 py-3 text-center">
-              <input v-model="row.hapus" @change="queueAutoSave" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300" />
+              <input
+                v-model="row.hapus"
+                @change="queueAutoSave"
+                type="checkbox"
+                class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
+              />
             </td>
             <td class="px-6 py-3 text-center">
-              <input v-model="row.koreksi" @change="queueAutoSave" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300" />
+              <input
+                v-model="row.koreksi"
+                @change="queueAutoSave"
+                type="checkbox"
+                class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
+              />
             </td>
             <td class="px-6 py-3 text-center">
-              <input v-model="row.export" @change="queueAutoSave" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300" />
+              <input
+                v-model="row.export"
+                @change="queueAutoSave"
+                type="checkbox"
+                class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
+              />
             </td>
           </tr>
 
