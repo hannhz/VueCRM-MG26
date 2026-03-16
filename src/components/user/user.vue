@@ -1,30 +1,47 @@
-<script setup>
-import { ref } from "vue";
-import { User, UserCog, Users, RefreshCcw } from "lucide-vue-next";
-import UserSettings from "./usersetings.vue"; // perhatikan nama file (sesuaikan)
+<script>
+import { mapGetters } from "vuex";
+import { User, UserCog, Users } from "lucide-vue-next";
+import UserSettings from "./usersetings.vue";
 import UserPermission from "./userpermission.vue";
 import UserTeam from "./userteam.vue";
 
-const activeTab = ref("settings"); // 'settings', 'permission', 'team'
-
-const menuItems = [
-  { key: "settings", label: "User Settings", icon: User },
-  { key: "permission", label: "User Permission", icon: UserCog },
-  { key: "team", label: "Team", icon: Users },
-];
-
-// Data dummy untuk total user (nanti dari API)
-const users = [];
-const totalUser = users.length;
+export default {
+  name: "UserPage",
+  components: {
+    UserSettings,
+    UserPermission,
+    UserTeam,
+  },
+  data() {
+    return {
+      activeTab: "settings",
+      menuItems: [
+        { key: "settings", label: "User Settings", icon: User },
+        { key: "permission", label: "User Permission", icon: UserCog },
+        { key: "team", label: "Team", icon: Users },
+      ],
+      maxUsers: 10,
+    };
+  },
+  computed: {
+    ...mapGetters({
+      users: "users/allUsers",
+    }),
+    totalUser() {
+      return Array.isArray(this.users) ? this.users.length : 0;
+    },
+  },
+  methods: {
+    setActiveTab(tabKey) {
+      this.activeTab = tabKey;
+    },
+  },
+};
 </script>
 
 <template>
-  <!-- Main Layout Grid -->
-  <div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 items-start">
-    <!-- Secondary Sidebar -->
-    <div
-      class="bg-white rounded-xl shadow-sm border border-outline overflow-hidden sticky"
-    >
+  <div class="grid grid-cols-1 gap-6 items-start lg:grid-cols-[220px_1fr]">
+    <div class="bg-white rounded-xl shadow-sm border border-outline overflow-hidden sticky top-4">
       <div class="bg-light-base/50 px-5 py-3 border-b border-outline">
         <h3 class="font-bold text-dark-base uppercase tracking-wider text-xs">
           User Menu
@@ -35,13 +52,9 @@ const totalUser = users.length;
         <button
           v-for="item in menuItems"
           :key="item.key"
-          @click="activeTab = item.key"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg w-full text-left transition cursor-pointer"
-          :class="[
-            activeTab === item.key
-              ? 'bg-gray-50/80 text-dark-base border-outline/50 shadow-sm font-semibold'
-              : 'hover:bg-gray-50/50 text-sub-text',
-          ]"
+          @click="setActiveTab(item.key)"
+          class="flex w-full items-center gap-3 px-4 py-3 rounded-lg text-left transition cursor-pointer"
+          :class="activeTab === item.key ? 'bg-gray-50/80 text-dark-base border-outline/50 shadow-sm font-semibold' : 'hover:bg-gray-50/50 text-sub-text'"
         >
           <component :is="item.icon" :size="18" />
           <span class="text-sm">{{ item.label }}</span>
@@ -59,13 +72,12 @@ const totalUser = users.length;
           </div>
           <div class="flex justify-between">
             <span>Maximum Users</span>
-            <span class="font-medium">10</span>
+            <span class="font-medium">{{ maxUsers }}</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Content Area -->
     <div class="min-w-0">
       <UserSettings v-if="activeTab === 'settings'" />
       <UserPermission v-else-if="activeTab === 'permission'" />

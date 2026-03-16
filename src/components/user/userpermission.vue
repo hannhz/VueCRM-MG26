@@ -1,369 +1,3 @@
-<script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
-import { useStore } from "vuex";
-import { RefreshCcw } from "lucide-vue-next";
-import api from "@/api";
-import { alertService } from "@/services/alertService";
-
-const store = useStore();
-const permissionScope = "Otoritas User";
-const apiHeaders = { keyfe: "0-opklm," };
-
-const authorityProfiles = ref(["User Authority 1", "User Authority 2"]);
-const selectedProfile = ref(authorityProfiles.value[0]);
-
-const defaultUsers = [
-  "fadlikhamdi@gmail.com",
-  "hanan@mail.com",
-  "aulia@mail.com",
-  "rizky@mail.com",
-];
-const selectedUserEmail = ref(defaultUsers[0]);
-const isLoadingPermission = ref(false);
-const isSavingPermission = ref(false);
-const autoSaveTimer = ref(null);
-
-const projectMenus = [
-  "Dashboard",
-  "Contacts",
-  "Companies",
-  "Deals",
-  "Task",
-  "Broadcast",
-  "Documents",
-  "Users",
-  "Settings",
-];
-
-const menuPermissions = ref([]);
-
-const userOptions = computed(() => {
-  const users = store.getters["users/usersList"] || [];
-  const emails = users
-    .map((user) => user.email)
-    .filter((email) => typeof email === "string" && email.trim() !== "");
-
-  return emails.length > 0 ? [...new Set(emails)] : defaultUsers;
-});
-
-const selectedUsername = computed(() => {
-  const users = store.getters["users/usersList"] || [];
-  const selectedUser = users.find((user) => user.email === selectedUserEmail.value);
-
-  const fromStore =
-    selectedUser?.username ||
-    selectedUser?.user_name ||
-    selectedUser?.userid ||
-    selectedUser?.name;
-
-  if (typeof fromStore === "string" && fromStore.trim() !== "") {
-    return fromStore;
-  }
-
-  const localPart = String(selectedUserEmail.value || "").split("@")[0];
-  return localPart || "";
-});
-
-const dbTopLevelMenus = computed(() => {
-  const layout = store.getters["settingsfe/getlayoutmenuweb"];
-  const dbmenu2 = layout?.dbmenu2 || [];
-
-  const names = dbmenu2
-    .filter((item) => item.L0 === "0" && item.HASACCESS === "1")
-    .map((item) => item.NamaCaption || item.label || item.pathfile)
-    .filter((name) => typeof name === "string" && name.trim() !== "");
-
-  return [...new Set(names)];
-});
-
-const effectiveMenuNames = computed(() => {
-  return dbTopLevelMenus.value.length > 0 ? dbTopLevelMenus.value : projectMenus;
-});
-
-function fallbackIconByMenu(menuName) {
-  const name = String(menuName || "").toLowerCase();
-  if (name.includes("dashboard")) return "LayoutDashboard";
-  if (name.includes("contact")) return "Users";
-  if (name.includes("compan")) return "Building2";
-  if (name.includes("deal")) return "Briefcase";
-  if (name.includes("task")) return "CheckSquare";
-  if (name.includes("broadcast") || name.includes("email")) return "Mail";
-  if (name.includes("document")) return "FileText";
-  if (name.includes("user")) return "UserCircle";
-  if (name.includes("setting")) return "Settings";
-  return "FileText";
-}
-
-function resolveNonEmptyIcon(row = {}) {
-  const direct = String(row.icon || row.ICON || "").trim();
-  if (direct) return direct;
-
-  const layout = store.getters["settingsfe/getlayoutmenuweb"];
-  const dbmenu2 = layout?.dbmenu2 || [];
-  const caption = String(row.caption || row.CAPTION || row.menu || "").trim();
-
-  if (caption) {
-    const matched = dbmenu2.find((item) => {
-      const itemCaption = String(item?.CAPTION || item?.NamaCaption || item?.caption || "").trim();
-      return itemCaption.toLowerCase() === caption.toLowerCase();
-    });
-
-    const fromLayout = String(matched?.icon || matched?.ICON || "").trim();
-    if (fromLayout) return fromLayout;
-  }
-
-  return fallbackIconByMenu(caption);
-}
-
-function buildDefaultPermission(menu, id) {
-  return {
-    id,
-    username: selectedUsername.value,
-    menu,
-    menuid: null,
-    caption: menu,
-    name: menu,
-    L0: "0",
-    Parent: "0",
-    pathfile: "",
-    icon: fallbackIconByMenu(menu),
-    accessLevel: 0,
-    hasaccess: true,
-    akses: true,
-    tambah: true,
-    hapus: true,
-    koreksi: true,
-    export: false,
-    status: 0,
-    flagkrm: null,
-    imageIndex: -1,
-    l1lama: 0,
-    accesslama: 0,
-  };
-}
-
-function syncMenuPermissions(menuNames) {
-  const previousByMenu = new Map(
-    menuPermissions.value.map((row) => [row.menu, row]),
-  );
-
-  menuPermissions.value = menuNames.map((menu, index) => {
-    const existing = previousByMenu.get(menu);
-    return existing ? { ...existing, id: index + 1 } : buildDefaultPermission(menu, index + 1);
-  });
-}
-
-function toBool(value, fallback = false) {
-  if (typeof value === "boolean") return value;
-  if (typeof value === "number") return value === 1;
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    return normalized === "1" || normalized === "true" || normalized === "y";
-  }
-  return fallback;
-}
-
-function normalizePermissionRows(rawRows) {
-  if (!Array.isArray(rawRows)) return [];
-
-  return rawRows
-    .map((row, index) => {
-      const menuName =
-        row.CAPTION ||
-        row.menu ||
-        row.nama_menu ||
-        row.NAMACAPTION ||
-        row.NamaCaption ||
-        row.caption ||
-        row.label ||
-        row.pathfile ||
-        "";
-
-      if (typeof menuName !== "string" || menuName.trim() === "") {
-        return null;
-      }
-
-      return {
-        id: index + 1,
-        username: row.username || row.USERID || selectedUsername.value,
-        menuid: row.menuid || row.id_menu || row.id || row.L1 || null,
-        menu: row.name || row.NAME || menuName,
-        name: row.name || row.NAME || menuName,
-        caption: row.CAPTION || row.caption || menuName,
-        L0: String(row.L0 ?? row.l0 ?? "0"),
-        Parent: String(row.Parent ?? row.parent ?? row.parendId ?? "0"),
-        pathfile: row.pathfile || row.PATHFILE || "",
-        icon: resolveNonEmptyIcon(row),
-        accessLevel: Number(row.ACCESS ?? row.access ?? 0),
-        hasaccess: toBool(row.HASACCESS ?? row.hasaccess, true),
-        akses: toBool(row.HASACCESS ?? row.hasaccess ?? row.akses, true),
-        tambah: toBool(row.tambah ?? row.TAMBAH ?? row.add ?? row.can_add, true),
-        hapus: toBool(row.hapus ?? row.HAPUS ?? row.delete ?? row.can_delete, true),
-        koreksi: toBool(row.koreksi ?? row.KOREKSI ?? row.edit ?? row.can_edit, true),
-        export: toBool(row.export ?? row.EXPORT ?? row.can_export, false),
-        status: Number(row.Status ?? row.status ?? 0),
-        flagkrm: row.FLAGKRM ?? row.flagkrm ?? null,
-        imageIndex: Number(row.ImageIndex ?? row.imageIndex ?? -1),
-        l1lama: Number(row.L1lama ?? row.l1lama ?? 0),
-        accesslama: Number(row.ACCESSlama ?? row.ACCESSlar ?? row.accesslama ?? row.accesslar ?? 0),
-      };
-    })
-    .filter(Boolean);
-}
-
-async function loadPermissionFromApi() {
-  isLoadingPermission.value = true;
-  try {
-    const response = await api.post(
-      "berkas/getflmenu",
-      { username: selectedUsername.value },
-      {
-        headers: apiHeaders,
-      },
-    );
-
-    const body = response?.data || {};
-
-    const rawRows = body.data || body.rows || body.permissions || body.flmenu || body.dbmenu2 || [];
-
-    const normalizedRows = normalizePermissionRows(rawRows);
-    if (normalizedRows.length > 0) {
-      menuPermissions.value = normalizedRows;
-    } else {
-      syncMenuPermissions(effectiveMenuNames.value);
-    }
-
-    const apiUsers = body.users || body.user_options || [];
-    if (Array.isArray(apiUsers) && apiUsers.length > 0) {
-      const parsedUsers = apiUsers
-        .map((item) => (typeof item === "string" ? item : item?.email))
-        .filter((email) => typeof email === "string" && email.trim() !== "");
-
-      if (parsedUsers.length > 0 && !parsedUsers.includes(selectedUserEmail.value)) {
-        selectedUserEmail.value = parsedUsers[0];
-      }
-    }
-
-    const apiProfiles = body.profiles || body.authority_profiles || [];
-    if (Array.isArray(apiProfiles) && apiProfiles.length > 0) {
-      const parsedProfiles = apiProfiles
-        .map((item) => (typeof item === "string" ? item : item?.name || item?.label))
-        .filter((name) => typeof name === "string" && name.trim() !== "");
-
-      if (parsedProfiles.length > 0) {
-        authorityProfiles.value = [...new Set(parsedProfiles)];
-        if (!authorityProfiles.value.includes(selectedProfile.value)) {
-          selectedProfile.value = authorityProfiles.value[0];
-        }
-      }
-    }
-  } catch (error) {
-    syncMenuPermissions(effectiveMenuNames.value);
-    const status = error?.response?.status;
-    const backendMessage =
-      error?.response?.data?.message || error?.response?.data?.error || "";
-    const message =
-      status === 500
-        ? `Server error 500 on getflmenu${backendMessage ? `: ${backendMessage}` : ""}`
-        : backendMessage || "Failed to load permission data.";
-    alertService.toastError(message);
-  } finally {
-    isLoadingPermission.value = false;
-  }
-}
-
-async function savePermissionToApi(options = {}) {
-  const { silent = false } = options;
-
-  isSavingPermission.value = true;
-  try {
-    // Backend saveedit expects raw array from $request->all(), not wrapped object.
-    const payload = menuPermissions.value.map((row) => ({
-      username: selectedUsername.value,
-      id: String(row.menuid ?? row.id ?? ""),
-      akses: row.akses ? 1 : 0,
-      tambah: row.tambah ? 1 : 0,
-      hapus: row.hapus ? 1 : 0,
-      koreksi: row.koreksi ? 1 : 0,
-      export: row.export ? 1 : 0,
-      L0: String(row.L0 ?? "0"),
-      Parent: String(row.Parent ?? "0"),
-      CAPTION: row.caption || row.name || row.menu || "",
-      icon: resolveNonEmptyIcon(row),
-      pathfile: row.pathfile || "",
-      ACCESS: Number.isFinite(row.accessLevel) ? row.accessLevel : 0,
-      HASACCESS: row.akses ? 1 : 0,
-      FLAGKRM: row.flagkrm,
-      Status: Number.isFinite(row.status) ? row.status : 0,
-      ImageIndex: Number.isFinite(row.imageIndex) ? row.imageIndex : -1,
-      L1lama: Number.isFinite(row.l1lama) ? row.l1lama : 0,
-      ACCESSlama: Number.isFinite(row.accesslama) ? row.accesslama : 0,
-    }));
-
-    await api.post("berkas/saveedit", payload, {
-      headers: apiHeaders,
-    });
-    if (!silent) {
-      alertService.toastSuccess("Permission changes saved successfully.");
-    }
-  } catch (error) {
-    const status = error?.response?.status;
-    const backendMessage =
-      error?.response?.data?.message || error?.response?.data?.error || "";
-    const message =
-      status === 500
-        ? `Server error 500 on saveedit${backendMessage ? `: ${backendMessage}` : ""}`
-        : backendMessage || "Failed to save permission data.";
-    alertService.toastError(message);
-  } finally {
-    isSavingPermission.value = false;
-  }
-}
-
-function queueAutoSave() {
-  if (isLoadingPermission.value) return;
-
-  if (autoSaveTimer.value) {
-    clearTimeout(autoSaveTimer.value);
-  }
-
-  autoSaveTimer.value = setTimeout(() => {
-    savePermissionToApi({ silent: true });
-  }, 200);
-}
-
-watch(effectiveMenuNames, (menuNames) => {
-  syncMenuPermissions(menuNames);
-}, { immediate: true });
-
-watch([selectedUserEmail, selectedProfile], () => {
-  loadPermissionFromApi();
-});
-
-onMounted(() => {
-  store.dispatch("users/fetchAllusers").catch(() => {});
-
-  const layout = store.getters["settingsfe/getlayoutmenuweb"];
-  if (!layout?.dbmenu2?.length) {
-    store.dispatch("settingsfe/actlayoutwebflmenu").catch(() => {
-      // Keep UI usable with project fallback menu when API menu fetch fails.
-    });
-  }
-
-  loadPermissionFromApi();
-});
-
-onBeforeUnmount(() => {
-  if (autoSaveTimer.value) {
-    clearTimeout(autoSaveTimer.value);
-  }
-});
-
-const visiblePermissions = computed(() => {
-  return menuPermissions.value;
-});
-</script>
-
 <template>
   <section class="bg-white rounded-xl border border-outline shadow-sm overflow-hidden">
     <div class="p-4 border-b border-outline">
@@ -482,3 +116,442 @@ const visiblePermissions = computed(() => {
     </div>
   </section>
 </template>
+
+<script>
+import { mapGetters } from "vuex";
+import { RefreshCcw } from "lucide-vue-next";
+import api from "@/api";
+import { alertService } from "@/services/alertService";
+
+const defaultUsers = [
+  "fadlikhamdi@gmail.com",
+  "hanan@mail.com",
+  "aulia@mail.com",
+  "rizky@mail.com",
+];
+
+const projectMenus = [
+  "Dashboard",
+  "Contacts",
+  "Companies",
+  "Deals",
+  "Task",
+  "Broadcast",
+  "Documents",
+  "Users",
+  "Settings",
+];
+
+export default {
+  name: "UserPermission",
+  components: {
+    RefreshCcw,
+  },
+  data() {
+    return {
+      permissionScope: "Otoritas User",
+      apiHeaders: { keyfe: "0-opklm," },
+      authorityProfiles: ["User Authority 1", "User Authority 2"],
+      selectedProfile: "User Authority 1",
+      selectedUserEmail: defaultUsers[0],
+      isLoadingPermission: false,
+      isSavingPermission: false,
+      autoSaveTimer: null,
+      menuPermissions: [],
+      projectMenus,
+      defaultUsers,
+    };
+  },
+  computed: {
+    ...mapGetters({
+      usersList: "users/usersList",
+      layoutMenuWeb: "settingsfe/getlayoutmenuweb",
+    }),
+
+    userOptions() {
+      const users = this.usersList || [];
+      const emails = users
+        .map((user) => user.email)
+        .filter((email) => typeof email === "string" && email.trim() !== "");
+      return emails.length > 0 ? [...new Set(emails)] : defaultUsers;
+    },
+
+    selectedUsername() {
+      const users = this.usersList || [];
+      const selectedUser = users.find((user) => user.email === this.selectedUserEmail);
+      const fromStore =
+        selectedUser?.username ||
+        selectedUser?.user_name ||
+        selectedUser?.userid ||
+        selectedUser?.name;
+
+      if (typeof fromStore === "string" && fromStore.trim() !== "") {
+        return fromStore;
+      }
+
+      const localPart = String(this.selectedUserEmail || "").split("@")[0];
+      return localPart || "";
+    },
+
+    dbTopLevelMenus() {
+      const dbmenu2 = this.layoutMenuWeb?.dbmenu2 || [];
+      const names = dbmenu2
+        .filter((item) => item.L0 === "0" && item.HASACCESS === "1")
+        .map((item) => item.NamaCaption || item.label || item.pathfile)
+        .filter((name) => typeof name === "string" && name.trim() !== "");
+      return [...new Set(names)];
+    },
+
+    effectiveMenuNames() {
+      return this.dbTopLevelMenus.length > 0 ? this.dbTopLevelMenus : projectMenus;
+    },
+
+    visiblePermissions() {
+      return this.menuPermissions;
+    },
+  },
+
+  watch: {
+    effectiveMenuNames: {
+      handler(menuNames) {
+        this.syncMenuPermissions(menuNames);
+      },
+      immediate: true,
+    },
+    selectedUserEmail() {
+      this.loadPermissionFromApi();
+    },
+    selectedProfile() {
+      this.loadPermissionFromApi();
+    },
+  },
+
+  methods: {
+    fallbackIconByMenu(menuName) {
+      const name = String(menuName || "").toLowerCase();
+      if (name.includes("dashboard")) return "LayoutDashboard";
+      if (name.includes("contact")) return "Users";
+      if (name.includes("compan")) return "Building2";
+      if (name.includes("deal")) return "Briefcase";
+      if (name.includes("task")) return "CheckSquare";
+      if (name.includes("broadcast") || name.includes("email")) return "Mail";
+      if (name.includes("document")) return "FileText";
+      if (name.includes("user")) return "UserCircle";
+      if (name.includes("setting")) return "Settings";
+      return "FileText";
+    },
+
+    resolveNonEmptyIcon(row = {}) {
+      const direct = String(row.icon || row.ICON || "").trim();
+      if (direct) return direct;
+
+      const dbmenu2 = this.layoutMenuWeb?.dbmenu2 || [];
+      const caption = String(row.caption || row.CAPTION || row.menu || "").trim();
+
+      if (caption) {
+        const matched = dbmenu2.find((item) => {
+          const itemCaption = String(
+            item?.CAPTION || item?.NamaCaption || item?.caption || "",
+          ).trim();
+          return itemCaption.toLowerCase() === caption.toLowerCase();
+        });
+
+        const fromLayout = String(matched?.icon || matched?.ICON || "").trim();
+        if (fromLayout) return fromLayout;
+      }
+
+      return this.fallbackIconByMenu(caption);
+    },
+
+    buildDefaultPermission(menu, id) {
+      return {
+        id,
+        username: this.selectedUsername,
+        menu,
+        menuid: null,
+        caption: menu,
+        name: menu,
+        L0: "0",
+        Parent: "0",
+        pathfile: "",
+        icon: this.fallbackIconByMenu(menu),
+        accessLevel: 0,
+        hasaccess: true,
+        akses: true,
+        tambah: true,
+        hapus: true,
+        koreksi: true,
+        export: false,
+        status: 0,
+        flagkrm: null,
+        imageIndex: -1,
+        l1lama: 0,
+        accesslama: 0,
+      };
+    },
+
+    syncMenuPermissions(menuNames) {
+      const previousByMenu = new Map(
+        this.menuPermissions.map((row) => [row.menu, row]),
+      );
+
+      this.menuPermissions = menuNames.map((menu, index) => {
+        const existing = previousByMenu.get(menu);
+        return existing
+          ? { ...existing, id: index + 1 }
+          : this.buildDefaultPermission(menu, index + 1);
+      });
+    },
+
+    toBool(value, fallback = false) {
+      if (typeof value === "boolean") return value;
+      if (typeof value === "number") return value === 1;
+      if (typeof value === "string") {
+        const normalized = value.trim().toLowerCase();
+        return (
+          normalized === "1" || normalized === "true" || normalized === "y"
+        );
+      }
+      return fallback;
+    },
+
+    normalizePermissionRows(rawRows) {
+      if (!Array.isArray(rawRows)) return [];
+
+      return rawRows
+        .map((row, index) => {
+          const menuName =
+            row.CAPTION ||
+            row.menu ||
+            row.nama_menu ||
+            row.NAMACAPTION ||
+            row.NamaCaption ||
+            row.caption ||
+            row.label ||
+            row.pathfile ||
+            "";
+
+          if (typeof menuName !== "string" || menuName.trim() === "") {
+            return null;
+          }
+
+          return {
+            id: index + 1,
+            username: row.username || row.USERID || this.selectedUsername,
+            menuid: row.menuid || row.id_menu || row.id || row.L1 || null,
+            menu: row.name || row.NAME || menuName,
+            name: row.name || row.NAME || menuName,
+            caption: row.CAPTION || row.caption || menuName,
+            L0: String(row.L0 ?? row.l0 ?? "0"),
+            Parent: String(row.Parent ?? row.parent ?? row.parendId ?? "0"),
+            pathfile: row.pathfile || row.PATHFILE || "",
+            icon: this.resolveNonEmptyIcon(row),
+            accessLevel: Number(row.ACCESS ?? row.access ?? 0),
+            hasaccess: this.toBool(row.HASACCESS ?? row.hasaccess, true),
+            akses: this.toBool(
+              row.HASACCESS ?? row.hasaccess ?? row.akses,
+              true,
+            ),
+            tambah: this.toBool(
+              row.tambah ?? row.TAMBAH ?? row.add ?? row.can_add,
+              true,
+            ),
+            hapus: this.toBool(
+              row.hapus ?? row.HAPUS ?? row.delete ?? row.can_delete,
+              true,
+            ),
+            koreksi: this.toBool(
+              row.koreksi ?? row.KOREKSI ?? row.edit ?? row.can_edit,
+              true,
+            ),
+            export: this.toBool(
+              row.export ?? row.EXPORT ?? row.can_export,
+              false,
+            ),
+            status: Number(row.Status ?? row.status ?? 0),
+            flagkrm: row.FLAGKRM ?? row.flagkrm ?? null,
+            imageIndex: Number(row.ImageIndex ?? row.imageIndex ?? -1),
+            l1lama: Number(row.L1lama ?? row.l1lama ?? 0),
+            accesslama: Number(
+              row.ACCESSlama ??
+                row.ACCESSlar ??
+                row.accesslama ??
+                row.accesslar ??
+                0,
+            ),
+          };
+        })
+        .filter(Boolean);
+    },
+
+    async loadPermissionFromApi() {
+      this.isLoadingPermission = true;
+      try {
+        const response = await api.post(
+          "berkas/getflmenu",
+          { username: this.selectedUsername },
+          { headers: this.apiHeaders },
+        );
+
+        const body = response?.data || {};
+        const rawRows =
+          body.data ||
+          body.rows ||
+          body.permissions ||
+          body.flmenu ||
+          body.dbmenu2 ||
+          [];
+
+        const normalizedRows = this.normalizePermissionRows(rawRows);
+        if (normalizedRows.length > 0) {
+          this.menuPermissions = normalizedRows;
+        } else {
+          this.syncMenuPermissions(this.effectiveMenuNames);
+        }
+
+        // Handle user options from API
+        const apiUsers = body.users || body.user_options || [];
+        if (Array.isArray(apiUsers) && apiUsers.length > 0) {
+          const parsedUsers = apiUsers
+            .map((item) =>
+              typeof item === "string" ? item : item?.email,
+            )
+            .filter(
+              (email) => typeof email === "string" && email.trim() !== "",
+            );
+
+          if (
+            parsedUsers.length > 0 &&
+            !parsedUsers.includes(this.selectedUserEmail)
+          ) {
+            this.selectedUserEmail = parsedUsers[0];
+          }
+        }
+
+        // Handle profiles from API
+        const apiProfiles = body.profiles || body.authority_profiles || [];
+        if (Array.isArray(apiProfiles) && apiProfiles.length > 0) {
+          const parsedProfiles = apiProfiles
+            .map((item) =>
+              typeof item === "string" ? item : item?.name || item?.label,
+            )
+            .filter((name) => typeof name === "string" && name.trim() !== "");
+
+          if (parsedProfiles.length > 0) {
+            this.authorityProfiles = [...new Set(parsedProfiles)];
+            if (!this.authorityProfiles.includes(this.selectedProfile)) {
+              this.selectedProfile = this.authorityProfiles[0];
+            }
+          }
+        }
+      } catch (error) {
+        this.syncMenuPermissions(this.effectiveMenuNames);
+        const status = error?.response?.status;
+        const backendMessage =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "";
+        const message =
+          status === 500
+            ? `Server error 500 on getflmenu${
+                backendMessage ? `: ${backendMessage}` : ""
+              }`
+            : backendMessage || "Failed to load permission data.";
+        alertService.toastError(message);
+      } finally {
+        this.isLoadingPermission = false;
+      }
+    },
+
+    async savePermissionToApi(options = {}) {
+      const { silent = false } = options;
+      this.isSavingPermission = true;
+      try {
+        const payload = this.menuPermissions.map((row) => ({
+          username: this.selectedUserEmail,
+          id: String(row.menuid ?? row.id ?? ""),
+          akses: row.akses ? 1 : 0,
+          tambah: row.tambah ? 1 : 0,
+          hapus: row.hapus ? 1 : 0,
+          koreksi: row.koreksi ? 1 : 0,
+          export: row.export ? 1 : 0,
+          L0: String(row.L0 ?? "0"),
+          Parent: String(row.Parent ?? "0"),
+          CAPTION: row.caption || row.name || row.menu || "",
+          icon: this.resolveNonEmptyIcon(row),
+          pathfile: row.pathfile || "",
+          ACCESS: Number.isFinite(row.accessLevel)
+            ? row.accessLevel
+            : 0,
+          HASACCESS: row.akses ? 1 : 0,
+          FLAGKRM: row.flagkrm,
+          Status: Number.isFinite(row.status) ? row.status : 0,
+          ImageIndex: Number.isFinite(row.imageIndex)
+            ? row.imageIndex
+            : -1,
+          L1lama: Number.isFinite(row.l1lama) ? row.l1lama : 0,
+          ACCESSlama: Number.isFinite(row.accesslama)
+            ? row.accesslama
+            : 0,
+        }));
+
+        await api.post("berkas/saveedit", payload, {
+          headers: this.apiHeaders,
+        });
+
+        if (!silent) {
+          alertService.toastSuccess(
+            "Permission changes saved successfully.",
+          );
+        }
+      } catch (error) {
+        const status = error?.response?.status;
+        const backendMessage =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "";
+        const message =
+          status === 500
+            ? `Server error 500 on saveedit${
+                backendMessage ? `: ${backendMessage}` : ""
+              }`
+            : backendMessage || "Failed to save permission data.";
+        alertService.toastError(message);
+      } finally {
+        this.isSavingPermission = false;
+      }
+    },
+
+    queueAutoSave() {
+      if (this.isLoadingPermission) return;
+
+      if (this.autoSaveTimer) {
+        clearTimeout(this.autoSaveTimer);
+      }
+
+      this.autoSaveTimer = setTimeout(() => {
+        this.savePermissionToApi({ silent: true });
+      }, 200);
+    },
+  },
+
+  mounted() {
+    this.$store.dispatch("users/fetchAllusers").catch(() => {});
+
+    const layout = this.layoutMenuWeb;
+    if (!layout?.dbmenu2?.length) {
+      this.$store
+        .dispatch("settingsfe/actlayoutwebflmenu")
+        .catch(() => {});
+    }
+
+    this.loadPermissionFromApi();
+  },
+
+  beforeDestroy() {
+    if (this.autoSaveTimer) {
+      clearTimeout(this.autoSaveTimer);
+    }
+  },
+};
+</script>

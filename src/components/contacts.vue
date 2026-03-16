@@ -1,469 +1,3 @@
-<script>
-import { mapActions, mapGetters } from "vuex";
-import AddContactForm from "./forms/AddContactForm.vue";
-import BulkAddContactForm from "./forms/BulkAddContactForm.vue";
-import DetailForm from "./forms/DetailFormDuplicate.vue";
-import DetailDataContact from "./forms/DetailDataContact.vue";
-import { alertService } from "@/services/alertService";
-
-import {
-  Search,
-  ChevronDown,
-  Download,
-  Edit,
-  Trash2,
-  Facebook,
-  Filter,
-  ChevronLeft,
-  ChevronRight,
-  FolderPlus,
-  FilePlus,
-  FileDown,
-  FolderDown,
-  RefreshCw,
-} from "lucide-vue-next";
-
-export default {
-  name: "Contacts",
-
-  components: {
-    AddContactForm,
-    BulkAddContactForm,
-    DetailForm,
-    DetailDataContact,
-    Search,
-    ChevronDown,
-    Download,
-    Edit,
-    Trash2,
-    Facebook,
-    Filter,
-    ChevronLeft,
-    ChevronRight,
-    FolderPlus,
-    FilePlus,
-    FileDown,
-    FolderDown,
-    RefreshCw,
-  },
-
-  data() {
-    return {
-      currentPage: 1,
-      itemsPerPage: 10,
-      showAddContactForm: false,
-      showBulkAddForm: false,
-      showDropdown: false,
-      showDownloadDropdown: false,
-      selectedIds: [],
-      selectedContact: null,
-      showDetailForm: false,
-      showDetailDataContact: false,
-      isDetailDataSubmitting: false,
-    };
-  },
-
-  computed: {
-    ...mapGetters({
-      contacts: "contacts/allContacts",
-      isLoading: "contacts/isLoading",
-      error: "contacts/error",
-      allCompanies: "company/allcompany",
-      allDeals: "deals/allDeals",
-    }),
-
-    totalContacts() {
-      return this.contacts.length;
-    },
-
-    contactsStatusText() {
-      if (this.isLoading) {
-        return "Searching contacts...";
-      }
-      if (this.error) {
-        return `Error: ${this.error}`;
-      }
-      return `${this.totalContacts.toLocaleString()} Total Contacts`;
-    },
-
-    contactsStatusClass() {
-      if (this.isLoading) {
-        return "text-blue-600";
-      }
-      if (this.error) {
-        return "text-red-600";
-      }
-      return "text-sub-text";
-    },
-
-    downloadLabel() {
-      return this.selectedIds.length
-        ? `Download (${this.selectedIds.length})`
-        : "Download";
-    },
-
-    paginatedContacts() {
-      const start = (this.currentPage - 1) * this.itemsPerPage;
-      const end = start + this.itemsPerPage;
-      return this.contacts.slice(start, end);
-    },
-
-    totalPages() {
-      return Math.ceil(this.totalContacts / this.itemsPerPage) || 1;
-    },
-  },
-
-  methods: {
-    ...mapActions({
-      fetchAllContacts: "contacts/fetchAllContacts",
-      fetchAllcompany: "company/fetchAllcompany",
-      fetchAllDeals: "deals/fetchAllDeals",
-      updateContact: "contacts/updateContact",
-      deleteContact: "contacts/deleteContact",
-    }),
-
-    getAssociationCandidates(...values) {
-      const candidates = [];
-
-      values.forEach((value) => {
-        if (Array.isArray(value)) {
-          value.forEach((item) => {
-            if (item !== "" && item !== null && item !== undefined) {
-              candidates.push(item);
-            }
-          });
-          return;
-        }
-
-        if (value !== "" && value !== null && value !== undefined) {
-          candidates.push(value);
-        }
-      });
-
-      return [...new Set(candidates.map((item) => String(item).trim()))].filter(
-        Boolean,
-      );
-    },
-
-    resolveAssociationLabels(candidates, options) {
-      const normalizedOptions = options.map((option) => ({
-        value: String(option.value),
-        label: String(option.label),
-        labelLower: String(option.label).toLowerCase(),
-      }));
-
-      const labels = candidates.map((candidate) => {
-        const normalizedCandidate = String(candidate).trim();
-        const candidateLower = normalizedCandidate.toLowerCase();
-
-        const byValue = normalizedOptions.find(
-          (option) => option.value === normalizedCandidate,
-        );
-        if (byValue) return byValue.label;
-
-        const byLabel = normalizedOptions.find(
-          (option) => option.labelLower === candidateLower,
-        );
-        if (byLabel) return byLabel.label;
-
-        return normalizedCandidate;
-      });
-
-      return [...new Set(labels)].filter(Boolean);
-    },
-
-    getAssociatedCompanyLabels(contact) {
-      const companyCandidates = this.getAssociationCandidates(
-        contact?.companyassoc,
-        contact?.companiesAssociation,
-        contact?.company_id,
-        contact?.companies_id,
-        contact?.company,
-        contact?.company_name,
-      );
-
-      const companyOptions = (this.allCompanies || []).map((company) => ({
-        value: company.id,
-        label: company.company_name || company.name || "Unknown",
-      }));
-
-      const labels = this.resolveAssociationLabels(
-        companyCandidates,
-        companyOptions,
-      );
-      return labels.length ? labels : ["-"];
-    },
-
-    getAssociatedDealLabels(contact) {
-      const dealCandidates = this.getAssociationCandidates(
-        contact?.dealsassoc,
-        contact?.dealsAssociation,
-        contact?.deal_id,
-        contact?.deals_id,
-        contact?.deal,
-        contact?.deal_name,
-      );
-
-      const dealOptions = (this.allDeals || []).map((deal) => ({
-        value: deal.id,
-        label: deal.deal_name || deal.name || "Unknown",
-      }));
-
-      const labels = this.resolveAssociationLabels(dealCandidates, dealOptions);
-      return labels.length ? labels : ["-"];
-    },
-
-    fetchData() {
-      this.fetchAllContacts()
-        .then(() => {
-          console.log("Contacts fetched successfully");
-        })
-        .catch((err) => {
-          console.error("Failed to fetch contacts:", err);
-        });
-    },
-
-    handleAddContact(contactData) {
-      console.log("New contact:", contactData);
-      // TODO: Implement API call via Vuex
-    },
-
-    toggleDropdown() {
-      this.showDropdown = !this.showDropdown;
-    },
-
-    toggleDownloadDropdown() {
-      this.showDownloadDropdown = !this.showDownloadDropdown;
-    },
-
-    openContactDetail(contact) {
-      this.selectedContact = { ...contact };
-      this.showDetailDataContact = true;
-    },
-
-    closeDetailDataContact() {
-      this.showDetailDataContact = false;
-      this.selectedContact = null;
-    },
-
-    // async handleDetailDataContactSubmit(payload) {
-    //   const contactId = this.selectedContact?.id;
-
-    //   if (!contactId) {
-    //     alertService.error(
-    //       "ID contact tidak ditemukan. Coba buka ulang detail data.",
-    //     );
-    //     return;
-    //   }
-
-    //   if (!payload?.contact?.first_name?.trim()) {
-    //     alertService.error("First Name wajib diisi.");
-    //     return;
-    //   }
-
-    //   this.isDetailDataSubmitting = true;
-
-    //   try {
-    //     const formdata = {
-    //       id: contactId,
-    //       ...payload.contact,
-    //       updated_at: new Date().toISOString(),
-    //     };
-
-    //     await this.$store.dispatch("contacts/updateContact", formdata);
-
-    //     alertService.success("Detail contact berhasil diperbarui.");
-    //     this.closeDetailDataContact();
-    //   } catch (error) {
-    //     const backendMessage =
-    //       error?.response?.data?.message ||
-    //       error?.response?.data?.error ||
-    //       error?.message ||
-    //       "Gagal update contact. Silakan coba lagi.";
-    //     alertService.error(backendMessage);
-    //   } finally {
-    //     this.isDetailDataSubmitting = false;
-    //   }
-    // },
-
-    handleDetailDataContactSubmit(payload) {
-      const contactId = this.selectedContact?.id;
-      const firstName = payload?.contact?.first_name?.trim();
-
-      if (!contactId) {
-        return alertService.error("ID contact tidak ditemukan.");
-      }
-
-      if (!firstName) {
-        return alertService.error("First Name wajib diisi.");
-      }
-
-      this.isDetailDataSubmitting = true;
-
-      // Format updated_at: YYYY-MM-DD HH:mm:ss (match AddContactForm pattern)
-      const now = new Date().toISOString().slice(0, 19).replace("T", " ");
-
-      // Flatten payload to match backend expectation for choice: 'u'
-      // This follows the "DetailDataCompany-style" emission but ensures contact logic works
-      const formdata = {
-        ...payload.contact,
-        id: contactId,
-        updated_at: now,
-
-        // Notes, Tasks, & Docs (Flattened for backend)
-        notes: payload.note,
-        task_name: payload.task?.name,
-        desktask: payload.task?.content,
-        statustask: payload.task?.status,
-        assignee: payload.task?.assignee,
-        due_date: payload.task?.dueDate,
-        task_time: payload.task?.time,
-        prioritytask: payload.task?.priority,
-        associated_contact: payload.task?.associatedContact,
-        docs: payload.docs?.description,
-      };
-
-      this.updateContact(formdata)
-        .then(() => {
-          alertService.success("Detail contact berhasil diperbarui.");
-          this.closeDetailDataContact();
-        })
-        .catch((error) => {
-          const message =
-            error?.response?.data?.message ||
-            error?.response?.data?.error ||
-            error?.message ||
-            "Gagal update contact.";
-
-          alertService.error(message);
-        })
-        .finally(() => {
-          this.isDetailDataSubmitting = false;
-        });
-    },
-
-    handleBulkAdd() {
-      this.showBulkAddForm = true;
-    },
-
-    downloadAll() {
-      console.log("Download all data");
-      this.showDownloadDropdown = false;
-    },
-
-    handleDownload() {
-      if (this.selectedIds.length) {
-        console.log("Download selected:", this.selectedIds);
-      } else {
-        console.log("Download all data");
-      }
-      this.showDownloadDropdown = false;
-    },
-
-    handleClickOutside(e) {
-      if (
-        !e.target.closest(".printable-dropdown") &&
-        !e.target.closest(".add-dropdown")
-      ) {
-        this.showDropdown = false;
-        this.showDownloadDropdown = false;
-      }
-    },
-
-    formatDate(dateString) {
-      if (!dateString) return "-";
-      const date = new Date(dateString);
-      return (
-        date.toLocaleDateString() +
-        " " +
-        date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      );
-    },
-
-    // async handleDeleteContacts() {
-    //   if (this.selectedIds.length === 0) {
-    //     alertService.warning("Pilih minimal satu contact untuk dihapus");
-    //     return;
-    //   }
-
-    //   const confirmDelete = await alertService.confirm(
-    //     "Hapus Contact?",
-    //     `${this.selectedIds.length} contact akan dihapus secara permanen. Lanjutkan?`,
-    //   );
-
-    //   if (!confirmDelete) return;
-
-    //   try {
-    //     // Delete each selected contact
-    //     for (const id of this.selectedIds) {
-    //       await this.$store.dispatch("contacts/deleteContact", id);
-    //     }
-    //     // Clear selected IDs
-    //     this.selectedIds = [];
-    //     alertService.success("Contact berhasil dihapus");
-    //   } catch (error) {
-    //     console.error("Error deleting contacts:", error);
-    //     const status = error?.response?.status;
-    //     const backendMessage =
-    //       error?.response?.data?.message ||
-    //       error?.response?.data?.error ||
-    //       error?.message;
-    //     alertService.error(
-    //       `Gagal menghapus contact. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Silakan coba lagi."}`,
-    //     );
-    //   }
-    // },
-
-    handleDeleteContacts() {
-      if (!this.selectedIds.length) {
-        return alertService.warning("Pilih minimal satu contact untuk dihapus");
-      }
-
-      alertService
-        .confirm(
-          "Hapus Contact?",
-          `${this.selectedIds.length} contact akan dihapus secara permanen.`,
-        )
-        .then((confirmDelete) => {
-          if (!confirmDelete) return;
-
-          const promises = this.selectedIds.map((id) => this.deleteContact(id));
-
-          return Promise.all(promises);
-        })
-        .then(() => {
-          this.selectedIds = [];
-          alertService.success("Contact berhasil dihapus");
-        })
-        .catch((error) => {
-          const status = error?.response?.status;
-          const message =
-            error?.response?.data?.message ||
-            error?.response?.data?.error ||
-            error?.message;
-
-          alertService.error(
-            `Gagal menghapus contact ${status ? `(Status ${status})` : ""}. ${
-              message || ""
-            }`,
-          );
-        });
-    },
-  },
-
-  mounted() {
-    document.addEventListener("click", this.handleClickOutside);
-    this.fetchData();
-    this.fetchAllcompany();
-    this.fetchAllDeals();
-  },
-
-  beforeUnmount() {
-    document.removeEventListener("click", this.handleClickOutside);
-  },
-};
-</script>
-
 <template>
   <div class="flex flex-col h-full">
     <!-- Action Bar -->
@@ -694,7 +228,7 @@ export default {
 
         <div class="overflow-x-auto">
           <table class="w-full">
-            <thead>
+            <thead class="sticky top-0 bg-white z-10">
               <tr class="border-b border-gray-200">
                 <th class="px-6 py-4 text-left">
                   <input
@@ -813,17 +347,7 @@ export default {
                 <td class="px-6 py-4">
                   <span
                     class="px-3 py-1 rounded-full text-xs font-medium"
-                    :class="{
-                      'bg-green-100 text-green-700':
-                        contact.status?.toLowerCase() === 'active' ||
-                        contact.status?.toLowerCase() === 'aktif',
-                      'bg-yellow-100 text-yellow-700':
-                        contact.status?.toLowerCase() === 'pending',
-                      'bg-gray-100 text-gray-700':
-                        !contact.status ||
-                        contact.status?.toLowerCase() === 'inactive' ||
-                        contact.status?.toLowerCase() === 'non-active',
-                    }"
+                    :class="getStatusClass(contact.status)"
                   >
                     {{ contact.status || "Inactive" }}
                   </span>
@@ -887,6 +411,418 @@ export default {
     />
   </div>
 </template>
+
+<script>
+import { mapActions, mapGetters } from "vuex";
+import AddContactForm from "./forms/AddContactForm.vue";
+import BulkAddContactForm from "./forms/BulkAddContactForm.vue";
+import DetailForm from "./forms/DetailFormDuplicate.vue";
+import DetailDataContact from "./forms/DetailDataContact.vue";
+import { alertService } from "@/services/alertService";
+
+import {
+  Search,
+  ChevronDown,
+  Download,
+  Edit,
+  Trash2,
+  Facebook,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  FolderPlus,
+  FilePlus,
+  FileDown,
+  FolderDown,
+  RefreshCw,
+} from "lucide-vue-next";
+
+export default {
+  name: "Contacts",
+
+  components: {
+    AddContactForm,
+    BulkAddContactForm,
+    DetailForm,
+    DetailDataContact,
+    Search,
+    ChevronDown,
+    Download,
+    Edit,
+    Trash2,
+    Facebook,
+    Filter,
+    ChevronLeft,
+    ChevronRight,
+    FolderPlus,
+    FilePlus,
+    FileDown,
+    FolderDown,
+    RefreshCw,
+  },
+
+  data() {
+    return {
+      currentPage: 1,
+      itemsPerPage: 10,
+      showAddContactForm: false,
+      showBulkAddForm: false,
+      showDropdown: false,
+      showDownloadDropdown: false,
+      selectedIds: [],
+      selectedContact: null,
+      showDetailForm: false,
+      showDetailDataContact: false,
+      isDetailDataSubmitting: false,
+    };
+  },
+
+  computed: {
+    ...mapGetters({
+      contacts: "contacts/allContacts",
+      pagination: "contacts/pagination",
+      isLoading: "contacts/isLoading",
+      error: "contacts/error",
+      allCompanies: "company/allcompany",
+      allDeals: "deals/allDeals",
+    }),
+
+    totalContacts() {
+      return this.pagination?.total || 0;
+    },
+
+    contactsStatusText() {
+      if (this.isLoading) {
+        return "Searching contacts...";
+      }
+      if (this.error) {
+        return `Error: ${this.error}`;
+      }
+      return `${this.totalContacts.toLocaleString()} Total Contacts`;
+    },
+
+    contactsStatusClass() {
+      if (this.isLoading) {
+        return "text-blue-600";
+      }
+      if (this.error) {
+        return "text-red-600";
+      }
+      return "text-sub-text";
+    },
+
+    downloadLabel() {
+      return this.selectedIds.length
+        ? `Download (${this.selectedIds.length})`
+        : "Download";
+    },
+
+    paginatedContacts() {
+      // With server-side pagination, we just show whatever the API returned
+      return this.contacts;
+    },
+
+    totalPages() {
+      return this.pagination?.last_page || 1;
+    },
+  },
+
+  watch: {
+    currentPage() {
+      this.fetchData();
+    },
+    itemsPerPage() {
+      this.currentPage = 1;
+      this.fetchData();
+    }
+  },
+
+  methods: {
+    getStatusClass(status) {
+      if (!status) return 'bg-gray-100 text-gray-700';
+      const s = status.toLowerCase();
+      if (s === 'active' || s === 'aktif') return 'bg-green-100 text-green-700';
+      if (s === 'pending') return 'bg-yellow-100 text-yellow-700';
+      if (s === 'inactive' || s === 'non-active') return 'bg-gray-100 text-gray-700';
+      return 'bg-gray-100 text-gray-700';
+    },
+    ...mapActions({
+      fetchAllContacts: "contacts/fetchAllContacts",
+      fetchAllcompany: "company/fetchAllcompany",
+      fetchAllDeals: "deals/fetchAllDeals",
+      updateContact: "contacts/updateContact",
+      deleteContact: "contacts/deleteContact",
+    }),
+
+    getAssociationCandidates(...values) {
+      const candidates = [];
+
+      values.forEach((value) => {
+        if (Array.isArray(value)) {
+          value.forEach((item) => {
+            if (item !== "" && item !== null && item !== undefined) {
+              candidates.push(item);
+            }
+          });
+          return;
+        }
+
+        if (value !== "" && value !== null && value !== undefined) {
+          candidates.push(value);
+        }
+      });
+
+      return [...new Set(candidates.map((item) => String(item).trim()))].filter(
+        Boolean,
+      );
+    },
+
+    resolveAssociationLabels(candidates, options) {
+      const normalizedOptions = options.map((option) => ({
+        value: String(option.value),
+        label: String(option.label),
+        labelLower: String(option.label).toLowerCase(),
+      }));
+
+      const labels = candidates.map((candidate) => {
+        const normalizedCandidate = String(candidate).trim();
+        const candidateLower = normalizedCandidate.toLowerCase();
+
+        const byValue = normalizedOptions.find(
+          (option) => option.value === normalizedCandidate,
+        );
+        if (byValue) return byValue.label;
+
+        const byLabel = normalizedOptions.find(
+          (option) => option.labelLower === candidateLower,
+        );
+        if (byLabel) return byLabel.label;
+
+        return normalizedCandidate;
+      });
+
+      return [...new Set(labels)].filter(Boolean);
+    },
+
+    getAssociatedCompanyLabels(contact) {
+      const companyCandidates = this.getAssociationCandidates(
+        contact?.companyassoc,
+        contact?.companiesAssociation,
+        contact?.company_id,
+        contact?.companies_id,
+        contact?.company,
+        contact?.company_name,
+      );
+
+      const companyOptions = (this.allCompanies || []).map((company) => ({
+        value: company.id,
+        label: company.company_name || company.name || "Unknown",
+      }));
+
+      const labels = this.resolveAssociationLabels(
+        companyCandidates,
+        companyOptions,
+      );
+      return labels.length ? labels : ["-"];
+    },
+
+    getAssociatedDealLabels(contact) {
+      const dealCandidates = this.getAssociationCandidates(
+        contact?.dealsassoc,
+        contact?.dealsAssociation,
+        contact?.deal_id,
+        contact?.deals_id,
+        contact?.deal,
+        contact?.deal_name,
+      );
+
+      const dealOptions = (this.allDeals || []).map((deal) => ({
+        value: deal.id,
+        label: deal.deal_name || deal.name || "Unknown",
+      }));
+
+      const labels = this.resolveAssociationLabels(dealCandidates, dealOptions);
+      return labels.length ? labels : ["-"];
+    },
+
+    fetchData() {
+      this.fetchAllContacts({ page: this.currentPage, per_page: this.itemsPerPage })
+        .then(() => {
+          console.log("Contacts fetched successfully");
+        })
+        .catch((err) => {
+          console.error("Failed to fetch contacts:", err);
+        });
+    },
+
+    handleAddContact(contactData) {
+      console.log("New contact:", contactData);
+      // TODO: Implement API call via Vuex
+    },
+
+    toggleDropdown() {
+      this.showDropdown = !this.showDropdown;
+    },
+
+    toggleDownloadDropdown() {
+      this.showDownloadDropdown = !this.showDownloadDropdown;
+    },
+
+    openContactDetail(contact) {
+      this.selectedContact = { ...contact };
+      this.showDetailDataContact = true;
+    },
+
+    closeDetailDataContact() {
+      this.showDetailDataContact = false;
+      this.selectedContact = null;
+    },
+
+
+    handleDetailDataContactSubmit(payload) {
+      const contactId = this.selectedContact?.id;
+      const firstName = payload?.contact?.first_name?.trim();
+
+      if (!contactId) {
+        return alertService.error("ID contact tidak ditemukan.");
+      }
+
+      if (!firstName) {
+        return alertService.error("First Name wajib diisi.");
+      }
+
+      this.isDetailDataSubmitting = true;
+
+      // Format updated_at: YYYY-MM-DD HH:mm:ss (match AddContactForm pattern)
+      const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+      // Flatten payload to match backend expectation for choice: 'u'
+      // This follows the "DetailDataCompany-style" emission but ensures contact logic works
+      const formdata = {
+        ...payload.contact,
+        id: contactId,
+        updated_at: now,
+
+        // Notes, Tasks, & Docs (Flattened for backend)
+        notes: payload.note,
+        task_name: payload.task?.name,
+        desktask: payload.task?.content,
+        statustask: payload.task?.status,
+        assignee: payload.task?.assignee,
+        due_date: payload.task?.dueDate,
+        task_time: payload.task?.time,
+        prioritytask: payload.task?.priority,
+        associated_contact: payload.task?.associatedContact,
+        docs: payload.docs?.description,
+      };
+
+      this.updateContact(formdata)
+        .then(() => {
+          alertService.success("Detail contact berhasil diperbarui.");
+          this.closeDetailDataContact();
+        })
+        .catch((error) => {
+          const message =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            "Gagal update contact.";
+
+          alertService.error(message);
+        })
+        .finally(() => {
+          this.isDetailDataSubmitting = false;
+        });
+    },
+
+    handleBulkAdd() {
+      this.showBulkAddForm = true;
+    },
+
+    downloadAll() {
+      console.log("Download all data");
+      this.showDownloadDropdown = false;
+    },
+
+    handleDownload() {
+      if (this.selectedIds.length) {
+        console.log("Download selected:", this.selectedIds);
+      } else {
+        console.log("Download all data");
+      }
+      this.showDownloadDropdown = false;
+    },
+
+    handleClickOutside(e) {
+      if (
+        !e.target.closest(".printable-dropdown") &&
+        !e.target.closest(".add-dropdown")
+      ) {
+        this.showDropdown = false;
+        this.showDownloadDropdown = false;
+      }
+    },
+
+    formatDate(dateString) {
+      if (!dateString) return "-";
+      const date = new Date(dateString);
+      return (
+        date.toLocaleDateString() +
+        " " +
+        date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      );
+    },
+
+
+    handleDeleteContacts() {
+      if (!this.selectedIds.length) {
+        return alertService.warning("Pilih minimal satu contact untuk dihapus");
+      }
+
+      alertService
+        .confirm(
+          "Hapus Contact?",
+          `${this.selectedIds.length} contact akan dihapus secara permanen.`,
+        )
+        .then((confirmDelete) => {
+          if (!confirmDelete) return;
+
+          const promises = this.selectedIds.map((id) => this.deleteContact(id));
+
+          return Promise.all(promises);
+        })
+        .then(() => {
+          this.selectedIds = [];
+          alertService.success("Contact berhasil dihapus");
+        })
+        .catch((error) => {
+          const status = error?.response?.status;
+          const message =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message;
+
+          alertService.error(
+            `Gagal menghapus contact ${status ? `(Status ${status})` : ""}. ${
+              message || ""
+            }`,
+          );
+        });
+    },
+  },
+
+  mounted() {
+    document.addEventListener("click", this.handleClickOutside);
+    this.fetchData();
+    this.fetchAllcompany();
+    this.fetchAllDeals();
+  },
+
+  beforeUnmount() {
+    document.removeEventListener("click", this.handleClickOutside);
+  },
+};
+</script>
 
 <style scoped>
 /* Custom Scrollbar for the table */

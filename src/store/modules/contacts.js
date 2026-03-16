@@ -5,6 +5,12 @@ const { cookies } = useCookies();
 
 const state = {
   contacts: [],
+  pagination: {
+    total: 0,
+    current_page: 1,
+    per_page: 10,
+    last_page: 1
+  },
   isLoading: false,
   error: null,
   viewMode: "list",
@@ -13,6 +19,7 @@ const state = {
 const getters = {
   currentView: (state) => state.viewMode,
   allContacts: (state) => state.contacts,
+  pagination: (state) => state.pagination,
   isLoading: (state) => state.isLoading,
   error: (state) => state.error,
 };
@@ -21,8 +28,20 @@ const mutations = {
   SET_VIEW_MODE(state, mode) {
     state.viewMode = mode;
   },
-  SET_CONTACTS(state, contacts) {
-    state.contacts = contacts;
+  SET_CONTACTS(state, payload) {
+    if (payload && payload.data) {
+      // Handle paginated response
+      state.contacts = payload.data;
+      state.pagination = {
+        total: payload.total || 0,
+        current_page: payload.current_page || 1,
+        per_page: payload.per_page || 10,
+        last_page: payload.last_page || 1
+      };
+    } else {
+      // Fallback for non-paginated or old format
+      state.contacts = payload || [];
+    }
   },
   SET_LOADING(state, isLoading) {
     state.isLoading = isLoading;
@@ -38,7 +57,7 @@ const mutations = {
 };
 
 const actions = {
-  fetchAllContacts({ commit }) {
+  fetchAllContacts({ commit }, params = { page: 1, per_page: 10 }) {
     commit("SET_LOADING", true);
     commit("SET_ERROR", null);
 
@@ -48,6 +67,7 @@ const actions = {
           headers: {
             Authorization: "Bearer " + cookies.get("token"),
           },
+          params: params
         });
         resolve(response.data);
       } catch (error) {

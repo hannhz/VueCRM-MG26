@@ -1,5 +1,5 @@
 import Dashboard from "@/components/dashboard.vue";
-import Contacts from "@/components/contacts.vue";
+import Contacts from "@/components/pages/Contacts/contacts.vue";
 import LoginPage from "@/components/loginpage.vue";
 import MainDashboard from "@/components/maindashboard.vue";
 import Companies from "@/components/companies.vue";
