@@ -58,6 +58,8 @@ const state = {
   error: null,
   viewMode: "list",
   searchQuery: "",
+  currentPage: 1,
+  itemsPerPage: 10,
 };
 
 const getters = {
@@ -83,10 +85,22 @@ const getters = {
         company.country?.toLowerCase().includes(query),
     );
   },
+  currentPage: (state) => state.currentPage,
+  itemsPerPage: (state) => state.itemsPerPage,
 };
 
 const actions = {
-  fetchAllcompany({ commit }) {
+  setCurrentPage({ commit }, page) {
+    commit("SET_CURRENT_PAGE", page);
+  },
+  setItemsPerPage({ commit }, items) {
+    commit("SET_ITEMS_PER_PAGE", items);
+  },
+  fetchAllcompany({ commit, state }, options = { forceRefresh: false }) {
+    if (!options.forceRefresh && state.company && state.company.length > 0) {
+      return Promise.resolve({ companies: state.company });
+    }
+
     commit("SET_LOADING", true);
     commit("SET_ERROR", null);
     const promise = new Promise(async (resolve, reject) => {
@@ -291,7 +305,27 @@ const actions = {
     try {
       const response = await api.post(
         "company/input",
-        { choice: "d", id: data },
+        {
+          choice: "d",
+          id: data,
+          company_name: "",
+          company_owner: "",
+          website: "",
+          type: "",
+          description: "",
+          email: "",
+          telephone: "",
+          website: "",
+          industry: "",
+          address: "",
+          country: "",
+          city: "",
+          province: "",
+          pos_code: "",
+          source: "",
+          type: "",
+          owner: "",
+        },
         { headers },
       );
       await context.dispatch("fetchAllcompany");
@@ -380,6 +414,12 @@ const mutations = {
   },
   SET_SEARCH_QUERY(state, query) {
     state.searchQuery = query;
+  },
+  SET_CURRENT_PAGE(state, page) {
+    state.currentPage = page;
+  },
+  SET_ITEMS_PER_PAGE(state, items) {
+    state.itemsPerPage = items;
   },
 };
 

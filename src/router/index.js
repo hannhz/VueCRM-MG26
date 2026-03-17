@@ -2,7 +2,7 @@ import Dashboard from "@/components/dashboard.vue";
 import Contacts from "@/components/pages/Contacts/contacts.vue";
 import LoginPage from "@/components/loginpage.vue";
 import MainDashboard from "@/components/maindashboard.vue";
-import Companies from "@/components/companies.vue";
+import Companies from "@/components/pages/Companies/companies.vue";
 import Deals from "@/components/deals/deals.vue";
 import DealsList from "@/components/deals/dealslist.vue";
 import DealsCard from "@/components/deals/dealscard.vue";

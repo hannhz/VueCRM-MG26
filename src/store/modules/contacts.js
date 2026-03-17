@@ -163,6 +163,30 @@ const actions = {
     const requestPayload = {
       choice: "d",
       id: contactId,
+      first_name: "", // Required by backend API even when deleting
+      last_name: "", // Required by backend API even when deleting
+      job_title: "",
+      owner: "",
+      email: "",
+      telephone_1: "",
+      telephone_2: "",
+      telephone_3: "",
+      address: "",
+      city: "",
+      state: "",
+      zip: "",
+      country: "",
+      notes: "",
+      status: "",
+      company_id: "",
+      deal_id: "",
+      company_label: "",
+      deal_label: "",
+      province: "",
+      city: "",
+      pos_code: "",
+      country: "",
+      source: "",
     };
 
     const promise = new Promise(async (resolve, reject) => {

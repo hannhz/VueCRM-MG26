@@ -163,13 +163,11 @@ export default {
 
     contactsStatusText() {
       if (this.isLoading) return "Searching contacts...";
-      if (this.error) return `Error: ${this.error}`;
       return `${this.totalContacts.toLocaleString()} Total Contacts`;
     },
 
     contactsStatusClass() {
       if (this.isLoading) return "text-blue-600";
-      if (this.error) return "text-red-600";
       return "text-sub-text";
     },
 

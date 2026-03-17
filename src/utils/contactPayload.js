@@ -3,24 +3,29 @@ export function buildUpdateContactPayload({ selectedContactId, payload }) {
         return { error: "ID Contact tidak ditemukan untuk diupdate." };
     }
 
-    // Format array associations ke string CSV yang dipisahkan koma
-    // karena backend Laravel ContactController tampaknya mengharapkan format tersebut 
-    // atau JSON array string dalam requestnya
-    const dealIds = Array.isArray(payload.dealsassoc)
-        ? payload.dealsassoc.join(",")
-        : payload.dealsassoc;
+    // `payload` coming from DetailDataContact contains { contact, note, task, docs }
+    // We mainly need the contact details at the root level for the update endpoint.
+    const contactData = payload?.contact || payload;
 
-    const companyIds = Array.isArray(payload.companyassoc)
-        ? payload.companyassoc.join(",")
-        : payload.companyassoc;
+    const dealIds = Array.isArray(contactData.dealsassoc)
+        ? contactData.dealsassoc.join(",")
+        : contactData.dealsassoc;
+
+    const companyIds = Array.isArray(contactData.companyassoc)
+        ? contactData.companyassoc.join(",")
+        : contactData.companyassoc;
 
     const requestPayload = {
         id: selectedContactId,
         choice: "u", // 'u' untuk Update (Laravel backend)
-        ...payload,
+        ...contactData,
+        ...payload, // Include note, task, docs if backend expects them (or maybe backend doesn't care)
         dealsassoc: dealIds || null,
         companyassoc: companyIds || null,
     };
+
+    // Prevent recursive or deeply nested `contact` property if we spread it above
+    delete requestPayload.contact;
 
     return { data: requestPayload, error: null };
 }

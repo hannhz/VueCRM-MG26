@@ -6,7 +6,7 @@
     >
       <div class="flex flex-col items-center gap-3">
         <RefreshCw class="animate-spin text-blue-950" :size="32" />
-        <p class="text-sm text-sub-text font-medium">Loading contacts...</p>
+        <p class="text-sm text-sub-text font-medium">Loading companies...</p>
       </div>
     </div>
 
@@ -24,13 +24,13 @@
             </th>
             <th class="w-[18%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white">
               <div class="flex items-center gap-2">
-                Contact Name
+                Company Name
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
             </th>
             <th class="w-[22%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white">
               <div class="flex items-center gap-2">
-                Contact Info
+                Info Company
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
             </th>
@@ -42,7 +42,7 @@
             </th>
             <th class="w-[10%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white">
               <div class="flex items-center gap-2">
-                Status
+                Type
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
             </th>
@@ -60,71 +60,53 @@
             </th>
           </tr>
         </thead>
-
         <tbody>
-          <tr v-if="contacts.length === 0 && !isLoading">
+          <tr v-if="companies.length === 0 && !isLoading">
             <td colspan="7" class="px-6 py-20 text-center text-sub-text">
               <div class="flex flex-col items-center gap-3">
                 <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
                   <Search :size="32" class="text-gray-400" />
                 </div>
-                <p class="text-lg font-medium">No contacts found</p>
+                <p class="text-lg font-medium">No companies found</p>
                 <p class="text-sm text-gray-400">
-                  We couldn't find any contacts matching your criteria.
+                  Start adding companies to see them here
                 </p>
-                <button
-                  @click="$emit('open-add-single')"
-                  class="mt-2 text-blue-600 font-medium hover:underline text-sm"
-                >
-                  + Add Your First Contact
-                </button>
               </div>
             </td>
           </tr>
 
           <tr
-            v-for="contact in contacts"
-            :key="contact.id"
+            v-for="company in companies"
+            :key="company.id"
             class="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer"
-            @click="$emit('row-click', contact)"
+            @click="$emit('row-click', company)"
           >
             <td class="px-6 py-4" @click.stop>
               <input
                 type="checkbox"
                 class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
-                :checked="selectedIds.includes(contact.id)"
-                @change="onToggleRow(contact.id, $event.target.checked)"
+                :checked="selectedIds.includes(company.id)"
+                @change="onToggleRow(company.id, $event.target.checked)"
               />
             </td>
-
-            <td class="px-6 py-4 text-sm text-gray-800 font-medium">
-              {{ contact.first_name }} {{ contact.last_name }}
+            <td class="px-6 py-4 text-sm text-gray-800 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+              {{ company.company_name }}
             </td>
-
-            <td class="px-6 py-4 text-sm text-dark-base">
-              <div>{{ contact.email || "-" }}</div>
-              <div class="text-xs text-sub-text">
-                {{ contact.telephone_1 || "-" }}
-              </div>
+            <td class="px-6 py-4 text-sm text-dark-base whitespace-nowrap overflow-hidden text-ellipsis">
+              {{ company.website }}
             </td>
-
             <td class="px-6 py-4 text-sm text-dark-base leading-5">
-              <div>{{ contact.companyLabelsText }}</div>
-              <div>{{ contact.dealLabelsText }}</div>
+              <div class="whitespace-nowrap overflow-hidden text-ellipsis">{{ company.contactLabelsText }}</div>
+              <div class="whitespace-nowrap overflow-hidden text-ellipsis">{{ company.dealLabelsText }}</div>
             </td>
-
-            <td class="px-6 py-4">
-              <span class="px-3 py-1 rounded-full text-xs font-medium" :class="contact.statusClass">
-                {{ contact.status || "Inactive" }}
-              </span>
-            </td>
-
             <td class="px-6 py-4 text-sm text-dark-base">
-              {{ contact.updatedAtText }}
+              {{ company.type }}
             </td>
-
-            <td class="px-6 py-4 text-sm text-dark-base">
-              {{ contact.owner || "-" }}
+            <td class="px-6 py-4 text-sm text-dark-base whitespace-nowrap overflow-hidden text-ellipsis">
+              {{ company.updatedAtText }}
+            </td>
+            <td class="px-6 py-4 text-sm text-dark-base whitespace-nowrap overflow-hidden text-ellipsis">
+              {{ company.company_owner || "-" }}
             </td>
           </tr>
         </tbody>
@@ -137,20 +119,15 @@
 import { ChevronDown, RefreshCw, Search } from "lucide-vue-next";
 
 export default {
-  name: "ContactsTable",
+  name: "CompaniesTable",
   components: { ChevronDown, RefreshCw, Search },
   props: {
-    contacts: { type: Array, default: () => [] }, // contacts view-model sudah siap tampil
+    companies: { type: Array, default: () => [] },
     isLoading: { type: Boolean, default: false },
     selectedIds: { type: Array, default: () => [] },
     allSelected: { type: Boolean, default: false },
   },
-  emits: [
-    "row-click",
-    "open-add-single",
-    "toggle-select-all",
-    "update:selectedIds",
-  ],
+  emits: ["row-click", "toggle-select-all", "update:selectedIds"],
   methods: {
     onToggleRow(id, checked) {
       const next = checked

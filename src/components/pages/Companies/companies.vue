@@ -1,0 +1,578 @@
+<script>
+import { mapState, mapGetters, mapActions } from "vuex";
+
+import CompaniesHeader from "./CompaniesHeader.vue";
+import CompaniesFilterBar from "./CompaniesFilterBar.vue";
+import CompaniesTable from "./CompaniesTable.vue";
+
+import CreateCompanyForm from "../../forms/CreateCompanyForm.vue";
+import BulkAddCompanyForm from "../../forms/BulkAddCompanyForm.vue";
+import DetailForm from "../../forms/DetailForm.vue";
+import DetailDataCompany from "../../forms/DetailDataCompany.vue";
+import { alertService } from "@/services/alertService";
+
+export default {
+  components: {
+    CompaniesHeader,
+    CompaniesFilterBar,
+    CompaniesTable,
+    CreateCompanyForm,
+    BulkAddCompanyForm,
+    DetailForm,
+    DetailDataCompany,
+  },
+
+  data() {
+    return {
+      showCreateCompanyForm: false,
+      showBulkAddForm: false,
+      showDetailForm: false,
+      showDetailDataCompany: false,
+      showDropdown: false,
+      showDownloadDropdown: false,
+      selectedIds: [],
+      selectedCompany: null,
+      isDetailDataSubmitting: false,
+    };
+  },
+
+  computed: {
+    ...mapState({
+      searchQuery: (state) => state.company.searchQuery,
+    }),
+
+    currentPage: {
+      get() {
+        return this.$store.getters['company/currentPage'];
+      },
+      set(value) {
+        this.$store.dispatch('company/setCurrentPage', value);
+      }
+    },
+    itemsPerPage: {
+      get() {
+        return this.$store.getters['company/itemsPerPage'];
+      },
+      set(value) {
+        this.$store.dispatch('company/setItemsPerPage', value);
+      }
+    },
+
+    ...mapGetters({
+      companies: "company/filteredCompanies",
+      isLoading: "company/isLoading",
+      error: "company/error",
+      allContacts: "contacts/allContacts",
+      allDeals: "deals/allDeals",
+    }),
+
+    totalCompanies() {
+      return this.companies.length;
+    },
+
+    totalPages() {
+      return Math.max(1, Math.ceil(this.totalCompanies / this.itemsPerPage));
+    },
+
+    paginatedCompanies() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      return this.companies.slice(start, start + this.itemsPerPage);
+    },
+
+    allSelected() {
+      const ids = this.paginatedCompanies.map((c) => c.id).filter(Boolean);
+      if (!ids.length) return false;
+      return ids.every((id) => this.selectedIds.includes(id));
+    },
+
+    tableCompanies() {
+      return this.paginatedCompanies.map((company) => {
+        const contactLabels = this.getAssociatedContactLabels(company);
+        const dealLabels = this.getAssociatedDealLabels(company);
+
+        // format date using basic logic since helper is absent
+        let formattedDate = "-";
+        if (company.updated_at || company.created_at) {
+          const date = new Date(company.updated_at || company.created_at);
+          formattedDate =
+            date.toLocaleDateString() +
+            " " +
+            date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        }
+
+        return {
+          ...company,
+          contactLabelsText: contactLabels.join(", "),
+          dealLabelsText: dealLabels.join(", "),
+          updatedAtText: formattedDate,
+        };
+      });
+    },
+
+    downloadLabel() {
+      return this.selectedIds.length
+        ? `Download (${this.selectedIds.length})`
+        : "Download";
+    },
+
+    companiesStatusText() {
+      if (this.isLoading) return "Searching company...";
+      if (this.error) return `Error: ${this.error}`;
+      return `${this.totalCompanies.toLocaleString()} Total Companies`;
+    },
+
+    companiesStatusClass() {
+      if (this.isLoading) return "text-blue-600";
+      if (this.error) return "text-red-600";
+      return "text-sub-text";
+    },
+  },
+
+  watch: {
+    totalCompanies() {
+      if (this.currentPage > this.totalPages) {
+        this.currentPage = this.totalPages;
+      }
+    },
+  },
+
+  mounted() {
+    this.fetchAllcompany();
+    this.fetchAllContacts();
+    this.fetchAllDeals();
+
+    document.addEventListener("click", this.handleClickOutside);
+  },
+
+  beforeUnmount() {
+    document.removeEventListener("click", this.handleClickOutside);
+  },
+
+  methods: {
+    ...mapActions("company", [
+      "fetchAllcompany",
+      "fetchcompanybyid",
+      "updatecompany",
+      "deletecompany",
+    ]),
+    ...mapActions("contacts", ["fetchAllContacts"]),
+    ...mapActions("deals", ["fetchAllDeals"]),
+
+    getDisplayNameFromContact(contact) {
+      return (
+        `${contact?.first_name || ""} ${contact?.last_name || ""}`.trim() ||
+        contact?.name ||
+        contact?.email ||
+        "Unknown"
+      );
+    },
+
+    getAssociationCandidates(...values) {
+      const candidates = [];
+
+      values.forEach((value) => {
+        if (Array.isArray(value)) {
+          value.forEach((item) => {
+            if (item !== "" && item !== null && item !== undefined) {
+              candidates.push(item);
+            }
+          });
+          return;
+        }
+
+        if (value !== "" && value !== null && value !== undefined) {
+          if (typeof value === "string" && value.includes(",")) {
+            value
+              .split(",")
+              .map((s) => s.trim())
+              .forEach((s) => {
+                if (s) candidates.push(s);
+              });
+          } else {
+            candidates.push(value);
+          }
+        }
+      });
+
+      return [...new Set(candidates.map((item) => String(item).trim()))].filter(
+        Boolean,
+      );
+    },
+
+    resolveAssociationLabels(candidates, options) {
+      const normalizedOptions = options.map((option) => ({
+        value: String(option.value),
+        label: String(option.label),
+        labelLower: String(option.label).toLowerCase(),
+      }));
+
+      const labels = candidates.map((candidate) => {
+        const normalizedCandidate = String(candidate).trim();
+        const candidateLower = normalizedCandidate.toLowerCase();
+
+        const byValue = normalizedOptions.find(
+          (option) => option.value === normalizedCandidate,
+        );
+        if (byValue) return byValue.label;
+
+        const byLabel = normalizedOptions.find(
+          (option) => option.labelLower === candidateLower,
+        );
+        if (byLabel) return byLabel.label;
+
+        return normalizedCandidate;
+      });
+
+      return [...new Set(labels)].filter(Boolean);
+    },
+
+    getAssociatedContactLabels(company) {
+      const contactCandidates = this.getAssociationCandidates(
+        company?.contactassoc,
+        company?.contactAssociation,
+        company?.contacts_id,
+        company?.contact_id,
+        company?.contact,
+        company?.contact_name,
+      );
+
+      const contactOptions = (this.allContacts || []).map((contact) => ({
+        value: contact.id,
+        label: this.getDisplayNameFromContact(contact),
+      }));
+
+      const labels = this.resolveAssociationLabels(
+        contactCandidates,
+        contactOptions,
+      );
+      return labels.length ? labels : ["-"];
+    },
+
+    getAssociatedDealLabels(company) {
+      const dealCandidates = this.getAssociationCandidates(
+        company?.dealsassoc,
+        company?.dealsAssociation,
+        company?.deals_id,
+        company?.deal_id,
+        company?.deal,
+        company?.deal_name,
+      );
+
+      const dealOptions = (this.allDeals || []).map((deal) => ({
+        value: deal.id,
+        label: deal.deal_name || deal.name || "Unknown",
+      }));
+
+      const labels = this.resolveAssociationLabels(dealCandidates, dealOptions);
+      return labels.length ? labels : ["-"];
+    },
+
+    toggleDropdown() {
+      this.showDropdown = !this.showDropdown;
+    },
+
+    toggleDownloadDropdown() {
+      this.showDownloadDropdown = !this.showDownloadDropdown;
+    },
+
+    handleClickOutside(e) {
+      if (
+        !e.target.closest(".add-dropdown") &&
+        !e.target.closest(".download-dropdown")
+      ) {
+        this.showDropdown = false;
+        this.showDownloadDropdown = false;
+      }
+    },
+
+    nextPage() {
+      if (this.currentPage < this.totalPages) this.currentPage++;
+    },
+
+    prevPage() {
+      if (this.currentPage > 1) this.currentPage--;
+    },
+
+    async openCompanyDetail(company) {
+      const companyId = company?.id;
+
+      if (!companyId) {
+        alertService.error("ID company tidak ditemukan.");
+        return;
+      }
+
+      this.isDetailDataSubmitting = true;
+
+      try {
+        const response = await this.fetchcompanybyid(companyId);
+        const companyDetail =
+          response?.data?.company ||
+          response?.data?.data ||
+          response?.data ||
+          response?.company ||
+          response?.companies ||
+          company;
+
+        this.selectedCompany = { ...company, ...companyDetail };
+        this.showDetailDataCompany = true;
+      } catch (error) {
+        this.selectedCompany = { ...company };
+        this.showDetailDataCompany = true;
+
+        const message =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Gagal mengambil detail terbaru dari server. Menampilkan data yang tersedia.";
+        alertService.warning(message);
+      } finally {
+        this.isDetailDataSubmitting = false;
+      }
+    },
+
+    closeDetailDataCompany() {
+      this.selectedCompany = null;
+      this.showDetailDataCompany = false;
+    },
+
+    handleDetailDataCompanySubmit(payload) {
+      const companyId = this.selectedCompany?.id;
+      const companyName = payload?.company?.company_name?.trim();
+
+      if (!companyId) {
+        return alertService.error("ID company tidak ditemukan.");
+      }
+
+      if (!companyName) {
+        return alertService.error("Company Name wajib diisi.");
+      }
+
+      this.isDetailDataSubmitting = true;
+
+      this.updatecompany({
+        keyedit: companyId,
+        formdata: {
+          ...payload.company,
+          updated_at: new Date().toISOString(),
+        },
+      })
+        .then(() => {
+          alertService.success("Detail company berhasil diperbarui.");
+          this.closeDetailDataCompany();
+        })
+        .catch((error) => {
+          const message =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            "Gagal update company";
+
+          alertService.error(message);
+        })
+        .finally(() => {
+          this.isDetailDataSubmitting = false;
+        });
+    },
+
+    handleDeleteCompanies() {
+      if (!this.selectedIds.length) {
+        return alertService.warning("Pilih minimal satu company untuk dihapus");
+      }
+
+      alertService
+        .confirm(
+          "Hapus Company?",
+          `${this.selectedIds.length} company akan dihapus secara permanen.`,
+        )
+        .then((confirmDelete) => {
+          if (!confirmDelete) return;
+
+          const promises = this.selectedIds.map((id) => this.deletecompany(id));
+
+          return Promise.all(promises);
+        })
+        .then(() => {
+          this.selectedIds = [];
+          alertService.success("Company berhasil dihapus");
+        })
+        .catch((error) => {
+          const status = error?.response?.status;
+          const message =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message;
+
+          alertService.error(
+            `Gagal menghapus company ${status ? `(Status ${status})` : ""}. ${
+              message || ""
+            }`,
+          );
+        });
+    },
+
+    toggleSelectAll(checked) {
+      const ids = this.paginatedCompanies.map((c) => c.id).filter(Boolean);
+      if (checked) {
+        this.selectedIds = [...new Set([...this.selectedIds, ...ids])];
+      } else {
+        this.selectedIds = this.selectedIds.filter((id) => !ids.includes(id));
+      }
+    },
+
+    handleDownload() {
+      const target = this.selectedIds.length
+        ? `selected: ${this.selectedIds}`
+        : "all data";
+
+      console.log("Download", target);
+      this.showDownloadDropdown = false;
+    },
+
+    downloadAll() {
+      console.log("Download all data");
+      this.showDownloadDropdown = false;
+    },
+
+    handleBulkAdd() {
+      this.showBulkAddForm = true;
+    },
+
+    fetchData() {
+      this.showDropdown = false;
+      this.showDownloadDropdown = false;
+
+      return this.fetchAllcompany({ forceRefresh: true }).catch((error) => {
+        const message =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          "Gagal refresh data company";
+
+        alertService.error(message);
+      });
+    },
+  },
+};
+</script>
+
+<template>
+  <div class="flex flex-col h-full">
+    <div
+      class="bg-white rounded-lg shadow-sm p-4 border border-outline flex flex-col min-h-0 min-h-[500px] flex-1"
+    >
+      <CompaniesHeader
+        :isLoading="isLoading"
+        :companiesStatusText="companiesStatusText"
+        :companiesStatusClass="companiesStatusClass"
+        :downloadLabel="downloadLabel"
+        :showAddDropdown="showDropdown"
+        :showDownloadDropdown="showDownloadDropdown"
+        @refresh="fetchData"
+        @toggle-add-dropdown="toggleDropdown"
+        @toggle-download-dropdown="toggleDownloadDropdown"
+        @open-add-single="showCreateCompanyForm = true; showDropdown = false;"
+        @open-bulk-add="handleBulkAdd"
+        @download-all="downloadAll"
+        @download="handleDownload"
+        @delete-selected="handleDeleteCompanies"
+      />
+
+      <CompaniesFilterBar
+        v-model:itemsPerPage="itemsPerPage"
+        v-model:currentPage="currentPage"
+        v-model:searchQuery="searchQuery"
+        :totalPages="totalPages"
+        @prev-page="prevPage"
+        @next-page="nextPage"
+        @search="fetchData"
+      />
+
+      <CompaniesTable
+        :companies="tableCompanies"
+        :isLoading="isLoading"
+        :selectedIds="selectedIds"
+        :allSelected="allSelected"
+        @update:selectedIds="selectedIds = $event"
+        @toggle-select-all="toggleSelectAll"
+        @row-click="openCompanyDetail"
+      />
+    </div>
+
+    <!-- Add Company Form -->
+    <CreateCompanyForm
+      :isOpen="showCreateCompanyForm"
+      @close="showCreateCompanyForm = false"
+      @submit="
+        (data) => {
+          console.log('Company added:', data);
+          showCreateCompanyForm = false;
+          showDetailForm = false;
+        }
+      "
+    />
+
+    <!-- Bulk Add Company Form -->
+    <BulkAddCompanyForm
+      :isOpen="showBulkAddForm"
+      @close="showBulkAddForm = false"
+      @submit="
+        (file) => {
+          console.log('File uploaded:', file);
+          showBulkAddForm = false;
+        }
+      "
+    />
+
+    <!-- Detail Form -->
+    <DetailForm
+      :isOpen="showDetailForm"
+      @close="showDetailForm = false"
+      @back="
+        showDetailForm = false;
+        showCreateCompanyForm = true;
+      "
+      @submit="
+        (data) => {
+          console.log('Detail submitted:', data);
+          showDetailForm = false;
+        }
+      "
+    />
+
+    <DetailDataCompany
+      :isOpen="showDetailDataCompany"
+      :company="selectedCompany"
+      :isSubmitting="isDetailDataSubmitting"
+      @close="closeDetailDataCompany"
+      @back="closeDetailDataCompany"
+      @submit="handleDetailDataCompanySubmit"
+    />
+  </div>
+</template>
+
+<style scoped>
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.animate-in {
+  animation: animate-in 0.2s ease-out;
+}
+
+@keyframes animate-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+</style>
