@@ -5,6 +5,7 @@ import router from "./router";
 //import { createPinia } from 'pinia'
 import Toast from "vue3-toastify";
 import "vue3-toastify/dist/index.css";
+import 'devextreme/dist/css/dx.light.css'
 // import VueCookies from 'vue3-cookies'
 import "./style.css";
 import "./css/welcome.css";
