@@ -1,248 +1,4 @@
-<script setup>
-import { ref, computed, watch } from "vue";
-import { useStore } from "vuex";
-import {
-  Filter,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  RefreshCw,
-  Trash,
-} from "lucide-vue-next";
-import { alertService } from "@/services/alertService";
 
-const emit = defineEmits(["viewDetail", "taskSelection"]);
-
-/* =========================
-   QUICK ADD
-========================= */
-const store = useStore();
-
-// Get tasks from Vuex store
-const allTasksData = computed(() => store.getters["tasks/filteredTasks"] || []);
-const isLoading = computed(() => store.getters["tasks/isLoading"]);
-const error = computed(() => store.getters["tasks/error"]);
-const signedInUser = computed(() => store.getters["users/usersignin"] || null);
-const authUser = computed(() => store.getters["auth/currentUser"] || null);
-const searchQuery = computed({
-  get: () => store.getters["tasks/searchQuery"] || "",
-  set: (value) => store.dispatch("tasks/setSearchQuery", value),
-});
-
-const taskText = ref("");
-const isQuickAdding = ref(false);
-const quickAddOwnerLabel = computed(() => getLoggedInName());
-
-const getLoggedInName = () => {
-  const user = signedInUser.value || authUser.value || {};
-  const fullName =
-    user.name ||
-    user.username ||
-    user.user_name ||
-    [user.firstname || user.first_name, user.lastname || user.last_name]
-      .filter(Boolean)
-      .join(" ") ||
-    user.email ||
-    "User";
-
-  return String(fullName).trim() || "User";
-};
-
-async function quickAdd() {
-  const taskName = taskText.value.trim();
-  if (!taskName || isQuickAdding.value) return;
-
-  isQuickAdding.value = true;
-
-  try {
-    if (!signedInUser.value) {
-      await store.dispatch("users/getusersignin").catch(() => null);
-    }
-
-    await store.dispatch("tasks/createTask", {
-      taskName,
-      owner: getLoggedInName(),
-      dueDate: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-    });
-
-    taskText.value = "";
-  } catch (err) {
-    console.error("Quick add task failed:", err);
-  } finally {
-    isQuickAdding.value = false;
-  }
-}
-
-const tasks = computed(() => allTasksData.value);
-
-/* =========================
-   PAGINATION
-========================= */
-const currentPage = ref(1);
-const itemsPerPage = ref(10);
-
-const totalTask = computed(() => tasks.value.length);
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(totalTask.value / itemsPerPage.value)),
-);
-
-const paginatedTasks = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value;
-  return tasks.value.slice(start, start + itemsPerPage.value);
-});
-
-watch([itemsPerPage, totalTask], () => {
-  if (currentPage.value > totalPages.value) {
-    currentPage.value = totalPages.value;
-  }
-});
-
-function nextPage() {
-  if (currentPage.value < totalPages.value) currentPage.value++;
-}
-
-function prevPage() {
-  if (currentPage.value > 1) currentPage.value--;
-}
-
-/* =========================
-   SELECT TASK
-========================= */
-
-const selectedTask = ref([]);
-const isSyncingStage = ref(false);
-const updatingTaskId = ref(null);
-const openStageDropdown = ref(null);
-
-const stageOptions = [
-  { value: "not_started", label: "Not Started" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "waiting", label: "Waiting" },
-  { value: "completed", label: "Completed" },
-  { value: "deferred", label: "Deferred" },
-];
-
-const getStageLabel = (stage) =>
-  stageOptions.find((opt) => opt.value === stage)?.label || stage;
-
-const stageColor = (stage) => {
-  if (stage === "not_started") return "bg-slate-100 text-slate-700";
-  if (stage === "in_progress") return "bg-blue-100 text-blue-700";
-  if (stage === "waiting") return "bg-yellow-100 text-yellow-700";
-  if (stage === "completed") return "bg-emerald-100 text-emerald-700";
-  if (stage === "deferred") return "bg-red-100 text-red-700";
-  return "bg-slate-100 text-slate-700";
-};
-
-const allSelected = computed(
-  () =>
-    paginatedTasks.value.length > 0 &&
-    paginatedTasks.value.every((task) => selectedTask.value.includes(task.id)),
-);
-
-function toggleSelectAll(e) {
-  selectedTask.value = e.target.checked
-    ? paginatedTasks.value.map((t) => t.id)
-    : [];
-  emit("taskSelection", selectedTask.value);
-}
-
-function toggleSelect(id) {
-  if (selectedTask.value.includes(id)) {
-    selectedTask.value = selectedTask.value.filter((i) => i !== id);
-  } else {
-    selectedTask.value.push(id);
-  }
-  emit("taskSelection", selectedTask.value);
-}
-
-function openTaskDetail(task) {
-  emit("viewDetail", task);
-}
-
-function clearSelection() {
-  selectedTask.value = [];
-  emit("taskSelection", []);
-}
-
-async function handleDelete() {
-  if (selectedTask.value.length === 0) {
-    alertService.warning("Pilih minimal satu task untuk dihapus");
-    return;
-  }
-
-  const confirmDelete = await alertService.confirm(
-    "Hapus Task?",
-    `${selectedTask.value.length} task akan dihapus secara permanen. Lanjutkan?`,
-  );
-
-  if (!confirmDelete) return;
-
-  try {
-    // Delete each selected task
-    for (const taskId of selectedTask.value) {
-      const taskItem = allTasksData.value.find(
-        (task) => task.id === taskId,
-      ) || {
-        id: taskId,
-      };
-      await store.dispatch("tasks/deleteTask", taskItem);
-    }
-    alertService.success("Task berhasil dihapus");
-    // Clear selected tasks
-    clearSelection();
-  } catch (error) {
-    console.error("Error deleting tasks:", error);
-    const status = error?.response?.status;
-    const backendMessage =
-      error?.response?.data?.message ||
-      error?.response?.data?.error ||
-      error?.message;
-    alertService.error(
-      `Gagal menghapus task. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Silakan coba lagi."}`,
-    );
-  }
-}
-
-// Expose clearSelection untuk parent component
-defineExpose({
-  clearSelection,
-});
-
-async function handleChangeStage(task, newStage) {
-  if (task.status === newStage || task.stage === newStage) {
-    openStageDropdown.value = null;
-    return;
-  }
-
-  const previousStage = task.status || task.stage;
-  task.status = newStage;
-  task.stage = newStage;
-  updatingTaskId.value = task.id;
-  isSyncingStage.value = true;
-  openStageDropdown.value = null;
-
-  try {
-    await store.dispatch("tasks/updateTask", {
-      id: task.id,
-      formData: {
-        status: newStage,
-      },
-    });
-
-    alertService.success("Stage task berhasil diperbarui.");
-  } catch (err) {
-    task.status = previousStage;
-    task.stage = previousStage;
-    alertService.error("Gagal update stage task. Silakan coba lagi.");
-  } finally {
-    isSyncingStage.value = false;
-    updatingTaskId.value = null;
-  }
-}
-</script>
 
 <template>
   <div
@@ -266,7 +22,7 @@ async function handleChangeStage(task, newStage) {
             @click="handleDelete"
             class="p-2 rounded-lg transition"
             :class="
-              selectedTask.length > 0
+              selectedTasks.length > 0
                 ? 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
                 : 'bg-gray-200 text-gray-500 hover:bg-gray-300 cursor-not-allowed'
             "
@@ -306,7 +62,7 @@ async function handleChangeStage(task, newStage) {
         </div>
 
         <!-- quick add -->
-        <div class="w-full xl:w-[26rem] shrink-0">
+        <div class="w-full xl:w-104 shrink-0">
           <div
             class="flex flex-col sm:flex-row bg-white border border-slate-200 rounded-md shadow-sm overflow-hidden"
           >
@@ -413,7 +169,7 @@ async function handleChangeStage(task, newStage) {
                 class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
               >
                 <div class="flex items-center gap-2">
-                  tasks Name
+                  Task Name
                   <ChevronDown :size="16" class="text-gray-400" />
                 </div>
               </th>
@@ -429,7 +185,7 @@ async function handleChangeStage(task, newStage) {
                 class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
               >
                 <div class="flex items-center gap-2">
-                  Jumlah/Tertanggal
+                  Due Date / Time
                   <ChevronDown :size="16" class="text-gray-400" />
                 </div>
               </th>
@@ -437,16 +193,15 @@ async function handleChangeStage(task, newStage) {
                 class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
               >
                 <div class="flex items-center gap-2">
-                  Associated with
+                  Associated With
                   <ChevronDown :size="16" class="text-gray-400" />
                 </div>
               </th>
-
               <th
                 class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
               >
                 <div class="flex items-center gap-2">
-                  Created/Update
+                  Created / Updated
                   <ChevronDown :size="16" class="text-gray-400" />
                 </div>
               </th>
@@ -488,7 +243,7 @@ async function handleChangeStage(task, newStage) {
               <td class="px-6 py-4">
                 <input
                   type="checkbox"
-                  :checked="selectedTask.includes(task.id)"
+                  :checked="selectedTasks.includes(task.id)"
                   @change="toggleSelect(task.id)"
                   @click.stop
                   class="w-4 h-4"
@@ -496,72 +251,66 @@ async function handleChangeStage(task, newStage) {
               </td>
 
               <td class="px-6 py-4">{{ task.title || task.name }}</td>
+
               <td class="px-6 py-4" @click.stop>
                 <div class="relative">
                   <button
-                    type="button"
-                    @click.stop="
-                      openStageDropdown =
-                        openStageDropdown === task.id ? null : task.id
-                    "
+                    @click.stop="toggleStageDropdown(task.id)"
                     :disabled="isSyncingStage && updatingTaskId === task.id"
-                    class="w-full px-3 py-1.5 rounded-md text-xs font-medium inline-flex items-center justify-between gap-2 border border-gray-200 transition hover:border-gray-300 disabled:opacity-60 disabled:cursor-not-allowed"
-                    :class="[
-                      stageColor(task.status || task.stage),
+                    :class="
+                      [getStageColor(task.status || task.stage),
                       openStageDropdown === task.id
                         ? 'ring-1 ring-sub-text border-sub-text'
                         : '',
                     ]"
+                    class="w-full px-3 py-1.5 rounded-md text-xs font-medium inline-flex items-center justify-between gap-2 border border-gray-200 transition hover:border-gray-300 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <span>{{ getStageLabel(task.status || task.stage) }}</span>
                     <ChevronDown
                       :size="14"
-                      class="transition-transform"
                       :class="openStageDropdown === task.id ? 'rotate-180' : ''"
+                      class="transition-transform"
                     />
                   </button>
 
-                  <Transition name="stage-dropdown">
+                  <!-- Stage Dropdown Menu -->
+                  <transition name="stage-dropdown">
                     <div
                       v-if="openStageDropdown === task.id"
                       class="absolute top-full mt-1 left-0 right-0 bg-white border border-outline rounded-lg shadow-lg z-20 min-w-max"
                       @click.stop
                     >
-                      <div class="py-1">
-                        <button
-                          type="button"
-                          v-for="opt in stageOptions"
-                          :key="opt.value"
-                          @click.stop="handleChangeStage(task, opt.value)"
-                          :disabled="
-                            isSyncingStage && updatingTaskId === task.id
-                          "
-                          class="w-full text-left px-4 py-2 text-sm transition hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                          :class="
-                            (task.status || task.stage) === opt.value
-                              ? 'font-semibold bg-gray-50 text-sub-text'
-                              : 'text-gray-700'
-                          "
-                        >
-                          <span
-                            v-if="(task.status || task.stage) === opt.value"
-                            class="text-sub-text"
-                          >
-                            ✓
-                          </span>
-                          <span v-else class="w-3"></span>
-                          <span>{{ opt.label }}</span>
-                        </button>
-                      </div>
+                      <button
+                        v-for="opt in stageOptions"
+                        :key="opt.value"
+                        @click.stop="handleChangeStage(task, opt.value)"
+                        :disabled="isSyncingStage && updatingTaskId === task.id"
+                        :class="
+                          (task.status || task.stage) === opt.value
+                            ? 'font-semibold bg-gray-50 text-sub-text'
+                            : 'text-gray-700'
+                        "
+                        class="w-full text-left px-4 py-2 text-sm transition hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        <span v-if="(task.status || task.stage) === opt.value" class="text-sub-text">
+                          ✓
+                        </span>
+                        <span v-else class="w-3"></span>
+                        <span>{{ opt.label }}</span>
+                      </button>
                     </div>
-                  </Transition>
+                  </transition>
                 </div>
               </td>
+
               <td class="px-6 py-4">{{ task.dueDate || task.time || "-" }}</td>
+
               <td class="px-6 py-4">—</td>
+
               <td class="px-6 py-4">
                 {{ task.created_at || task.createdAt || "-" }}
               </td>
+
               <td class="px-6 py-4">
                 {{ task.owner || task.assignee || "-" }}
               </td>
@@ -571,14 +320,277 @@ async function handleChangeStage(task, newStage) {
       </div>
     </div>
 
-    <p
-      v-if="error"
-      class="px-6 py-3 text-sm text-red-600 border-t border-gray-100"
-    >
+    <!-- Error Message -->
+    <p v-if="error" class="px-6 py-3 text-sm text-red-600 border-t border-gray-100">
       {{ error }}
     </p>
   </div>
 </template>
+
+<script>
+import {
+  Filter,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  RefreshCw,
+  Trash,
+} from "lucide-vue-next";
+import { alertService } from "@/services/alertService";
+
+export default {
+  name: "TaskList",
+  components: {
+    Filter,
+    Search,
+    ChevronLeft,
+    ChevronRight,
+    ChevronDown,
+    RefreshCw,
+    Trash,
+  },
+  emits: ["viewDetail", "taskSelection"],
+  data() {
+    return {
+      taskText: "",
+      isQuickAdding: false,
+      currentPage: 1,
+      itemsPerPage: 10,
+      selectedTasks: [],
+      isSyncingStage: false,
+      updatingTaskId: null,
+      openStageDropdown: null,
+      stageOptions: [
+        { value: "not_started", label: "Not Started" },
+        { value: "in_progress", label: "In Progress" },
+        { value: "waiting", label: "Waiting" },
+        { value: "completed", label: "Completed" },
+        { value: "deferred", label: "Deferred" },
+      ],
+    };
+  },
+  computed: {
+    allTasksData() {
+      return this.$store.getters["tasks/filteredTasks"] || [];
+    },
+    isLoading() {
+      return this.$store.getters["tasks/isLoading"];
+    },
+    error() {
+      return this.$store.getters["tasks/error"];
+    },
+    signedInUser() {
+      return this.$store.getters["users/usersignin"] || null;
+    },
+    authUser() {
+      return this.$store.getters["auth/currentUser"] || null;
+    },
+    searchQuery: {
+      get() {
+        return this.$store.getters["tasks/searchQuery"] || "";
+      },
+      set(value) {
+        this.$store.dispatch("tasks/setSearchQuery", value);
+      },
+    },
+    tasks() {
+      return this.allTasksData;
+    },
+    quickAddOwnerLabel() {
+      return this.getLoggedInName();
+    },
+    totalTask() {
+      return this.tasks.length;
+    },
+    totalPages() {
+      return Math.max(1, Math.ceil(this.totalTask / this.itemsPerPage));
+    },
+    paginatedTasks() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      return this.tasks.slice(start, start + this.itemsPerPage);
+    },
+    allSelected() {
+      return (
+        this.paginatedTasks.length > 0 &&
+        this.paginatedTasks.every((task) => this.selectedTasks.includes(task.id))
+      );
+    },
+  },
+  methods: {
+    getLoggedInName() {
+      const user = this.signedInUser || this.authUser || {};
+      const fullName =
+        user.name ||
+        user.username ||
+        user.user_name ||
+        [user.firstname || user.first_name, user.lastname || user.last_name]
+          .filter(Boolean)
+          .join(" ") ||
+        user.email ||
+        "User";
+
+      return String(fullName).trim() || "User";
+    },
+
+    getStageLabel(stage) {
+      return this.stageOptions.find((opt) => opt.value === stage)?.label || stage;
+    },
+
+    getStageColor(stage) {
+      const colors = {
+        not_started: "bg-slate-100 text-slate-700",
+        in_progress: "bg-blue-100 text-blue-700",
+        waiting: "bg-yellow-100 text-yellow-700",
+        completed: "bg-emerald-100 text-emerald-700",
+        deferred: "bg-red-100 text-red-700",
+      };
+      return colors[stage] || "bg-slate-100 text-slate-700";
+    },
+
+    async quickAdd() {
+      const taskName = this.taskText.trim();
+      if (!taskName || this.isQuickAdding) return;
+
+      this.isQuickAdding = true;
+
+      try {
+        if (!this.signedInUser) {
+          await this.$store.dispatch("users/getusersignin").catch(() => null);
+        }
+
+        await this.$store.dispatch("tasks/createTask", {
+          taskName,
+          owner: this.getLoggedInName(),
+          dueDate: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        });
+
+        this.taskText = "";
+      } catch (err) {
+        console.error("Quick add task failed:", err);
+      } finally {
+        this.isQuickAdding = false;
+      }
+    },
+
+    toggleSelectAll(e) {
+      this.selectedTasks = e.target.checked ? this.paginatedTasks.map((t) => t.id) : [];
+      this.$emit("taskSelection", this.selectedTasks);
+    },
+
+    toggleSelect(id) {
+      if (this.selectedTasks.includes(id)) {
+        this.selectedTasks = this.selectedTasks.filter((i) => i !== id);
+      } else {
+        this.selectedTasks.push(id);
+      }
+      this.$emit("taskSelection", this.selectedTasks);
+    },
+
+    toggleStageDropdown(taskId) {
+      this.openStageDropdown = this.openStageDropdown === taskId ? null : taskId;
+    },
+
+    openTaskDetail(task) {
+      this.$emit("viewDetail", task);
+    },
+
+    clearSelection() {
+      this.selectedTasks = [];
+      this.$emit("taskSelection", []);
+    },
+
+    async handleDelete() {
+      if (this.selectedTasks.length === 0) {
+        alertService.warning("Pilih minimal satu task untuk dihapus");
+        return;
+      }
+
+      const confirmDelete = await alertService.confirm(
+        "Hapus Task?",
+        `${this.selectedTasks.length} task akan dihapus secara permanen. Lanjutkan?`,
+      );
+
+      if (!confirmDelete) return;
+
+      try {
+        for (const taskId of this.selectedTasks) {
+          const taskItem =
+            this.allTasksData.find((task) => task.id === taskId) || {
+              id: taskId,
+            };
+          await this.$store.dispatch("tasks/deleteTask", taskItem);
+        }
+        alertService.success("Task berhasil dihapus");
+        this.clearSelection();
+      } catch (error) {
+        console.error("Error deleting tasks:", error);
+        const status = error?.response?.status;
+        const backendMessage =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message;
+        alertService.error(
+          `Gagal menghapus task. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Silakan coba lagi."}`,
+        );
+      }
+    },
+
+    async handleChangeStage(task, newStage) {
+      if (task.status === newStage || task.stage === newStage) {
+        this.openStageDropdown = null;
+        return;
+      }
+
+      const previousStage = task.status || task.stage;
+      task.status = newStage;
+      task.stage = newStage;
+      this.updatingTaskId = task.id;
+      this.isSyncingStage = true;
+      this.openStageDropdown = null;
+
+      try {
+        await this.$store.dispatch("tasks/updateTask", {
+          id: task.id,
+          formData: {
+            status: newStage,
+          },
+        });
+
+        alertService.success("Stage task berhasil diperbarui.");
+      } catch (err) {
+        task.status = previousStage;
+        task.stage = previousStage;
+        alertService.error("Gagal update stage task. Silakan coba lagi.");
+      } finally {
+        this.isSyncingStage = false;
+        this.updatingTaskId = null;
+      }
+    },
+
+    nextPage() {
+      if (this.currentPage < this.totalPages) this.currentPage++;
+    },
+
+    prevPage() {
+      if (this.currentPage > 1) this.currentPage--;
+    },
+  },
+  watch: {
+    itemsPerPage() {
+      if (this.currentPage > this.totalPages) {
+        this.currentPage = this.totalPages;
+      }
+    },
+    totalTask() {
+      if (this.currentPage > this.totalPages) {
+        this.currentPage = this.totalPages;
+      }
+    },
+  },
+};
+</script>
 
 <style scoped>
 .stage-dropdown-enter-active,

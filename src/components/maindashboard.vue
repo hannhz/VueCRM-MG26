@@ -160,7 +160,6 @@ export default {
   async mounted() {
     if (!this.getlayoutmenuweb || this.getlayoutmenuweb.length === 0) {
       await this.actlayoutweb().then((e) => {
-        console.log(e);
       });
     }
 
@@ -169,7 +168,6 @@ export default {
 
   watch: {
     nametabs(e) {
-      console.log(e);
     },
   },
 };

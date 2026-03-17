@@ -31,6 +31,10 @@ const props = defineProps({
     type: String,
     default: "contact",
   },
+  contact:{
+    type: Object,
+    default: {},
+  }
 });
 
 const emit = defineEmits(["close", "submit", "back"]);
