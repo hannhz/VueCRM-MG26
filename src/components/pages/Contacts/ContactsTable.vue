@@ -115,7 +115,7 @@
 
             <td class="px-6 py-4">
               <span class="px-3 py-1 rounded-full text-xs font-medium" :class="contact.statusClass">
-                {{ contact.status || "Inactive" }}
+                {{ contact.statusName || contact.status || "Inactive" }}
               </span>
             </td>
 

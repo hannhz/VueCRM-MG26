@@ -92,6 +92,7 @@
 <script>
 import { mapActions, mapGetters } from "vuex";
 import { alertService } from "@/services/alertService";
+import { useStatuses } from "@/composables/useStatuses";
 
 import ContactsHeader from "./ContactsHeader.vue";
 import ContactsFilterBar from "./ContactsFilterBar.vue";
@@ -127,6 +128,9 @@ export default {
       currentPage: 1,
       itemsPerPage: 10,
       searchQuery: "",
+
+      // statuses mapping
+      statuses: [],
 
       // dropdowns & modals
       showAddContactForm: false,
@@ -231,6 +235,7 @@ export default {
           dealLabelsText: (dealLabels.length ? dealLabels : ["-"]).join(", "),
           updatedAtText: this.formatDate(contact.updated_at || contact.created_at),
           statusClass: this.getStatusClass(contact.status),
+          statusName: this.getStatusName(contact.status),
         };
       });
     },
@@ -443,10 +448,48 @@ export default {
 
     getStatusClass(status) {
       if (!status) return "bg-gray-100 text-gray-700";
-      const s = String(status).toLowerCase();
-      if (s === "active" || s === "aktif") return "bg-green-100 text-green-700";
-      if (s === "pending") return "bg-yellow-100 text-yellow-700";
+      
+      // Map status ID to class
+      const statusId = parseInt(status);
+      if (statusId === 1 || statusId === 6 || statusId === 7) return "bg-green-100 text-green-700"; // Competitor, Partner, Qualified
+      if (statusId === 4) return "bg-yellow-100 text-yellow-700"; // Lead
+      if (statusId === 5) return "bg-blue-100 text-blue-700"; // Opportunity
+      
       return "bg-gray-100 text-gray-700";
+    },
+
+    getStatusName(id) {
+      if (!id) return "-";
+      // If already a string (name), return as-is
+      if (typeof id === "string") return id;
+      // If numeric ID, map to name
+      const status = this.statuses.find((s) => s.id == id);
+      return status ? status.name : "-";
+    },
+
+    async fetchStatuses() {
+      try {
+        const { cookies } = await import("vue3-cookies");
+        const api = (await import("@/api")).default;
+        const response = await api.get("statuses", {
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
+          },
+        });
+        this.statuses = response.data || [];
+      } catch (error) {
+        console.error("Failed to fetch statuses:", error);
+        // Fallback
+        this.statuses = [
+          { id: 1, name: "Competitor" },
+          { id: 2, name: "Customer" },
+          { id: 3, name: "Ex Customer" },
+          { id: 4, name: "Lead" },
+          { id: 5, name: "Opportunity" },
+          { id: 6, name: "Partner" },
+          { id: 7, name: "Qualified" },
+        ];
+      }
     },
   },
 
@@ -454,6 +497,7 @@ export default {
     document.addEventListener("click", this.handleClickOutside);
 
     // initial fetch
+    this.fetchStatuses();
     this.fetchData();
     this.fetchAllcompany();
     this.fetchAllDeals();

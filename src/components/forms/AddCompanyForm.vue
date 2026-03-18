@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "vuex";
 import { ArrowRight, X, Plus, ChevronDown } from "lucide-vue-next";
+import { useStatuses } from "@/composables/useStatuses";
 import AddContactQuickForm from "./AddContactQuickForm.vue";
 
 const props = defineProps({
@@ -14,6 +15,7 @@ const props = defineProps({
 const emit = defineEmits(["close", "submit"]);
 
 const store = useStore();
+const { statuses, fetchStatuses } = useStatuses();
 
 const contactOptions = computed(() => {
   const contacts = store.getters["contacts/allContacts"] || [];
@@ -73,6 +75,7 @@ onMounted(() => {
   store.dispatch("users/fetchAllusers");
   store.dispatch("contacts/fetchAllContacts");
   store.dispatch("deals/fetchAllDeals");
+  fetchStatuses();
   applyDefaultOwner();
 });
 
@@ -107,14 +110,6 @@ const sourceOptions = [
   { value: "social_media", label: "Social Media" },
   { value: "cold_call", label: "Cold Call" },
   { value: "other", label: "Other" },
-];
-
-const typeOptions = [
-  { value: "", label: "Select Type" },
-  { value: "prospect", label: "Prospect" },
-  { value: "customer", label: "Customer" },
-  { value: "partner", label: "Partner" },
-  { value: "vendor", label: "Vendor" },
 ];
 
 const showAddContactQuickForm = ref(false);
@@ -393,15 +388,16 @@ const handleSubmit = () => {
                   >Type</label
                 >
                 <select
-                  v-model="formData.type"
+                  v-model.number="formData.type"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
                 >
+                  <option value="" disabled selected>Select Type</option>
                   <option
-                    v-for="opt in typeOptions"
-                    :key="opt.value"
-                    :value="opt.value"
+                    v-for="status in statuses"
+                    :key="status.id"
+                    :value="status.id"
                   >
-                    {{ opt.label }}
+                    {{ status.name }}
                   </option>
                 </select>
               </div>

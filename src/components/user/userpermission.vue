@@ -1,16 +1,17 @@
-
-
 <template>
   <section
     class="bg-white rounded-xl border border-outline shadow-sm overflow-hidden"
   >
     <div class="p-4 border-b border-outline">
-      <div class="flex flex-wrap items-end justify-between gap-3">
-        <div class="flex min-w-0 flex-wrap items-end gap-2 sm:gap-3">
-          <div class="w-full sm:w-64">
-            <label class="mb-1 block text-sm font-medium text-sub-text"
-              >Select User:</label
-            >
+      <!-- Top Section: Selects & Buttons -->
+      <div class="flex flex-col lg:flex-row lg:items-end gap-4 w-full">
+        <!-- LEFT: Selects -->
+        <div class="flex flex-col sm:flex-row gap-3 flex-1 min-w-0">
+          <!-- Select User -->
+          <div class="flex-1 min-w-0 sm:min-w-64">
+            <label class="mb-1 block text-sm font-medium text-sub-text">
+              Select User:
+            </label>
             <select
               v-model="selectedUserEmail"
               class="w-full rounded-lg border border-outline bg-white py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
@@ -21,10 +22,11 @@
             </select>
           </div>
 
-          <div class="w-full sm:w-56">
-            <label class="mb-1 block text-sm font-medium text-sub-text"
-              >Authority Profile:</label
-            >
+          <!-- Select Authority Profile -->
+          <div class="flex-1 min-w-0 sm:min-w-56">
+            <label class="mb-1 block text-sm font-medium text-sub-text">
+              Authority Profile:
+            </label>
             <select
               v-model="selectedProfile"
               class="w-full rounded-lg border border-outline bg-white py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
@@ -39,11 +41,11 @@
             </select>
           </div>
 
+          <!-- Refresh Button -->
           <button
-            type="button"
             @click="loadPermissionFromApi"
             :disabled="isLoadingPermission"
-            class="h-9 w-9 rounded-lg border border-outline bg-white p-2 transition-all hover:bg-light-base active:scale-95 disabled:opacity-50"
+            class="h-10 w-10 lg:h-9 lg:w-9 rounded-lg border border-outline bg-white p-2 transition-all hover:bg-light-base active:scale-95 disabled:opacity-50 self-end"
             title="Refresh Data"
           >
             <RefreshCcw
@@ -54,11 +56,11 @@
           </button>
         </div>
 
+        <!-- RIGHT: Save Button -->
         <button
-          type="button"
           @click="savePermissionToApi"
           :disabled="isSavingPermission || isLoadingPermission"
-          class="rounded-lg border border-primary bg-primary px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          class="rounded-lg bg-dark-base border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 w-full lg:w-auto"
         >
           {{ isSavingPermission ? "Saving..." : "Save Changes" }}
         </button>
@@ -457,13 +459,9 @@ export default {
         );
 
         const body = response?.data || {};
-        const rawRows =
-          body.data ||
-          body.rows ||
-          body.permissions ||
-          body.flmenu ||
-          body.dbmenu2 ||
-          [];
+
+        // COBA PARSE RESPONSE - ADJUST SESUAI BACKEND
+        const rawRows = body.data || body.rows || body.permissions || [];
 
         const normalizedRows = this.normalizePermissionRows(rawRows);
         if (normalizedRows.length > 0) {
@@ -508,6 +506,7 @@ export default {
           }
         }
       } catch (error) {
+        console.error("API Error:", error); // Lihat error di console
         this.syncMenuPermissions(this.effectiveMenuNames);
         const status = error?.response?.status;
         const backendMessage =

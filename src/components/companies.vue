@@ -305,6 +305,7 @@ export default {
       selectedIds: [],
       selectedCompany: null,
       isDetailDataSubmitting: false,
+      statuses: [],
     };
   },
 
@@ -362,6 +363,7 @@ export default {
   },
 
   mounted() {
+    this.fetchStatuses();
     this.fetchAllcompany();
     this.fetchAllContacts();
     this.fetchAllDeals();
@@ -665,6 +667,54 @@ export default {
 
         alertService.error(message);
       });
+    },
+
+    getTypeName(id) {
+      if (!id) return "-";
+      // If already a string (name), return as-is
+      if (typeof id === "string") return id;
+      // If numeric ID, map to name
+      const status = this.statuses.find((s) => s.id == id);
+      return status ? status.name : "-";
+    },
+
+    async fetchStatuses() {
+      try {
+        const token = this.$cookies.get("token");
+        const response = await fetch(
+          `${import.meta.env.VITE_APP_API_URL}/statuses`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          this.statuses = Array.isArray(data?.data) ? data.data : data;
+        } else {
+          this.statuses = [
+            { id: 1, name: "Competitor" },
+            { id: 2, name: "Customer" },
+            { id: 3, name: "Ex Customer" },
+            { id: 4, name: "Lead" },
+            { id: 5, name: "Opportunity" },
+            { id: 6, name: "Partner" },
+            { id: 7, name: "Qualified" },
+          ];
+        }
+      } catch (error) {
+        this.statuses = [
+          { id: 1, name: "Competitor" },
+          { id: 2, name: "Customer" },
+          { id: 3, name: "Ex Customer" },
+          { id: 4, name: "Lead" },
+          { id: 5, name: "Opportunity" },
+          { id: 6, name: "Partner" },
+          { id: 7, name: "Qualified" },
+        ];
+      }
     },
   },
 };
@@ -1002,7 +1052,7 @@ export default {
                 </div>
               </td>
               <td class="px-6 py-4">
-                {{ company.type }}
+                {{ getTypeName(company.type) }}
               </td>
               <td class="px-6 py-4 text-sm text-dark-base">
                 {{ company.updated_at }}

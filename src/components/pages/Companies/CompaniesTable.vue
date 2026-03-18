@@ -100,7 +100,7 @@
               <div class="whitespace-nowrap overflow-hidden text-ellipsis">{{ company.dealLabelsText }}</div>
             </td>
             <td class="px-6 py-4 text-sm text-dark-base">
-              {{ company.type }}
+              {{ company.typeName || company.type }}
             </td>
             <td class="px-6 py-4 text-sm text-dark-base whitespace-nowrap overflow-hidden text-ellipsis">
               {{ company.updatedAtText }}

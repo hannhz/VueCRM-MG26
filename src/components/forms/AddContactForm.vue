@@ -2,6 +2,7 @@
 import { mapActions, mapGetters } from "vuex";
 import { X, Plus, ChevronDown, Loader2 } from "lucide-vue-next";
 import { toast } from "vue3-toastify";
+import { useStatuses } from "@/composables/useStatuses";
 import AddCompanyForm from "./AddCompanyForm.vue";
 import AddDealForm from "./AddDealForm.vue";
 import ContactDetailForm from "./DetailForm.vue";
@@ -27,6 +28,12 @@ export default {
   },
 
   emits: ["close", "submit"],
+
+  setup() {
+    const { statuses, fetchStatuses } = useStatuses();
+    fetchStatuses();
+    return { statuses };
+  },
 
   data() {
     return {
@@ -250,12 +257,25 @@ export default {
               <label class="block text-sm font-medium text-dark-base mb-2">
                 Status
               </label>
-              <input
-                v-model="formData.status"
-                type="text"
-                placeholder="Status"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
+              <div class="relative">
+                <select
+                  v-model.number="formData.status"
+                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                >
+                  <option value="" disabled selected>Select Status</option>
+                  <option
+                    v-for="status in statuses"
+                    :key="status.id"
+                    :value="status.id"
+                  >
+                    {{ status.name }}
+                  </option>
+                </select>
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
+              </div>
             </div>
           </div>
 

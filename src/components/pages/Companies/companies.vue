@@ -33,6 +33,7 @@ export default {
       selectedIds: [],
       selectedCompany: null,
       isDetailDataSubmitting: false,
+      statuses: [],
     };
   },
 
@@ -105,6 +106,7 @@ export default {
           contactLabelsText: contactLabels.join(", "),
           dealLabelsText: dealLabels.join(", "),
           updatedAtText: formattedDate,
+          typeName: this.getTypeName(company.type),
         };
       });
     },
@@ -137,6 +139,7 @@ export default {
   },
 
   mounted() {
+    this.fetchStatuses();
     this.fetchAllcompany();
     this.fetchAllContacts();
     this.fetchAllDeals();
@@ -449,6 +452,40 @@ export default {
 
         alertService.error(message);
       });
+    },
+
+    getTypeName(id) {
+      if (!id) return "-";
+      // If already a string (name), return as-is
+      if (typeof id === "string") return id;
+      // If numeric ID, map to name
+      const status = this.statuses.find((s) => s.id == id);
+      return status ? status.name : "-";
+    },
+
+    async fetchStatuses() {
+      try {
+        const { cookies } = await import("vue3-cookies");
+        const api = (await import("@/api")).default;
+        const response = await api.get("statuses", {
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
+          },
+        });
+        this.statuses = response.data || [];
+      } catch (error) {
+        console.error("Failed to fetch statuses:", error);
+        // Fallback
+        this.statuses = [
+          { id: 1, name: "Competitor" },
+          { id: 2, name: "Customer" },
+          { id: 3, name: "Ex Customer" },
+          { id: 4, name: "Lead" },
+          { id: 5, name: "Opportunity" },
+          { id: 6, name: "Partner" },
+          { id: 7, name: "Qualified" },
+        ];
+      }
     },
   },
 };

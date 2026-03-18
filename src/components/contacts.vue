@@ -349,7 +349,7 @@
                     class="px-3 py-1 rounded-full text-xs font-medium"
                     :class="getStatusClass(contact.status)"
                   >
-                    {{ contact.status || "Inactive" }}
+                    {{ getStatusName(contact.status) || "Inactive" }}
                   </span>
                 </td>
                 <td class="px-6 py-4 text-sm text-dark-base">
@@ -474,6 +474,7 @@ export default {
       showDetailForm: false,
       showDetailDataContact: false,
       isDetailDataSubmitting: false,
+      statuses: [],
     };
   },
 
@@ -809,10 +810,59 @@ export default {
           );
         });
     },
+
+    getStatusName(id) {
+      if (!id) return "-";
+      // If already a string (name), return as-is
+      if (typeof id === "string") return id;
+      // If numeric ID, map to name
+      const status = this.statuses.find((s) => s.id == id);
+      return status ? status.name : "-";
+    },
+
+    async fetchStatuses() {
+      try {
+        const token = this.$cookies.get("token");
+        const response = await fetch(
+          `${import.meta.env.VITE_APP_API_URL}/statuses`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          this.statuses = Array.isArray(data?.data) ? data.data : data;
+        } else {
+          this.statuses = [
+            { id: 1, name: "Competitor" },
+            { id: 2, name: "Customer" },
+            { id: 3, name: "Ex Customer" },
+            { id: 4, name: "Lead" },
+            { id: 5, name: "Opportunity" },
+            { id: 6, name: "Partner" },
+            { id: 7, name: "Qualified" },
+          ];
+        }
+      } catch (error) {
+        this.statuses = [
+          { id: 1, name: "Competitor" },
+          { id: 2, name: "Customer" },
+          { id: 3, name: "Ex Customer" },
+          { id: 4, name: "Lead" },
+          { id: 5, name: "Opportunity" },
+          { id: 6, name: "Partner" },
+          { id: 7, name: "Qualified" },
+        ];
+      }
+    },
   },
 
   mounted() {
     document.addEventListener("click", this.handleClickOutside);
+    this.fetchStatuses();
     this.fetchData();
     this.fetchAllcompany();
     this.fetchAllDeals();
