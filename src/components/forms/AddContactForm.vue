@@ -91,35 +91,9 @@ export default {
     },
 
     handleSubmit() {
-      // Add timestamps directly to formData and payload
-      const now = new Date().toISOString().slice(0, 19).replace("T", " ");
-      this.formData.created_at = now;
-      this.formData.updated_at = now;
-
-      // Extract only database fields to avoid 500 error from unexpected fields
-      const { companiesAssociation, dealsAssociation, ...payload } =
-        this.formData;
-
-      console.log("Submitting contact with payload:", payload);
-
-      this.saveContact(payload)
-        .then((response) => {
-          console.log("Contact saved successfully in component:", response);
-          toast.success("Contact saved successfully!");
-
-          // Show the detail form as requested by the user
-          this.showDetailForm = true;
-
-          // Optional: Reset the main form data since it's already saved
-          // this.handleReset();
-        })
-        .catch((error) => {
-          console.error("Failed to save contact in component:", error);
-          toast.error(
-            "Failed to save contact: " +
-              (error.response?.data?.message || error.message),
-          );
-        });
+      // Just move to detail form without saving
+      // Data will be saved when user clicks "Save" in DetailForm
+      this.showDetailForm = true;
     },
 
     handleReset() {
@@ -489,11 +463,13 @@ export default {
   <!-- Contact Detail Form (Next step) -->
   <ContactDetailForm
     :isOpen="showDetailForm"
+    :contactData="formData"
     @close="showDetailForm = false"
     @back="showDetailForm = false"
     @submit="
       showDetailForm = false;
       handleClose();
+      handleReset();
     "
   />
 </template>

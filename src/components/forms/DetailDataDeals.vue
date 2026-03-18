@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch, computed, onMounted, onUnmounted } from "vue";
 import { useStore } from "vuex";
+import { toast } from "vue3-toastify";
 import {
   X,
   ChevronDown,
@@ -25,6 +26,10 @@ const props = defineProps({
   deal: {
     type: Object,
     default: null,
+  },
+  dealData: {
+    type: Object,
+    default: () => ({}),
   },
 });
 
@@ -751,8 +756,39 @@ const removeDocFile = (index) => {
 
 const handleClose = () => emit("close");
 const handleBack = () => emit("back");
+const isSavingDeal = ref(false);
 
-const handleSave = () => {
+const handleSave = async () => {
+  // If dealData is provided (new deal creation), save it first
+  if (Object.keys(props.dealData || {}).length > 0) {
+    isSavingDeal.value = true;
+    try {
+      // Prepare deal data
+      const dealPayload = {
+        ...props.dealData,
+      };
+
+      console.log("Saving deal with payload:", dealPayload);
+
+      // Save deal via store
+      const response = await store.dispatch(
+        "deals/createDeal",
+        dealPayload,
+      );
+
+      console.log("Deal saved successfully:", response);
+      toast.success("Deal saved successfully!");
+    } catch (error) {
+      console.error("Failed to save deal:", error);
+      toast.error(
+        "Failed to save deal: " +
+          (error.response?.data?.message || error.message),
+      );
+      isSavingDeal.value = false;
+      return;
+    }
+  }
+
   // Convert board stage values to database pipeline values before submitting
   const dealDataForSubmit = {
     ...dealForm.value,
@@ -784,6 +820,7 @@ const handleSave = () => {
       files: selectedDocFiles.value,
     },
   });
+  isSavingDeal.value = false;
 };
 
 const handleReset = () => {

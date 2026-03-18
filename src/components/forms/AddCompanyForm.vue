@@ -4,6 +4,7 @@ import { useStore } from "vuex";
 import { ArrowRight, X, Plus, ChevronDown } from "lucide-vue-next";
 import { useStatuses } from "@/composables/useStatuses";
 import AddContactQuickForm from "./AddContactQuickForm.vue";
+import DetailDataCompany from "./DetailDataCompany.vue";
 
 const props = defineProps({
   isOpen: {
@@ -113,6 +114,7 @@ const sourceOptions = [
 ];
 
 const showAddContactQuickForm = ref(false);
+const showDetailForm = ref(false);
 
 const formData = ref({
   companyName: "",
@@ -143,18 +145,9 @@ const handleContactQuickSubmit = async () => {
 };
 
 const handleSubmit = () => {
-  // Map fields to match standard naming and wrap associations in arrays
-  const submissionData = {
-    ...formData.value,
-    owner: formData.value.owner || currentUserName.value || "",
-    dealsassoc: formData.value.dealsassoc ? [formData.value.dealsassoc] : [],
-    contactassoc: formData.value.contactassoc
-      ? [formData.value.contactassoc]
-      : [],
-  };
-
-  emit("submit", submissionData);
-  handleClose();
+  // Just move to detail form without saving
+  // Data will be saved when user clicks "Save" in DetailDataCompany
+  showDetailForm.value = true;
 };
 </script>
 
@@ -488,22 +481,25 @@ const handleSubmit = () => {
 
         <!-- Footer -->
         <div
-          class="bg-white flex items-center gap-3 px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+          class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
         >
-          <button
-            type="button"
-            @click="handleSubmit"
-            class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
-          >
-            Add Company
-          </button>
-          <button
-            type="button"
-            @click="handleClose"
-            class="px-6 py-2 border border-outline rounded-lg text-sub-text hover:bg-light-base transition-colors text-sm font-medium"
-          >
-            Cancel
-          </button>
+          <div></div>
+          <div class="flex gap-3">
+            <button
+              type="button"
+              @click="handleClose"
+              class="px-6 py-2 border border-outline rounded-lg text-sub-text hover:bg-light-base transition-colors text-sm font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              @click="handleSubmit"
+              class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -514,6 +510,37 @@ const handleSubmit = () => {
     :isOpen="showAddContactQuickForm"
     @close="showAddContactQuickForm = false"
     @submit="handleContactQuickSubmit"
+  />
+
+  <!-- Detail Data Company Form -->
+  <DetailDataCompany
+    :isOpen="showDetailForm"
+    :companyData="formData"
+    @close="showDetailForm = false"
+    @back="showDetailForm = false"
+    @submit="
+      showDetailForm = false;
+      handleClose();
+      formData = {
+        companyName: '',
+        companyOwner: '',
+        owner: '',
+        description: '',
+        email: '',
+        telephone: '',
+        website: '',
+        industry: '',
+        address: '',
+        country: '',
+        province: '',
+        city: '',
+        posCode: '',
+        source: '',
+        type: '',
+        dealsassoc: '',
+        contactassoc: '',
+      };
+    "
   />
 </template>
 

@@ -1,5 +1,6 @@
-<script setup>
+<script>
 import { ref } from "vue";
+import { mapActions } from "vuex";
 import {
   X,
   ChevronDown,
@@ -8,121 +9,193 @@ import {
   MapPin,
   Camera,
   Mic,
+  Loader2,
 } from "lucide-vue-next";
+import { toast } from "vue3-toastify";
 
-defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false,
+export default {
+  name: "DetailForm",
+
+  components: {
+    X,
+    ChevronDown,
+    ChevronRight,
+    Plus,
+    MapPin,
+    Camera,
+    Mic,
+    Loader2,
   },
-});
 
-const emit = defineEmits(["close", "submit", "back"]);
-
-// Section toggles
-const showNotes = ref(true);
-const showTasks = ref(true);
-const showDocs = ref(true);
-
-// Notes
-const noteContent = ref(
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-);
-
-// Tasks
-const taskName = ref("");
-const taskContent = ref(
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-);
-const taskStatus = ref("");
-const taskAssignee = ref("");
-const taskDueDate = ref("");
-const taskTime = ref("");
-const taskPriority = ref("");
-const taskAssociatedContact = ref("");
-
-const statusOptions = [
-  { value: "", label: "Select Data" },
-  { value: "todo", label: "To Do" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "done", label: "Done" },
-];
-
-const assigneeOptions = [
-  { value: "", label: "Select Data" },
-  { value: "thomas", label: "Thomas Anree" },
-  { value: "abdul", label: "Abdul" },
-];
-
-const priorityOptions = [
-  { value: "", label: "Select Data" },
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
-];
-
-// Docs
-const docDescription = ref(
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-);
-const docFileSource = ref("");
-const docDropdownOpen = ref(false);
-const docDropdownRef = ref(null);
-const selectedDocFiles = ref([]);
-
-const fileSourceOptions = [
-  { value: "", label: "Select File Source" },
-  { value: "local", label: "Local File" },
-  { value: "google_drive", label: "Google Drive" },
-  { value: "dropbox", label: "Dropbox" },
-];
-
-const handleDocFileChange = (e) => {
-  selectedDocFiles.value = Array.from(e.target.files);
-};
-
-const removeDocFile = (index) => {
-  selectedDocFiles.value.splice(index, 1);
-};
-
-const handleClose = () => emit("close");
-const handleBack = () => emit("back");
-
-const handleSave = () => {
-  emit("submit", {
-    note: noteContent.value,
-    task: {
-      name: taskName.value,
-      content: taskContent.value,
-      status: taskStatus.value,
-      assignee: taskAssignee.value,
-      dueDate: taskDueDate.value,
-      time: taskTime.value,
-      priority: taskPriority.value,
-      associatedContact: taskAssociatedContact.value,
+  props: {
+    isOpen: {
+      type: Boolean,
+      default: false,
     },
-    docs: {
-      description: docDescription.value,
-      fileSource: docFileSource.value,
-      files: selectedDocFiles.value,
+    contactData: {
+      type: Object,
+      default: () => ({}),
     },
-  });
-  handleClose();
-};
+  },
 
-const handleReset = () => {
-  noteContent.value = "";
-  taskName.value = "";
-  taskContent.value = "";
-  taskStatus.value = "";
-  taskAssignee.value = "";
-  taskDueDate.value = "";
-  taskTime.value = "";
-  taskPriority.value = "";
-  taskAssociatedContact.value = "";
-  docDescription.value = "";
-  docFileSource.value = "";
-  selectedDocFiles.value = [];
+  emits: ["close", "submit", "back"],
+
+  data() {
+    return {
+      // Section toggles
+      showNotes: true,
+      showTasks: true,
+      showDocs: true,
+
+      // Notes
+      noteContent:
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+
+      // Tasks
+      taskName: "",
+      taskContent:
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+      taskStatus: "",
+      taskAssignee: "",
+      taskDueDate: "",
+      taskTime: "",
+      taskPriority: "",
+      taskAssociatedContact: "",
+
+      statusOptions: [
+        { value: "", label: "Select Data" },
+        { value: "todo", label: "To Do" },
+        { value: "in_progress", label: "In Progress" },
+        { value: "done", label: "Done" },
+      ],
+
+      assigneeOptions: [
+        { value: "", label: "Select Data" },
+        { value: "thomas", label: "Thomas Anree" },
+        { value: "abdul", label: "Abdul" },
+      ],
+
+      priorityOptions: [
+        { value: "", label: "Select Data" },
+        { value: "low", label: "Low" },
+        { value: "medium", label: "Medium" },
+        { value: "high", label: "High" },
+      ],
+
+      // Docs
+      docDescription:
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+      docFileSource: "",
+      docDropdownOpen: false,
+      selectedDocFiles: [],
+
+      fileSourceOptions: [
+        { value: "", label: "Select File Source" },
+        { value: "local", label: "Local File" },
+        { value: "google_drive", label: "Google Drive" },
+        { value: "dropbox", label: "Dropbox" },
+      ],
+
+      isLoading: false,
+    };
+  },
+
+  methods: {
+    ...mapActions({
+      saveContact: "contacts/createContact",
+    }),
+
+    handleDocFileChange(e) {
+      this.selectedDocFiles = Array.from(e.target.files);
+    },
+
+    removeDocFile(index) {
+      this.selectedDocFiles.splice(index, 1);
+    },
+
+    handleClose() {
+      this.$emit("close");
+    },
+
+    handleBack() {
+      this.$emit("back");
+    },
+
+    handleSave() {
+      this.isLoading = true;
+
+      // Prepare contact payload with timestamps
+      const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+      const { companiesAssociation, dealsAssociation, ...contactPayload } =
+        this.contactData;
+
+      // Add timestamps
+      contactPayload.created_at = now;
+      contactPayload.updated_at = now;
+
+      console.log("Saving contact with payload:", contactPayload);
+
+      // First, save the contact
+      this.saveContact(contactPayload)
+        .then((response) => {
+          console.log("Contact saved successfully:", response);
+          toast.success("Contact saved successfully!");
+
+          // Prepare detail data
+          const detailData = {
+            note: this.noteContent,
+            task: {
+              name: this.taskName,
+              content: this.taskContent,
+              status: this.taskStatus,
+              assignee: this.taskAssignee,
+              dueDate: this.taskDueDate,
+              time: this.taskTime,
+              priority: this.taskPriority,
+              associatedContact: this.taskAssociatedContact,
+            },
+            docs: {
+              description: this.docDescription,
+              fileSource: this.docFileSource,
+              files: this.selectedDocFiles,
+            },
+          };
+
+          console.log("Detail data:", detailData);
+
+          // TODO: Implement save logic for detail data (notes, tasks, docs)
+          // For now, emit submit to close the form
+          this.$emit("submit", detailData);
+          this.isLoading = false;
+        })
+        .catch((error) => {
+          console.error("Failed to save contact:", error);
+          toast.error(
+            "Failed to save contact: " +
+              (error.response?.data?.message || error.message),
+          );
+          this.isLoading = false;
+        });
+    },
+
+    handleReset() {
+      this.noteContent =
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit";
+      this.taskName = "";
+      this.taskContent =
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit";
+      this.taskStatus = "";
+      this.taskAssignee = "";
+      this.taskDueDate = "";
+      this.taskTime = "";
+      this.taskPriority = "";
+      this.taskAssociatedContact = "";
+      this.docDescription =
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit";
+      this.docFileSource = "";
+      this.selectedDocFiles = [];
+    },
+  },
 };
 </script>
 
@@ -848,10 +921,12 @@ const handleReset = () => {
           <button
             type="button"
             @click="handleSave"
-            class="flex items-center gap-2 px-5 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
+            :disabled="isLoading"
+            class="flex items-center gap-2 px-5 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save Contact
-            <ChevronDown :size="16" />
+            <Loader2 v-if="isLoading" :size="16" class="animate-spin" />
+            <span>{{ isLoading ? "Saving..." : "Save Contact" }}</span>
+            <ChevronDown v-if="!isLoading" :size="16" />
           </button>
         </div>
       </div>

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "vuex";
 import { ArrowRight, X } from "lucide-vue-next";
-import { alertService } from "@/services/alertService";
+import DetailDataDeals from "./DetailDataDeals.vue";
 
 const props = defineProps({
   isOpen: {
@@ -95,6 +95,7 @@ const formData = ref({
 });
 
 const selectedFiles = ref([]);
+const showDetailForm = ref(false);
 
 const fetchReferenceData = async () => {
   await Promise.allSettled([
@@ -133,49 +134,9 @@ const removeFile = (index) => {
 const handleClose = () => emit("close");
 
 const handleSubmit = async () => {
-  if (!formData.value.dealName.trim()) {
-    alertService.error("Deal Name wajib diisi!");
-    return;
-  }
-
-  if (isSubmitting.value) {
-    return;
-  }
-
-  isSubmitting.value = true;
-
-  try {
-    const submissionData = {
-      ...formData.value,
-      owner: formData.value.owner || currentUserName.value || "",
-    };
-
-    const response = await store.dispatch("deals/createDeal", submissionData);
-
-    if (response?.msg === "gagal") {
-      await alertService.error(
-        "Server returned 'gagal'. Please check the payload or choice parameter.",
-      );
-      return;
-    }
-
-    if (response?.success === false) {
-      await alertService.error(response?.message || "Failed to save deal");
-      return;
-    }
-
-    await alertService.toastSuccess(response?.msg || "Deal saved successfully");
-    emit("submit", response);
-    handleClose();
-  } catch (error) {
-    const message =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Gagal menambah deal. Silakan coba lagi.";
-    await alertService.toastError(message);
-  } finally {
-    isSubmitting.value = false;
-  }
+  // Just move to detail form without saving
+  // Data will be saved when user clicks "Save" in DetailDataDeals
+  showDetailForm.value = true;
 };
 </script>
 
@@ -490,27 +451,55 @@ const handleSubmit = async () => {
 
         <!-- Footer -->
         <div
-          class="bg-white flex items-center gap-3 px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+          class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
         >
-          <button
-            type="button"
-            @click="handleSubmit"
-            :disabled="isSubmitting"
-            class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
-          >
-            {{ isSubmitting ? "Saving..." : "Add Deal" }}
-          </button>
-          <button
-            type="button"
-            @click="handleClose"
-            class="px-6 py-2 border border-outline rounded-lg text-sub-text hover:bg-light-base transition-colors text-sm font-medium"
-          >
-            Cancel
-          </button>
+          <div></div>
+          <div class="flex gap-3">
+            <button
+              type="button"
+              @click="handleClose"
+              class="px-6 py-2 border border-outline rounded-lg text-sub-text hover:bg-light-base transition-colors text-sm font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              @click="handleSubmit"
+              class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </Transition>
+
+  <!-- Detail Data Deals Form -->
+  <DetailDataDeals
+    :isOpen="showDetailForm"
+    :dealData="formData"
+    @close="showDetailForm = false"
+    @back="showDetailForm = false"
+    @submit="
+      showDetailForm = false;
+      handleClose();
+      formData = {
+        dealName: '',
+        pipeline: '',
+        currency: 'IDR',
+        amount: '',
+        expectedCloseDate: '',
+        owner: '',
+        priority: '',
+        source: '',
+        showOptional: false,
+        description: '',
+        documents: '',
+      };
+      selectedFiles = [];
+    "
+  />
 </template>
 
 <style scoped>

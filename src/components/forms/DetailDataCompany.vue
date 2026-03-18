@@ -2,6 +2,7 @@
 import { ref, watch, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useStatuses } from "@/composables/useStatuses";
+import { toast } from "vue3-toastify";
 import {
   X,
   ChevronDown,
@@ -26,6 +27,10 @@ const props = defineProps({
   company: {
     type: Object,
     default: null,
+  },
+  companyData: {
+    type: Object,
+    default: () => ({}),
   },
 });
 
@@ -560,8 +565,45 @@ const removeDocFile = (index) => {
 
 const handleClose = () => emit("close");
 const handleBack = () => emit("back");
+const isSavingCompany = ref(false);
 
-const handleSave = () => {
+const handleSave = async () => {
+  // If companyData is provided (new company creation), save it first
+  if (Object.keys(props.companyData || {}).length > 0) {
+    isSavingCompany.value = true;
+    try {
+      // Prepare company data
+      const companyPayload = {
+        ...props.companyData,
+        dealsassoc: props.companyData.dealsassoc
+          ? [props.companyData.dealsassoc]
+          : [],
+        contactassoc: props.companyData.contactassoc
+          ? [props.companyData.contactassoc]
+          : [],
+      };
+
+      console.log("Saving company with payload:", companyPayload);
+
+      // Save company via store
+      const response = await store.dispatch(
+        "companies/createOrUpdateCompany",
+        companyPayload,
+      );
+
+      console.log("Company saved successfully:", response);
+      toast.success("Company saved successfully!");
+    } catch (error) {
+      console.error("Failed to save company:", error);
+      toast.error(
+        "Failed to save company: " +
+          (error.response?.data?.message || error.message),
+      );
+      isSavingCompany.value = false;
+      return;
+    }
+  }
+
   // Map fields to match standard naming and wrap associations in comma-separated strings
   const submissionData = {
     ...companyForm.value,
@@ -589,6 +631,7 @@ const handleSave = () => {
       files: selectedDocFiles.value,
     },
   });
+  isSavingCompany.value = false;
 };
 
 const handleReset = () => {
