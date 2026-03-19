@@ -317,6 +317,16 @@ const getContactFormDefaults = (contact = null) => {
       const match = statuses.value.find(s => s.name.toLowerCase() === String(statusValue).toLowerCase());
       return match ? match.id : "";
     })(),
+    type: (() => {
+      const typeValue = data?.type || "";
+      // Try to find by ID first (if it's a number)
+      if (!isNaN(typeValue)) {
+        return parseInt(typeValue);
+      }
+      // If it's a string, try to find matching status by name
+      const match = statuses.value.find(s => s.name.toLowerCase() === String(typeValue).toLowerCase());
+      return match ? match.id : "";
+    })(),
     telephone_1: data?.telephone_1 || "",
     telephone_2: data?.telephone_2 || "",
     address: data?.address || "",
@@ -588,6 +598,8 @@ const handleSave = () => {
   const submissionData = {
     ...contactForm.value,
     id: props.contact?.id,
+    type: contactForm.value.type || "",
+    status: contactForm.value.status || "",
     companyassoc: (contactForm.value.companyassoc || []).join(","),
     dealsassoc: (contactForm.value.dealsassoc || []).join(","),
   };
@@ -617,6 +629,9 @@ const handleReset = () => {
   contactForm.value = getContactFormDefaults(props.contact);
   syncAssociationValues(props.contact);
   syncAdditionalData(props.contact);
+  noteContent.value = "";
+  taskName.value = "";
+  taskContent.value = "";
   docFileSource.value = "";
   selectedDocFiles.value = [];
 };
@@ -779,7 +794,35 @@ onMounted(() => {
                   >
                     <option value="" disabled selected>Select Status</option>
                     <option
-                      v-for="status in statuses"
+                      v-for="status in (statuses || [])"
+                      :key="status.id"
+                      :value="status.id"
+                    >
+                      {{ status.name }}
+                    </option>
+                  </select>
+                  <ChevronDown
+                    :size="16"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Type -->
+            <div>
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2"
+                  >Type</label
+                >
+                <div class="relative">
+                  <select
+                    v-model.number="contactForm.type"
+                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                  >
+                    <option value="" disabled selected>Select Type</option>
+                    <option
+                      v-for="status in (statuses || [])"
                       :key="status.id"
                       :value="status.id"
                     >

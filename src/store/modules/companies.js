@@ -7,6 +7,8 @@ const { cookies } = useCookies();
 const extractCompaniesArray = (payload) => {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.companies)) return payload.companies;
+  // Handle nested pagination structure: companies: { data: [...], current_page: 1, ... }
+  if (payload?.companies?.data && Array.isArray(payload.companies.data)) return payload.companies.data;
   if (Array.isArray(payload?.data)) return payload.data;
   if (Array.isArray(payload?.data?.data)) return payload.data.data;
   return [];
@@ -79,10 +81,12 @@ const getters = {
     const query = state.searchQuery.toLowerCase();
     return state.company.filter(
       (company) =>
-        company.name?.toLowerCase().includes(query) ||
+        company.company_name?.toLowerCase().includes(query) ||
         company.email?.toLowerCase().includes(query) ||
-        company.phone?.toLowerCase().includes(query) ||
-        company.country?.toLowerCase().includes(query),
+        company.telephone?.toLowerCase().includes(query) ||
+        company.country?.toLowerCase().includes(query) ||
+        company.city?.toLowerCase().includes(query) ||
+        company.industry?.toLowerCase().includes(query),
     );
   },
   currentPage: (state) => state.currentPage,
@@ -96,47 +100,42 @@ const actions = {
   setItemsPerPage({ commit }, items) {
     commit("SET_ITEMS_PER_PAGE", items);
   },
-  fetchAllcompany({ commit, state }, options = { forceRefresh: false }) {
-    if (!options.forceRefresh && state.company && state.company.length > 0) {
-      return Promise.resolve({ companies: state.company });
-    }
-
+  fetchAllcompany({ commit, state }, params = { page: 1, per_page: 100 }) {
+    // Always fetch fresh data to get all companies with pagination support
     commit("SET_LOADING", true);
     commit("SET_ERROR", null);
+    
     const promise = new Promise(async (resolve, reject) => {
       try {
-        let network = await api.get("company", {
-          headers: {
-            Authorization: "Bearer " + cookies.get("token"),
-          },
-          // headers: { Authorization: "Bearer " + localStorage.getItem("token") },
-        });
+        let companies = [];
+        let currentPage = 1;
+        let hasMorePages = true;
 
-        const firstPayload = network.data;
-        let companies = extractCompaniesArray(firstPayload);
+        // Fetch all pages with per_page=100 to get all data
+        while (hasMorePages) {
+          const response = await api.get("company", {
+            headers: {
+              Authorization: "Bearer " + cookies.get("token"),
+            },
+            params: {
+              page: currentPage,
+              per_page: params.per_page || 100,
+            },
+          });
 
-        const paginationMeta = extractPaginationMeta(firstPayload);
+          const pageData = extractCompaniesArray(response.data);
+          companies = companies.concat(pageData);
 
-        if (paginationMeta && paginationMeta.lastPage > 1) {
-          for (let page = 2; page <= paginationMeta.lastPage; page += 1) {
-            const pageResponse = await api.getbydata(
-              "company",
-              { page },
-              {
-                headers: {
-                  Authorization: "Bearer " + cookies.get("token"),
-                },
-              },
-            );
-
-            companies = companies.concat(
-              extractCompaniesArray(pageResponse.data),
-            );
+          const paginationMeta = extractPaginationMeta(response.data);
+          
+          if (!paginationMeta || currentPage >= paginationMeta.lastPage) {
+            hasMorePages = false;
+          } else {
+            currentPage++;
           }
         }
 
         resolve({
-          raw: firstPayload,
           companies: dedupeCompaniesById(companies),
         });
       } catch (error) {
@@ -146,13 +145,11 @@ const actions = {
 
     promise
       .then((data) => {
-        const companiesData = data.companies || extractCompaniesArray(data.raw);
-        commit("setcompany", companiesData);
+        commit("setcompany", data.companies);
         commit("SET_LOADING", false);
       })
       .catch((error) => {
-        // Tangani error lain jika ada
-        console.error("Error:", error);
+        console.error("Error fetching companies:", error);
         commit("SET_ERROR", error.message);
         commit("SET_LOADING", false);
       });

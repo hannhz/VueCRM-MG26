@@ -1,5 +1,7 @@
 <script>
 import { mapState, mapGetters, mapActions } from "vuex";
+import { useCookies } from "vue3-cookies";
+import api from "@/api";
 
 import CompaniesHeader from "./CompaniesHeader.vue";
 import CompaniesFilterBar from "./CompaniesFilterBar.vue";
@@ -38,9 +40,14 @@ export default {
   },
 
   computed: {
-    ...mapState({
-      searchQuery: (state) => state.company.searchQuery,
-    }),
+    searchQuery: {
+      get() {
+        return this.$store.getters['company/searchQuery'];
+      },
+      set(value) {
+        this.$store.dispatch('company/setSearchQuery', value);
+      }
+    },
 
     currentPage: {
       get() {
@@ -465,8 +472,7 @@ export default {
 
     async fetchStatuses() {
       try {
-        const { cookies } = await import("vue3-cookies");
-        const api = (await import("@/api")).default;
+        const { cookies } = useCookies();
         const response = await api.get("statuses", {
           headers: {
             Authorization: "Bearer " + cookies.get("token"),
@@ -475,7 +481,7 @@ export default {
         this.statuses = response.data || [];
       } catch (error) {
         console.error("Failed to fetch statuses:", error);
-        // Fallback
+        // Fallback ke hardcoded jika API fail
         this.statuses = [
           { id: 1, name: "Competitor" },
           { id: 2, name: "Customer" },

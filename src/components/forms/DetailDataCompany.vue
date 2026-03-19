@@ -47,6 +47,14 @@ const dealOptions = computed(() => {
   return store.getters["deals/allDeals"] || [];
 });
 
+const typeDisplayName = computed(() => {
+  if (!companyForm.value.type) return "-";
+  // statuses adalah ref, jadi akses .value atau gunakan langsung jika sudah array
+  const statusesArray = Array.isArray(statuses) ? statuses : (statuses.value || []);
+  const typeStatus = statusesArray.find((s) => s.id == companyForm.value.type);
+  return typeStatus ? typeStatus.name : companyForm.value.type;
+});
+
 const fetchReferenceData = async () => {
   const promises = [];
 
@@ -321,7 +329,7 @@ const getCompanyFormDefaults = (company = null) => {
     country: data?.country || "",
     pos_code: data?.pos_code || data?.posCode || "",
     source: data?.source || "",
-    type: data?.type || "",
+    type: data?.typeid ? Number(data.typeid) : (!isNaN(data?.type) && data?.type !== "" && data?.type !== null ? Number(data.type) : ""),
     dealsassoc: deals,
     contactassoc: contacts,
   };
@@ -507,7 +515,7 @@ const syncAdditionalData = (company) => {
   // Tasks mapping
   taskName.value = data.task_name || "";
   taskContent.value = data.desktask || data.task_content || "";
-  taskStatus.value = data.status || "";
+  taskStatus.value = data.status || data.statustask || "";
   taskAssignee.value = resolveUserValue(data.assignee, assigneeOptions.value);
   taskDueDate.value = data.due_date || "";
   
@@ -518,7 +526,7 @@ const syncAdditionalData = (company) => {
     taskTime.value = "";
   }
   
-  taskPriority.value = data.priority || "";
+  taskPriority.value = data.priority || data.prioritytask || "";
 
   // Docs mapping
   docDescription.value = data.docs || "";
@@ -878,19 +886,25 @@ watch(
                 <label class="block text-sm font-medium text-dark-base mb-2"
                   >Type</label
                 >
-                <select
-                  v-model.number="companyForm.type"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
-                >
-                  <option value="" disabled selected>Select Type</option>
-                  <option
-                    v-for="status in statuses"
-                    :key="status.id"
-                    :value="status.id"
+                <div class="relative">
+                  <select
+                    v-model.number="companyForm.type"
+                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                   >
-                    {{ status.name }}
-                  </option>
-                </select>
+                    <option value="" disabled selected>Select Type</option>
+                    <option
+                      v-for="status in (statuses || [])"
+                      :key="status.id"
+                      :value="Number(status.id) || ''"
+                    >
+                      {{ status.name }}
+                    </option>
+                  </select>
+                  <ChevronDown
+                    :size="16"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                  />
+                </div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2"

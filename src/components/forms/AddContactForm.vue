@@ -35,6 +35,23 @@ export default {
     return { statuses };
   },
 
+  mounted() {
+    this.$store.dispatch("users/getusersignin");
+    this.$store.dispatch("users/fetchAllusers");
+    this.applyDefaultOwner();
+  },
+
+  watch: {
+    isOpen(newVal) {
+      if (newVal) {
+        Promise.allSettled([
+          this.$store.dispatch("users/getusersignin"),
+          this.$store.dispatch("users/fetchAllusers"),
+        ]).finally(() => this.applyDefaultOwner());
+      }
+    },
+  },
+
   data() {
     return {
       sourceOptions: [
@@ -79,12 +96,45 @@ export default {
     ...mapGetters({
       isLoading: "contacts/isLoading",
     }),
+    ownerOptions() {
+      const users = this.$store.getters["users/allUsers"] || [];
+      return [
+        { value: "", label: "Select Owner" },
+        ...users.map((user) => ({
+          value: user.name || user.username || user.id,
+          label: user.name || user.username || "Unknown",
+        })),
+      ];
+    },
+    currentUserName() {
+      const signedInUser =
+        this.$store.getters["users/usersignin"] ||
+        this.$store.state.auth?.user ||
+        null;
+      const fullName = [
+        signedInUser?.first_name || signedInUser?.firstname,
+        signedInUser?.last_name || signedInUser?.lastname,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+
+      return (
+        signedInUser?.name || signedInUser?.username || fullName || ""
+      );
+    },
   },
 
   methods: {
     ...mapActions({
       saveContact: "contacts/createContact",
     }),
+
+    applyDefaultOwner() {
+      if (!this.formData.owner && this.currentUserName) {
+        this.formData.owner = this.currentUserName;
+      }
+    },
 
     handleClose() {
       this.$emit("close");
@@ -204,12 +254,24 @@ export default {
               <label class="block text-sm font-medium text-dark-base mb-2">
                 Owner <span class="text-red-600">*</span>
               </label>
-              <input
-                v-model="formData.owner"
-                type="text"
-                placeholder="Owner"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
+              <div class="relative">
+                <select
+                  v-model="formData.owner"
+                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                >
+                  <option
+                    v-for="opt in ownerOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
+                </select>
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
+              </div>
             </div>
           </div>
 
