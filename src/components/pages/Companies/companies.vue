@@ -9,9 +9,13 @@ import CompaniesTable from "./CompaniesTable.vue";
 
 import CreateCompanyForm from "../../forms/CreateCompanyForm.vue";
 import BulkAddCompanyForm from "../../forms/BulkAddCompanyForm.vue";
-import DetailForm from "../../forms/DetailForm.vue";
+import DetailForm from "../../forms/DetailFormDuplicate.vue";
 import DetailDataCompany from "../../forms/DetailDataCompany.vue";
 import { alertService } from "@/services/alertService";
+import {
+  buildDetailFormPayload,
+  getUpdateAction,
+} from "@/utils/detailFormPayload";
 
 export default {
   components: {
@@ -35,6 +39,8 @@ export default {
       selectedIds: [],
       selectedCompany: null,
       isDetailDataSubmitting: false,
+      isDetailFormSubmitting: false,
+      detailFormEntityId: null,
       statuses: [],
     };
   },
@@ -42,28 +48,28 @@ export default {
   computed: {
     searchQuery: {
       get() {
-        return this.$store.getters['company/searchQuery'];
+        return this.$store.getters["company/searchQuery"];
       },
       set(value) {
-        this.$store.dispatch('company/setSearchQuery', value);
-      }
+        this.$store.dispatch("company/setSearchQuery", value);
+      },
     },
 
     currentPage: {
       get() {
-        return this.$store.getters['company/currentPage'];
+        return this.$store.getters["company/currentPage"];
       },
       set(value) {
-        this.$store.dispatch('company/setCurrentPage', value);
-      }
+        this.$store.dispatch("company/setCurrentPage", value);
+      },
     },
     itemsPerPage: {
       get() {
-        return this.$store.getters['company/itemsPerPage'];
+        return this.$store.getters["company/itemsPerPage"];
       },
       set(value) {
-        this.$store.dispatch('company/setItemsPerPage', value);
-      }
+        this.$store.dispatch("company/setItemsPerPage", value);
+      },
     },
 
     ...mapGetters({
@@ -83,8 +89,15 @@ export default {
     },
 
     paginatedCompanies() {
+      // Sort by updated_at DESC (newest first)
+      const sorted = [...this.companies].sort((a, b) => {
+        const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+        const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+        return dateB - dateA; // DESC: newest first
+      });
+
       const start = (this.currentPage - 1) * this.itemsPerPage;
-      return this.companies.slice(start, start + this.itemsPerPage);
+      return sorted.slice(start, start + this.itemsPerPage);
     },
 
     allSelected() {
@@ -383,6 +396,59 @@ export default {
         });
     },
 
+    handleDetailFormSubmit(data) {
+      const entityType = data?.entityType || "company";
+      const entityId = this.detailFormEntityId;
+
+      if (!entityId) {
+        return alertService.error("ID entity tidak ditemukan.");
+      }
+
+      const { data: payload, error } = buildDetailFormPayload({
+        entityType,
+        entityId,
+        payload: data,
+      });
+
+      if (error) {
+        return alertService.error(error);
+      }
+
+      this.isDetailFormSubmitting = true;
+
+      const actionName = getUpdateAction(entityType);
+      if (!actionName) {
+        this.isDetailFormSubmitting = false;
+        return alertService.error(
+          `Entity type "${entityType}" tidak didukung.`,
+        );
+      }
+
+      this.$store
+        .dispatch(actionName, payload)
+        .then(() => {
+          alertService.success(
+            `Detail ${entityType} berhasil disimpan ke database.`,
+          );
+          this.showDetailForm = false;
+          this.detailFormEntityId = null;
+          // Refresh data setelah save
+          return this.fetchAllcompany();
+        })
+        .catch((error) => {
+          const message =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            `Gagal menyimpan detail ${entityType}`;
+
+          alertService.error(message);
+        })
+        .finally(() => {
+          this.isDetailFormSubmitting = false;
+        });
+    },
+
     handleDeleteCompanies() {
       if (!this.selectedIds.length) {
         return alertService.warning("Pilih minimal satu company untuk dihapus");
@@ -500,7 +566,7 @@ export default {
 <template>
   <div class="flex flex-col h-full">
     <div
-      class="bg-white rounded-lg shadow-sm p-4 border border-outline flex flex-col min-h-0 min-h-[500px] flex-1"
+      class="bg-white rounded-lg shadow-sm p-4 border border-outline flex flex-col min-h-0 flex-1"
     >
       <CompaniesHeader
         :isLoading="isLoading"
@@ -512,7 +578,10 @@ export default {
         @refresh="fetchData"
         @toggle-add-dropdown="toggleDropdown"
         @toggle-download-dropdown="toggleDownloadDropdown"
-        @open-add-single="showCreateCompanyForm = true; showDropdown = false;"
+        @open-add-single="
+          showCreateCompanyForm = true;
+          showDropdown = false;
+        "
         @open-bulk-add="handleBulkAdd"
         @download-all="downloadAll"
         @download="handleDownload"
@@ -565,20 +634,20 @@ export default {
       "
     />
 
-    <!-- Detail Form -->
+    <!-- Detail Form (Notes, Tasks, Docs) -->
     <DetailForm
       :isOpen="showDetailForm"
+      :entityType="'company'"
+      :contact="selectedCompany"
+      :isSaving="isDetailFormSubmitting"
+      title="Add Company Details"
+      saveButtonText="Save Details"
       @close="showDetailForm = false"
       @back="
         showDetailForm = false;
         showCreateCompanyForm = true;
       "
-      @submit="
-        (data) => {
-          console.log('Detail submitted:', data);
-          showDetailForm = false;
-        }
-      "
+      @submit="handleDetailFormSubmit"
     />
 
     <DetailDataCompany

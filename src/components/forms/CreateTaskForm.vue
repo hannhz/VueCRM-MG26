@@ -85,6 +85,7 @@ const handleClose = () => emit("close");
 
 const handleSubmit = () => {
   emit("submit", formData.value);
+  handleReset();
   handleClose();
 };
 

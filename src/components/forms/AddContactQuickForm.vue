@@ -119,11 +119,36 @@ const formData = ref({
   city: "",
   posCode: "",
   source: "",
-  companyassoc: "",
-  dealsassoc: "",
+  companiesSearch: "",
+  dealsSearch: "",
+  selectedCompanies: [],
+  selectedDeals: [],
 });
 
 const handleClose = () => emit("close");
+
+const handleReset = () => {
+  formData.value = {
+    firstName: "",
+    lastName: "",
+    jobTitle: "",
+    owner: "",
+    email: "",
+    status: "",
+    telephone: "",
+    mobile: "",
+    address: "",
+    country: "",
+    province: "",
+    city: "",
+    posCode: "",
+    source: "",
+    companiesSearch: "",
+    dealsSearch: "",
+    selectedCompanies: [],
+    selectedDeals: [],
+  };
+};
 
 const handleSubmit = async () => {
   if (!formData.value.firstName.trim()) {
@@ -168,6 +193,7 @@ const handleSubmit = async () => {
       response?.msg || "Contact berhasil ditambahkan",
     );
 
+    handleReset();
     emit("submit", response);
     handleClose();
   } catch (error) {
@@ -181,6 +207,88 @@ const handleSubmit = async () => {
     isSubmitting.value = false;
   }
 };
+
+const showCompaniesDropdown = ref(false);
+const showDealsDropdown = ref(false);
+
+const filteredCompanies = computed(() => {
+  if (!formData.value.companiesSearch) {
+    return store.getters["company/allcompany"] || [];
+  }
+  const companies = store.getters["company/allcompany"] || [];
+  return companies.filter((c) =>
+    (c.company_name || c.name || "")
+      .toLowerCase()
+      .includes(formData.value.companiesSearch.toLowerCase()),
+  );
+});
+
+const filteredDeals = computed(() => {
+  if (!formData.value.dealsSearch) {
+    return store.getters["deals/allDeals"] || [];
+  }
+  const deals = store.getters["deals/allDeals"] || [];
+  return deals.filter((d) =>
+    (d.deal_name || d.name || "")
+      .toLowerCase()
+      .includes(formData.value.dealsSearch.toLowerCase()),
+  );
+});
+
+const selectCompany = (company) => {
+  if (!formData.value.selectedCompanies.find((c) => c.id === company.id)) {
+    formData.value.selectedCompanies.push(company);
+  }
+  formData.value.companiesSearch = "";
+  showCompaniesDropdown.value = false;
+};
+
+const removeCompany = (companyId) => {
+  formData.value.selectedCompanies = formData.value.selectedCompanies.filter(
+    (c) => c.id !== companyId,
+  );
+};
+
+const selectDeal = (deal) => {
+  if (!formData.value.selectedDeals.find((d) => d.id === deal.id)) {
+    formData.value.selectedDeals.push(deal);
+  }
+  formData.value.dealsSearch = "";
+  showDealsDropdown.value = false;
+};
+
+const removeDeal = (dealId) => {
+  formData.value.selectedDeals = formData.value.selectedDeals.filter(
+    (d) => d.id !== dealId,
+  );
+};
+
+const handleClickOutside = (e) => {
+  if (!e.target.closest("[data-companies-dropdown]")) {
+    showCompaniesDropdown.value = false;
+  }
+  if (!e.target.closest("[data-deals-dropdown]")) {
+    showDealsDropdown.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchAssociationOptions().finally(applyDefaultOwner);
+  document.addEventListener("click", handleClickOutside);
+});
+
+watch(
+  () => props.isOpen,
+  (isOpen) => {
+    if (isOpen) {
+      fetchAssociationOptions().finally(applyDefaultOwner);
+    }
+  },
+);
+
+// onBeforeUnmount(() => {
+//   document.removeEventListener('click', handleClickOutside);
+// });
 </script>
 
 <template>
@@ -445,53 +553,109 @@ const handleSubmit = async () => {
               </div>
             </div>
 
-            <!-- Companies Association -->
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Companies Association</label
-              >
+            <!-- Companies Association (Searchable Dropdown) -->
+            <div data-companies-dropdown>
+              <label class="block text-sm font-medium text-dark-base mb-2">
+                Companies Association
+              </label>
               <div class="relative">
-                <select
-                  v-model="formData.companyassoc"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                >
-                  <option
-                    v-for="opt in companyOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                <input
+                  v-model="formData.companiesSearch"
+                  type="text"
+                  placeholder="Search companies..."
+                  @focus="showCompaniesDropdown = true"
+                  @input="showCompaniesDropdown = true"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
                 />
+
+                <!-- Dropdown -->
+                <div
+                  v-if="showCompaniesDropdown && filteredCompanies.length > 0"
+                  class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
+                >
+                  <div
+                    v-for="company in filteredCompanies"
+                    :key="company.id"
+                    @click="selectCompany(company)"
+                    class="px-3 py-2 hover:bg-light-base cursor-pointer text-sm text-dark-base"
+                  >
+                    {{ company.company_name || company.name }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Selected Companies Tags -->
+              <div
+                v-if="formData.selectedCompanies.length > 0"
+                class="mt-2 flex flex-wrap gap-2"
+              >
+                <span
+                  v-for="company in formData.selectedCompanies"
+                  :key="company.id"
+                  class="bg-light-base px-2 py-1 rounded text-xs text-dark-base flex items-center gap-1"
+                >
+                  {{ company.company_name || company.name }}
+                  <button
+                    type="button"
+                    @click="removeCompany(company.id)"
+                    class="hover:text-red"
+                  >
+                    <X :size="14" />
+                  </button>
+                </span>
               </div>
             </div>
 
-            <!-- Deals Association -->
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Deals Association</label
-              >
+            <!-- Deals Association (Searchable Dropdown) -->
+            <div data-deals-dropdown>
+              <label class="block text-sm font-medium text-dark-base mb-2">
+                Deals Association
+              </label>
               <div class="relative">
-                <select
-                  v-model="formData.dealsassoc"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                >
-                  <option
-                    v-for="opt in dealOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                <input
+                  v-model="formData.dealsSearch"
+                  type="text"
+                  placeholder="Search deals..."
+                  @focus="showDealsDropdown = true"
+                  @input="showDealsDropdown = true"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
                 />
+
+                <!-- Dropdown -->
+                <div
+                  v-if="showDealsDropdown && filteredDeals.length > 0"
+                  class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
+                >
+                  <div
+                    v-for="deal in filteredDeals"
+                    :key="deal.id"
+                    @click="selectDeal(deal)"
+                    class="px-3 py-2 hover:bg-light-base cursor-pointer text-sm text-dark-base"
+                  >
+                    {{ deal.deal_name || deal.name }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Selected Deals Tags -->
+              <div
+                v-if="formData.selectedDeals.length > 0"
+                class="mt-2 flex flex-wrap gap-2"
+              >
+                <span
+                  v-for="deal in formData.selectedDeals"
+                  :key="deal.id"
+                  class="bg-light-base px-2 py-1 rounded text-xs text-dark-base flex items-center gap-1"
+                >
+                  {{ deal.deal_name || deal.name }}
+                  <button
+                    type="button"
+                    @click="removeDeal(deal.id)"
+                    class="hover:text-red"
+                  >
+                    <X :size="14" />
+                  </button>
+                </span>
               </div>
             </div>
           </form>

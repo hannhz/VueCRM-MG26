@@ -1,5 +1,3 @@
-
-
 <template>
   <div
     class="bg-white rounded-lg shadow-sm w-full h-147 border border-outline flex flex-col overflow-hidden"
@@ -257,8 +255,8 @@
                   <button
                     @click.stop="toggleStageDropdown(task.id)"
                     :disabled="isSyncingStage && updatingTaskId === task.id"
-                    :class="
-                      [getStageColor(task.status || task.stage),
+                    :class="[
+                      getStageColor(task.status || task.stage),
                       openStageDropdown === task.id
                         ? 'ring-1 ring-sub-text border-sub-text'
                         : '',
@@ -292,7 +290,10 @@
                         "
                         class="w-full text-left px-4 py-2 text-sm transition hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       >
-                        <span v-if="(task.status || task.stage) === opt.value" class="text-sub-text">
+                        <span
+                          v-if="(task.status || task.stage) === opt.value"
+                          class="text-sub-text"
+                        >
                           ✓
                         </span>
                         <span v-else class="w-3"></span>
@@ -321,7 +322,10 @@
     </div>
 
     <!-- Error Message -->
-    <p v-if="error" class="px-6 py-3 text-sm text-red-600 border-t border-gray-100">
+    <p
+      v-if="error"
+      class="px-6 py-3 text-sm text-red-600 border-t border-gray-100"
+    >
       {{ error }}
     </p>
   </div>
@@ -413,7 +417,9 @@ export default {
     allSelected() {
       return (
         this.paginatedTasks.length > 0 &&
-        this.paginatedTasks.every((task) => this.selectedTasks.includes(task.id))
+        this.paginatedTasks.every((task) =>
+          this.selectedTasks.includes(task.id),
+        )
       );
     },
   },
@@ -434,7 +440,9 @@ export default {
     },
 
     getStageLabel(stage) {
-      return this.stageOptions.find((opt) => opt.value === stage)?.label || stage;
+      return (
+        this.stageOptions.find((opt) => opt.value === stage)?.label || stage
+      );
     },
 
     getStageColor(stage) {
@@ -475,7 +483,9 @@ export default {
     },
 
     toggleSelectAll(e) {
-      this.selectedTasks = e.target.checked ? this.paginatedTasks.map((t) => t.id) : [];
+      this.selectedTasks = e.target.checked
+        ? this.paginatedTasks.map((t) => t.id)
+        : [];
       this.$emit("taskSelection", this.selectedTasks);
     },
 
@@ -489,7 +499,8 @@ export default {
     },
 
     toggleStageDropdown(taskId) {
-      this.openStageDropdown = this.openStageDropdown === taskId ? null : taskId;
+      this.openStageDropdown =
+        this.openStageDropdown === taskId ? null : taskId;
     },
 
     openTaskDetail(task) {
@@ -516,10 +527,11 @@ export default {
 
       try {
         for (const taskId of this.selectedTasks) {
-          const taskItem =
-            this.allTasksData.find((task) => task.id === taskId) || {
-              id: taskId,
-            };
+          const taskItem = this.allTasksData.find(
+            (task) => task.id === taskId,
+          ) || {
+            id: taskId,
+          };
           await this.$store.dispatch("tasks/deleteTask", taskItem);
         }
         alertService.success("Task berhasil dihapus");

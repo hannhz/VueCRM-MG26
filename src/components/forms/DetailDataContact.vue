@@ -252,13 +252,19 @@ const resolveAssociationValues = (candidates, options) => {
       // Fallback: search by name/label match
       const matchedByLabel = options.find((option) => {
         const label = String(
-          option.name ?? option.deal_name ?? option.company_name ?? option.label ?? "",
+          option.name ??
+            option.deal_name ??
+            option.company_name ??
+            option.label ??
+            "",
         )
           .trim()
           .toLowerCase();
         return label === normalizedCandidate.toLowerCase();
       });
-      return matchedByLabel ? matchedByLabel.id || matchedByLabel.label || matchedByLabel.value : null;
+      return matchedByLabel
+        ? matchedByLabel.id || matchedByLabel.label || matchedByLabel.value
+        : null;
     })
     .filter((v) => v !== null && v !== undefined);
 };
@@ -266,20 +272,22 @@ const resolveAssociationValues = (candidates, options) => {
 const resolveUserValue = (candidate, options) => {
   if (!candidate || !options) return "";
   const normalizedCandidate = String(candidate).trim().toLowerCase();
-  
-  const match = options.find(opt => 
-    String(opt.value).trim().toLowerCase() === normalizedCandidate ||
-    String(opt.label).trim().toLowerCase() === normalizedCandidate
+
+  const match = options.find(
+    (opt) =>
+      String(opt.value).trim().toLowerCase() === normalizedCandidate ||
+      String(opt.label).trim().toLowerCase() === normalizedCandidate,
   );
-  
+
   return match ? match.value : candidate;
 };
 
 const getContactFormDefaults = (contact = null) => {
   // Extract actual contact data if it's wrapped in the response format
-  const data = (contact && contact.contacts && contact.contacts.length > 0) 
-    ? contact.contacts[0] 
-    : contact;
+  const data =
+    contact && contact.contacts && contact.contacts.length > 0
+      ? contact.contacts[0]
+      : contact;
 
   const companyCandidates = getAssociationCandidates(
     data?.companyassoc ||
@@ -314,7 +322,9 @@ const getContactFormDefaults = (contact = null) => {
         return parseInt(statusValue);
       }
       // If it's a string, try to find matching status by name
-      const match = statuses.value.find(s => s.name.toLowerCase() === String(statusValue).toLowerCase());
+      const match = statuses.value.find(
+        (s) => s.name.toLowerCase() === String(statusValue).toLowerCase(),
+      );
       return match ? match.id : "";
     })(),
     type: (() => {
@@ -324,7 +334,9 @@ const getContactFormDefaults = (contact = null) => {
         return parseInt(typeValue);
       }
       // If it's a string, try to find matching status by name
-      const match = statuses.value.find(s => s.name.toLowerCase() === String(typeValue).toLowerCase());
+      const match = statuses.value.find(
+        (s) => s.name.toLowerCase() === String(typeValue).toLowerCase(),
+      );
       return match ? match.id : "";
     })(),
     telephone_1: data?.telephone_1 || "",
@@ -346,9 +358,10 @@ const syncAssociationValues = (contactData = props.contact) => {
   if (!contactData) return;
 
   // Handle wrapped response format or direct object
-  const data = (contactData && contactData.contacts && contactData.contacts.length > 0) 
-    ? contactData.contacts[0] 
-    : contactData;
+  const data =
+    contactData && contactData.contacts && contactData.contacts.length > 0
+      ? contactData.contacts[0]
+      : contactData;
 
   const dealsCandidates = getAssociationCandidates(
     contactForm.value.dealsassoc.length > 0
@@ -399,9 +412,10 @@ const syncAdditionalData = (contactData) => {
   if (!contactData) return;
 
   // Handle wrapped response format or direct object
-  const data = (contactData && contactData.contacts && contactData.contacts.length > 0) 
-    ? contactData.contacts[0] 
-    : contactData;
+  const data =
+    contactData && contactData.contacts && contactData.contacts.length > 0
+      ? contactData.contacts[0]
+      : contactData;
 
   // Notes mapping
   noteContent.value = data.notes || "";
@@ -412,16 +426,19 @@ const syncAdditionalData = (contactData) => {
   taskStatus.value = data.status || data.statustask || "";
   taskAssignee.value = resolveUserValue(data.assignee, assigneeOptions.value);
   taskDueDate.value = data.due_date || "";
-  
+
   // Format task_time: HH:mm:ss.SSSSSSS -> HH:mm
   if (data.task_time) {
-    taskTime.value = data.task_time.split('.')[0].substring(0, 5);
+    taskTime.value = data.task_time.split(".")[0].substring(0, 5);
   } else {
     taskTime.value = "";
   }
-  
+
   taskPriority.value = data.priority || data.prioritytask || "";
-  taskAssociatedContact.value = resolveUserValue(data.associated_contact || data.associatedContact, associatedWithOptions.value);
+  taskAssociatedContact.value = resolveUserValue(
+    data.associated_contact || data.associatedContact,
+    associatedWithOptions.value,
+  );
 
   // Docs mapping
   docDescription.value = data.docs || "";
@@ -452,7 +469,7 @@ watch(
       contactForm.value = getContactFormDefaults(contact);
       syncAssociationValues(contact);
       syncAdditionalData(contact);
-      
+
       // Then fetch full details from server
       fetchFullContactDetails(contact.id);
     }
@@ -486,11 +503,12 @@ const companySearch = ref("");
 const companyDropdownRef = ref(null);
 
 const filteredCompanies = computed(() => {
-  if (!companySearch.value) return companyOptions.value.filter(opt => opt.value !== "");
+  if (!companySearch.value)
+    return companyOptions.value.filter((opt) => opt.value !== "");
   return companyOptions.value
-    .filter(opt => opt.value !== "")
+    .filter((opt) => opt.value !== "")
     .filter((c) =>
-      c.label.toLowerCase().includes(companySearch.value.toLowerCase())
+      c.label.toLowerCase().includes(companySearch.value.toLowerCase()),
     );
 });
 
@@ -500,11 +518,12 @@ const dealSearch = ref("");
 const dealDropdownRef = ref(null);
 
 const filteredDeals = computed(() => {
-  if (!dealSearch.value) return dealOptions.value.filter(opt => opt.value !== "");
+  if (!dealSearch.value)
+    return dealOptions.value.filter((opt) => opt.value !== "");
   return dealOptions.value
-    .filter(opt => opt.value !== "")
+    .filter((opt) => opt.value !== "")
     .filter((d) =>
-      d.label.toLowerCase().includes(dealSearch.value.toLowerCase())
+      d.label.toLowerCase().includes(dealSearch.value.toLowerCase()),
     );
 });
 
@@ -692,13 +711,15 @@ onMounted(() => {
       <!-- Scrollable Content -->
       <div class="flex-1 overflow-y-auto min-h-0 relative">
         <!-- Loading Overlay -->
-        <div 
-          v-if="isFetching" 
+        <div
+          v-if="isFetching"
           class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center pointer-events-none"
         >
           <div class="flex flex-col items-center gap-2">
             <Loader2 class="w-8 h-8 animate-spin text-sub-text" />
-            <span class="text-sm font-medium text-sub-text">Loading details...</span>
+            <span class="text-sm font-medium text-sub-text"
+              >Loading details...</span
+            >
           </div>
         </div>
 
@@ -794,35 +815,7 @@ onMounted(() => {
                   >
                     <option value="" disabled selected>Select Status</option>
                     <option
-                      v-for="status in (statuses || [])"
-                      :key="status.id"
-                      :value="status.id"
-                    >
-                      {{ status.name }}
-                    </option>
-                  </select>
-                  <ChevronDown
-                    :size="16"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Type -->
-            <div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Type</label
-                >
-                <div class="relative">
-                  <select
-                    v-model.number="contactForm.type"
-                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled selected>Select Type</option>
-                    <option
-                      v-for="status in (statuses || [])"
+                      v-for="status in statuses || []"
                       :key="status.id"
                       :value="status.id"
                     >
@@ -1011,7 +1004,9 @@ onMounted(() => {
                     @click="toggleCompany(company)"
                     class="px-4 py-2 hover:bg-light-base cursor-pointer flex items-center justify-between text-sm transition"
                   >
-                    <span class="font-medium text-dark-base">{{ company.label }}</span>
+                    <span class="font-medium text-dark-base">{{
+                      company.label
+                    }}</span>
                     <div
                       v-if="isCompanySelected(company.value)"
                       class="w-5 h-5 bg-dark-base rounded-full flex items-center justify-center"
@@ -1087,7 +1082,9 @@ onMounted(() => {
                     @click="toggleDeal(deal)"
                     class="px-4 py-2 hover:bg-light-base cursor-pointer flex items-center justify-between text-sm transition"
                   >
-                    <span class="font-medium text-dark-base">{{ deal.label }}</span>
+                    <span class="font-medium text-dark-base">{{
+                      deal.label
+                    }}</span>
                     <div
                       v-if="isDealSelected(deal.value)"
                       class="w-5 h-5 bg-dark-base rounded-full flex items-center justify-center"

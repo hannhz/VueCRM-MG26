@@ -31,14 +31,23 @@ export default {
 
   setup() {
     const { statuses, fetchStatuses } = useStatuses();
-    fetchStatuses();
-    return { statuses };
+    return { statuses, fetchStatuses };
   },
 
   mounted() {
+    this.fetchStatuses();
     this.$store.dispatch("users/getusersignin");
     this.$store.dispatch("users/fetchAllusers");
+    this.$store.dispatch("company/fetchAllcompany");
+    this.$store.dispatch("deals/fetchAllDeals");
     this.applyDefaultOwner();
+
+    // Add click outside handler
+    document.addEventListener("click", this.handleClickOutside);
+  },
+
+  beforeUnmount() {
+    document.removeEventListener("click", this.handleClickOutside);
   },
 
   watch: {
@@ -47,6 +56,8 @@ export default {
         Promise.allSettled([
           this.$store.dispatch("users/getusersignin"),
           this.$store.dispatch("users/fetchAllusers"),
+          this.$store.dispatch("company/fetchAllcompany"),
+          this.$store.dispatch("deals/fetchAllDeals"),
         ]).finally(() => this.applyDefaultOwner());
       }
     },
@@ -85,17 +96,31 @@ export default {
         dealsAssociation: "",
         created_at: "",
         updated_at: "",
+        companiesSearch: "",
+        dealsSearch: "",
+        selectedCompanies: [],
+        selectedDeals: [],
       },
       showAddCompanyForm: false,
       showAddDealForm: false,
       showDetailForm: false,
+      showCompaniesDropdown: false,
+      showDealsDropdown: false,
     };
   },
 
   computed: {
     ...mapGetters({
       isLoading: "contacts/isLoading",
+      allCompaniesData: "company/allcompany", // Ambil dari store
+      allDealsData: "deals/allDeals", // Ambil dari store
     }),
+    allCompanies() {
+      return this.allCompaniesData || [];
+    },
+    allDeals() {
+      return this.allDealsData || [];
+    },
     ownerOptions() {
       const users = this.$store.getters["users/allUsers"] || [];
       return [
@@ -119,9 +144,25 @@ export default {
         .join(" ")
         .trim();
 
-      return (
-        signedInUser?.name || signedInUser?.username || fullName || ""
-      );
+      return signedInUser?.name || signedInUser?.username || fullName || "";
+    },
+    filteredCompanies() {
+      if (!this.formData.companiesSearch) return this.allCompanies || [];
+      return (this.allCompanies || []).filter((company) => {
+        const companyName = company.company_name || company.name || "";
+        return companyName
+          .toLowerCase()
+          .includes(this.formData.companiesSearch.toLowerCase());
+      });
+    },
+    filteredDeals() {
+      if (!this.formData.dealsSearch) return this.allDeals || [];
+      return (this.allDeals || []).filter((deal) => {
+        const dealName = deal.deal_name || deal.name || "";
+        return dealName
+          .toLowerCase()
+          .includes(this.formData.dealsSearch.toLowerCase());
+      });
     },
   },
 
@@ -129,23 +170,19 @@ export default {
     ...mapActions({
       saveContact: "contacts/createContact",
     }),
-
     applyDefaultOwner() {
       if (!this.formData.owner && this.currentUserName) {
         this.formData.owner = this.currentUserName;
       }
     },
-
     handleClose() {
       this.$emit("close");
     },
-
     handleSubmit() {
       // Just move to detail form without saving
       // Data will be saved when user clicks "Save" in DetailForm
       this.showDetailForm = true;
     },
-
     handleReset() {
       this.formData = {
         first_name: "",
@@ -166,7 +203,56 @@ export default {
         dealsAssociation: "",
         created_at: "",
         updated_at: "",
+        companiesSearch: "",
+        dealsSearch: "",
+        selectedCompanies: [],
+        selectedDeals: [],
       };
+    },
+    toggleCompaniesDropdown() {
+      this.showCompaniesDropdown = !this.showCompaniesDropdown;
+    },
+    toggleDealsDropdown() {
+      this.showDealsDropdown = !this.showDealsDropdown;
+    },
+    selectCompany(company) {
+      if (!this.formData.selectedCompanies.find((c) => c.id === company.id)) {
+        this.formData.selectedCompanies.push(company);
+      }
+      this.formData.companiesSearch = "";
+      this.showCompaniesDropdown = false;
+    },
+    removeCompany(companyId) {
+      this.formData.selectedCompanies = this.formData.selectedCompanies.filter(
+        (c) => c.id !== companyId,
+      );
+    },
+    selectDeal(deal) {
+      if (!this.formData.selectedDeals.find((d) => d.id === deal.id)) {
+        this.formData.selectedDeals.push(deal);
+      }
+      this.formData.dealsSearch = "";
+      this.showDealsDropdown = false;
+    },
+    removeDeal(dealId) {
+      this.formData.selectedDeals = this.formData.selectedDeals.filter(
+        (d) => d.id !== dealId,
+      );
+    },
+    filterCompanies() {
+      this.showCompaniesDropdown = true;
+    },
+    filterDeals() {
+      this.showDealsDropdown = true;
+    },
+    handleClickOutside(e) {
+      // Close dropdowns saat klik di luar
+      if (!e.target.closest("[data-companies-dropdown]")) {
+        this.showCompaniesDropdown = false;
+      }
+      if (!e.target.closest("[data-deals-dropdown]")) {
+        this.showDealsDropdown = false;
+      }
     },
   },
 };
@@ -432,16 +518,84 @@ export default {
           </div>
 
           <!-- Companies Association -->
-          <div>
+          <div data-companies-dropdown>
             <label class="block text-sm font-medium text-dark-base mb-2">
               Companies Association
             </label>
-            <input
-              v-model="formData.companiesAssociation"
-              type="text"
-              placeholder="Search by Name"
-              class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-            />
+            <div class="relative">
+              <input
+                v-model="formData.companiesSearch"
+                type="text"
+                placeholder="Search companies..."
+                @click="toggleCompaniesDropdown"
+                @input="filterCompanies"
+                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
+              <ChevronDown
+                :size="16"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none transition-transform duration-200"
+                :class="{ 'rotate-180': showCompaniesDropdown }"
+              />
+
+              <!-- Dropdown -->
+              <div
+                v-if="showCompaniesDropdown && filteredCompanies.length > 0"
+                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
+              >
+                <div
+                  v-for="company in filteredCompanies"
+                  :key="company.id"
+                  @click="selectCompany(company)"
+                  class="px-3 py-2 hover:bg-light-base cursor-pointer text-sm text-dark-base"
+                >
+                  {{
+                    company.company_name || company.name || "Unnamed Company"
+                  }}
+                </div>
+              </div>
+
+              <!-- Empty State -->
+              <div
+                v-if="
+                  showCompaniesDropdown &&
+                  filteredCompanies.length === 0 &&
+                  allCompanies.length > 0
+                "
+                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
+              >
+                <p class="text-sm text-sub-text">No companies found</p>
+              </div>
+
+              <!-- Loading/No Data State -->
+              <div
+                v-if="showCompaniesDropdown && allCompanies.length === 0"
+                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
+              >
+                <p class="text-sm text-sub-text">Loading companies...</p>
+              </div>
+            </div>
+
+            <!-- Selected Companies -->
+            <div
+              v-if="formData.selectedCompanies.length > 0"
+              class="mt-2 flex flex-wrap gap-2"
+            >
+              <span
+                v-for="company in formData.selectedCompanies"
+                :key="company.id"
+                class="bg-light-base px-2 py-1 rounded text-xs text-dark-base flex items-center gap-1"
+              >
+                {{ company.company_name || company.name }}
+                <button
+                  type="button"
+                  @click="removeCompany(company.id)"
+                  class="hover:text-red"
+                >
+                  <X :size="14" />
+                </button>
+              </span>
+            </div>
+
             <button
               type="button"
               @click="showAddCompanyForm = true"
@@ -453,16 +607,82 @@ export default {
           </div>
 
           <!-- Deals Association -->
-          <div>
+          <div data-deals-dropdown>
             <label class="block text-sm font-medium text-dark-base mb-2">
               Deals Association
             </label>
-            <input
-              v-model="formData.dealsAssociation"
-              type="text"
-              placeholder="Search by Name"
-              class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-            />
+            <div class="relative">
+              <input
+                v-model="formData.dealsSearch"
+                type="text"
+                placeholder="Search deals..."
+                @click="toggleDealsDropdown"
+                @input="filterDeals"
+                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
+              <ChevronDown
+                :size="16"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none transition-transform duration-200"
+                :class="{ 'rotate-180': showDealsDropdown }"
+              />
+
+              <!-- Dropdown -->
+              <div
+                v-if="showDealsDropdown && filteredDeals.length > 0"
+                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
+              >
+                <div
+                  v-for="deal in filteredDeals"
+                  :key="deal.id"
+                  @click="selectDeal(deal)"
+                  class="px-3 py-2 hover:bg-light-base cursor-pointer text-sm text-dark-base"
+                >
+                  {{ deal.deal_name || deal.name || "Unnamed Deal" }}
+                </div>
+              </div>
+
+              <!-- Empty State -->
+              <div
+                v-if="
+                  showDealsDropdown &&
+                  filteredDeals.length === 0 &&
+                  allDeals.length > 0
+                "
+                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
+              >
+                <p class="text-sm text-sub-text">No deals found</p>
+              </div>
+
+              <!-- Loading/No Data State -->
+              <div
+                v-if="showDealsDropdown && allDeals.length === 0"
+                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
+              >
+                <p class="text-sm text-sub-text">Loading deals...</p>
+              </div>
+            </div>
+
+            <!-- Selected Deals -->
+            <div
+              v-if="formData.selectedDeals.length > 0"
+              class="mt-2 flex flex-wrap gap-2"
+            >
+              <span
+                v-for="deal in formData.selectedDeals"
+                :key="deal.id"
+                class="bg-light-base px-2 py-1 rounded text-xs text-dark-base flex items-center gap-1"
+              >
+                {{ deal.deal_name || deal.name }}
+                <button
+                  type="button"
+                  @click="removeDeal(deal.id)"
+                  class="hover:text-red"
+                >
+                  <X :size="14" />
+                </button>
+              </span>
+            </div>
+
             <button
               type="button"
               @click="showAddDealForm = true"

@@ -29,7 +29,6 @@ export default createStore({
     settingsfe: settingsfeModule,
     team: teamModule,
     activity: activityModule,
-    userpermisions: userpermisions,    
-
+    userpermisions: userpermisions,
   },
 });

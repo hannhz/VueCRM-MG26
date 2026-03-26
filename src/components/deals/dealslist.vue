@@ -11,27 +11,38 @@ import {
 } from "lucide-vue-next";
 import { alertService } from "@/services/alertService";
 
-const store = useStore();
+const props = defineProps({
+  currentPage: {
+    type: Number,
+    default: 1,
+  },
+  itemsPerPage: {
+    type: Number,
+    default: 10,
+  },
+});
 
-const emit = defineEmits(["viewDetail"]);
+const emit = defineEmits([
+  "viewDetail",
+  "update:currentPage",
+  "update:itemsPerPage",
+]);
+
+const store = useStore();
 
 // Get deals from Vuex store
 const allDeals = computed(() => store.getters["deals/filteredDeals"] || []);
+const pagination = computed(() => store.getters["deals/pagination"] || {});
+
 const searchQuery = computed({
   get: () => store.state.deals.searchQuery,
   set: (value) => store.dispatch("deals/setSearchQuery", value),
 });
 
-const currentPage = ref(1);
-const totalDeals = ref(18600);
-const itemsPerPage = ref(10);
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(totalDeals.value / itemsPerPage.value)),
-);
-const paginatedDeals = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value;
-  return deals.value.slice(start, start + itemsPerPage.value);
-});
+const totalDeals = computed(() => pagination.value?.total || 0);
+const totalPages = computed(() => pagination.value?.last_page || 1);
+
+const paginatedDeals = computed(() => deals.value); // Backend handles slicing now
 
 const stageOptions = [
   { value: "new", label: "New" },
@@ -193,20 +204,9 @@ const handleViewDetail = (deal) => {
   emit("viewDetail", deal);
 };
 
-//handled add deal form
-const handleAddDeal = (dealData) => {
-  // Logic untuk save deal data ke API atau state
-  console.log("New deal:", dealData);
-  // TODO: Implement API call
-};
-
 // Lifecycle: Fetch deals on mount
 onMounted(async () => {
-  try {
-    await store.dispatch("deals/fetchAllDeals");
-  } catch (error) {
-    console.error("Failed to fetch deals:", error);
-  }
+  // Data sudah di-fetch oleh parent (deals.vue)
 });
 
 // Watch Vuex deals and update local ref
@@ -214,23 +214,20 @@ watch(
   () => allDeals.value,
   (newDeals) => {
     deals.value = newDeals.map(normalizeDeal);
-    totalDeals.value = deals.value.length;
   },
   { immediate: true },
 );
 
-watch([itemsPerPage, totalDeals], () => {
-  if (currentPage.value > totalPages.value) {
-    currentPage.value = totalPages.value;
-  }
-});
-
 const nextPage = () => {
-  if (currentPage.value < totalPages.value) currentPage.value++;
+  if (props.currentPage < totalPages.value) {
+    emit("update:currentPage", props.currentPage + 1);
+  }
 };
 
 const prevPage = () => {
-  if (currentPage.value > 1) currentPage.value--;
+  if (props.currentPage > 1) {
+    emit("update:currentPage", props.currentPage - 1);
+  }
 };
 </script>
 <style scoped>
@@ -301,7 +298,8 @@ const prevPage = () => {
           <div class="flex items-center gap-2">
             <span class="text-sm text-dark-base">Show</span>
             <select
-              v-model.number="itemsPerPage"
+              :value="itemsPerPage"
+              @change="emit('update:itemsPerPage', Number($event.target.value))"
               class="px-3 py-2 border border-outline rounded-lg text-sm"
             >
               <option :value="10">10</option>
@@ -425,7 +423,8 @@ const prevPage = () => {
 
         <input
           type="number"
-          v-model.number="currentPage"
+          :value="currentPage"
+          @input="emit('update:currentPage', Number($event.target.value))"
           min="1"
           :max="totalPages"
           class="w-12 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-sub-text"

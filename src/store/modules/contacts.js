@@ -9,7 +9,7 @@ const state = {
     total: 0,
     current_page: 1,
     per_page: 10,
-    last_page: 1
+    last_page: 1,
   },
   isLoading: false,
   error: null,
@@ -36,7 +36,7 @@ const mutations = {
         total: payload.total || 0,
         current_page: payload.current_page || 1,
         per_page: payload.per_page || 10,
-        last_page: payload.last_page || 1
+        last_page: payload.last_page || 1,
       };
     } else {
       // Fallback for non-paginated or old format
@@ -67,7 +67,7 @@ const actions = {
           headers: {
             Authorization: "Bearer " + cookies.get("token"),
           },
-          params: params
+          params: params,
         });
         resolve(response.data);
       } catch (error) {
@@ -228,11 +228,14 @@ const actions = {
 
     const promise = new Promise(async (resolve, reject) => {
       try {
-        const response = await api.get(`contact/fetchcontactbyid?id=${contactId}`, {
-          headers: {
-            Authorization: "Bearer " + cookies.get("token"),
+        const response = await api.get(
+          `contact/fetchcontactbyid?id=${contactId}`,
+          {
+            headers: {
+              Authorization: "Bearer " + cookies.get("token"),
+            },
           },
-        });
+        );
         resolve(response.data);
       } catch (error) {
         reject(error);

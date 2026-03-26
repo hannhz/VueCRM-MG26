@@ -1,12 +1,14 @@
 <template>
   <div class="flex flex-wrap items-center gap-3">
     <div class="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+      <!-- Filter Icon -->
       <button
         class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
       >
         <Filter :size="20" class="text-dark-base" />
       </button>
 
+      <!-- Search Input -->
       <div class="relative w-full sm:w-auto">
         <input
           :value="searchQuery"
@@ -17,13 +19,15 @@
         />
       </div>
 
+      <!-- Search Icon Button -->
       <button
-        class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition"
         @click="$emit('search')"
+        class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition"
       >
         <Search :size="20" class="text-dark-base" />
       </button>
 
+      <!-- Show Dropdown -->
       <div class="flex items-center gap-2">
         <span class="text-sm text-dark-base">Show</span>
         <select
@@ -31,6 +35,7 @@
           @change="$emit('update:itemsPerPage', Number($event.target.value))"
           class="px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
         >
+          <option :value="5">5</option>
           <option :value="10">10</option>
           <option :value="25">25</option>
           <option :value="50">50</option>
@@ -39,6 +44,7 @@
       </div>
     </div>
 
+    <!-- Pagination Controls -->
     <div
       class="flex w-full items-center justify-end gap-3 text-sm text-sub-text sm:w-auto sm:ml-auto"
     >
@@ -78,21 +84,13 @@
 import { Filter, Search, ChevronLeft, ChevronRight } from "lucide-vue-next";
 
 export default {
-  name: "CompaniesFilterBar",
+  name: "UsersFilterBar",
   components: { Filter, Search, ChevronLeft, ChevronRight },
   props: {
     searchQuery: { type: String, default: "" },
-    itemsPerPage: { type: Number, default: 10 },
+    itemsPerPage: { type: Number, default: 5 },
     currentPage: { type: Number, default: 1 },
     totalPages: { type: Number, default: 1 },
   },
-  emits: [
-    "update:searchQuery",
-    "update:itemsPerPage",
-    "update:currentPage",
-    "search",
-    "prev-page",
-    "next-page",
-  ],
 };
 </script>

@@ -1,7 +1,9 @@
 <template>
   <div class="flex flex-wrap items-center gap-3">
     <div class="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
-      <button class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition">
+      <button
+        class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
+      >
         <Filter :size="20" class="text-dark-base" />
       </button>
 
@@ -37,7 +39,9 @@
       </div>
     </div>
 
-    <div class="flex w-full items-center justify-end gap-3 text-sm text-sub-text sm:w-auto sm:ml-auto">
+    <div
+      class="flex w-full items-center justify-end gap-3 text-sm text-sub-text sm:w-auto sm:ml-auto"
+    >
       <button
         @click="$emit('prev-page')"
         class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"

@@ -54,15 +54,11 @@
       :isOpen="showDetailForm"
       title="Add Contact / Details"
       saveButtonText="Save Contact"
-      entityType="contact"
+      :entityType="'contact'"
       :contact="selectedContact"
+      :isSaving="isDetailFormSubmitting"
       @close="showDetailForm = false"
-      @submit="
-        (data) => {
-          console.log('Contact detail updated:', data);
-          showDetailForm = false;
-        }
-      "
+      @submit="handleDetailFormSubmit"
     />
 
     <!-- Contact Data Detail Form (for row click) -->
@@ -108,6 +104,10 @@ import {
   resolveAssociationLabels,
 } from "@/utils/associations";
 import { buildUpdateContactPayload } from "@/utils/contactPayload";
+import {
+  buildDetailFormPayload,
+  getUpdateAction,
+} from "@/utils/detailFormPayload";
 
 export default {
   name: "Contacts",
@@ -225,15 +225,21 @@ export default {
           companyCandidates,
           companyOptions,
         );
-        const dealLabels = resolveAssociationLabels(dealCandidates, dealOptions);
+        const dealLabels = resolveAssociationLabels(
+          dealCandidates,
+          dealOptions,
+        );
 
         return {
           ...contact,
-          companyLabelsText: (companyLabels.length ? companyLabels : ["-"]).join(
-            ", ",
-          ),
+          companyLabelsText: (companyLabels.length
+            ? companyLabels
+            : ["-"]
+          ).join(", "),
           dealLabelsText: (dealLabels.length ? dealLabels : ["-"]).join(", "),
-          updatedAtText: this.formatDate(contact.updated_at || contact.created_at),
+          updatedAtText: this.formatDate(
+            contact.updated_at || contact.created_at,
+          ),
           statusClass: this.getStatusClass(contact.status),
           statusName: this.getStatusName(contact.status),
         };
@@ -370,6 +376,112 @@ export default {
         });
     },
 
+    handleDetailFormSubmit(data) {
+      const entityType = data?.entityType || "contact";
+      const entityId = this.detailFormEntityId;
+
+      if (!entityId) {
+        return alertService.error("ID entity tidak ditemukan.");
+      }
+
+      const { data: payload, error } = buildDetailFormPayload({
+        entityType,
+        entityId,
+        payload: data,
+      });
+
+      if (error) {
+        return alertService.error(error);
+      }
+
+      this.isDetailFormSubmitting = true;
+
+      const actionName = getUpdateAction(entityType);
+      if (!actionName) {
+        this.isDetailFormSubmitting = false;
+        return alertService.error(
+          `Entity type "${entityType}" tidak didukung.`,
+        );
+      }
+
+      this.$store
+        .dispatch(actionName, payload)
+        .then(() => {
+          alertService.success(
+            `Detail ${entityType} berhasil disimpan ke database.`,
+          );
+          this.showDetailForm = false;
+          this.detailFormEntityId = null;
+          // Refresh data setelah save
+          return this.fetchAllContacts();
+        })
+        .catch((error) => {
+          const message =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            `Gagal menyimpan detail ${entityType}`;
+
+          alertService.error(message);
+        })
+        .finally(() => {
+          this.isDetailFormSubmitting = false;
+        });
+    },
+
+    handleDetailFormSubmit(data) {
+      const entityType = data?.entityType || "contact";
+      const entityId = this.detailFormEntityId;
+
+      if (!entityId) {
+        return alertService.error("ID entity tidak ditemukan.");
+      }
+
+      const { data: payload, error } = buildDetailFormPayload({
+        entityType,
+        entityId,
+        payload: data,
+      });
+
+      if (error) {
+        return alertService.error(error);
+      }
+
+      this.isDetailFormSubmitting = true;
+
+      const actionName = getUpdateAction(entityType);
+      if (!actionName) {
+        this.isDetailFormSubmitting = false;
+        return alertService.error(
+          `Entity type "${entityType}" tidak didukung.`,
+        );
+      }
+
+      this.$store
+        .dispatch(actionName, payload)
+        .then(() => {
+          alertService.success(
+            `Detail ${entityType} berhasil disimpan ke database.`,
+          );
+          this.showDetailForm = false;
+          this.detailFormEntityId = null;
+          // Refresh data setelah save
+          return this.fetchAllContacts();
+        })
+        .catch((error) => {
+          const message =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            `Gagal menyimpan detail ${entityType}`;
+
+          alertService.error(message);
+        })
+        .finally(() => {
+          this.isDetailFormSubmitting = false;
+        });
+    },
+
     handleAddContact(contactData) {
       console.log("New contact:", contactData);
       // TODO: Implement API call via Vuex
@@ -448,13 +560,14 @@ export default {
 
     getStatusClass(status) {
       if (!status) return "bg-gray-100 text-gray-700";
-      
+
       // Map status ID to class
       const statusId = parseInt(status);
-      if (statusId === 1 || statusId === 6 || statusId === 7) return "bg-green-100 text-green-700"; // Competitor, Partner, Qualified
+      if (statusId === 1 || statusId === 6 || statusId === 7)
+        return "bg-green-100 text-green-700"; // Competitor, Partner, Qualified
       if (statusId === 4) return "bg-yellow-100 text-yellow-700"; // Lead
       if (statusId === 5) return "bg-blue-100 text-blue-700"; // Opportunity
-      
+
       return "bg-gray-100 text-gray-700";
     },
 

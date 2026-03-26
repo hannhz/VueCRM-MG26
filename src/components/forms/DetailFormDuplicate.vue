@@ -1,5 +1,4 @@
-<script setup>
-import { ref } from "vue";
+<script>
 import {
   X,
   ChevronDown,
@@ -10,168 +9,175 @@ import {
   Mic,
 } from "lucide-vue-next";
 
-const props = defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false,
+export default {
+  name: "DetailFormDuplicate",
+  components: {
+    X,
+    ChevronDown,
+    ChevronRight,
+    Plus,
+    MapPin,
+    Camera,
+    Mic,
   },
-  title: {
-    type: String,
-    default: "Add Contact / Details",
-  },
-  saveButtonText: {
-    type: String,
-    default: "Save",
-  },
-  isSaving: {
-    type: Boolean,
-    default: false,
-  },
-  entityType: {
-    type: String,
-    default: "contact",
-  },
-  contact:{
-    type: Object,
-    default: {},
-  }
-});
-
-const emit = defineEmits(["close", "submit", "back"]);
-
-// Section toggles
-const showNotes = ref(true);
-const showTasks = ref(true);
-const showDocs = ref(true);
-
-// Notes
-const noteContent = ref(
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-);
-
-// Tasks
-const taskName = ref("");
-const taskContent = ref(
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-);
-const taskStatus = ref("");
-const taskAssignee = ref("");
-const taskDueDate = ref("");
-const taskTime = ref("");
-const taskPriority = ref("");
-const taskAssociatedContact = ref("");
-
-const statusOptions = [
-  { value: "", label: "Select Data" },
-  { value: "todo", label: "To Do" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "done", label: "Done" },
-];
-
-const assigneeOptions = [
-  { value: "", label: "Select Data" },
-  { value: "thomas", label: "Thomas Anree" },
-  { value: "abdul", label: "Abdul" },
-];
-
-const priorityOptions = [
-  { value: "", label: "Select Data" },
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
-];
-
-// Docs
-const docDescription = ref(
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-);
-const docFileSource = ref("");
-const docDropdownOpen = ref(false);
-const docDropdownRef = ref(null);
-const selectedDocFiles = ref([]);
-
-const fileSourceOptions = [
-  { value: "", label: "Select File Source" },
-  { value: "local", label: "Local File" },
-  { value: "google_drive", label: "Google Drive" },
-  { value: "dropbox", label: "Dropbox" },
-];
-
-const handleDocFileChange = (e) => {
-  selectedDocFiles.value = Array.from(e.target.files);
-};
-
-const removeDocFile = (index) => {
-  selectedDocFiles.value.splice(index, 1);
-};
-
-const handleClose = () => emit("close");
-const handleBack = () => emit("back");
-
-const handleSave = () => {
-  if (props.isSaving) {
-    return;
-  }
-
-  emit("submit", {
-    entityType: props.entityType,
-    note: noteContent.value,
-    task: {
-      name: taskName.value,
-      content: taskContent.value,
-      status: taskStatus.value,
-      assignee: taskAssignee.value,
-      dueDate: taskDueDate.value,
-      time: taskTime.value,
-      priority: taskPriority.value,
-      associatedContact: taskAssociatedContact.value,
+  props: {
+    isOpen: {
+      type: Boolean,
+      default: false,
     },
-    docs: {
-      description: docDescription.value,
-      fileSource: docFileSource.value,
-      files: selectedDocFiles.value,
+    title: {
+      type: String,
+      default: "Add Contact / Details",
     },
-  });
-};
-
-const handleReset = () => {
-  noteContent.value = "";
-  taskName.value = "";
-  taskContent.value = "";
-  taskStatus.value = "";
-  taskAssignee.value = "";
-  taskDueDate.value = "";
-  taskTime.value = "";
-  taskPriority.value = "";
-  taskAssociatedContact.value = "";
-  docDescription.value = "";
-  docFileSource.value = "";
-  selectedDocFiles.value = [];
+    saveButtonText: {
+      type: String,
+      default: "Save",
+    },
+    isSaving: {
+      type: Boolean,
+      default: false,
+    },
+    entityType: {
+      type: String,
+      default: "contact",
+    },
+    contact: {
+      type: Object,
+      default: () => ({}),
+    },
+    // NEW: Dynamic options props
+    statusOptions: {
+      type: Array,
+      default: () => [
+        { value: "", label: "Select Data" },
+        { value: "todo", label: "To Do" },
+        { value: "in_progress", label: "In Progress" },
+        { value: "done", label: "Done" },
+      ],
+    },
+    assigneeOptions: {
+      type: Array,
+      default: () => [
+        { value: "", label: "Select Data" },
+        { value: "thomas", label: "Thomas Anree" },
+        { value: "abdul", label: "Abdul" },
+      ],
+    },
+    priorityOptions: {
+      type: Array,
+      default: () => [
+        { value: "", label: "Select Data" },
+        { value: "low", label: "Low" },
+        { value: "medium", label: "Medium" },
+        { value: "high", label: "High" },
+      ],
+    },
+  },
+  emits: ["close", "submit", "back"],
+  data() {
+    return {
+      showNotes: true,
+      showTasks: true,
+      showDocs: true,
+      noteContent: "",
+      taskName: "",
+      taskContent: "",
+      taskStatus: "",
+      taskAssignee: "",
+      taskDueDate: "",
+      taskTime: "",
+      taskPriority: "",
+      taskAssociatedContact: "",
+      docDescription: "",
+      docFileSource: "",
+      docDropdownOpen: false,
+      selectedDocFiles: [],
+      fileSourceOptions: [
+        { value: "", label: "Select File Source" },
+        { value: "local", label: "Local File" },
+        { value: "google_drive", label: "Google Drive" },
+        { value: "dropbox", label: "Dropbox" },
+      ],
+    };
+  },
+  methods: {
+    handleDocFileChange(e) {
+      this.selectedDocFiles = Array.from(e.target.files);
+    },
+    removeDocFile(index) {
+      this.selectedDocFiles.splice(index, 1);
+    },
+    handleClose() {
+      this.$emit("close");
+    },
+    handleBack() {
+      this.$emit("back");
+    },
+    handleSave() {
+      if (this.isSaving) {
+        return;
+      }
+      this.$emit("submit", {
+        entityType: this.entityType,
+        note: this.noteContent,
+        task: {
+          name: this.taskName,
+          content: this.taskContent,
+          status: this.taskStatus,
+          assignee: this.taskAssignee,
+          dueDate: this.taskDueDate,
+          time: this.taskTime,
+          priority: this.taskPriority,
+          associatedContact: this.taskAssociatedContact,
+        },
+        docs: {
+          description: this.docDescription,
+          fileSource: this.docFileSource,
+          files: this.selectedDocFiles,
+        },
+      });
+      this.handleReset();
+    },
+    handleReset() {
+      this.noteContent = "";
+      this.taskName = "";
+      this.taskContent = "";
+      this.taskStatus = "";
+      this.taskAssignee = "";
+      this.taskDueDate = "";
+      this.taskTime = "";
+      this.taskPriority = "";
+      this.taskAssociatedContact = "";
+      this.docDescription = "";
+      this.docFileSource = "";
+      this.selectedDocFiles = [];
+    },
+  },
 };
 </script>
 
 <template>
   <!-- Overlay -->
-  <Transition name="overlay">
+  <transition name="overlay">
     <div
       v-if="isOpen"
-      class="fixed inset-0 bg-sub-text/80 z-40 transition-all duration-300"
+      class="fixed inset-0 bg-sub-text/80 z-55 transition-all duration-300"
       @click="handleClose"
     ></div>
-  </Transition>
+  </transition>
 
   <!-- Slide Panel -->
-  <Transition name="slide">
+  <transition name="slide">
     <div
       v-if="isOpen"
-      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-50 flex flex-col"
+      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-60 flex flex-col"
       @click.stop
     >
       <!-- Header -->
       <div
         class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
       >
-        <h2 class="text-xl font-bold text-dark-base">{{ props.title }}</h2>
+        <h2 class="text-xl font-bold text-dark-base">{{ title }}</h2>
         <button
           @click="handleClose"
           class="p-2 hover:bg-light-base rounded-lg transition-colors"
@@ -748,10 +754,8 @@ const handleReset = () => {
                         docFileSource ? 'text-dark-base' : 'text-gray-400'
                       "
                     >
-                      {{
-                        fileSourceOptions.find((o) => o.value === docFileSource)
-                          ?.label || "Select File Source"
-                      }}
+                      { fileSourceOptions.find((o) => o.value === docFileSource)
+                      ?.label || "Select File Source" }
                     </span>
                     <svg
                       class="w-4 h-4 text-sub-text transition-transform"
@@ -872,17 +876,17 @@ const handleReset = () => {
           <button
             type="button"
             @click="handleSave"
-            :disabled="props.isSaving"
+            :disabled="isSaving"
             class="flex items-center gap-2 px-5 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
-            :class="{ 'opacity-60 cursor-not-allowed': props.isSaving }"
+            :class="{ 'opacity-60 cursor-not-allowed': isSaving }"
           >
-            {{ props.isSaving ? "Saving..." : props.saveButtonText }}
+            {{ isSaving ? "Saving..." : saveButtonText }}
             <ChevronDown :size="16" />
           </button>
         </div>
       </div>
     </div>
-  </Transition>
+  </transition>
 </template>
 
 <style scoped>

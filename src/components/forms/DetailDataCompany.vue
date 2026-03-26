@@ -3,6 +3,7 @@ import { ref, watch, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useStatuses } from "@/composables/useStatuses";
 import { toast } from "vue3-toastify";
+
 import {
   X,
   ChevronDown,
@@ -50,7 +51,9 @@ const dealOptions = computed(() => {
 const typeDisplayName = computed(() => {
   if (!companyForm.value.type) return "-";
   // statuses adalah ref, jadi akses .value atau gunakan langsung jika sudah array
-  const statusesArray = Array.isArray(statuses) ? statuses : (statuses.value || []);
+  const statusesArray = Array.isArray(statuses)
+    ? statuses
+    : statuses.value || [];
   const typeStatus = statusesArray.find((s) => s.id == companyForm.value.type);
   return typeStatus ? typeStatus.name : companyForm.value.type;
 });
@@ -279,20 +282,22 @@ const resolveAssociationValues = (candidates, options) => {
 const resolveUserValue = (candidate, options) => {
   if (!candidate || !options) return "";
   const normalizedCandidate = String(candidate).trim().toLowerCase();
-  
-  const match = options.find(opt => 
-    String(opt.value).trim().toLowerCase() === normalizedCandidate ||
-    String(opt.label).trim().toLowerCase() === normalizedCandidate
+
+  const match = options.find(
+    (opt) =>
+      String(opt.value).trim().toLowerCase() === normalizedCandidate ||
+      String(opt.label).trim().toLowerCase() === normalizedCandidate,
   );
-  
+
   return match ? match.value : candidate;
 };
 
 const getCompanyFormDefaults = (company = null) => {
   // Extract actual company data if it's wrapped in the response format
-  const data = (company && company.companies && company.companies.length > 0) 
-    ? company.companies[0] 
-    : company;
+  const data =
+    company && company.companies && company.companies.length > 0
+      ? company.companies[0]
+      : company;
 
   const deals = getAssociationCandidates(
     data?.dealsassoc ||
@@ -301,7 +306,7 @@ const getCompanyFormDefaults = (company = null) => {
       data?.deals_id ||
       data?.deal_id ||
       data?.deals || // Handle 'deals' field from user JSON
-      data?.deal
+      data?.deal,
   );
 
   const contacts = getAssociationCandidates(
@@ -311,7 +316,7 @@ const getCompanyFormDefaults = (company = null) => {
       data?.contacts_id ||
       data?.contact_id ||
       data?.contact || // Handle 'contact' field from user JSON
-      data?.contact
+      data?.contact,
   );
 
   return {
@@ -329,7 +334,11 @@ const getCompanyFormDefaults = (company = null) => {
     country: data?.country || "",
     pos_code: data?.pos_code || data?.posCode || "",
     source: data?.source || "",
-    type: data?.typeid ? Number(data.typeid) : (!isNaN(data?.type) && data?.type !== "" && data?.type !== null ? Number(data.type) : ""),
+    type: data?.typeid
+      ? Number(data.typeid)
+      : !isNaN(data?.type) && data?.type !== "" && data?.type !== null
+        ? Number(data.type)
+        : "",
     dealsassoc: deals,
     contactassoc: contacts,
   };
@@ -360,9 +369,10 @@ const syncAssociationValues = (company = props.company) => {
   }
 
   // Handle wrapped response format
-  const data = (company && company.companies && company.companies.length > 0) 
-    ? company.companies[0] 
-    : company;
+  const data =
+    company && company.companies && company.companies.length > 0
+      ? company.companies[0]
+      : company;
 
   const dealsCandidates = getAssociationCandidates(
     companyForm.value.dealsassoc.length > 0
@@ -505,9 +515,10 @@ const syncAdditionalData = (company) => {
   if (!company) return;
 
   // Handle wrapped response format
-  const data = (company && company.companies && company.companies.length > 0) 
-    ? company.companies[0] 
-    : company;
+  const data =
+    company && company.companies && company.companies.length > 0
+      ? company.companies[0]
+      : company;
 
   // Notes mapping
   noteContent.value = data.notes || "";
@@ -518,14 +529,14 @@ const syncAdditionalData = (company) => {
   taskStatus.value = data.status || data.statustask || "";
   taskAssignee.value = resolveUserValue(data.assignee, assigneeOptions.value);
   taskDueDate.value = data.due_date || "";
-  
+
   // Format task_time: HH:mm:ss.SSSSSSS -> HH:mm
   if (data.task_time) {
-    taskTime.value = data.task_time.split('.')[0].substring(0, 5);
+    taskTime.value = data.task_time.split(".")[0].substring(0, 5);
   } else {
     taskTime.value = "";
   }
-  
+
   taskPriority.value = data.priority || data.prioritytask || "";
 
   // Docs mapping
@@ -893,7 +904,7 @@ watch(
                   >
                     <option value="" disabled selected>Select Type</option>
                     <option
-                      v-for="status in (statuses || [])"
+                      v-for="status in statuses || []"
                       :key="status.id"
                       :value="Number(status.id) || ''"
                     >
@@ -1495,8 +1506,6 @@ watch(
                   </option>
                 </select>
               </div>
-
-              
             </div>
           </div>
 

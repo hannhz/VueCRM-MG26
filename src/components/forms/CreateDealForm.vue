@@ -1,7 +1,14 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "vuex";
-import { X, Plus, ChevronDown, Paperclip } from "lucide-vue-next";
+import {
+  X,
+  Plus,
+  ChevronDown,
+  Paperclip,
+  Search,
+  Check,
+} from "lucide-vue-next";
 import ContactDetailForm from "./DetailFormDuplicate.vue";
 import AddCompanyForm from "./AddCompanyForm.vue";
 import AddContactQuickForm from "./AddContactQuickForm.vue";
@@ -111,6 +118,7 @@ onMounted(() => {
   store.dispatch("contacts/fetchAllContacts");
   store.dispatch("company/fetchAllcompany");
   applyDefaultOwner();
+  document.addEventListener("click", handleClickOutside);
 });
 
 watch(
@@ -130,6 +138,12 @@ const showDetailForm = ref(false);
 const showAddCompanyForm = ref(false);
 const showAddContactQuickForm = ref(false);
 const isSavingBeforeDetail = ref(false);
+
+// Search and dropdown states for associations
+const contactSearch = ref("");
+const companySearch = ref("");
+const isContactDropdownOpen = ref(false);
+const isCompanyDropdownOpen = ref(false);
 
 // Documents dropdown
 const docSourceOptions = [
@@ -161,8 +175,8 @@ const formData = ref({
   source: "",
   description: "",
   documents: null,
-  contactassoc: "",
-  companyassoc: "",
+  contactassoc: [],
+  companyassoc: [],
 });
 
 const handleFileChange = (e) => {
@@ -180,6 +194,92 @@ const handleSubmit = async () => {
   showDetailForm.value = true;
 };
 
+const allContacts = computed(() => store.getters["contacts/allContacts"] || []);
+const allCompanies = computed(() => store.getters["company/allcompany"] || []);
+
+const filteredContacts = computed(() => {
+  if (!contactSearch.value) return allContacts.value;
+  return allContacts.value.filter((c) => {
+    const fullName = `${c.first_name || ""} ${c.last_name || ""}`.toLowerCase();
+    const email = (c.email || "").toLowerCase();
+    return (
+      fullName.includes(contactSearch.value.toLowerCase()) ||
+      email.includes(contactSearch.value.toLowerCase())
+    );
+  });
+});
+
+const filteredCompanies = computed(() => {
+  if (!companySearch.value) return allCompanies.value;
+  return allCompanies.value.filter((c) => {
+    const name = (c.company_name || c.name || "").toLowerCase();
+    return name.includes(companySearch.value.toLowerCase());
+  });
+});
+
+const selectedContacts = computed(() => {
+  return allContacts.value.filter((c) =>
+    formData.value.contactassoc.includes(c.id),
+  );
+});
+
+const selectedCompanies = computed(() => {
+  return allCompanies.value.filter((c) =>
+    formData.value.companyassoc.includes(c.id),
+  );
+});
+
+const toggleContactDropdown = () => {
+  isContactDropdownOpen.value = !isContactDropdownOpen.value;
+};
+
+const toggleCompanyDropdown = () => {
+  isCompanyDropdownOpen.value = !isCompanyDropdownOpen.value;
+};
+
+const filterContacts = () => {
+  isContactDropdownOpen.value = true;
+};
+
+const filterCompanies = () => {
+  isCompanyDropdownOpen.value = true;
+};
+
+const toggleContact = (contact) => {
+  const index = formData.value.contactassoc.indexOf(contact.id);
+  if (index === -1) {
+    formData.value.contactassoc.push(contact.id);
+  } else {
+    formData.value.contactassoc.splice(index, 1);
+  }
+};
+
+const isContactSelected = (id) => {
+  return formData.value.contactassoc.includes(id);
+};
+
+const toggleCompany = (company) => {
+  const index = formData.value.companyassoc.indexOf(company.id);
+  if (index === -1) {
+    formData.value.companyassoc.push(company.id);
+  } else {
+    formData.value.companyassoc.splice(index, 1);
+  }
+};
+
+const isCompanySelected = (id) => {
+  return formData.value.companyassoc.includes(id);
+};
+
+const handleClickOutside = (e) => {
+  if (!e.target.closest("[data-contacts-dropdown]")) {
+    isContactDropdownOpen.value = false;
+  }
+  if (!e.target.closest("[data-companies-dropdown]")) {
+    isCompanyDropdownOpen.value = false;
+  }
+};
+
 const handleDetailSubmit = async (detailPayload) => {
   if (isSavingBeforeDetail.value) {
     return;
@@ -191,12 +291,8 @@ const handleDetailSubmit = async (detailPayload) => {
     const submissionData = {
       ...formData.value,
       owner: formData.value.owner || currentUserName.value || "",
-      contactassoc: formData.value.contactassoc
-        ? [formData.value.contactassoc]
-        : [],
-      companyassoc: formData.value.companyassoc
-        ? [formData.value.companyassoc]
-        : [],
+      contactassoc: (formData.value.contactassoc || []).join(","),
+      companyassoc: (formData.value.companyassoc || []).join(","),
     };
 
     console.log("Submitting Deal Payload:", submissionData, detailPayload);
@@ -216,6 +312,7 @@ const handleDetailSubmit = async (detailPayload) => {
     }
 
     await alertService.toastSuccess(response?.msg || "Deal saved successfully");
+    handleReset();
     emit("submit", response);
     showDetailForm.value = false;
     handleClose();
@@ -252,9 +349,11 @@ const handleReset = () => {
     source: "",
     description: "",
     documents: null,
-    contactassoc: "",
-    companyassoc: "",
+    contactassoc: [],
+    companyassoc: [],
   };
+  contactSearch.value = "";
+  companySearch.value = "";
   showOptional.value = false;
 };
 </script>
@@ -593,28 +692,82 @@ const handleReset = () => {
           </div>
 
           <!-- Contact Association -->
-          <div>
-            <label class="block text-sm font-medium text-dark-base mb-2"
-              >Contact Association</label
-            >
+          <div data-contacts-dropdown>
+            <label class="block text-sm font-medium text-dark-base mb-2">
+              Contact Association
+            </label>
             <div class="relative">
-              <select
-                v-model="formData.contactassoc"
-                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-              >
-                <option
-                  v-for="opt in contactOptions"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
-                  {{ opt.label }}
-                </option>
-              </select>
+              <input
+                v-model="contactSearch"
+                type="text"
+                placeholder="Search contacts..."
+                @click="toggleContactDropdown"
+                @input="filterContacts"
+                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
               <ChevronDown
                 :size="16"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none transition-transform duration-200"
+                :class="{ 'rotate-180': isContactDropdownOpen }"
               />
+
+              <!-- Dropdown -->
+              <div
+                v-if="isContactDropdownOpen && filteredContacts.length > 0"
+                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
+              >
+                <div
+                  v-for="contact in filteredContacts"
+                  :key="contact.id"
+                  @click="toggleContact(contact)"
+                  class="px-3 py-2 hover:bg-light-base cursor-pointer text-sm text-dark-base"
+                >
+                  {{ contact.first_name }} {{ contact.last_name }}
+                </div>
+              </div>
+
+              <!-- Empty State -->
+              <div
+                v-if="
+                  isContactDropdownOpen &&
+                  filteredContacts.length === 0 &&
+                  allContacts.length > 0
+                "
+                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
+              >
+                <p class="text-sm text-sub-text">No contacts found</p>
+              </div>
+
+              <!-- Loading/No Data State -->
+              <div
+                v-if="isContactDropdownOpen && allContacts.length === 0"
+                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
+              >
+                <p class="text-sm text-sub-text">Loading contacts...</p>
+              </div>
             </div>
+
+            <!-- Selected Contacts -->
+            <div
+              v-if="selectedContacts.length > 0"
+              class="mt-2 flex flex-wrap gap-2"
+            >
+              <span
+                v-for="contact in selectedContacts"
+                :key="contact.id"
+                class="bg-light-base px-2 py-1 rounded text-xs text-dark-base flex items-center gap-1"
+              >
+                {{ contact.first_name }} {{ contact.last_name }}
+                <button
+                  type="button"
+                  @click="toggleContact(contact)"
+                  class="hover:text-red"
+                >
+                  <X :size="14" />
+                </button>
+              </span>
+            </div>
+
             <button
               type="button"
               @click="showAddContactQuickForm = true"
@@ -626,28 +779,84 @@ const handleReset = () => {
           </div>
 
           <!-- Companies Association -->
-          <div>
-            <label class="block text-sm font-medium text-dark-base mb-2"
-              >Companies Association</label
-            >
+          <div data-companies-dropdown>
+            <label class="block text-sm font-medium text-dark-base mb-2">
+              Companies Association
+            </label>
             <div class="relative">
-              <select
-                v-model="formData.companyassoc"
-                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-              >
-                <option
-                  v-for="opt in companyOptions"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
-                  {{ opt.label }}
-                </option>
-              </select>
+              <input
+                v-model="companySearch"
+                type="text"
+                placeholder="Search companies..."
+                @click="toggleCompanyDropdown"
+                @input="filterCompanies"
+                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
               <ChevronDown
                 :size="16"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none transition-transform duration-200"
+                :class="{ 'rotate-180': isCompanyDropdownOpen }"
               />
+
+              <!-- Dropdown -->
+              <div
+                v-if="isCompanyDropdownOpen && filteredCompanies.length > 0"
+                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
+              >
+                <div
+                  v-for="company in filteredCompanies"
+                  :key="company.id"
+                  @click="toggleCompany(company)"
+                  class="px-3 py-2 hover:bg-light-base cursor-pointer text-sm text-dark-base"
+                >
+                  {{
+                    company.company_name || company.name || "Unnamed Company"
+                  }}
+                </div>
+              </div>
+
+              <!-- Empty State -->
+              <div
+                v-if="
+                  isCompanyDropdownOpen &&
+                  filteredCompanies.length === 0 &&
+                  allCompanies.length > 0
+                "
+                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
+              >
+                <p class="text-sm text-sub-text">No companies found</p>
+              </div>
+
+              <!-- Loading/No Data State -->
+              <div
+                v-if="isCompanyDropdownOpen && allCompanies.length === 0"
+                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
+              >
+                <p class="text-sm text-sub-text">Loading companies...</p>
+              </div>
             </div>
+
+            <!-- Selected Companies -->
+            <div
+              v-if="selectedCompanies.length > 0"
+              class="mt-2 flex flex-wrap gap-2"
+            >
+              <span
+                v-for="company in selectedCompanies"
+                :key="company.id"
+                class="bg-light-base px-2 py-1 rounded text-xs text-dark-base flex items-center gap-1"
+              >
+                {{ company.company_name || company.name }}
+                <button
+                  type="button"
+                  @click="toggleCompany(company)"
+                  class="hover:text-red"
+                >
+                  <X :size="14" />
+                </button>
+              </span>
+            </div>
+
             <button
               type="button"
               @click="showAddCompanyForm = true"

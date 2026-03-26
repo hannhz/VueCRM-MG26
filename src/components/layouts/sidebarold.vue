@@ -16,7 +16,7 @@ import Documents from "@/components/documents/Documents.vue";
 import DocumentList from "@/components/documents/DocumentList.vue";
 import DocumentsTemplate from "@/components/documents/DocumentsTemplate.vue";
 import DocumentsShortCode from "@/components/documents/DocumentsShortCode.vue";
-import UserSetings from "@/components/user/usersetings.vue";
+import UserSetings from "@/components/user/usersettings/usersetings.vue";
 import UserPermission from "@/components/user/userpermission.vue";
 import UserTeam from "@/components/user/userteam.vue";
 import User from "@/components/user/user.vue";

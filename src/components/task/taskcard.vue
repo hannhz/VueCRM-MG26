@@ -1,13 +1,15 @@
-
-
 <template>
-  <div class="w-full bg-white rounded-lg shadow-sm h-147 border border-outline flex flex-col overflow-hidden">
+  <div
+    class="w-full bg-white rounded-lg shadow-sm h-147 border border-outline flex flex-col overflow-hidden"
+  >
     <!-- Action Bar -->
     <div class="pt-4 pr-4 pl-4">
       <div class="flex items-center gap-4 w-full mb-4">
         <div class="flex items-center gap-3 flex-1 min-w-0">
           <!-- Filter Button -->
-          <button class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition">
+          <button
+            class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
+          >
             <Filter :size="20" class="text-dark-base" />
           </button>
 
@@ -20,7 +22,9 @@
           />
 
           <!-- Search Button -->
-          <button class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition">
+          <button
+            class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition"
+          >
             <Search :size="20" class="text-dark-base" />
           </button>
 
@@ -142,83 +146,95 @@
     </div>
 
     <!-- Error Message -->
-    <p v-if="error" class="px-6 py-3 text-sm text-red-600 border-t border-gray-100">
+    <p
+      v-if="error"
+      class="px-6 py-3 text-sm text-red-600 border-t border-gray-100"
+    >
       {{ error }}
     </p>
   </div>
 </template>
 
 <script>
-import draggable from 'vuedraggable';
-import { Filter, Search } from 'lucide-vue-next';
-import { alertService } from '@/services/alertService';
+import draggable from "vuedraggable";
+import { Filter, Search } from "lucide-vue-next";
+import { alertService } from "@/services/alertService";
 
 export default {
-  name: 'TaskCard',
+  name: "TaskCard",
   components: {
     draggable,
     Filter,
     Search,
   },
-  emits: ['viewDetail'],
+  emits: ["viewDetail"],
   data() {
     return {
       boards: [],
       isSyncingStage: false,
       boardMeta: [
-        { id: 1, key: 'not_started', name: 'Not Started' },
-        { id: 2, key: 'in_progress', name: 'In Progress' },
-        { id: 3, key: 'waiting', name: 'Waiting' },
-        { id: 4, key: 'completed', name: 'Completed' },
-        { id: 5, key: 'deferred', name: 'Deferred' },
+        { id: 1, key: "not_started", name: "Not Started" },
+        { id: 2, key: "in_progress", name: "In Progress" },
+        { id: 3, key: "waiting", name: "Waiting" },
+        { id: 4, key: "completed", name: "Completed" },
+        { id: 5, key: "deferred", name: "Deferred" },
       ],
     };
   },
   computed: {
     allTasks() {
-      return this.$store.getters['tasks/filteredTasks'] || [];
+      return this.$store.getters["tasks/filteredTasks"] || [];
     },
     searchQuery: {
       get() {
-        return this.$store.getters['tasks/searchQuery'] || '';
+        return this.$store.getters["tasks/searchQuery"] || "";
       },
       set(value) {
-        this.$store.dispatch('tasks/setSearchQuery', value);
+        this.$store.dispatch("tasks/setSearchQuery", value);
       },
     },
     error() {
-      return this.$store.getters['tasks/error'];
+      return this.$store.getters["tasks/error"];
     },
     totalVisibleTasks() {
-      return this.boards.reduce((total, board) => total + board.items.length, 0);
+      return this.boards.reduce(
+        (total, board) => total + board.items.length,
+        0,
+      );
     },
   },
   methods: {
     normalizeStatus(statusRaw) {
-      const status = String(statusRaw || 'not_started')
+      const status = String(statusRaw || "not_started")
         .toLowerCase()
-        .replace(/\s+/g, '_');
+        .replace(/\s+/g, "_");
 
-      if (status.includes('progress')) return 'in_progress';
-      if (status.includes('wait')) return 'waiting';
-      if (status.includes('complete') || status.includes('done')) return 'completed';
-      if (status.includes('defer')) return 'deferred';
-      return 'not_started';
+      if (status.includes("progress")) return "in_progress";
+      if (status.includes("wait")) return "waiting";
+      if (status.includes("complete") || status.includes("done"))
+        return "completed";
+      if (status.includes("defer")) return "deferred";
+      return "not_started";
     },
 
     normalizeTask(task) {
       return {
         id: task.id,
-        title: task.title || task.name || task.task_name || 'Untitled Task',
-        description: task.description || task.task_content || '-',
+        title: task.title || task.name || task.task_name || "Untitled Task",
+        description: task.description || task.task_content || "-",
         stage: this.normalizeStatus(task.status || task.stage),
-        dueDate: task.dueDate || task.due_date || task.date || task.deadline || '-',
-        time: task.time || task.task_time || task.due_time || '-',
+        dueDate:
+          task.dueDate || task.due_date || task.date || task.deadline || "-",
+        time: task.time || task.task_time || task.due_time || "-",
         associatedWith:
-          task.associatedWith || task.associated_with || task.contact_name || task.company_name || '-',
-        updatedAt: task.updated_at || task.updatedAt || '-',
-        owner: task.owner || task.assignee || task.user_name || '-',
-        priority: task.priority || '',
+          task.associatedWith ||
+          task.associated_with ||
+          task.contact_name ||
+          task.company_name ||
+          "-",
+        updatedAt: task.updated_at || task.updatedAt || "-",
+        owner: task.owner || task.assignee || task.user_name || "-",
+        priority: task.priority || "",
         raw: task,
       };
     },
@@ -232,9 +248,11 @@ export default {
         deferred: [],
       };
 
-      rawTasks.map((task) => this.normalizeTask(task)).forEach((task) => {
-        buckets[task.stage].push(task);
-      });
+      rawTasks
+        .map((task) => this.normalizeTask(task))
+        .forEach((task) => {
+          buckets[task.stage].push(task);
+        });
 
       this.boards = this.boardMeta.map((board) => ({
         ...board,
@@ -244,17 +262,17 @@ export default {
 
     getStageClass(stage) {
       const stageClasses = {
-        not_started: 'bg-slate-100 text-slate-700',
-        in_progress: 'bg-blue-100 text-blue-700',
-        waiting: 'bg-yellow-100 text-yellow-700',
-        completed: 'bg-emerald-100 text-emerald-700',
-        deferred: 'bg-red-100 text-red-700',
+        not_started: "bg-slate-100 text-slate-700",
+        in_progress: "bg-blue-100 text-blue-700",
+        waiting: "bg-yellow-100 text-yellow-700",
+        completed: "bg-emerald-100 text-emerald-700",
+        deferred: "bg-red-100 text-red-700",
       };
-      return stageClasses[stage] || 'bg-slate-100 text-slate-700';
+      return stageClasses[stage] || "bg-slate-100 text-slate-700";
     },
 
     openTaskDetail(task) {
-      this.$emit('viewDetail', task.raw || task);
+      this.$emit("viewDetail", task.raw || task);
     },
 
     async handleBoardChange(event, targetBoard) {
@@ -270,22 +288,23 @@ export default {
       this.isSyncingStage = true;
 
       try {
-        await this.$store.dispatch('tasks/updateTask', {
+        await this.$store.dispatch("tasks/updateTask", {
           id: movedTask.id,
           formData: {
             task_name: movedTask.title,
-            description: movedTask.description === '-' ? '' : movedTask.description,
+            description:
+              movedTask.description === "-" ? "" : movedTask.description,
             status: nextStage,
-            priority: movedTask.priority || '',
-            assignee: movedTask.owner === '-' ? '' : movedTask.owner,
-            due_date: movedTask.dueDate === '-' ? '' : movedTask.dueDate,
-            task_time: movedTask.time === '-' ? '' : movedTask.time,
+            priority: movedTask.priority || "",
+            assignee: movedTask.owner === "-" ? "" : movedTask.owner,
+            due_date: movedTask.dueDate === "-" ? "" : movedTask.dueDate,
+            task_time: movedTask.time === "-" ? "" : movedTask.time,
           },
         });
       } catch (err) {
         movedTask.stage = previousStage;
-        await this.$store.dispatch('tasks/fetchAllTasks').catch(() => {});
-        alertService.error('Gagal pindah stage task. Coba lagi.');
+        await this.$store.dispatch("tasks/fetchAllTasks").catch(() => {});
+        alertService.error("Gagal pindah stage task. Coba lagi.");
       } finally {
         this.isSyncingStage = false;
       }
@@ -295,19 +314,19 @@ export default {
       event.stopPropagation();
 
       const confirmed = await alertService.confirm(
-        'Hapus Task?',
-        'Task ini akan dihapus secara permanen. Lanjutkan?',
+        "Hapus Task?",
+        "Task ini akan dihapus secara permanen. Lanjutkan?",
       );
 
       if (!confirmed) return;
 
       try {
-        await this.$store.dispatch('tasks/deleteTask', task.raw || task);
-        alertService.success('Task berhasil dihapus.');
-        await this.$store.dispatch('tasks/fetchAllTasks').catch(() => {});
+        await this.$store.dispatch("tasks/deleteTask", task.raw || task);
+        alertService.success("Task berhasil dihapus.");
+        await this.$store.dispatch("tasks/fetchAllTasks").catch(() => {});
       } catch (err) {
-        console.error('Delete task error:', err);
-        alertService.error('Gagal menghapus task. Coba lagi.');
+        console.error("Delete task error:", err);
+        alertService.error("Gagal menghapus task. Coba lagi.");
       }
     },
   },
@@ -318,7 +337,7 @@ export default {
   },
   mounted() {
     this.rebuildBoards(this.allTasks);
-    this.$store.dispatch('tasks/fetchAllTasks').catch(() => {});
+    this.$store.dispatch("tasks/fetchAllTasks").catch(() => {});
   },
 };
 </script>

@@ -8,7 +8,8 @@ const extractCompaniesArray = (payload) => {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.companies)) return payload.companies;
   // Handle nested pagination structure: companies: { data: [...], current_page: 1, ... }
-  if (payload?.companies?.data && Array.isArray(payload.companies.data)) return payload.companies.data;
+  if (payload?.companies?.data && Array.isArray(payload.companies.data))
+    return payload.companies.data;
   if (Array.isArray(payload?.data)) return payload.data;
   if (Array.isArray(payload?.data?.data)) return payload.data.data;
   return [];
@@ -104,7 +105,7 @@ const actions = {
     // Always fetch fresh data to get all companies with pagination support
     commit("SET_LOADING", true);
     commit("SET_ERROR", null);
-    
+
     const promise = new Promise(async (resolve, reject) => {
       try {
         let companies = [];
@@ -127,7 +128,7 @@ const actions = {
           companies = companies.concat(pageData);
 
           const paginationMeta = extractPaginationMeta(response.data);
-          
+
           if (!paginationMeta || currentPage >= paginationMeta.lastPage) {
             hasMorePages = false;
           } else {

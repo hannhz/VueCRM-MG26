@@ -7,14 +7,20 @@
       </span>
     </div>
 
-    <div class="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2">
+    <div
+      class="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2"
+    >
       <button
         @click="$emit('refresh')"
         :disabled="isLoading"
         class="h-9 w-9 rounded-lg border border-outline bg-white p-2 transition-all hover:bg-light-base active:scale-95 disabled:opacity-50 sm:h-10 sm:w-10"
         title="Refresh Data"
       >
-        <RefreshCw :size="18" :class="{ 'animate-spin': isLoading }" class="text-sub-text" />
+        <RefreshCw
+          :size="18"
+          :class="{ 'animate-spin': isLoading }"
+          class="text-sub-text"
+        />
       </button>
 
       <!-- Add New -->

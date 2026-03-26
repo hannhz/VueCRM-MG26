@@ -243,7 +243,9 @@ export default {
 
     selectedUsername() {
       const users = this.usersList || [];
-      const selectedUser = users.find((user) => user.email === this.selectedUserEmail);
+      const selectedUser = users.find(
+        (user) => user.email === this.selectedUserEmail,
+      );
       const fromStore =
         selectedUser?.username ||
         selectedUser?.user_name ||
@@ -268,7 +270,9 @@ export default {
     },
 
     effectiveMenuNames() {
-      return this.dbTopLevelMenus.length > 0 ? this.dbTopLevelMenus : projectMenus;
+      return this.dbTopLevelMenus.length > 0
+        ? this.dbTopLevelMenus
+        : projectMenus;
     },
 
     visiblePermissions() {
@@ -311,7 +315,9 @@ export default {
       if (direct) return direct;
 
       const dbmenu2 = this.layoutMenuWeb?.dbmenu2 || [];
-      const caption = String(row.caption || row.CAPTION || row.menu || "").trim();
+      const caption = String(
+        row.caption || row.CAPTION || row.menu || "",
+      ).trim();
 
       if (caption) {
         const matched = dbmenu2.find((item) => {
@@ -474,9 +480,7 @@ export default {
         const apiUsers = body.users || body.user_options || [];
         if (Array.isArray(apiUsers) && apiUsers.length > 0) {
           const parsedUsers = apiUsers
-            .map((item) =>
-              typeof item === "string" ? item : item?.email,
-            )
+            .map((item) => (typeof item === "string" ? item : item?.email))
             .filter(
               (email) => typeof email === "string" && email.trim() !== "",
             );
@@ -510,9 +514,7 @@ export default {
         this.syncMenuPermissions(this.effectiveMenuNames);
         const status = error?.response?.status;
         const backendMessage =
-          error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          "";
+          error?.response?.data?.message || error?.response?.data?.error || "";
         const message =
           status === 500
             ? `Server error 500 on getflmenu${
@@ -542,19 +544,13 @@ export default {
           CAPTION: row.caption || row.name || row.menu || "",
           icon: this.resolveNonEmptyIcon(row),
           pathfile: row.pathfile || "",
-          ACCESS: Number.isFinite(row.accessLevel)
-            ? row.accessLevel
-            : 0,
+          ACCESS: Number.isFinite(row.accessLevel) ? row.accessLevel : 0,
           HASACCESS: row.akses ? 1 : 0,
           FLAGKRM: row.flagkrm,
           Status: Number.isFinite(row.status) ? row.status : 0,
-          ImageIndex: Number.isFinite(row.imageIndex)
-            ? row.imageIndex
-            : -1,
+          ImageIndex: Number.isFinite(row.imageIndex) ? row.imageIndex : -1,
           L1lama: Number.isFinite(row.l1lama) ? row.l1lama : 0,
-          ACCESSlama: Number.isFinite(row.accesslama)
-            ? row.accesslama
-            : 0,
+          ACCESSlama: Number.isFinite(row.accesslama) ? row.accesslama : 0,
         }));
 
         await api.post("berkas/saveedit", payload, {
@@ -562,16 +558,12 @@ export default {
         });
 
         if (!silent) {
-          alertService.toastSuccess(
-            "Permission changes saved successfully.",
-          );
+          alertService.toastSuccess("Permission changes saved successfully.");
         }
       } catch (error) {
         const status = error?.response?.status;
         const backendMessage =
-          error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          "";
+          error?.response?.data?.message || error?.response?.data?.error || "";
         const message =
           status === 500
             ? `Server error 500 on saveedit${
@@ -602,9 +594,7 @@ export default {
 
     const layout = this.layoutMenuWeb;
     if (!layout?.dbmenu2?.length) {
-      this.$store
-        .dispatch("settingsfe/actlayoutwebflmenu")
-        .catch(() => {});
+      this.$store.dispatch("settingsfe/actlayoutwebflmenu").catch(() => {});
     }
 
     this.loadPermissionFromApi();

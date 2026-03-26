@@ -12,7 +12,9 @@
 
     <div class="h-full overflow-auto overflow-x-auto">
       <table class="w-full table-fixed">
-        <thead class="sticky top-0 z-10 bg-white shadow-sm ring-1 ring-gray-200">
+        <thead
+          class="sticky top-0 z-10 bg-white shadow-sm ring-1 ring-gray-200"
+        >
           <tr class="border-b border-gray-200">
             <th class="w-16 px-6 py-4 text-left bg-white">
               <input
@@ -22,37 +24,49 @@
                 @change="$emit('toggle-select-all', $event.target.checked)"
               />
             </th>
-            <th class="w-[18%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white">
+            <th
+              class="w-[18%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
+            >
               <div class="flex items-center gap-2">
                 Company Name
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
             </th>
-            <th class="w-[22%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white">
+            <th
+              class="w-[22%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
+            >
               <div class="flex items-center gap-2">
                 Info Company
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
             </th>
-            <th class="w-[20%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white">
+            <th
+              class="w-[20%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
+            >
               <div class="flex items-center gap-2">
                 Associated with
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
             </th>
-            <th class="w-[10%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white">
+            <th
+              class="w-[10%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
+            >
               <div class="flex items-center gap-2">
                 Type
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
             </th>
-            <th class="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white">
+            <th
+              class="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
+            >
               <div class="flex items-center gap-2">
                 Created/Update
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
             </th>
-            <th class="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white">
+            <th
+              class="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
+            >
               <div class="flex items-center gap-2">
                 Owner
                 <ChevronDown :size="16" class="text-gray-400" />
@@ -64,7 +78,9 @@
           <tr v-if="companies.length === 0 && !isLoading">
             <td colspan="7" class="px-6 py-20 text-center text-sub-text">
               <div class="flex flex-col items-center gap-3">
-                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                <div
+                  class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center"
+                >
                   <Search :size="32" class="text-gray-400" />
                 </div>
                 <p class="text-lg font-medium">No companies found</p>
@@ -89,23 +105,35 @@
                 @change="onToggleRow(company.id, $event.target.checked)"
               />
             </td>
-            <td class="px-6 py-4 text-sm text-gray-800 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+            <td
+              class="px-6 py-4 text-sm text-gray-800 font-medium whitespace-nowrap overflow-hidden text-ellipsis"
+            >
               {{ company.company_name }}
             </td>
-            <td class="px-6 py-4 text-sm text-dark-base whitespace-nowrap overflow-hidden text-ellipsis">
+            <td
+              class="px-6 py-4 text-sm text-dark-base whitespace-nowrap overflow-hidden text-ellipsis"
+            >
               {{ company.website }}
             </td>
             <td class="px-6 py-4 text-sm text-dark-base leading-5">
-              <div class="whitespace-nowrap overflow-hidden text-ellipsis">{{ company.contactLabelsText }}</div>
-              <div class="whitespace-nowrap overflow-hidden text-ellipsis">{{ company.dealLabelsText }}</div>
+              <div class="whitespace-nowrap overflow-hidden text-ellipsis">
+                {{ company.contactLabelsText }}
+              </div>
+              <div class="whitespace-nowrap overflow-hidden text-ellipsis">
+                {{ company.dealLabelsText }}
+              </div>
             </td>
             <td class="px-6 py-4 text-sm text-dark-base">
               {{ company.typeName || company.type }}
             </td>
-            <td class="px-6 py-4 text-sm text-dark-base whitespace-nowrap overflow-hidden text-ellipsis">
+            <td
+              class="px-6 py-4 text-sm text-dark-base whitespace-nowrap overflow-hidden text-ellipsis"
+            >
               {{ company.updatedAtText }}
             </td>
-            <td class="px-6 py-4 text-sm text-dark-base whitespace-nowrap overflow-hidden text-ellipsis">
+            <td
+              class="px-6 py-4 text-sm text-dark-base whitespace-nowrap overflow-hidden text-ellipsis"
+            >
               {{ company.company_owner || "-" }}
             </td>
           </tr>

@@ -10,6 +10,20 @@ export function useStatuses() {
   const statusesError = ref(null);
 
   const fetchStatuses = async () => {
+    if (!api || !api.get) {
+      console.warn("API module not ready, using fallback statuses");
+      statuses.value = [
+        { id: 1, name: "Competitor" },
+        { id: 2, name: "Customer" },
+        { id: 3, name: "Ex Customer" },
+        { id: 4, name: "Lead" },
+        { id: 5, name: "Opportunity" },
+        { id: 6, name: "Partner" },
+        { id: 7, name: "Qualified" },
+      ];
+      return;
+    }
+
     statusesLoading.value = true;
     statusesError.value = null;
 

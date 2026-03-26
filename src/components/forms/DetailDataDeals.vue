@@ -199,8 +199,12 @@ const getAssociationCandidates = (...values) => {
           value.name,
           value.label,
           // Handle plural objects if they are arrays
-          ...(Array.isArray(value.contacts) ? getAssociationCandidates(value.contacts) : []),
-          ...(Array.isArray(value.companies) ? getAssociationCandidates(value.companies) : []),
+          ...(Array.isArray(value.contacts)
+            ? getAssociationCandidates(value.contacts)
+            : []),
+          ...(Array.isArray(value.companies)
+            ? getAssociationCandidates(value.companies)
+            : []),
         ];
       }
 
@@ -237,9 +241,11 @@ const resolveAssociationValue = (candidates, options) => {
     }
 
     const matchedByLabel = options.find((option) => {
-      return String(option.label ?? option.name ?? "")
-        .trim()
-        .toLowerCase() === normalizedCandidate;
+      return (
+        String(option.label ?? option.name ?? "")
+          .trim()
+          .toLowerCase() === normalizedCandidate
+      );
     });
 
     if (matchedByLabel) {
@@ -284,18 +290,22 @@ const companyOptions = computed(() => {
 });
 
 const filteredContacts = computed(() => {
-  if (!contactSearch.value) return contactOptions.value.filter(opt => opt.value !== "");
+  if (!contactSearch.value)
+    return contactOptions.value.filter((opt) => opt.value !== "");
   return contactOptions.value.filter(
     (c) =>
-      c.label?.toLowerCase().includes(contactSearch.value.toLowerCase()) && c.value !== ""
+      c.label?.toLowerCase().includes(contactSearch.value.toLowerCase()) &&
+      c.value !== "",
   );
 });
 
 const filteredCompanies = computed(() => {
-  if (!companySearch.value) return companyOptions.value.filter(opt => opt.value !== "");
+  if (!companySearch.value)
+    return companyOptions.value.filter((opt) => opt.value !== "");
   return companyOptions.value.filter(
     (c) =>
-      c.label?.toLowerCase().includes(companySearch.value.toLowerCase()) && c.value !== ""
+      c.label?.toLowerCase().includes(companySearch.value.toLowerCase()) &&
+      c.value !== "",
   );
 });
 
@@ -384,7 +394,9 @@ const resolveAssociationValues = (candidates, options) => {
       if (matchedOption) return String(matchedOption.value);
 
       const matchedByLabel = options.find((option) => {
-        const label = String(option.label || "").trim().toLowerCase();
+        const label = String(option.label || "")
+          .trim()
+          .toLowerCase();
         return label === normalizedCandidate.toLowerCase();
       });
       return matchedByLabel ? String(matchedByLabel.value) : null;
@@ -449,7 +461,7 @@ const selectedCompanies = computed(() => {
     const companyId = String(c.value).trim();
     if (!companyId) return false;
     return dealForm.value.companies_association.some(
-      (id) => String(id).trim() === companyId
+      (id) => String(id).trim() === companyId,
     );
   });
 });
@@ -531,10 +543,10 @@ const fetchFullDealDetails = async (id) => {
     if (data) {
       // Handle wrapped response format
       const fullData = getDealPayloadData(data);
-      
+
       // Update local deal data to trigger reactive resolution in watcher
       localDealData.value = { ...localDealData.value, ...fullData };
-      
+
       // Also sync non-form data directly
       syncAdditionalData(fullData);
     }
@@ -715,23 +727,22 @@ watch(
   { immediate: true },
 );
 
-watch(
-  [localDealData, contactOptions, companyOptions],
-  ([deal]) => {
-    if (deal) {
-      // Only initialize dealForm if it's a new deal ID or currently empty
-      if (!dealForm.value.deal_name) {
-        dealForm.value = getDealFormDefaults(deal);
-      } else {
-        // Only update associations reactively as they might load later
-        dealForm.value.contact_association = resolveContactAssociationValues(deal);
-        dealForm.value.companies_association = resolveCompanyAssociationValues(deal);
-      }
-      
-      syncAdditionalData(deal);
+watch([localDealData, contactOptions, companyOptions], ([deal]) => {
+  if (deal) {
+    // Only initialize dealForm if it's a new deal ID or currently empty
+    if (!dealForm.value.deal_name) {
+      dealForm.value = getDealFormDefaults(deal);
+    } else {
+      // Only update associations reactively as they might load later
+      dealForm.value.contact_association =
+        resolveContactAssociationValues(deal);
+      dealForm.value.companies_association =
+        resolveCompanyAssociationValues(deal);
     }
+
+    syncAdditionalData(deal);
   }
-);
+});
 
 watch(
   () => props.isOpen,
@@ -771,10 +782,7 @@ const handleSave = async () => {
       console.log("Saving deal with payload:", dealPayload);
 
       // Save deal via store
-      const response = await store.dispatch(
-        "deals/createDeal",
-        dealPayload,
-      );
+      const response = await store.dispatch("deals/createDeal", dealPayload);
 
       console.log("Deal saved successfully:", response);
       toast.success("Deal saved successfully!");
@@ -1079,7 +1087,9 @@ const handleReset = () => {
                     class="px-4 py-2 hover:bg-light-base cursor-pointer flex items-center justify-between text-sm transition"
                   >
                     <div class="flex flex-col">
-                      <span class="font-medium text-dark-base">{{ contact.label }}</span>
+                      <span class="font-medium text-dark-base">{{
+                        contact.label
+                      }}</span>
                     </div>
                     <div
                       v-if="isContactSelected(contact.value)"
@@ -1157,7 +1167,9 @@ const handleReset = () => {
                     class="px-4 py-2 hover:bg-light-base cursor-pointer flex items-center justify-between text-sm transition"
                   >
                     <div class="flex flex-col">
-                      <span class="font-medium text-dark-base">{{ company.label }}</span>
+                      <span class="font-medium text-dark-base">{{
+                        company.label
+                      }}</span>
                     </div>
                     <div
                       v-if="isCompanySelected(company.value)"

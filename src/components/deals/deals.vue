@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "vuex";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import DealsCard from "./dealscard.vue";
 import DealsList from "./dealslist.vue";
 import CreateDealForm from "@/components/forms/CreateDealForm.vue";
@@ -23,6 +23,7 @@ import {
 
 const store = useStore();
 const route = useRoute();
+const router = useRouter();
 
 /* 🔥 GANTI activeMode dengan Vuex */
 const activeMode = computed(() => store.getters["deals/currentView"]);
@@ -52,11 +53,11 @@ const dealsStatusClass = computed(() => {
 const showDropdown = ref(false);
 
 function changeToCard() {
-  store.dispatch("deals/setViewMode", "card");
+  router.push({ name: "DealsCard" });
 }
 
 function changeToList() {
-  store.dispatch("deals/setViewMode", "list");
+  router.push({ name: "DealsList" });
 }
 const selectedIds = ref([]);
 const showDownloadDropdown = ref(false);
@@ -65,6 +66,11 @@ const showBulkAddDealForm = ref(false);
 const showDetailDataDeals = ref(false);
 const selectedDeal = ref(null);
 const isDetailDataDealsSubmitting = ref(false);
+
+// Pagination & Search State
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+const searchQuery = computed(() => store.state.deals.searchQuery);
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value;
@@ -89,19 +95,22 @@ const handleDownload = () => {
 };
 
 // Fetch data function untuk refresh
-const fetchData = () => {
-  store
-    .dispatch("deals/fetchAllDeals")
-    .then(() => {
-      console.log("Deals fetched successfully");
-    })
-    .catch((err) => {
-      console.error("Failed to fetch deals:", err);
+const fetchData = async () => {
+  try {
+    await store.dispatch("deals/fetchAllDeals", {
+      page: currentPage.value,
+      per_page: itemsPerPage.value,
+      q: searchQuery.value,
     });
+    console.log("Deals fetched successfully");
+  } catch (err) {
+    console.error("Failed to fetch deals:", err);
+  }
 };
 
 const handleCreateDealSubmit = async () => {
   showCreateDealForm.value = false;
+  currentPage.value = 1; // Reset to page 1 on new creation
   await fetchData();
 };
 
@@ -181,15 +190,31 @@ onMounted(() => {
   fetchData();
 });
 
+// Unified watch for pagination and search
+let searchDebounceTimeout = null;
+
+watch([currentPage, itemsPerPage], () => {
+  fetchData();
+});
+
+watch(searchQuery, (newVal, oldVal) => {
+  if (newVal === oldVal) return;
+
+  // Debounce search query changes
+  if (searchDebounceTimeout) clearTimeout(searchDebounceTimeout);
+
+  searchDebounceTimeout = setTimeout(() => {
+    currentPage.value = 1; // Reset to page 1 on new search
+    fetchData();
+  }, 500); // 500ms debounce
+});
+
 watch(
   () => route.path,
   (path) => {
-    if (path.endsWith("/dealslist")) {
+    if (path.includes("dealslist")) {
       store.dispatch("deals/setViewMode", "list");
-      return;
-    }
-
-    if (path.includes("/crmAdmin/deals")) {
+    } else {
       store.dispatch("deals/setViewMode", "card");
     }
   },
@@ -362,9 +387,16 @@ watch(
         </div>
       </div>
 
-      <DealsCard v-if="activeMode === 'card'" @viewDetail="openDealDetail" />
+      <DealsCard
+        v-if="activeMode === 'card'"
+        v-model:currentPage="currentPage"
+        v-model:itemsPerPage="itemsPerPage"
+        @viewDetail="openDealDetail"
+      />
       <DealsList
         v-else-if="activeMode === 'list'"
+        v-model:currentPage="currentPage"
+        v-model:itemsPerPage="itemsPerPage"
         @viewDetail="openDealDetail"
       />
     </div>

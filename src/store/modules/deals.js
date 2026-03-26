@@ -40,22 +40,35 @@ const resolveDealId = (responseData, fallbackId = null) => {
 const mapCreateDealPayload = (formData = {}) => {
   const normalizedAmount = normalizeNumber(formData.amount);
 
+  // Helper to ensure association is a string
+  const formatAssoc = (assoc) => {
+    if (Array.isArray(assoc)) {
+      return assoc.filter(Boolean).join(",");
+    }
+    return assoc || "";
+  };
+
   return {
     // Mapping utama sesuai kolom DB
-    deal_name: formData.dealName?.trim() || null,
+    deal_name: formData.dealName?.trim() || formData.deal_name?.trim() || null,
     pipeline: formData.pipeline || null,
     currency: formData.currency || "IDR",
     amount_value: normalizedAmount,
-    expected_close_date: formData.expectedCloseDate || null,
+    expected_close_date:
+      formData.expectedCloseDate || formData.expected_close_date || null,
     owner: formData.owner || null,
     priority: formData.priority || null,
     source: formData.source || null,
+    // Associations
+    contactassoc: formatAssoc(formData.contactassoc || formData.contacts_id),
+    companyassoc: formatAssoc(formData.companyassoc || formData.companies_id),
     // Alias untuk kompatibilitas variasi backend
-    name: formData.dealName?.trim() || null,
-    dealName: formData.dealName?.trim() || null,
+    name: formData.dealName?.trim() || formData.deal_name?.trim() || null,
+    dealName: formData.dealName?.trim() || formData.deal_name?.trim() || null,
     amount: normalizedAmount,
     stage: formData.pipeline || "new",
-    expectedCloseDate: formData.expectedCloseDate || null,
+    expectedCloseDate:
+      formData.expectedCloseDate || formData.expected_close_date || null,
   };
 };
 
@@ -72,6 +85,26 @@ const mapBoardStageToPipeline = (stage) => {
   return stageMap[stage] || stage || "new";
 };
 
+const normalizeStage = (rawStage) => {
+  const stage = String(rawStage || "new").toLowerCase();
+  if (stage.includes("qual")) return "qualified";
+  if (stage.includes("adv") || stage.includes("negot")) return "advanced";
+  if (stage.includes("pay") || stage.includes("proposal")) return "payment";
+  if (
+    stage.includes("won") ||
+    stage.includes("close_won") ||
+    stage.includes("closed_won")
+  )
+    return "won";
+  if (
+    stage.includes("lost") ||
+    stage.includes("close_lost") ||
+    stage.includes("closed_lost")
+  )
+    return "lost";
+  return "new";
+};
+
 export default {
   namespaced: true,
 
@@ -81,6 +114,7 @@ export default {
     isLoading: false,
     error: null,
     searchQuery: "", // Add search state
+    pagination: null, // Add pagination state
   }),
 
   mutations: {
@@ -93,7 +127,16 @@ export default {
     },
 
     ADD_DEAL(state, deal) {
-      state.deals = [deal, ...state.deals];
+      if (!deal) return;
+      // Map properties if needed to match frontend expectation
+      const normalizedDeal = {
+        ...deal,
+        id: deal.id || Date.now(), // Fallback ID if missing
+        name: deal.deal_name || deal.dealName || deal.name || "New Deal",
+        stage: deal.pipeline || deal.stage || "new",
+        amount: deal.amount_value || deal.amount || 0,
+      };
+      state.deals = [normalizedDeal, ...state.deals];
     },
 
     UPDATE_DEAL_STAGE(state, payload) {
@@ -106,7 +149,9 @@ export default {
 
     UPDATE_DEAL(state, payload) {
       const { dealId, updatedData } = payload;
-      const index = state.deals.findIndex((deal) => String(deal.id) === String(dealId));
+      const index = state.deals.findIndex(
+        (deal) => String(deal.id) === String(dealId),
+      );
       if (index !== -1) {
         // Create new array to trigger Vue 3 reactivity
         const newDeals = [...state.deals];
@@ -130,6 +175,10 @@ export default {
     SET_SEARCH_QUERY(state, query) {
       state.searchQuery = query;
     },
+
+    SET_PAGINATION(state, pagination) {
+      state.pagination = pagination;
+    },
   },
 
   actions: {
@@ -141,13 +190,24 @@ export default {
       commit("SET_SEARCH_QUERY", query);
     },
 
-    fetchAllDeals({ commit }) {
+    fetchAllDeals({ commit }, params = {}) {
       commit("SET_LOADING", true);
       commit("SET_ERROR", null);
+
+      const requestParams = { ...params };
+      // Hapus &q= jika kosong agar backend tidak bingung
+      if (
+        requestParams.q === "" ||
+        requestParams.q === null ||
+        requestParams.q === undefined
+      ) {
+        delete requestParams.q;
+      }
 
       const promise = new Promise(async (resolve, reject) => {
         try {
           const response = await api.get("deals", {
+            params: requestParams,
             headers: {
               Authorization: "Bearer " + cookies.get("token"),
             },
@@ -160,8 +220,20 @@ export default {
 
       promise
         .then((data) => {
-          const dealsData = data.deals || data.data || data;
+          // Tangani struktur paginasi Laravel (deals.data)
+          const dealsData = data.deals?.data || data.deals || data.data || data;
+
           commit("SET_DEALS", Array.isArray(dealsData) ? dealsData : []);
+
+          // Simpan info paginasi jika ada
+          if (data.deals && data.deals.current_page) {
+            const { data: _, ...pagination } = data.deals;
+            commit("SET_PAGINATION", pagination);
+          } else if (data.current_page) {
+            const { data: _, ...pagination } = data;
+            commit("SET_PAGINATION", pagination);
+          }
+
           commit("SET_LOADING", false);
         })
         .catch((error) => {
@@ -186,14 +258,11 @@ export default {
       commit("SET_LOADING", true);
       const promise = new Promise(async (resolve, reject) => {
         try {
-          const response = await api.get(
-            `deals/fetchdealsbyid?id=${id}`,
-            {
-              headers: {
-                Authorization: "Bearer " + cookies.get("token"),
-              },
+          const response = await api.get(`deals/fetchdealsbyid?id=${id}`, {
+            headers: {
+              Authorization: "Bearer " + cookies.get("token"),
             },
-          );
+          });
           resolve(response.data);
         } catch (error) {
           reject(error);
@@ -213,52 +282,104 @@ export default {
       return promise;
     },
 
-    async updateDealStage({ commit, state }, payload) {
+    async updateDealStage({ commit, state, dispatch }, payload) {
       const { dealId, newStage } = payload;
       const pipelineValue = mapBoardStageToPipeline(newStage);
-      const apiStageValue = pipelineValue;
 
+      // Cari deal yang akan diupdate untuk mendapatkan data lengkapnya
+      const existingDeal = state.deals.find(
+        (deal) => String(deal.id) === String(dealId),
+      );
+      if (!existingDeal) return;
+
+      const previousStage =
+        existingDeal.stage || normalizeStage(existingDeal.pipeline);
+
+      // Optimistic update
       commit("UPDATE_DEAL_STAGE", { dealId, newStage });
 
       const headers = {
         Authorization: "Bearer " + cookies.get("token"),
       };
 
-      // Cari deal yang akan diupdate untuk mendapatkan data lengkapnya
-      const existingDeal = state.deals.find((deal) => deal.id === dealId);
+      const now = new Date().toISOString().slice(0, 19).replace("T", " ");
 
-      // Gunakan endpoint deals/input dengan choice='u' (update)
+      // Helper to ensure association is a string
+      const formatAssoc = (assoc) => {
+        if (Array.isArray(assoc)) return assoc.filter(Boolean).join(",");
+        if (assoc && typeof assoc === "object") return assoc.id || "";
+        return assoc || "";
+      };
+
+      const cAssoc = formatAssoc(
+        existingDeal.contactassoc ||
+          existingDeal.dealsassoc ||
+          existingDeal.contacts_id ||
+          existingDeal.contact_id ||
+          existingDeal.id_contact,
+      );
+      const mAssoc = formatAssoc(
+        existingDeal.companyassoc ||
+          existingDeal.companies_id ||
+          existingDeal.company_id ||
+          existingDeal.id_company,
+      );
+
       const requestPayload = {
         choice: "u",
         id: dealId,
-        // Kirim data yang sudah ada + stage/pipeline yang baru
-        deal_name: existingDeal?.deal_name || existingDeal?.name || null,
+        id_deals: dealId,
+        deal_name:
+          existingDeal.deal_name ||
+          existingDeal.name ||
+          existingDeal.dealName ||
+          "Untitled Deal",
+        name: existingDeal.name || existingDeal.deal_name || "Untitled Deal",
+        dealName:
+          existingDeal.deal_name || existingDeal.name || "Untitled Deal",
         pipeline: pipelineValue,
-        currency: existingDeal?.currency || "IDR",
-        amount_value:
-          existingDeal?.amount_value || existingDeal?.amount || null,
-        expected_close_date: existingDeal?.expected_close_date || null,
-        owner: existingDeal?.owner || null,
-        priority: existingDeal?.priority || null,
-        source: existingDeal?.source || null,
-        stage: apiStageValue,
+        stage: pipelineValue,
+        currency: existingDeal.currency || "IDR",
+        amount_value: existingDeal.amount_value || existingDeal.amount || null,
+        amount: existingDeal.amount_value || existingDeal.amount || null,
+        expected_close_date:
+          existingDeal.expected_close_date ||
+          existingDeal.expectedCloseDate ||
+          null,
+        owner: existingDeal.owner || existingDeal.owner_name || null,
+        priority: existingDeal.priority || null,
+        source: existingDeal.source || null,
+        updated_at: now,
 
-        // TAMBAHKAN INI untuk companiesAssociation dan contactAssociation
-        companyassoc: existingDeal?.companyassoc || [],
-        contactassoc:
-          existingDeal?.contactassoc || existingDeal?.dealsassoc || [],
+        // Backend strongly requires these association fields (Flattened)
+        contactassoc: cAssoc,
+        companyassoc: mAssoc,
+        contacts_id: cAssoc.split(",")[0] || "",
+        companies_id: mAssoc.split(",")[0] || "",
+        contact_id: cAssoc.split(",")[0] || "",
+        company_id: mAssoc.split(",")[0] || "",
+
+        // Notes, Tasks, & Docs
+        notes: existingDeal.notes || "",
+        docs: existingDeal.docs || "",
       };
 
       try {
-        const response = await api.post("deals/input", requestPayload, {
-          headers,
+        await api.post("deals/input", requestPayload, { headers });
+
+        // PENTING: Refresh state dengan parameter yang sama agar tampilan tidak reset
+        await dispatch("fetchAllDeals", {
+          page: state.pagination?.current_page || 1,
+          per_page: state.pagination?.per_page || 10,
+          q: state.searchQuery,
         });
-        return response.data;
+
+        return { success: true };
       } catch (error) {
         // Rollback jika gagal
         commit("UPDATE_DEAL_STAGE", {
           dealId,
-          newStage: existingDeal?.stage || "new",
+          newStage: previousStage,
         });
         throw error;
       }
@@ -284,8 +405,12 @@ export default {
             },
           });
 
-          // Refresh daftar HANYA setelah sukses dan tunggu sampai selesai
-          await dispatch("fetchAllDeals");
+          // Refresh daftar dengan parameter yang sama agar tampilan tidak reset
+          await dispatch("fetchAllDeals", {
+            page: state.pagination?.current_page || 1,
+            per_page: state.pagination?.per_page || 10,
+            q: state.searchQuery,
+          });
 
           resolve(response.data);
         } catch (error) {
@@ -314,10 +439,12 @@ export default {
     },
 
     createDeal({ dispatch }, formData) {
-      // Gunakan saveDeal dengan choice='i' untuk backward compatibility
+      // Gunakan mapCreateDealPayload untuk memastikan key sesuai backend (deal_name, etc.)
+      const mappedData = mapCreateDealPayload(formData);
       const payload = {
         choice: "i",
         ...formData,
+        ...mappedData,
       };
       return dispatch("saveDeal", payload);
     },
@@ -337,7 +464,9 @@ export default {
         ...formdata,
         // Backend strictly requires amount_value
         amount_value:
-          formdata.amount !== undefined ? formdata.amount : formdata.amount_value,
+          formdata.amount !== undefined
+            ? formdata.amount
+            : formdata.amount_value,
       };
 
       return dispatch("saveDeal", requestPayload);
@@ -375,13 +504,15 @@ export default {
         return state.deals;
       }
       const query = state.searchQuery.toLowerCase();
-      return state.deals.filter(
-        (deal) =>
+      return state.deals.filter((deal) => {
+        return (
+          deal.dealName?.toLowerCase().includes(query) ||
           deal.name?.toLowerCase().includes(query) ||
-          deal.deal_name?.toLowerCase().includes(query) ||
-          deal.contact?.toLowerCase().includes(query) ||
-          deal.company?.toLowerCase().includes(query),
-      );
+          deal.deal_name?.toLowerCase().includes(query)
+        );
+      });
     },
+
+    pagination: (state) => state.pagination,
   },
 };

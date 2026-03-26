@@ -1,5 +1,3 @@
-
-
 <template>
   <div
     class="bg-white rounded-lg shadow-sm border border-outline flex flex-col overflow-hidden"
@@ -9,7 +7,9 @@
       <div class="flex items-center gap-4 w-full flex-wrap">
         <div class="flex items-center gap-3 flex-1 min-w-0 flex-wrap">
           <!-- Filter Button -->
-          <button class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition">
+          <button
+            class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
+          >
             <Filter :size="20" class="text-dark-base" />
           </button>
 
@@ -22,14 +22,19 @@
           />
 
           <!-- Search Button -->
-          <button class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition">
+          <button
+            class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition"
+          >
             <Search :size="20" class="text-dark-base" />
           </button>
 
           <!-- Show Pagination -->
           <div class="flex items-center gap-2">
             <span class="text-sm text-dark-base">Show</span>
-            <select v-model="pageSize" class="px-3 py-2 border border-outline rounded-lg text-sm">
+            <select
+              v-model="pageSize"
+              class="px-3 py-2 border border-outline rounded-lg text-sm"
+            >
               <option value="10">10</option>
               <option value="25">25</option>
               <option value="50">50</option>
@@ -61,9 +66,15 @@
             {{ currentMonthName }} {{ currentYear }}
           </h2>
           <div class="flex gap-2">
-            <button @click="prevMonth" class="px-3 py-1 border rounded">◀</button>
-            <button @click="goToday" class="px-3 py-1 border rounded">Today</button>
-            <button @click="nextMonth" class="px-3 py-1 border rounded">▶</button>
+            <button @click="prevMonth" class="px-3 py-1 border rounded">
+              ◀
+            </button>
+            <button @click="goToday" class="px-3 py-1 border rounded">
+              Today
+            </button>
+            <button @click="nextMonth" class="px-3 py-1 border rounded">
+              ▶
+            </button>
           </div>
         </div>
 
@@ -83,11 +94,19 @@
             <div class="text-sm font-semibold">{{ day.day }}</div>
 
             <!-- Event Preview -->
-            <div v-if="events[day.date]" class="mt-1 text-xs text-left space-y-1 overflow-hidden">
-              <div class="bg-blue-100 text-blue-700 px-1 py-0.5 rounded truncate">
+            <div
+              v-if="events[day.date]"
+              class="mt-1 text-xs text-left space-y-1 overflow-hidden"
+            >
+              <div
+                class="bg-blue-100 text-blue-700 px-1 py-0.5 rounded truncate"
+              >
                 {{ events[day.date][0].title }}
               </div>
-              <div v-if="events[day.date].length > 1" class="text-[10px] text-gray-500">
+              <div
+                v-if="events[day.date].length > 1"
+                class="text-[10px] text-gray-500"
+              >
                 +{{ events[day.date].length - 1 }} more
               </div>
             </div>
@@ -133,18 +152,21 @@
     </div>
 
     <!-- Error Message -->
-    <p v-if="error" class="px-6 py-3 text-sm text-red-600 border-t border-gray-100">
+    <p
+      v-if="error"
+      class="px-6 py-3 text-sm text-red-600 border-t border-gray-100"
+    >
       {{ error }}
     </p>
   </div>
 </template>
 
 <script>
-import { Filter, Search, RefreshCw, Trash } from 'lucide-vue-next';
-import { alertService } from '@/services/alertService';
+import { Filter, Search, RefreshCw, Trash } from "lucide-vue-next";
+import { alertService } from "@/services/alertService";
 
 export default {
-  name: 'TaskCalendar',
+  name: "TaskCalendar",
   components: {
     Filter,
     Search,
@@ -158,23 +180,33 @@ export default {
       currentMonth: today.getMonth(),
       currentYear: today.getFullYear(),
       selectedDate: this.formatDate(today),
-      searchText: '',
-      pageSize: '10',
+      searchText: "",
+      pageSize: "10",
       monthNames: [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December',
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
       ],
     };
   },
   computed: {
     isLoading() {
-      return this.$store.getters['tasks/isLoading'];
+      return this.$store.getters["tasks/isLoading"];
     },
     error() {
-      return this.$store.getters['tasks/error'];
+      return this.$store.getters["tasks/error"];
     },
     allTasks() {
-      return this.$store.getters['tasks/allTasks'] || [];
+      return this.$store.getters["tasks/allTasks"] || [];
     },
     events() {
       return this.allTasks.reduce((acc, task) => {
@@ -190,8 +222,8 @@ export default {
 
         acc[key].push({
           id: task.id,
-          title: task.title || task.name || 'Untitled Task',
-          time: task.time || '',
+          title: task.title || task.name || "Untitled Task",
+          time: task.time || "",
           rawTask: task,
         });
 
@@ -203,10 +235,14 @@ export default {
     },
     calendarDays() {
       const result = [];
-      const totalDays = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
+      const totalDays = new Date(
+        this.currentYear,
+        this.currentMonth + 1,
+        0,
+      ).getDate();
 
       for (let i = 1; i <= totalDays; i++) {
-        const dateStr = `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        const dateStr = `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
         result.push({
           day: i,
           date: dateStr,
@@ -228,7 +264,7 @@ export default {
   },
   methods: {
     formatDate(date) {
-      return date.toISOString().split('T')[0];
+      return date.toISOString().split("T")[0];
     },
     prevMonth() {
       if (this.currentMonth === 0) {
@@ -258,28 +294,31 @@ export default {
       return day.date === this.selectedDate;
     },
     openTaskDetail(event) {
-      this.$emit('viewDetail', event.rawTask || { id: event.id });
+      this.$emit("viewDetail", event.rawTask || { id: event.id });
     },
     async handleDeleteTask(taskItem) {
       const confirmDelete = await alertService.confirm(
-        'Hapus Task?',
-        'Task ini akan dihapus secara permanen. Lanjutkan?',
+        "Hapus Task?",
+        "Task ini akan dihapus secara permanen. Lanjutkan?",
       );
 
       if (!confirmDelete) return;
 
       try {
-        await this.$store.dispatch('tasks/deleteTask', taskItem?.rawTask || taskItem);
-        alertService.success('Task berhasil dihapus');
+        await this.$store.dispatch(
+          "tasks/deleteTask",
+          taskItem?.rawTask || taskItem,
+        );
+        alertService.success("Task berhasil dihapus");
       } catch (error) {
-        console.error('Error deleting task:', error);
+        console.error("Error deleting task:", error);
         const status = error?.response?.status;
         const backendMessage =
           error?.response?.data?.message ||
           error?.response?.data?.error ||
           error?.message;
         alertService.error(
-          `Gagal menghapus task. ${status ? `Status: ${status}. ` : ''}${backendMessage || 'Silakan coba lagi.'}`,
+          `Gagal menghapus task. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Silakan coba lagi."}`,
         );
       }
     },

@@ -48,13 +48,11 @@ export default {
       showDocs: true,
 
       // Notes
-      noteContent:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+      noteContent: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
 
       // Tasks
       taskName: "",
-      taskContent:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+      taskContent: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
       taskStatus: "",
       taskAssignee: "",
       taskDueDate: "",
@@ -83,8 +81,7 @@ export default {
       ],
 
       // Docs
-      docDescription:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+      docDescription: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
       docFileSource: "",
       docDropdownOpen: false,
       selectedDocFiles: [],

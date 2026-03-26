@@ -278,6 +278,7 @@ export default {
 
     handleSubmit() {
       this.$emit("submit", this.formData);
+      this.handleReset();
       this.handleClose();
     },
 

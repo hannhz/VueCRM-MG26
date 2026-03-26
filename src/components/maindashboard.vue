@@ -159,16 +159,14 @@ export default {
 
   async mounted() {
     if (!this.getlayoutmenuweb || this.getlayoutmenuweb.length === 0) {
-      await this.actlayoutweb().then((e) => {
-      });
+      await this.actlayoutweb().then((e) => {});
     }
 
     // this.loadTabsFromStorage();
   },
 
   watch: {
-    nametabs(e) {
-    },
+    nametabs(e) {},
   },
 };
 </script>

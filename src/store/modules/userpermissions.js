@@ -21,8 +21,11 @@ const actions = {
     commit("SET_ERROR", null);
 
     try {
-      console.log("[Vuex] userpermissions/loadPermissions - Loading for user:", username);
-      
+      console.log(
+        "[Vuex] userpermissions/loadPermissions - Loading for user:",
+        username,
+      );
+
       const response = await api.get("user/permissions", {
         params: { username },
         headers: {
@@ -30,13 +33,19 @@ const actions = {
         },
       });
 
-      console.log("[Vuex] userpermissions/loadPermissions - Response:", response.data);
+      console.log(
+        "[Vuex] userpermissions/loadPermissions - Response:",
+        response.data,
+      );
       commit("SET_PERMISSIONS", response.data);
       commit("SET_LOADING", false);
       return response.data;
     } catch (error) {
       console.error("[Vuex] userpermissions/loadPermissions - Error:", error);
-      const message = error?.response?.data?.message || error?.message || "Failed to load permissions";
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to load permissions";
       commit("SET_ERROR", message);
       commit("SET_LOADING", false);
       throw error;
@@ -48,20 +57,29 @@ const actions = {
     commit("SET_ERROR", null);
 
     try {
-      console.log("[Vuex] userpermissions/savePermissions - Saving payload:", payload);
-      
+      console.log(
+        "[Vuex] userpermissions/savePermissions - Saving payload:",
+        payload,
+      );
+
       const response = await api.post("user/permissions", payload, {
         headers: {
           Authorization: `Bearer ${cookies.get("token")}`,
         },
       });
 
-      console.log("[Vuex] userpermissions/savePermissions - Response:", response.data);
+      console.log(
+        "[Vuex] userpermissions/savePermissions - Response:",
+        response.data,
+      );
       commit("SET_LOADING", false);
       return response.data;
     } catch (error) {
       console.error("[Vuex] userpermissions/savePermissions - Error:", error);
-      const message = error?.response?.data?.message || error?.message || "Failed to save permissions";
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to save permissions";
       commit("SET_ERROR", message);
       commit("SET_LOADING", false);
       throw error;

@@ -1,7 +1,7 @@
 <script>
 import { mapGetters } from "vuex";
 import { User, UserCog, Users } from "lucide-vue-next";
-import UserSettings from "./usersetings.vue";
+import UserSettings from "./usersettings/usersetings.vue";
 import UserPermission from "./userpermission.vue";
 import UserTeam from "./userteam.vue";
 
@@ -41,7 +41,9 @@ export default {
 
 <template>
   <div class="grid grid-cols-1 gap-6 items-start lg:grid-cols-[220px_1fr]">
-    <div class="bg-white rounded-xl shadow-sm border border-outline overflow-hidden sticky top-4">
+    <div
+      class="bg-white rounded-xl shadow-sm border border-outline overflow-hidden sticky top-4"
+    >
       <div class="bg-light-base/50 px-5 py-3 border-b border-outline">
         <h3 class="font-bold text-dark-base uppercase tracking-wider text-xs">
           User Menu
@@ -54,7 +56,11 @@ export default {
           :key="item.key"
           @click="setActiveTab(item.key)"
           class="flex w-full items-center gap-3 px-4 py-3 rounded-lg text-left transition cursor-pointer"
-          :class="activeTab === item.key ? 'bg-gray-50/80 text-dark-base border-outline/50 shadow-sm font-semibold' : 'hover:bg-gray-50/50 text-sub-text'"
+          :class="
+            activeTab === item.key
+              ? 'bg-gray-50/80 text-dark-base border-outline/50 shadow-sm font-semibold'
+              : 'hover:bg-gray-50/50 text-sub-text'
+          "
         >
           <component :is="item.icon" :size="18" />
           <span class="text-sm">{{ item.label }}</span>

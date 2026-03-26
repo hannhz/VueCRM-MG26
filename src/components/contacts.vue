@@ -535,17 +535,18 @@ export default {
     itemsPerPage() {
       this.currentPage = 1;
       this.fetchData();
-    }
+    },
   },
 
   methods: {
     getStatusClass(status) {
-      if (!status) return 'bg-gray-100 text-gray-700';
+      if (!status) return "bg-gray-100 text-gray-700";
       const s = status.toLowerCase();
-      if (s === 'active' || s === 'aktif') return 'bg-green-100 text-green-700';
-      if (s === 'pending') return 'bg-yellow-100 text-yellow-700';
-      if (s === 'inactive' || s === 'non-active') return 'bg-gray-100 text-gray-700';
-      return 'bg-gray-100 text-gray-700';
+      if (s === "active" || s === "aktif") return "bg-green-100 text-green-700";
+      if (s === "pending") return "bg-yellow-100 text-yellow-700";
+      if (s === "inactive" || s === "non-active")
+        return "bg-gray-100 text-gray-700";
+      return "bg-gray-100 text-gray-700";
     },
     ...mapActions({
       fetchAllContacts: "contacts/fetchAllContacts",
@@ -647,7 +648,10 @@ export default {
     },
 
     fetchData() {
-      this.fetchAllContacts({ page: this.currentPage, per_page: this.itemsPerPage })
+      this.fetchAllContacts({
+        page: this.currentPage,
+        per_page: this.itemsPerPage,
+      })
         .then(() => {
           console.log("Contacts fetched successfully");
         })
@@ -678,7 +682,6 @@ export default {
       this.showDetailDataContact = false;
       this.selectedContact = null;
     },
-
 
     handleDetailDataContactSubmit(payload) {
       const contactId = this.selectedContact?.id;
@@ -774,7 +777,6 @@ export default {
       );
     },
 
-
     handleDeleteContacts() {
       if (!this.selectedIds.length) {
         return alertService.warning("Pilih minimal satu contact untuk dihapus");
@@ -822,41 +824,44 @@ export default {
 
     async fetchStatuses() {
       try {
-        const token = this.$cookies.get("token");
+        const token = this.$cookies?.get("token");
+        if (!token) {
+          console.warn("No token available for fetching statuses");
+          this.setFallbackStatuses();
+          return;
+        }
+
         const response = await fetch(
           `${import.meta.env.VITE_APP_API_URL}/statuses`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
 
         if (response.ok) {
           const data = await response.json();
           this.statuses = Array.isArray(data?.data) ? data.data : data;
         } else {
-          this.statuses = [
-            { id: 1, name: "Competitor" },
-            { id: 2, name: "Customer" },
-            { id: 3, name: "Ex Customer" },
-            { id: 4, name: "Lead" },
-            { id: 5, name: "Opportunity" },
-            { id: 6, name: "Partner" },
-            { id: 7, name: "Qualified" },
-          ];
+          this.setFallbackStatuses();
         }
       } catch (error) {
-        this.statuses = [
-          { id: 1, name: "Competitor" },
-          { id: 2, name: "Customer" },
-          { id: 3, name: "Ex Customer" },
-          { id: 4, name: "Lead" },
-          { id: 5, name: "Opportunity" },
-          { id: 6, name: "Partner" },
-          { id: 7, name: "Qualified" },
-        ];
+        console.error("Failed to fetch statuses:", error);
+        this.setFallbackStatuses();
       }
+    },
+
+    setFallbackStatuses() {
+      this.statuses = [
+        { id: 1, name: "Competitor" },
+        { id: 2, name: "Customer" },
+        { id: 3, name: "Ex Customer" },
+        { id: 4, name: "Lead" },
+        { id: 5, name: "Opportunity" },
+        { id: 6, name: "Partner" },
+        { id: 7, name: "Qualified" },
+      ];
     },
   },
 

@@ -149,6 +149,28 @@ const handleSubmit = () => {
   // Data will be saved when user clicks "Save" in DetailDataCompany
   showDetailForm.value = true;
 };
+
+const handleReset = () => {
+  formData.value = {
+    companyName: "",
+    companyOwner: "",
+    owner: "",
+    description: "",
+    email: "",
+    telephone: "",
+    website: "",
+    industry: "",
+    address: "",
+    country: "",
+    province: "",
+    city: "",
+    posCode: "",
+    source: "",
+    type: "",
+    dealsassoc: "",
+    contactassoc: "",
+  };
+};
 </script>
 
 <template>

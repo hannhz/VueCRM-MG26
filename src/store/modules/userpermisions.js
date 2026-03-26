@@ -14,7 +14,7 @@ const getters = {
   permissions: (state) => state.permissions,
   loading: (state) => state.loading,
   saving: (state) => state.saving,
-   error: (state) => state.error,
+  error: (state) => state.error,
 };
 
 const mutations = {
@@ -30,7 +30,7 @@ const mutations = {
     state.saving = val;
   },
 
-   SET_ERROR(state, payload) {
+  SET_ERROR(state, payload) {
     state.error = payload;
   },
 };
