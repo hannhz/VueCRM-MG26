@@ -281,7 +281,7 @@ watch(
             ></textarea>
           </div>
 
-          <!-- Status & Assignee -->
+          <!-- Status -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2"
@@ -294,29 +294,6 @@ watch(
                 >
                   <option
                     v-for="opt in statusOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="18"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                />
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Assignee</label
-              >
-              <div class="relative">
-                <select
-                  v-model="formData.assignee"
-                  class="w-full px-4 py-3 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white appearance-none cursor-pointer text-dark-base"
-                >
-                  <option
-                    v-for="opt in assigneeOptions"
                     :key="opt.value"
                     :value="opt.value"
                   >

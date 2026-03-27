@@ -8,6 +8,7 @@ import CreateDealForm from "@/components/forms/CreateDealForm.vue";
 import BulkAddDealForm from "@/components/forms/BulkAddDealForm.vue";
 import DetailDataDeals from "@/components/forms/DetailDataDeals.vue";
 import { alertService } from "@/services/alertService";
+import { buildEntityDetailPayload } from "@/utils/detailFormPayload";
 import {
   ChevronDown,
   FileDown,
@@ -169,6 +170,19 @@ const handleDetailDataDealsSubmit = async (payload) => {
       keyedit: dealId,
       formdata,
     });
+
+    const { data: detailPayload, error: detailError } =
+      buildEntityDetailPayload({
+        entityType: "deal",
+        entityId: dealId,
+        payload,
+      });
+
+    if (detailError) {
+      throw new Error(detailError);
+    }
+
+    await store.dispatch("deals/saveDealDetail", detailPayload);
 
     alertService.success("Detail deal berhasil diperbarui.");
     closeDetailDataDeals();

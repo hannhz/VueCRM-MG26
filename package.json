@@ -14,6 +14,7 @@
     "axios": "^1.13.6",
     "devextreme": "24.2.14",
     "devextreme-vue": "24.2.14",
+    "idn-area-data": "^4.0.1",
     "lucide-vue-next": "^0.563.0",
     "pinia": "^3.0.4",
     "sweetalert2": "^11.26.21",

@@ -183,24 +183,6 @@ onMounted(() => {
           </div>
 
           <div class="space-y-2">
-            <label class="text-sm font-medium text-dark-base"
-              >Owner/Assignee</label
-            >
-            <select
-              v-model="form.assignee"
-              class="w-full px-3 py-2 border border-outline rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-sub-text"
-            >
-              <option
-                v-for="opt in assigneeOptions"
-                :key="opt.value"
-                :value="opt.value"
-              >
-                {{ opt.label }}
-              </option>
-            </select>
-          </div>
-
-          <div class="space-y-2">
             <label class="text-sm font-medium text-dark-base">Due Date</label>
             <input
               v-model="form.due_date"

@@ -159,10 +159,10 @@ export default {
   },
 
   mounted() {
-    this.fetchStatuses();
-    this.fetchAllcompany();
-    this.fetchAllContacts();
-    this.fetchAllDeals();
+    // this.fetchStatuses();
+    // this.fetchAllcompany();
+    // this.fetchAllContacts();
+    // this.fetchAllDeals();
 
     document.addEventListener("click", this.handleClickOutside);
   },
@@ -358,6 +358,9 @@ export default {
     },
 
     handleDetailDataCompanySubmit(payload) {
+
+
+      // console.log(payload);
       const companyId = this.selectedCompany?.id;
       const companyName = payload?.company?.company_name?.trim();
 
@@ -375,6 +378,16 @@ export default {
         keyedit: companyId,
         formdata: {
           ...payload.company,
+          notes: payload?.note || "",
+          task_name: payload?.task?.name || "",
+          desktask: payload?.task?.content || "",
+          statustask: payload?.task?.status || "",
+          assignee: payload?.task?.assignee || "",
+          due_date: payload?.task?.dueDate || "",
+          task_time: payload?.task?.time || "",
+          prioritytask: payload?.task?.priority || "",
+          associated_contact: payload?.task?.associatedContact || "",
+          docs: payload?.docs?.description || "",
           updated_at: new Date().toISOString(),
         },
       })
@@ -415,6 +428,47 @@ export default {
       }
 
       this.isDetailFormSubmitting = true;
+
+      if (entityType === "company") {
+        this.updatecompany({
+          keyedit: entityId,
+          formdata: {
+            ...(this.selectedCompany || {}),
+            notes: data?.note || "",
+            task_name: data?.task?.name || "",
+            desktask: data?.task?.content || "",
+            statustask: data?.task?.status || "",
+            assignee: data?.task?.assignee || "",
+            due_date: data?.task?.dueDate || "",
+            task_time: data?.task?.time || "",
+            prioritytask: data?.task?.priority || "",
+            associated_contact: data?.task?.associatedContact || "",
+            docs: data?.docs?.description || "",
+            updated_at: new Date().toISOString(),
+          },
+        })
+          .then(() => {
+            alertService.success(
+              `Detail ${entityType} berhasil disimpan ke database.`,
+            );
+            this.showDetailForm = false;
+            this.detailFormEntityId = null;
+            return this.fetchAllcompany();
+          })
+          .catch((submitError) => {
+            const message =
+              submitError?.response?.data?.message ||
+              submitError?.response?.data?.error ||
+              submitError?.message ||
+              `Gagal menyimpan detail ${entityType}`;
+
+            alertService.error(message);
+          })
+          .finally(() => {
+            this.isDetailFormSubmitting = false;
+          });
+        return;
+      }
 
       const actionName = getUpdateAction(entityType);
       if (!actionName) {

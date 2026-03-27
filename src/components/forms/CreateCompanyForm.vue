@@ -3,6 +3,7 @@ import { mapActions, mapGetters } from "vuex";
 import { X, Plus, ChevronDown } from "lucide-vue-next";
 import AddDealForm from "./AddDealForm.vue";
 import AddContactQuickForm from "./AddContactQuickForm.vue";
+import LocationSelector from "./component/LocationSelector.vue";
 import ContactDetailForm from "./DetailFormDuplicate.vue";
 import { alertService } from "@/services/alertService";
 import api from "@/api";
@@ -313,13 +314,24 @@ export default {
       this.isSubmitting = true;
 
       try {
+        const now = new Date().toISOString();
         const dataToSubmit = {
           ...this.formData,
           owner: this.formData.owner || this.currentUserName || "",
           dealsassoc: (this.formData.dealsassoc || []).join(","),
           contactassoc: (this.formData.contactassoc || []).join(","),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          notes: detailPayload?.note || "",
+          task_name: detailPayload?.task?.name || "",
+          desktask: detailPayload?.task?.content || "",
+          statustask: detailPayload?.task?.status || "",
+          assignee: detailPayload?.task?.assignee || "",
+          due_date: detailPayload?.task?.dueDate || "",
+          task_time: detailPayload?.task?.time || "",
+          prioritytask: detailPayload?.task?.priority || "",
+          associated_contact: detailPayload?.task?.associatedContact || "",
+          docs: detailPayload?.docs?.description || "",
+          created_at: now,
+          updated_at: now,
         };
 
         const response = await this.insertCompany({ formdata: dataToSubmit });
@@ -514,57 +526,7 @@ export default {
             </div>
           </div>
 
-          <!-- Address & City -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Address</label
-              >
-              <input
-                v-model="formData.address"
-                type="text"
-                placeholder="Ex simopomahan"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >City</label
-              >
-              <input
-                v-model="formData.city"
-                type="text"
-                placeholder="City"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-            </div>
-          </div>
-
-          <!-- Province & Country -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Province</label
-              >
-              <input
-                v-model="formData.province"
-                type="text"
-                placeholder="Province"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Country</label
-              >
-              <input
-                v-model="formData.country"
-                type="text"
-                placeholder="Country"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-            </div>
-          </div>
+            <LocationSelector v-model="formData" />
 
           <!-- Pos Code & Source -->
           <div class="grid grid-cols-2 gap-4">
@@ -604,8 +566,8 @@ export default {
             </div>
           </div>
 
-          <!-- Type & Owner -->
-          <div class="grid grid-cols-2 gap-4">
+          <!-- Type -->
+          <div class="grid grid-cols-1 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2"
                 >Type</label
@@ -630,29 +592,7 @@ export default {
                 />
               </div>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Owner</label
-              >
-              <div class="relative">
-                <select
-                  v-model="formData.owner"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                >
-                  <option
-                    v-for="opt in ownerOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                />
-              </div>
-            </div>
+    
           </div>
 
           <!-- Contact Association -->

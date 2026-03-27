@@ -105,7 +105,9 @@ import {
 } from "@/utils/associations";
 import { buildUpdateContactPayload } from "@/utils/contactPayload";
 import {
+  buildEntityDetailPayload,
   buildDetailFormPayload,
+  getDetailSaveAction,
   getUpdateAction,
 } from "@/utils/detailFormPayload";
 
@@ -144,6 +146,8 @@ export default {
       showDetailForm: false,
       showDetailDataContact: false,
       isDetailDataSubmitting: false,
+      isDetailFormSubmitting: false,
+      detailFormEntityId: null,
     };
   },
 
@@ -263,6 +267,7 @@ export default {
       fetchAllcompany: "company/fetchAllcompany",
       fetchAllDeals: "deals/fetchAllDeals",
       updateContact: "contacts/updateContact",
+      saveContactDetail: "contacts/saveContactDetail",
       deleteContact: "contacts/deleteContact",
     }),
 
@@ -356,9 +361,19 @@ export default {
 
       if (error) return alertService.error(error);
 
+      const { data: detailPayload, error: detailError } =
+        buildEntityDetailPayload({
+          entityType: "contact",
+          entityId: contactId,
+          payload,
+        });
+
+      if (detailError) return alertService.error(detailError);
+
       this.isDetailDataSubmitting = true;
 
       this.updateContact(data)
+        .then(() => this.saveContactDetail(detailPayload))
         .then(() => {
           alertService.success("Detail contact berhasil diperbarui.");
           this.closeDetailDataContact();
@@ -384,7 +399,12 @@ export default {
         return alertService.error("ID entity tidak ditemukan.");
       }
 
-      const { data: payload, error } = buildDetailFormPayload({
+      const detailActionName = getDetailSaveAction(entityType);
+      const payloadBuilder = detailActionName
+        ? buildEntityDetailPayload
+        : buildDetailFormPayload;
+
+      const { data: payload, error } = payloadBuilder({
         entityType,
         entityId,
         payload: data,
@@ -396,60 +416,7 @@ export default {
 
       this.isDetailFormSubmitting = true;
 
-      const actionName = getUpdateAction(entityType);
-      if (!actionName) {
-        this.isDetailFormSubmitting = false;
-        return alertService.error(
-          `Entity type "${entityType}" tidak didukung.`,
-        );
-      }
-
-      this.$store
-        .dispatch(actionName, payload)
-        .then(() => {
-          alertService.success(
-            `Detail ${entityType} berhasil disimpan ke database.`,
-          );
-          this.showDetailForm = false;
-          this.detailFormEntityId = null;
-          // Refresh data setelah save
-          return this.fetchAllContacts();
-        })
-        .catch((error) => {
-          const message =
-            error?.response?.data?.message ||
-            error?.response?.data?.error ||
-            error?.message ||
-            `Gagal menyimpan detail ${entityType}`;
-
-          alertService.error(message);
-        })
-        .finally(() => {
-          this.isDetailFormSubmitting = false;
-        });
-    },
-
-    handleDetailFormSubmit(data) {
-      const entityType = data?.entityType || "contact";
-      const entityId = this.detailFormEntityId;
-
-      if (!entityId) {
-        return alertService.error("ID entity tidak ditemukan.");
-      }
-
-      const { data: payload, error } = buildDetailFormPayload({
-        entityType,
-        entityId,
-        payload: data,
-      });
-
-      if (error) {
-        return alertService.error(error);
-      }
-
-      this.isDetailFormSubmitting = true;
-
-      const actionName = getUpdateAction(entityType);
+      const actionName = detailActionName || getUpdateAction(entityType);
       if (!actionName) {
         this.isDetailFormSubmitting = false;
         return alertService.error(

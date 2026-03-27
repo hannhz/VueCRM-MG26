@@ -43,17 +43,6 @@ const currencyOptions = [
   { value: "EUR", label: "EUR" },
 ];
 
-const userOptions = computed(() => {
-  const users = store.getters["users/allUsers"] || [];
-  return [
-    { value: "", label: "Select Owner" },
-    ...users.map((u) => ({
-      value: u.name || u.username || u.id,
-      label: u.name || u.username || "Unknown",
-    })),
-  ];
-});
-
 const currentUserName = computed(() => {
   const signedInUser =
     store.getters["users/usersignin"] || store.state.auth?.user || null;
@@ -491,8 +480,8 @@ const handleReset = () => {
             </div>
           </div>
 
-          <!-- Expected Close Date & Owner -->
-          <div class="grid grid-cols-2 gap-4">
+          <!-- Expected Close Date -->
+          <div class="grid grid-cols-1 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2"
                 >Expected Close Date</label
@@ -503,29 +492,6 @@ const handleReset = () => {
                 placeholder="Close Date"
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base"
               />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Owner</label
-              >
-              <div class="relative">
-                <select
-                  v-model="formData.owner"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                >
-                  <option
-                    v-for="opt in userOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                />
-              </div>
             </div>
           </div>
 

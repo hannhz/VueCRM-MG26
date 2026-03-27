@@ -2,6 +2,7 @@
 import { ref, watch, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useStatuses } from "@/composables/useStatuses";
+import LocationSelector from "./component/LocationSelector.vue";
 import {
   X,
   ChevronDown,
@@ -54,17 +55,6 @@ const dealOptions = computed(() => {
     ...deals.map((deal) => ({
       value: deal.id,
       label: deal.deal_name || deal.name || "Unknown",
-    })),
-  ];
-});
-
-const ownerOptions = computed(() => {
-  const users = store.getters["users/allUsers"] || [];
-  return [
-    { value: "", label: "Select Owner" },
-    ...users.map((user) => ({
-      value: user.name || user.username || user.id,
-      label: user.name || user.username || "Unknown",
     })),
   ];
 });
@@ -753,8 +743,8 @@ onMounted(() => {
               </div>
             </div>
 
-            <!-- Job Title & Owner -->
-            <div class="grid grid-cols-2 gap-4">
+            <!-- Job Title -->
+            <div class="grid grid-cols-1 gap-4">
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2"
                   >Job Title</label
@@ -765,29 +755,6 @@ onMounted(() => {
                   placeholder="Job Title"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
                 />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Owner</label
-                >
-                <div class="relative">
-                  <select
-                    v-model="contactForm.owner"
-                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                  >
-                    <option
-                      v-for="opt in ownerOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                  <ChevronDown
-                    :size="16"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                  />
-                </div>
               </div>
             </div>
 
@@ -856,57 +823,7 @@ onMounted(() => {
               </div>
             </div>
 
-            <!-- Address & City -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Address</label
-                >
-                <input
-                  v-model="contactForm.address"
-                  type="text"
-                  placeholder="Address"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >City</label
-                >
-                <input
-                  v-model="contactForm.city"
-                  type="text"
-                  placeholder="City"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
-
-            <!-- Province & Country -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Province</label
-                >
-                <input
-                  v-model="contactForm.province"
-                  type="text"
-                  placeholder="Province"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Country</label
-                >
-                <input
-                  v-model="contactForm.country"
-                  type="text"
-                  placeholder="Country"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
+            <LocationSelector v-model="contactForm" />
 
             <!-- Pos Code & Source -->
             <div class="grid grid-cols-2 gap-4">
@@ -1420,8 +1337,8 @@ onMounted(() => {
                 ></textarea>
               </div>
 
-              <!-- Status & Assignee -->
-              <div class="grid grid-cols-2 gap-4 px-4 pb-4">
+              <!-- Status -->
+              <div class="grid grid-cols-1 gap-4 px-4 pb-4">
                 <div>
                   <label class="block text-sm font-medium text-dark-base mb-2"
                     >Status</label
@@ -1432,23 +1349,6 @@ onMounted(() => {
                   >
                     <option
                       v-for="opt in statusOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-dark-base mb-2"
-                    >Assignee</label
-                  >
-                  <select
-                    v-model="taskAssignee"
-                    class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
-                  >
-                    <option
-                      v-for="opt in assigneeOptions"
                       :key="opt.value"
                       :value="opt.value"
                     >

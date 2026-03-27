@@ -1,5 +1,6 @@
 import api from "@/api";
 import { useCookies } from "vue3-cookies";
+import { getDetailEndpointCandidates } from "@/utils/detailFormPayload";
 
 const { cookies } = useCookies();
 
@@ -386,7 +387,7 @@ export default {
       }
     },
 
-    async saveDeal({ dispatch, commit }, formData) {
+    async saveDeal({ dispatch, commit, state }, formData) {
       commit("SET_LOADING", true);
       commit("SET_ERROR", null);
 
@@ -471,6 +472,35 @@ export default {
       };
 
       return dispatch("saveDeal", requestPayload);
+    },
+
+    async saveDealDetail({ dispatch }, detailPayload) {
+      const headers = {
+        Authorization: "Bearer " + cookies.get("token"),
+      };
+
+      const endpoints = getDetailEndpointCandidates("deal");
+      let lastError = null;
+
+      for (const endpoint of endpoints) {
+        try {
+          const response = await api.post(endpoint, detailPayload, { headers });
+          await dispatch("fetchAllDeals").catch(() => {});
+          return response.data;
+        } catch (error) {
+          const status = error?.response?.status;
+          if (status === 404 || status === 405) {
+            lastError = error;
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      throw (
+        lastError ||
+        new Error("Endpoint detail deal tidak ditemukan di backend.")
+      );
     },
 
     async deleteDeal({ commit, dispatch }, dealId) {

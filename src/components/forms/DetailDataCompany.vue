@@ -3,6 +3,7 @@ import { ref, watch, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useStatuses } from "@/composables/useStatuses";
 import { toast } from "vue3-toastify";
+import LocationSelector from "./component/LocationSelector.vue";
 
 import {
   X,
@@ -112,17 +113,6 @@ const assigneeOptions = computed(() => {
   const users = store.getters["users/allUsers"] || [];
   return [
     { value: "", label: "Select Data" },
-    ...users.map((user) => ({
-      value: user.name || user.username || user.id,
-      label: user.name || user.username || "Unknown",
-    })),
-  ];
-});
-
-const ownerOptions = computed(() => {
-  const users = store.getters["users/allUsers"] || [];
-  return [
-    { value: "", label: "Select Owner" },
     ...users.map((user) => ({
       value: user.name || user.username || user.id,
       label: user.name || user.username || "Unknown",
@@ -718,7 +708,7 @@ watch(
           <div class="border border-outline rounded-lg p-4 space-y-4">
             <h3 class="text-sm font-semibold text-dark-base">Company Info</h3>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4">
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2"
                   >Company Name</label
@@ -727,17 +717,6 @@ watch(
                   v-model="companyForm.company_name"
                   type="text"
                   placeholder="Ex Siap Soft"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Company Owner</label
-                >
-                <input
-                  v-model="companyForm.company_owner"
-                  type="text"
-                  placeholder="Ex Abdul"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
                 />
               </div>
@@ -811,55 +790,7 @@ watch(
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Address</label
-                >
-                <input
-                  v-model="companyForm.address"
-                  type="text"
-                  placeholder="Ex simopomahan"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >City</label
-                >
-                <input
-                  v-model="companyForm.city"
-                  type="text"
-                  placeholder="City"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Province</label
-                >
-                <input
-                  v-model="companyForm.province"
-                  type="text"
-                  placeholder="Province"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Country</label
-                >
-                <input
-                  v-model="companyForm.country"
-                  type="text"
-                  placeholder="Country"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
+            <LocationSelector v-model="companyForm" />
 
             <div class="grid grid-cols-2 gap-4">
               <div>
@@ -892,7 +823,7 @@ watch(
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4">
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2"
                   >Type</label
@@ -909,29 +840,6 @@ watch(
                       :value="Number(status.id) || ''"
                     >
                       {{ status.name }}
-                    </option>
-                  </select>
-                  <ChevronDown
-                    :size="16"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                  />
-                </div>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Owner</label
-                >
-                <div class="relative">
-                  <select
-                    v-model="companyForm.owner"
-                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                  >
-                    <option
-                      v-for="opt in ownerOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
                     </option>
                   </select>
                   <ChevronDown
@@ -1424,8 +1332,8 @@ watch(
                 ></textarea>
               </div>
 
-              <!-- Status & Assignee -->
-              <div class="grid grid-cols-2 gap-4 px-4 pb-4">
+              <!-- Status -->
+              <div class="grid grid-cols-1 gap-4 px-4 pb-4">
                 <div>
                   <label class="block text-sm font-medium text-dark-base mb-2"
                     >Status</label
@@ -1436,23 +1344,6 @@ watch(
                   >
                     <option
                       v-for="opt in statusOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-dark-base mb-2"
-                    >Assignee</label
-                  >
-                  <select
-                    v-model="taskAssignee"
-                    class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
-                  >
-                    <option
-                      v-for="opt in assigneeOptions"
                       :key="opt.value"
                       :value="opt.value"
                     >

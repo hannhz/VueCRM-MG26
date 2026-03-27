@@ -51,6 +51,58 @@ const dedupeCompaniesById = (companies) => {
   });
 };
 
+const normalizeCompanyPayload = (payload = {}) => {
+  const normalized = {
+    ...payload,
+  };
+
+  const normalizeText = (value) => {
+    if (value === undefined || value === null) return "";
+    if (typeof value === "string") return value;
+    return String(value);
+  };
+
+  const extractedDocs =
+    typeof normalized.docs === "object"
+      ? normalized.docs?.description
+      : normalized.docs;
+
+  const docsValue =
+    normalizeText(extractedDocs) ||
+    normalizeText(normalized.doc) ||
+    normalizeText(normalized.doc_description);
+
+  const noteValue = normalizeText(normalized.note) || normalizeText(normalized.notes);
+
+  // Send both key styles so backend mapper can bind whichever it expects.
+  normalized.note = noteValue;
+  normalized.notes = noteValue;
+  normalized.docs = docsValue;
+  normalized.doc = docsValue;
+
+  if (
+    normalized.task_json === undefined ||
+    normalized.task_json === null ||
+    normalized.task_json === ""
+  ) {
+    const taskObj = {
+      name: normalizeText(normalized.task_name),
+      content: normalizeText(normalized.desktask),
+      status: normalizeText(normalized.statustask),
+      assignee: normalizeText(normalized.assignee),
+      dueDate: normalizeText(normalized.due_date),
+      time: normalizeText(normalized.task_time),
+      priority: normalizeText(normalized.prioritytask),
+      associatedContact: normalizeText(normalized.associated_contact),
+    };
+
+    const hasTaskValue = Object.values(taskObj).some((value) => value !== "");
+    normalized.task_json = hasTaskValue ? JSON.stringify(taskObj) : null;
+  }
+
+  return normalized;
+};
+
 const state = {
   company: [],
   companyignin: null,
@@ -243,10 +295,10 @@ const actions = {
         // Tentukan choice: 'i' untuk insert, 'u' untuk update
         const choice = formData.choice || (formData.id ? "u" : "i");
 
-        const requestPayload = {
+        const requestPayload = normalizeCompanyPayload({
           choice: choice,
           ...formData,
-        };
+        });
 
         let network = await api.post("company/input", requestPayload, {
           headers: {
@@ -293,6 +345,17 @@ const actions = {
       ...data.formdata,
     };
     return context.dispatch("saveCompany", payload);
+  },
+
+  async saveCompanyDetail(context, detailPayload) {
+    const headers = {
+      Authorization: "Bearer " + cookies.get("token"),
+    };
+
+    const requestPayload = normalizeCompanyPayload(detailPayload);
+    const response = await api.post("company/input", requestPayload, { headers });
+    await context.dispatch("fetchAllcompany").catch(() => {});
+    return response.data;
   },
 
   async deletecompany(context, data) {

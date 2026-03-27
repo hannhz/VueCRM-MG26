@@ -506,8 +506,8 @@ export default {
                 ></textarea>
               </div>
 
-              <!-- Status & Assignee -->
-              <div class="grid grid-cols-2 gap-4 px-4 pb-4">
+              <!-- Status -->
+              <div class="grid grid-cols-1 gap-4 px-4 pb-4">
                 <div>
                   <label class="block text-sm font-medium text-dark-base mb-2"
                     >Status</label
@@ -518,23 +518,6 @@ export default {
                   >
                     <option
                       v-for="opt in statusOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-dark-base mb-2"
-                    >Assignee</label
-                  >
-                  <select
-                    v-model="taskAssignee"
-                    class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
-                  >
-                    <option
-                      v-for="opt in assigneeOptions"
                       :key="opt.value"
                       :value="opt.value"
                     >
@@ -754,8 +737,7 @@ export default {
                         docFileSource ? 'text-dark-base' : 'text-gray-400'
                       "
                     >
-                      { fileSourceOptions.find((o) => o.value === docFileSource)
-                      ?.label || "Select File Source" }
+                      Select File Source
                     </span>
                     <svg
                       class="w-4 h-4 text-sub-text transition-transform"

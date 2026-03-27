@@ -119,17 +119,6 @@ const currencyOptions = [
   { value: "EUR", label: "EUR" },
 ];
 
-const ownerOptions = computed(() => {
-  const users = store.getters["users/allUsers"] || [];
-  return [
-    { value: "", label: "Select Owner" },
-    ...users.map((u) => ({
-      value: u.name || u.username || u.id,
-      label: u.name || u.username || "Unknown",
-    })),
-  ];
-});
-
 const currentUserName = computed(() => {
   const signedInUser =
     store.getters["users/usersignin"] || store.state.auth?.user || null;
@@ -963,7 +952,7 @@ const handleReset = () => {
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4">
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2"
                   >Expected Close Date</label
@@ -973,23 +962,6 @@ const handleReset = () => {
                   type="date"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
                 />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Owner</label
-                >
-                <select
-                  v-model="dealForm.owner"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
-                >
-                  <option
-                    v-for="opt in ownerOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
               </div>
             </div>
 
@@ -1520,8 +1492,8 @@ const handleReset = () => {
                 ></textarea>
               </div>
 
-              <!-- Status & Assignee -->
-              <div class="grid grid-cols-2 gap-4 px-4 pb-4">
+              <!-- Status -->
+              <div class="grid grid-cols-1 gap-4 px-4 pb-4">
                 <div>
                   <label class="block text-sm font-medium text-dark-base mb-2"
                     >Status</label
@@ -1532,23 +1504,6 @@ const handleReset = () => {
                   >
                     <option
                       v-for="opt in statusOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-dark-base mb-2"
-                    >Assignee</label
-                  >
-                  <select
-                    v-model="taskAssignee"
-                    class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
-                  >
-                    <option
-                      v-for="opt in assigneeOptions"
                       :key="opt.value"
                       :value="opt.value"
                     >

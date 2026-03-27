@@ -4,6 +4,7 @@ import { useStore } from "vuex";
 import { ArrowRight, X, ChevronDown } from "lucide-vue-next";
 import { alertService } from "@/services/alertService";
 import { useStatuses } from "@/composables/useStatuses";
+import LocationSelector from "./component/LocationSelector.vue";
 
 const props = defineProps({
   isOpen: {
@@ -36,17 +37,6 @@ const dealOptions = computed(() => {
     ...deals.map((d) => ({
       value: d.id,
       label: d.deal_name || d.name || "Unknown",
-    })),
-  ];
-});
-
-const ownerOptions = computed(() => {
-  const users = store.getters["users/allUsers"] || [];
-  return [
-    { value: "", label: "Select Owner" },
-    ...users.map((user) => ({
-      value: user.name || user.username || user.id,
-      label: user.name || user.username || "Unknown",
     })),
   ];
 });
@@ -359,8 +349,8 @@ watch(
               </div>
             </div>
 
-            <!-- Job Title & Owner -->
-            <div class="grid grid-cols-2 gap-4">
+            <!-- Job Title -->
+            <div class="grid grid-cols-1 gap-4">
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2"
                   >Job Title</label
@@ -371,29 +361,6 @@ watch(
                   placeholder="Job Title"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
                 />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Owner <span class="text-red-600">*</span></label
-                >
-                <div class="relative">
-                  <select
-                    v-model="formData.owner"
-                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                  >
-                    <option
-                      v-for="opt in ownerOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                  <ChevronDown
-                    :size="16"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                  />
-                </div>
               </div>
             </div>
 
@@ -462,57 +429,7 @@ watch(
               </div>
             </div>
 
-            <!-- Address & City -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Address</label
-                >
-                <input
-                  v-model="formData.address"
-                  type="text"
-                  placeholder="Address"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >City</label
-                >
-                <input
-                  v-model="formData.city"
-                  type="text"
-                  placeholder="City"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
-
-            <!-- Province & Country -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Province</label
-                >
-                <input
-                  v-model="formData.province"
-                  type="text"
-                  placeholder="Province"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Country</label
-                >
-                <input
-                  v-model="formData.country"
-                  type="text"
-                  placeholder="Country"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
+            <LocationSelector v-model="formData" />
 
             <!-- Pos Code & Source -->
             <div class="grid grid-cols-2 gap-4">

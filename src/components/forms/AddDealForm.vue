@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "vuex";
 import { ArrowRight, X } from "lucide-vue-next";
-import DetailDataDeals from "./DetailDataDeals.vue";
+import { alertService } from "@/services/alertService";
 
 const props = defineProps({
   isOpen: {
@@ -31,17 +31,6 @@ const currencyOptions = [
   { value: "EUR", label: "EUR" },
   { value: "SGD", label: "SGD" },
 ];
-
-const ownerOptions = computed(() => {
-  const users = store.getters["users/allUsers"] || [];
-  return [
-    { value: "", label: "Select Owner" },
-    ...users.map((u) => ({
-      value: u.name || u.username || u.id,
-      label: u.name || u.username || "Unknown",
-    })),
-  ];
-});
 
 const currentUserName = computed(() => {
   const signedInUser =
@@ -80,7 +69,7 @@ const fileSourceOptions = [
   { value: "dropbox", label: "Dropbox" },
 ];
 
-const formData = ref({
+const getDefaultFormData = () => ({
   dealName: "",
   pipeline: "",
   currency: "IDR",
@@ -94,8 +83,9 @@ const formData = ref({
   documents: "",
 });
 
+const formData = ref(getDefaultFormData());
+
 const selectedFiles = ref([]);
-const showDetailForm = ref(false);
 
 const fetchReferenceData = async () => {
   await Promise.allSettled([
@@ -134,9 +124,52 @@ const removeFile = (index) => {
 const handleClose = () => emit("close");
 
 const handleSubmit = async () => {
-  // Just move to detail form without saving
-  // Data will be saved when user clicks "Save" in DetailDataDeals
-  showDetailForm.value = true;
+  if (!formData.value.dealName?.trim()) {
+    await alertService.toastError("Deal Name wajib diisi.");
+    return;
+  }
+
+  if (isSubmitting.value) {
+    return;
+  }
+
+  isSubmitting.value = true;
+
+  try {
+    const payload = {
+      dealName: formData.value.dealName.trim(),
+      pipeline: formData.value.pipeline || "new",
+      currency: formData.value.currency || "IDR",
+      amount: formData.value.amount,
+      expectedCloseDate: formData.value.expectedCloseDate || "",
+      owner: formData.value.owner || currentUserName.value || "",
+      priority: formData.value.priority || "",
+      source: formData.value.source || "",
+      description: formData.value.description || "",
+    };
+
+    const response = await store.dispatch("deals/createDeal", payload);
+    await store.dispatch("deals/fetchAllDeals");
+    await alertService.toastSuccess(response?.msg || "Deal berhasil ditambahkan");
+
+    emit("submit", response);
+    handleReset();
+    handleClose();
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message ||
+      "Gagal menambah deal";
+    await alertService.toastError(message);
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+const handleReset = () => {
+  formData.value = getDefaultFormData();
+  selectedFiles.value = [];
 };
 </script>
 
@@ -248,8 +281,8 @@ const handleSubmit = async () => {
               </div>
             </div>
 
-            <!-- Expected Close Date & Owner -->
-            <div class="grid grid-cols-2 gap-4">
+            <!-- Expected Close Date -->
+            <div class="grid grid-cols-1 gap-4">
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2"
                   >Expected Close Date</label
@@ -260,23 +293,6 @@ const handleSubmit = async () => {
                   placeholder="Close Date"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
                 />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Owner</label
-                >
-                <select
-                  v-model="formData.owner"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
-                >
-                  <option
-                    v-for="opt in ownerOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
               </div>
             </div>
 
@@ -465,41 +481,16 @@ const handleSubmit = async () => {
             <button
               type="button"
               @click="handleSubmit"
-              class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
+              :disabled="isSubmitting"
+              class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Next
+              {{ isSubmitting ? "Saving..." : "Save" }}
             </button>
           </div>
         </div>
       </div>
     </div>
   </Transition>
-
-  <!-- Detail Data Deals Form -->
-  <DetailDataDeals
-    :isOpen="showDetailForm"
-    :dealData="formData"
-    @close="showDetailForm = false"
-    @back="showDetailForm = false"
-    @submit="
-      showDetailForm = false;
-      handleClose();
-      formData = {
-        dealName: '',
-        pipeline: '',
-        currency: 'IDR',
-        amount: '',
-        expectedCloseDate: '',
-        owner: '',
-        priority: '',
-        source: '',
-        showOptional: false,
-        description: '',
-        documents: '',
-      };
-      selectedFiles = [];
-    "
-  />
 </template>
 
 <style scoped>

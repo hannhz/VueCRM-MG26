@@ -5,6 +5,7 @@ import { ArrowRight, X, Plus, ChevronDown } from "lucide-vue-next";
 import { useStatuses } from "@/composables/useStatuses";
 import AddContactQuickForm from "./AddContactQuickForm.vue";
 import DetailDataCompany from "./DetailDataCompany.vue";
+import LocationSelector from "./component/LocationSelector.vue";
 
 const props = defineProps({
   isOpen: {
@@ -36,17 +37,6 @@ const dealOptions = computed(() => {
     ...deals.map((d) => ({
       value: d.id,
       label: d.deal_name || d.name || "Unknown",
-    })),
-  ];
-});
-
-const ownerOptions = computed(() => {
-  const users = store.getters["users/allUsers"] || [];
-  return [
-    { value: "", label: "Select Owner" },
-    ...users.map((user) => ({
-      value: user.name || user.username || user.id,
-      label: user.name || user.username || "Unknown",
     })),
   ];
 });
@@ -214,8 +204,8 @@ const handleReset = () => {
         <!-- Form Content (Scrollable) -->
         <div class="flex-1 overflow-y-auto min-h-0">
           <form @submit.prevent="handleSubmit" class="p-6 space-y-5">
-            <!-- Company Name & Owner -->
-            <div class="grid grid-cols-2 gap-4">
+            <!-- Company Name -->
+            <div class="grid grid-cols-1 gap-4">
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2"
                   >Company Name <span class="text-red-600">*</span></label
@@ -226,17 +216,6 @@ const handleReset = () => {
                   placeholder="Ex Siap Soft"
                   class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
                   required
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Company Owner <span class="text-red-600">*</span></label
-                >
-                <input
-                  v-model="formData.companyOwner"
-                  type="text"
-                  placeholder="Ex Abdul"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
                 />
               </div>
             </div>
@@ -312,57 +291,7 @@ const handleReset = () => {
               </div>
             </div>
 
-            <!-- Address & Country -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Address</label
-                >
-                <input
-                  v-model="formData.address"
-                  type="text"
-                  placeholder="Ex simopomahan"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Country</label
-                >
-                <input
-                  v-model="formData.country"
-                  type="text"
-                  placeholder="Country"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
-
-            <!-- Province & City -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Province</label
-                >
-                <input
-                  v-model="formData.province"
-                  type="text"
-                  placeholder="Province"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >City</label
-                >
-                <input
-                  v-model="formData.city"
-                  type="text"
-                  placeholder="City"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
+            <LocationSelector v-model="formData" />
 
             <!-- Pos Code & Source -->
             <div class="grid grid-cols-2 gap-4">
@@ -396,8 +325,8 @@ const handleReset = () => {
               </div>
             </div>
 
-            <!-- Type & Owner -->
-            <div class="grid grid-cols-2 gap-4">
+            <!-- Type -->
+            <div class="grid grid-cols-1 gap-4">
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2"
                   >Type</label
@@ -415,29 +344,6 @@ const handleReset = () => {
                     {{ status.name }}
                   </option>
                 </select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Owner</label
-                >
-                <div class="relative">
-                  <select
-                    v-model="formData.owner"
-                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                  >
-                    <option
-                      v-for="opt in ownerOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                  <ChevronDown
-                    :size="16"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                  />
-                </div>
               </div>
             </div>
 
