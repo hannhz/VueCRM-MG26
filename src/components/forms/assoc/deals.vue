@@ -1,13 +1,13 @@
 <template>
   <div class="relative" ref="dealDropdownRef">
-    <label class="block text-sm font-medium text-dark-base mb-2"
-      >Deals Association</label
-    >
+    <label class="block text-sm font-medium text-dark-base mb-2">
+      Deals Association
+    </label>
     <div
       @click="isDealDropdownOpen = !isDealDropdownOpen"
       class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-10.5 bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
     >
-      <div v-if="selectedDeals.length === 0" class="text-gray-400 text-sm">
+      <div v-if="dealsassoc.length === 0" class="text-gray-400 text-sm">
         Search and select deals
       </div>
       <div
@@ -80,15 +80,23 @@
 </template>
 
 <script>
+import { mapGetters } from "vuex";
+import { X, ChevronDown, Search, Check } from "lucide-vue-next";
+
 export default {
+  name: "DealAssociationForm",
+
+  components: {
+    X,
+    ChevronDown,
+    Search,
+    Check,
+  },
+
   props: {
-    companyForm: {
-      type: Object,
-      required: true,
-    },
-    allDeals: {
+    modelValue: {
       type: Array,
-      required: true,
+      default: () => [],
     },
   },
 
@@ -100,51 +108,74 @@ export default {
   },
 
   computed: {
-    // ambil deal yang sudah dipilih berdasarkan id
-    selectedDeals() {
-      return this.allDeals.filter((deal) =>
-        this.companyForm.dealsassoc.includes(deal.id),
-      );
+    ...mapGetters({
+      allDeals: "deals/allDeals",
+    }),
+
+    dealsassoc: {
+      get() {
+        return this.modelValue || [];
+      },
+      set(value) {
+        this.$emit("update:modelValue", value);
+      },
     },
 
-    // filter search
     filteredDeals() {
-      if (!this.dealSearch) return this.allDeals;
+      if (!this.dealSearch) return this.allDeals || [];
 
-      return this.allDeals.filter((deal) =>
-        this.getDisplayNameFromDeal(deal)
-          .toLowerCase()
-          .includes(this.dealSearch.toLowerCase()),
+      return (this.allDeals || []).filter((d) => {
+        const name = (d.deal_name || d.name || "").toLowerCase();
+        const search = this.dealSearch.toLowerCase();
+
+        return name.includes(search);
+      });
+    },
+
+    selectedDeals() {
+      return (this.allDeals || []).filter((d) =>
+        this.dealsassoc.includes(String(d.id).trim()),
       );
     },
   },
 
+  mounted() {
+    document.addEventListener("click", this.handleClickOutside);
+  },
+
+  destroyed() {
+    document.removeEventListener("click", this.handleClickOutside);
+  },
+
   methods: {
-    // cek apakah deal sudah dipilih
-    isDealSelected(id) {
-      return this.companyForm.dealsassoc.includes(id);
-    },
-
-    // toggle select / unselect
     toggleDeal(deal) {
-      let updatedDeals = [...this.companyForm.dealsassoc];
+      const dealId = String(deal.id).trim();
+      const index = this.dealsassoc.findIndex(
+        (id) => String(id).trim() === dealId,
+      );
 
-      if (updatedDeals.includes(deal.id)) {
-        updatedDeals = updatedDeals.filter((id) => id !== deal.id);
+      let newValue;
+      if (index === -1) {
+        newValue = [...this.dealsassoc, dealId];
       } else {
-        updatedDeals.push(deal.id);
+        newValue = this.dealsassoc.filter((id, i) => i !== index);
       }
-
-      // emit ke parent (PENTING)
-      this.$emit("update:companyForm", {
-        ...this.companyForm,
-        dealsassoc: updatedDeals,
-      });
+      this.dealsassoc = newValue;
     },
 
-    // nama yang ditampilkan
+    isDealSelected(id) {
+      const dealId = String(id).trim();
+      return this.dealsassoc.some((did) => String(did).trim() === dealId);
+    },
+
     getDisplayNameFromDeal(deal) {
-      return deal.name || deal.title || `Deal #${deal.id}`;
+      return deal.deal_name || deal.name || `Deal #${deal.id}`;
+    },
+
+    handleClickOutside(e) {
+      if (!this.$refs.dealDropdownRef?.contains(e.target)) {
+        this.isDealDropdownOpen = false;
+      }
     },
   },
 };

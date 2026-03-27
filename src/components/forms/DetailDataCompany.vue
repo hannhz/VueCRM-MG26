@@ -1,9 +1,7 @@
-<script setup>
-import { ref, watch, computed, onMounted } from "vue";
-import { useStore } from "vuex";
+<script>
 import { useStatuses } from "@/composables/useStatuses";
-import { toast } from "vue3-toastify";
 import LocationSelector from "./component/LocationSelector.vue";
+import NotesSection from "./details/NotesSection.vue";
 
 import {
   X,
@@ -17,656 +15,717 @@ import {
   Check,
 } from "lucide-vue-next";
 
-const props = defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false,
+export default {
+  name: "DetailDataCompany",
+  components: {
+    LocationSelector,
+    NotesSection,
+    X,
+    ChevronDown,
+    ChevronRight,
+    Plus,
+    MapPin,
+    Camera,
+    Mic,
+    Search,
+    Check,
   },
-  isSubmitting: {
-    type: Boolean,
-    default: false,
+
+  props: {
+    isOpen: {
+      type: Boolean,
+      default: false,
+    },
+    isSubmitting: {
+      type: Boolean,
+      default: false,
+    },
+    company: {
+      type: Object,
+      default: null,
+    },
+    companyData: {
+      type: Object,
+      default: () => ({}),
+    },
   },
-  company: {
-    type: Object,
-    default: null,
+
+  data() {
+    return {
+      statuses: [],
+      companyForm: {
+        company_name: "",
+        company_owner: "",
+        owner: "",
+        description: "",
+        email: "",
+        telephone: "",
+        website: "",
+        industry: "",
+        address: "",
+        city: "",
+        province: "",
+        country: "",
+        pos_code: "",
+        source: "",
+        type: "",
+        dealsassoc: [],
+        contactassoc: [],
+      },
+      // Section toggles
+      showTasks: true,
+      showDocs: true,
+
+      // Notes
+      noteContent: "",
+
+      // Tasks
+      taskName: "",
+      taskContent: "",
+      taskStatus: "",
+      taskAssignee: "",
+      taskDueDate: "",
+      taskTime: "",
+      taskPriority: "",
+      taskAssociatedContact: "",
+
+      statusOptions: [
+        { value: "", label: "Select Data" },
+        { value: "todo", label: "To Do" },
+        { value: "in_progress", label: "In Progress" },
+        { value: "done", label: "Done" },
+      ],
+
+      priorityOptions: [
+        { value: "", label: "Select Data" },
+        { value: "low", label: "Low" },
+        { value: "medium", label: "Medium" },
+        { value: "high", label: "High" },
+      ],
+
+      // Docs
+      docDescription: "",
+      docFileSource: "",
+      docDropdownOpen: false,
+      selectedDocFiles: [],
+
+      fileSourceOptions: [
+        { value: "", label: "Select File Source" },
+        { value: "local", label: "Local File" },
+        { value: "google_drive", label: "Google Drive" },
+        { value: "dropbox", label: "Dropbox" },
+      ],
+
+      industryOptions: [
+        { value: "", label: "Select Industry" },
+        { value: "technology", label: "Technology" },
+        { value: "finance", label: "Finance" },
+        { value: "healthcare", label: "Healthcare" },
+        { value: "education", label: "Education" },
+        { value: "retail", label: "Retail" },
+        { value: "manufacturing", label: "Manufacturing" },
+        { value: "consulting", label: "Consulting" },
+        { value: "other", label: "Other" },
+      ],
+
+      sourceOptions: [
+        { value: "", label: "Select Source" },
+        { value: "website", label: "Website" },
+        { value: "referral", label: "Referral" },
+        { value: "social_media", label: "Social Media" },
+        { value: "email_campaign", label: "Email Campaign" },
+        { value: "cold_call", label: "Cold Call" },
+        { value: "trade_show", label: "Trade Show" },
+        { value: "partner", label: "Partner" },
+        { value: "other", label: "Other" },
+      ],
+
+      // Dropdown State for Contacts
+      isContactDropdownOpen: false,
+      contactSearch: "",
+
+      // Dropdown State for Deals
+      isDealDropdownOpen: false,
+      dealSearch: "",
+
+      isSavingCompany: false,
+      contactDropdownRef: null,
+      dealDropdownRef: null,
+      docDropdownRef: null,
+    };
   },
-  companyData: {
-    type: Object,
-    default: () => ({}),
+
+  computed: {
+    contactOptions() {
+      return this.$store.getters["contacts/allContacts"] || [];
+    },
+
+    dealOptions() {
+      return this.$store.getters["deals/allDeals"] || [];
+    },
+
+    typeDisplayName() {
+      if (!this.companyForm.type) return "-";
+      const typeStatus = this.statuses.find(
+        (s) => s.id == this.companyForm.type
+      );
+      return typeStatus ? typeStatus.name : this.companyForm.type;
+    },
+
+    assigneeOptions() {
+      const users = this.$store.getters["users/allUsers"] || [];
+      return [
+        { value: "", label: "Select Data" },
+        ...users.map((user) => ({
+          value: user.name || user.username || user.id,
+          label: user.name || user.username || "Unknown",
+        })),
+      ];
+    },
+
+    currentUserName() {
+      const signedInUser =
+        this.$store.getters["users/usersignin"] ||
+        this.$store.state.auth?.user ||
+        null;
+      const fullName = [
+        signedInUser?.first_name || signedInUser?.firstname,
+        signedInUser?.last_name || signedInUser?.lastname,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+
+      return signedInUser?.name || signedInUser?.username || fullName || "";
+    },
+
+    associatedWithOptions() {
+      const contacts = this.$store.getters["contacts/allContacts"] || [];
+      return [
+        { value: "", label: "Select Contact" },
+        ...contacts.map((contact) => ({
+          value: contact.id,
+          label: this.getDisplayNameFromContact(contact),
+        })),
+      ];
+    },
+
+    filteredContacts() {
+      if (!this.contactSearch) return this.contactOptions;
+      return this.contactOptions.filter(
+        (c) =>
+          `${c.first_name} ${c.last_name}`
+            .toLowerCase()
+            .includes(this.contactSearch.toLowerCase()) ||
+          c.email?.toLowerCase().includes(this.contactSearch.toLowerCase())
+      );
+    },
+
+    filteredDeals() {
+      if (!this.dealSearch) return this.dealOptions;
+      return this.dealOptions.filter((d) =>
+        (d.deal_name || d.name)
+          ?.toLowerCase()
+          .includes(this.dealSearch.toLowerCase())
+      );
+    },
+
+    selectedContacts() {
+      return this.contactOptions.filter((c) => {
+        const contactId = String(c.id).trim();
+        return this.companyForm.contactassoc.some(
+          (id) => String(id).trim() === contactId
+        );
+      });
+    },
+
+    selectedDeals() {
+      return this.dealOptions.filter((d) => {
+        const dealId = String(d.id).trim();
+        return this.companyForm.dealsassoc.some(
+          (id) => String(id).trim() === dealId
+        );
+      });
+    },
   },
-});
 
-const emit = defineEmits(["close", "submit", "back"]);
-
-const store = useStore();
-const { statuses, fetchStatuses } = useStatuses();
-
-const contactOptions = computed(() => {
-  return store.getters["contacts/allContacts"] || [];
-});
-
-const dealOptions = computed(() => {
-  return store.getters["deals/allDeals"] || [];
-});
-
-const typeDisplayName = computed(() => {
-  if (!companyForm.value.type) return "-";
-  // statuses adalah ref, jadi akses .value atau gunakan langsung jika sudah array
-  const statusesArray = Array.isArray(statuses)
-    ? statuses
-    : statuses.value || [];
-  const typeStatus = statusesArray.find((s) => s.id == companyForm.value.type);
-  return typeStatus ? typeStatus.name : companyForm.value.type;
-});
-
-const fetchReferenceData = async () => {
-  const promises = [];
-
-  if (!store.getters["users/usersignin"]) {
-    promises.push(store.dispatch("users/getusersignin"));
-  }
-
-  // Only fetch if store is empty to reduce 429 errors
-  if ((store.getters["users/allUsers"] || []).length === 0) {
-    promises.push(store.dispatch("users/fetchAllusers"));
-  }
-  if ((store.getters["contacts/allContacts"] || []).length === 0) {
-    promises.push(store.dispatch("contacts/fetchAllContacts"));
-  }
-  if ((store.getters["deals/allDeals"] || []).length === 0) {
-    promises.push(store.dispatch("deals/fetchAllDeals"));
-  }
-
-  promises.push(fetchStatuses());
-
-  if (promises.length > 0) {
-    await Promise.allSettled(promises);
-  }
-};
-
-// Section toggles
-const showNotes = ref(true);
-const showTasks = ref(true);
-const showDocs = ref(true);
-
-// Notes
-const noteContent = ref("");
-
-// Tasks
-const taskName = ref("");
-const taskContent = ref("");
-const taskStatus = ref("");
-const taskAssignee = ref("");
-const taskDueDate = ref("");
-const taskTime = ref("");
-const taskPriority = ref("");
-const taskAssociatedContact = ref("");
-
-const statusOptions = [
-  { value: "", label: "Select Data" },
-  { value: "todo", label: "To Do" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "done", label: "Done" },
-];
-
-const assigneeOptions = computed(() => {
-  const users = store.getters["users/allUsers"] || [];
-  return [
-    { value: "", label: "Select Data" },
-    ...users.map((user) => ({
-      value: user.name || user.username || user.id,
-      label: user.name || user.username || "Unknown",
-    })),
-  ];
-});
-
-const currentUserName = computed(() => {
-  const signedInUser =
-    store.getters["users/usersignin"] || store.state.auth?.user || null;
-  const fullName = [
-    signedInUser?.first_name || signedInUser?.firstname,
-    signedInUser?.last_name || signedInUser?.lastname,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-
-  return signedInUser?.name || signedInUser?.username || fullName || "";
-});
-
-const associatedWithOptions = computed(() => {
-  const contacts = store.getters["contacts/allContacts"] || [];
-  return [
-    { value: "", label: "Select Contact" },
-    ...contacts.map((contact) => ({
-      value: contact.id,
-      label: getDisplayNameFromContact(contact),
-    })),
-  ];
-});
-
-const getDisplayNameFromContact = (contact) => {
-  if (!contact) return "Unknown";
-  return (
-    `${contact.first_name || ""} ${contact.last_name || ""}`.trim() ||
-    contact.name ||
-    contact.email ||
-    "Unknown"
-  );
-};
-
-const getDisplayNameFromDeal = (deal) => {
-  if (!deal) return "Unknown";
-  return deal.deal_name || deal.name || "Unknown";
-};
-
-const priorityOptions = [
-  { value: "", label: "Select Data" },
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
-];
-
-// Docs
-const docDescription = ref("");
-const docFileSource = ref("");
-const docDropdownOpen = ref(false);
-const docDropdownRef = ref(null);
-const selectedDocFiles = ref([]);
-
-const fileSourceOptions = [
-  { value: "", label: "Select File Source" },
-  { value: "local", label: "Local File" },
-  { value: "google_drive", label: "Google Drive" },
-  { value: "dropbox", label: "Dropbox" },
-];
-
-const industryOptions = [
-  { value: "", label: "Select Industry" },
-  { value: "technology", label: "Technology" },
-  { value: "finance", label: "Finance" },
-  { value: "healthcare", label: "Healthcare" },
-  { value: "education", label: "Education" },
-  { value: "retail", label: "Retail" },
-  { value: "manufacturing", label: "Manufacturing" },
-  { value: "consulting", label: "Consulting" },
-  { value: "other", label: "Other" },
-];
-
-const sourceOptions = [
-  { value: "", label: "Select Source" },
-  { value: "website", label: "Website" },
-  { value: "referral", label: "Referral" },
-  { value: "social_media", label: "Social Media" },
-  { value: "email_campaign", label: "Email Campaign" },
-  { value: "cold_call", label: "Cold Call" },
-  { value: "trade_show", label: "Trade Show" },
-  { value: "partner", label: "Partner" },
-  { value: "other", label: "Other" },
-];
-
-const getAssociationCandidates = (value) => {
-  if (!value) return [];
-  if (Array.isArray(value)) {
-    return value
-      .map((v) => {
-        if (typeof v === "object" && v !== null) {
-          return (
-            v.id ??
-            v.deal_id ??
-            v.contact_id ??
-            v.id_deal ??
-            v.id_contact ??
-            v.userid ??
-            v.id_user
-          );
+  watch: {
+    company: {
+      handler(newCompany) {
+        if (newCompany) {
+          this.companyForm = this.getCompanyFormDefaults(newCompany);
+          this.syncAssociationValues(newCompany);
+          this.syncTaskAssociatedContact(newCompany);
+          this.syncAdditionalData(newCompany);
         }
-        return v;
-      })
-      .filter((v) => v !== "" && v !== null && v !== undefined);
-  }
-  if (typeof value === "string") {
-    return value
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }
-  return [value];
-};
-
-const resolveAssociationValues = (candidates, options) => {
-  if (!candidates || !Array.isArray(candidates) || !options) return [];
-
-  return candidates
-    .map((candidate) => {
-      const normalizedCandidate = String(candidate).trim();
-      if (!normalizedCandidate) return null;
-
-      // Find by ID match
-      const matchedOption = options.find((option) => {
-        const optId = String(
-          option.id ??
-            option.value ??
-            option.deal_id ??
-            option.contact_id ??
-            "",
-        ).trim();
-        return optId === normalizedCandidate;
-      });
-      if (matchedOption) return matchedOption.id || matchedOption.value;
-
-      // Fallback: search by name/label match
-      const matchedByLabel = options.find((option) => {
-        const label = String(
-          option.name ?? option.deal_name ?? option.label ?? "",
-        )
-          .trim()
-          .toLowerCase();
-        return label === normalizedCandidate.toLowerCase();
-      });
-      return matchedByLabel ? matchedByLabel.id || matchedByLabel.value : null;
-    })
-    .filter((v) => v !== null && v !== undefined);
-};
-
-const resolveUserValue = (candidate, options) => {
-  if (!candidate || !options) return "";
-  const normalizedCandidate = String(candidate).trim().toLowerCase();
-
-  const match = options.find(
-    (opt) =>
-      String(opt.value).trim().toLowerCase() === normalizedCandidate ||
-      String(opt.label).trim().toLowerCase() === normalizedCandidate,
-  );
-
-  return match ? match.value : candidate;
-};
-
-const getCompanyFormDefaults = (company = null) => {
-  // Extract actual company data if it's wrapped in the response format
-  const data =
-    company && company.companies && company.companies.length > 0
-      ? company.companies[0]
-      : company;
-
-  const deals = getAssociationCandidates(
-    data?.dealsassoc ||
-      company?.dealsassoc || // Check wrapper too
-      data?.dealsAssociation ||
-      data?.deals_id ||
-      data?.deal_id ||
-      data?.deals || // Handle 'deals' field from user JSON
-      data?.deal,
-  );
-
-  const contacts = getAssociationCandidates(
-    data?.contactassoc ||
-      company?.contactassoc || // Check wrapper too
-      data?.contactAssociation ||
-      data?.contacts_id ||
-      data?.contact_id ||
-      data?.contact || // Handle 'contact' field from user JSON
-      data?.contact,
-  );
-
-  return {
-    company_name: data?.company_name || "",
-    company_owner: data?.company_owner || "",
-    owner: data?.owner || currentUserName.value || "",
-    description: data?.description || "",
-    email: data?.email || "",
-    telephone: data?.telephone || "",
-    website: data?.website || "",
-    industry: data?.industry || "",
-    address: data?.address || "",
-    city: data?.city || "",
-    province: data?.province || "",
-    country: data?.country || "",
-    pos_code: data?.pos_code || data?.posCode || "",
-    source: data?.source || "",
-    type: data?.typeid
-      ? Number(data.typeid)
-      : !isNaN(data?.type) && data?.type !== "" && data?.type !== null
-        ? Number(data.type)
-        : "",
-    dealsassoc: deals,
-    contactassoc: contacts,
-  };
-};
-
-const companyForm = ref(getCompanyFormDefaults());
-
-const syncTaskAssociatedContact = (company = props.company) => {
-  const candidates = getAssociationCandidates(
-    taskAssociatedContact.value ||
-      company?.contactassoc ||
-      company?.contactAssociation ||
-      company?.contacts_id ||
-      company?.contact_id ||
-      company?.contact,
-  );
-
-  const resolved = resolveAssociationValues(
-    candidates,
-    associatedWithOptions.value,
-  );
-  taskAssociatedContact.value = resolved.length > 0 ? resolved[0] : "";
-};
-
-const syncAssociationValues = (company = props.company) => {
-  if (!company) {
-    return;
-  }
-
-  // Handle wrapped response format
-  const data =
-    company && company.companies && company.companies.length > 0
-      ? company.companies[0]
-      : company;
-
-  const dealsCandidates = getAssociationCandidates(
-    companyForm.value.dealsassoc.length > 0
-      ? companyForm.value.dealsassoc
-      : company?.dealsassoc || // Check wrapper root (for associations array)
-          data?.dealsassoc ||
-          data?.dealsAssociation ||
-          data?.deals_id ||
-          data?.deals || // From user JSON
-          data?.deal_id ||
-          data?.deal,
-  );
-
-  companyForm.value.dealsassoc = resolveAssociationValues(
-    dealsCandidates,
-    dealOptions.value,
-  );
-
-  const contactCandidates = getAssociationCandidates(
-    companyForm.value.contactassoc.length > 0
-      ? companyForm.value.contactassoc
-      : company?.contactassoc || // Check wrapper root
-          data?.contactassoc ||
-          data?.contactAssociation ||
-          data?.contacts_id ||
-          data?.contact || // From user JSON
-          data?.contact_id ||
-          data?.contact,
-  );
-
-  companyForm.value.contactassoc = resolveAssociationValues(
-    contactCandidates,
-    contactOptions.value,
-  );
-};
-
-// Dropdown State for Contacts
-const isContactDropdownOpen = ref(false);
-const contactSearch = ref("");
-const contactDropdownRef = ref(null);
-
-const filteredContacts = computed(() => {
-  if (!contactSearch.value) return contactOptions.value;
-  return contactOptions.value.filter(
-    (c) =>
-      `${c.first_name} ${c.last_name}`
-        .toLowerCase()
-        .includes(contactSearch.value.toLowerCase()) ||
-      c.email?.toLowerCase().includes(contactSearch.value.toLowerCase()),
-  );
-});
-
-// Dropdown State for Deals
-const isDealDropdownOpen = ref(false);
-const dealSearch = ref("");
-const dealDropdownRef = ref(null);
-
-const filteredDeals = computed(() => {
-  if (!dealSearch.value) return dealOptions.value;
-  return dealOptions.value.filter((d) =>
-    (d.deal_name || d.name)
-      ?.toLowerCase()
-      .includes(dealSearch.value.toLowerCase()),
-  );
-});
-
-const toggleContact = (contact) => {
-  const contactId = String(contact.id).trim();
-  const index = companyForm.value.contactassoc.findIndex(
-    (id) => String(id).trim() === contactId,
-  );
-  if (index === -1) {
-    companyForm.value.contactassoc.push(contactId);
-  } else {
-    companyForm.value.contactassoc.splice(index, 1);
-  }
-};
-
-const isContactSelected = (id) => {
-  const normalizedId = String(id).trim();
-  return companyForm.value.contactassoc.some(
-    (assocId) => String(assocId).trim() === normalizedId,
-  );
-};
-
-const selectedContacts = computed(() => {
-  return contactOptions.value.filter((c) => {
-    const contactId = String(c.id).trim();
-    return companyForm.value.contactassoc.some(
-      (id) => String(id).trim() === contactId,
-    );
-  });
-});
-
-const toggleDeal = (deal) => {
-  const dealId = String(deal.id).trim();
-  const index = companyForm.value.dealsassoc.findIndex(
-    (id) => String(id).trim() === dealId,
-  );
-  if (index === -1) {
-    companyForm.value.dealsassoc.push(dealId);
-  } else {
-    companyForm.value.dealsassoc.splice(index, 1);
-  }
-};
-
-const isDealSelected = (id) => {
-  const normalizedId = String(id).trim();
-  return companyForm.value.dealsassoc.some(
-    (assocId) => String(assocId).trim() === normalizedId,
-  );
-};
-
-const selectedDeals = computed(() => {
-  return dealOptions.value.filter((d) => {
-    const dealId = String(d.id).trim();
-    return companyForm.value.dealsassoc.some(
-      (id) => String(id).trim() === dealId,
-    );
-  });
-});
-
-const handleClickOutside = (event) => {
-  if (
-    contactDropdownRef.value &&
-    !contactDropdownRef.value.contains(event.target)
-  ) {
-    isContactDropdownOpen.value = false;
-  }
-  if (dealDropdownRef.value && !dealDropdownRef.value.contains(event.target)) {
-    isDealDropdownOpen.value = false;
-  }
-};
-
-onMounted(() => {
-  document.addEventListener("mousedown", handleClickOutside);
-});
-
-const syncAdditionalData = (company) => {
-  if (!company) return;
-
-  // Handle wrapped response format
-  const data =
-    company && company.companies && company.companies.length > 0
-      ? company.companies[0]
-      : company;
-
-  // Notes mapping
-  noteContent.value = data.notes || "";
-
-  // Tasks mapping
-  taskName.value = data.task_name || "";
-  taskContent.value = data.desktask || data.task_content || "";
-  taskStatus.value = data.status || data.statustask || "";
-  taskAssignee.value = resolveUserValue(data.assignee, assigneeOptions.value);
-  taskDueDate.value = data.due_date || "";
-
-  // Format task_time: HH:mm:ss.SSSSSSS -> HH:mm
-  if (data.task_time) {
-    taskTime.value = data.task_time.split(".")[0].substring(0, 5);
-  } else {
-    taskTime.value = "";
-  }
-
-  taskPriority.value = data.priority || data.prioritytask || "";
-
-  // Docs mapping
-  docDescription.value = data.docs || "";
-};
-
-watch(
-  () => props.company,
-  (company) => {
-    if (company) {
-      companyForm.value = getCompanyFormDefaults(company);
-      syncAssociationValues(company);
-      syncTaskAssociatedContact(company);
-      syncAdditionalData(company);
-    }
+      },
+      deep: true,
+    },
+    isOpen(isOpen) {
+      if (isOpen) {
+        this.fetchReferenceData();
+      }
+    },
+    currentUserName: {
+      handler(name) {
+        if (name) {
+          if (!this.companyForm.owner) {
+            this.companyForm.owner = name;
+          }
+          if (!this.taskAssignee) {
+            this.taskAssignee = this.resolveUserValue(
+              name,
+              this.assigneeOptions
+            );
+          }
+        }
+      },
+      immediate: true,
+    },
+    dealOptions() {
+      this.syncAssociationValues();
+      this.syncTaskAssociatedContact();
+      this.syncAdditionalData(this.company);
+    },
+    contactOptions() {
+      this.syncAssociationValues();
+      this.syncTaskAssociatedContact();
+      this.syncAdditionalData(this.company);
+    },
+    assigneeOptions() {
+      this.syncAssociationValues();
+      this.syncTaskAssociatedContact();
+      this.syncAdditionalData(this.company);
+    },
   },
-  { immediate: true },
-);
 
-watch(
-  [dealOptions, contactOptions, associatedWithOptions, assigneeOptions],
-  () => {
-    syncAssociationValues();
-    syncTaskAssociatedContact();
-    syncAdditionalData(props.company);
+  mounted() {
+    document.addEventListener("mousedown", this.handleClickOutside);
+    this.companyForm = this.getCompanyFormDefaults();
+    this.initializeStatuses();
   },
-);
 
-watch(
-  () => props.isOpen,
-  (isOpen) => {
-    if (isOpen) {
-      fetchReferenceData();
-    }
+  beforeDestroy() {
+    document.removeEventListener("mousedown", this.handleClickOutside);
   },
-);
 
-const handleDocFileChange = (e) => {
-  selectedDocFiles.value = Array.from(e.target.files);
-};
+  methods: {
+    async initializeStatuses() {
+      const { statuses, fetchStatuses } = useStatuses();
+      this.statuses = Array.isArray(statuses) ? statuses : (statuses.value || []);
+      await fetchStatuses();
+    },
 
-const removeDocFile = (index) => {
-  selectedDocFiles.value.splice(index, 1);
-};
+    async fetchReferenceData() {
+      const promises = [];
 
-const handleClose = () => emit("close");
-const handleBack = () => emit("back");
-const isSavingCompany = ref(false);
+      if (!this.$store.getters["users/usersignin"]) {
+        promises.push(this.$store.dispatch("users/getusersignin"));
+      }
 
-const handleSave = async () => {
-  // If companyData is provided (new company creation), save it first
-  if (Object.keys(props.companyData || {}).length > 0) {
-    isSavingCompany.value = true;
-    try {
-      // Prepare company data
-      const companyPayload = {
-        ...props.companyData,
-        dealsassoc: props.companyData.dealsassoc
-          ? [props.companyData.dealsassoc]
-          : [],
-        contactassoc: props.companyData.contactassoc
-          ? [props.companyData.contactassoc]
-          : [],
+      if ((this.$store.getters["users/allUsers"] || []).length === 0) {
+        promises.push(this.$store.dispatch("users/fetchAllusers"));
+      }
+      if ((this.$store.getters["contacts/allContacts"] || []).length === 0) {
+        promises.push(this.$store.dispatch("contacts/fetchAllContacts"));
+      }
+      if ((this.$store.getters["deals/allDeals"] || []).length === 0) {
+        promises.push(this.$store.dispatch("deals/fetchAllDeals"));
+      }
+
+      const { fetchStatuses } = useStatuses();
+      promises.push(fetchStatuses());
+
+      if (promises.length > 0) {
+        await Promise.allSettled(promises);
+      }
+    },
+
+    getDisplayNameFromContact(contact) {
+      if (!contact) return "Unknown";
+      return (
+        `${contact.first_name || ""} ${contact.last_name || ""}`.trim() ||
+        contact.name ||
+        contact.email ||
+        "Unknown"
+      );
+    },
+
+    getDisplayNameFromDeal(deal) {
+      if (!deal) return "Unknown";
+      return deal.deal_name || deal.name || "Unknown";
+    },
+
+    getAssociationCandidates(value) {
+      if (!value) return [];
+      if (Array.isArray(value)) {
+        return value
+          .map((v) => {
+            if (typeof v === "object" && v !== null) {
+              return (
+                v.id ||
+                v.deal_id ||
+                v.contact_id ||
+                v.id_deal ||
+                v.id_contact ||
+                v.userid ||
+                v.id_user
+              );
+            }
+            return v;
+          })
+          .filter((v) => v !== "" && v !== null && v !== undefined);
+      }
+      if (typeof value === "string") {
+        return value
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+      return [value];
+    },
+
+    resolveAssociationValues(candidates, options) {
+      if (!candidates || !Array.isArray(candidates) || !options) return [];
+
+      return candidates
+        .map((candidate) => {
+          const normalizedCandidate = String(candidate).trim();
+          if (!normalizedCandidate) return null;
+
+          const matchedOption = options.find((option) => {
+            const optId = String(
+              option.id ||
+                option.value ||
+                option.deal_id ||
+                option.contact_id ||
+                ""
+            ).trim();
+            return optId === normalizedCandidate;
+          });
+          if (matchedOption) return matchedOption.id || matchedOption.value;
+
+          const matchedByLabel = options.find((option) => {
+            const label = String(
+              option.name || option.deal_name || option.label || ""
+            )
+              .trim()
+              .toLowerCase();
+            return label === normalizedCandidate.toLowerCase();
+          });
+          return matchedByLabel
+            ? matchedByLabel.id || matchedByLabel.value
+            : null;
+        })
+        .filter((v) => v !== null && v !== undefined);
+    },
+
+    resolveUserValue(candidate, options) {
+      if (!candidate || !options) return "";
+      const normalizedCandidate = String(candidate).trim().toLowerCase();
+
+      const match = options.find(
+        (opt) =>
+          String(opt.value).trim().toLowerCase() === normalizedCandidate ||
+          String(opt.label).trim().toLowerCase() === normalizedCandidate
+      );
+
+      return match ? match.value : candidate;
+    },
+
+    getCompanyFormDefaults(company = null) {
+      const data =
+        company && company.companies && company.companies.length > 0
+          ? company.companies[0]
+          : company;
+
+      const deals = this.getAssociationCandidates(
+        (data && data.dealsassoc) ||
+          (company && company.dealsassoc) ||
+          (data && data.dealsAssociation) ||
+          (data && data.deals_id) ||
+          (data && data.deal_id) ||
+          (data && data.deals) ||
+          (data && data.deal)
+      );
+
+      const contacts = this.getAssociationCandidates(
+        (data && data.contactassoc) ||
+          (company && company.contactassoc) ||
+          (data && data.contactAssociation) ||
+          (data && data.contacts_id) ||
+          (data && data.contact_id) ||
+          (data && data.contact)
+      );
+
+      return {
+        company_name: (data && data.company_name) || "",
+        company_owner: (data && data.company_owner) || "",
+        owner: (data && data.owner) || this.currentUserName || "",
+        description: (data && data.description) || "",
+        email: (data && data.email) || "",
+        telephone: (data && data.telephone) || "",
+        website: (data && data.website) || "",
+        industry: (data && data.industry) || "",
+        address: (data && data.address) || "",
+        city: (data && data.city) || "",
+        province: (data && data.province) || "",
+        country: (data && data.country) || "",
+        pos_code: (data && data.pos_code) || (data && data.posCode) || "",
+        source: (data && data.source) || "",
+        type:
+          data && data.typeid
+            ? Number(data.typeid)
+            : data &&
+              !isNaN(data.type) &&
+              data.type !== "" &&
+              data.type !== null
+            ? Number(data.type)
+            : "",
+        dealsassoc: deals,
+        contactassoc: contacts,
+      };
+    },
+
+    syncTaskAssociatedContact(company = null) {
+      company = company || this.company;
+      const candidates = this.getAssociationCandidates(
+        this.taskAssociatedContact ||
+          (company && company.contactassoc) ||
+          (company && company.contactAssociation) ||
+          (company && company.contacts_id) ||
+          (company && company.contact_id) ||
+          (company && company.contact)
+      );
+
+      const resolved = this.resolveAssociationValues(
+        candidates,
+        this.associatedWithOptions
+      );
+      this.taskAssociatedContact =
+        resolved.length > 0 ? resolved[0] : "";
+    },
+
+    syncAssociationValues(company = null) {
+      company = company || this.company;
+      if (!company) {
+        return;
+      }
+
+      const data =
+        company && company.companies && company.companies.length > 0
+          ? company.companies[0]
+          : company;
+
+      const dealsCandidates = this.getAssociationCandidates(
+        this.companyForm.dealsassoc.length > 0
+          ? this.companyForm.dealsassoc
+          : (company && company.dealsassoc) ||
+            (data && data.dealsassoc) ||
+            (data && data.dealsAssociation) ||
+            (data && data.deals_id) ||
+            (data && data.deals) ||
+            (data && data.deal_id) ||
+            (data && data.deal)
+      );
+
+      this.companyForm.dealsassoc = this.resolveAssociationValues(
+        dealsCandidates,
+        this.dealOptions
+      );
+
+      const contactCandidates = this.getAssociationCandidates(
+        this.companyForm.contactassoc.length > 0
+          ? this.companyForm.contactassoc
+          : (company && company.contactassoc) ||
+            (data && data.contactassoc) ||
+            (data && data.contactAssociation) ||
+            (data && data.contacts_id) ||
+            (data && data.contact) ||
+            (data && data.contact_id) ||
+            (data && data.contact)
+      );
+
+      this.companyForm.contactassoc = this.resolveAssociationValues(
+        contactCandidates,
+        this.contactOptions
+      );
+    },
+
+    handleClickOutside(event) {
+      if (
+        this.contactDropdownRef &&
+        !this.contactDropdownRef.contains(event.target)
+      ) {
+        this.isContactDropdownOpen = false;
+      }
+      if (
+        this.dealDropdownRef &&
+        !this.dealDropdownRef.contains(event.target)
+      ) {
+        this.isDealDropdownOpen = false;
+      }
+    },
+
+    syncAdditionalData(company) {
+      if (!company) return;
+
+      const data =
+        company && company.companies && company.companies.length > 0
+          ? company.companies[0]
+          : company;
+
+      this.noteContent = (data && data.notes) || "";
+
+      this.taskName = (data && data.task_name) || "";
+      this.taskContent =
+        (data && data.desktask) || (data && data.task_content) || "";
+      this.taskStatus =
+        (data && data.status) || (data && data.statustask) || "";
+      this.taskAssignee = this.resolveUserValue(
+        data && data.assignee,
+        this.assigneeOptions
+      );
+      this.taskDueDate = (data && data.due_date) || "";
+
+      if (data && data.task_time) {
+        this.taskTime = data.task_time.split(".")[0].substring(0, 5);
+      } else {
+        this.taskTime = "";
+      }
+
+      this.taskPriority =
+        (data && data.priority) || (data && data.prioritytask) || "";
+
+      this.docDescription = (data && data.docs) || "";
+    },
+
+    toggleContact(contact) {
+      const contactId = String(contact.id).trim();
+      const index = this.companyForm.contactassoc.findIndex(
+        (id) => String(id).trim() === contactId
+      );
+      if (index === -1) {
+        this.companyForm.contactassoc.push(contactId);
+      } else {
+        this.companyForm.contactassoc.splice(index, 1);
+      }
+    },
+
+    isContactSelected(id) {
+      const normalizedId = String(id).trim();
+      return this.companyForm.contactassoc.some(
+        (assocId) => String(assocId).trim() === normalizedId
+      );
+    },
+
+    toggleDeal(deal) {
+      const dealId = String(deal.id).trim();
+      const index = this.companyForm.dealsassoc.findIndex(
+        (id) => String(id).trim() === dealId
+      );
+      if (index === -1) {
+        this.companyForm.dealsassoc.push(dealId);
+      } else {
+        this.companyForm.dealsassoc.splice(index, 1);
+      }
+    },
+
+    isDealSelected(id) {
+      const normalizedId = String(id).trim();
+      return this.companyForm.dealsassoc.some(
+        (assocId) => String(assocId).trim() === normalizedId
+      );
+    },
+
+    handleDocFileChange(e) {
+      this.selectedDocFiles = Array.from(e.target.files);
+    },
+
+    removeDocFile(index) {
+      this.selectedDocFiles.splice(index, 1);
+    },
+
+    handleClose() {
+      this.$emit("close");
+    },
+
+    handleBack() {
+      this.$emit("back");
+    },
+
+    async handleSave() {
+      if (Object.keys(this.companyData || {}).length > 0) {
+        this.isSavingCompany = true;
+        try {
+          const companyPayload = {
+            ...this.companyData,
+            dealsassoc: this.companyData.dealsassoc
+              ? [this.companyData.dealsassoc]
+              : [],
+            contactassoc: this.companyData.contactassoc
+              ? [this.companyData.contactassoc]
+              : [],
+          };
+
+          console.log("Saving company with payload:", companyPayload);
+
+          const response = await this.$store.dispatch(
+            "companies/createOrUpdateCompany",
+            companyPayload
+          );
+
+          console.log("Company saved successfully:", response);
+          success("Company saved successfully!");
+        } catch (error) {
+          console.error("Failed to save company:", error);
+          error(
+            "Failed to save company: " +
+              (error.response?.data?.message || error.message)
+          );
+          this.isSavingCompany = false;
+          return;
+        }
+      }
+
+      const submissionData = {
+        ...this.companyForm,
+        id: this.company?.id,
+        dealsassoc: (this.companyForm.dealsassoc || []).join(","),
+        contactassoc: (this.companyForm.contactassoc || []).join(","),
       };
 
-      console.log("Saving company with payload:", companyPayload);
-
-      // Save company via store
-      const response = await store.dispatch(
-        "companies/createOrUpdateCompany",
-        companyPayload,
-      );
-
-      console.log("Company saved successfully:", response);
-      toast.success("Company saved successfully!");
-    } catch (error) {
-      console.error("Failed to save company:", error);
-      toast.error(
-        "Failed to save company: " +
-          (error.response?.data?.message || error.message),
-      );
-      isSavingCompany.value = false;
-      return;
-    }
-  }
-
-  // Map fields to match standard naming and wrap associations in comma-separated strings
-  const submissionData = {
-    ...companyForm.value,
-    id: props.company?.id,
-    dealsassoc: (companyForm.value.dealsassoc || []).join(","),
-    contactassoc: (companyForm.value.contactassoc || []).join(","),
-  };
-
-  emit("submit", {
-    company: submissionData,
-    note: noteContent.value,
-    task: {
-      name: taskName.value,
-      content: taskContent.value,
-      status: taskStatus.value,
-      assignee: taskAssignee.value,
-      dueDate: taskDueDate.value,
-      time: taskTime.value,
-      priority: taskPriority.value,
-      associatedContact: taskAssociatedContact.value,
+      this.$emit("submit", {
+        company: submissionData,
+        note: this.noteContent,
+        task: {
+          name: this.taskName,
+          content: this.taskContent,
+          status: this.taskStatus,
+          assignee: this.taskAssignee,
+          dueDate: this.taskDueDate,
+          time: this.taskTime,
+          priority: this.taskPriority,
+          associatedContact: this.taskAssociatedContact,
+        },
+        docs: {
+          description: this.docDescription,
+          fileSource: this.docFileSource,
+          files: this.selectedDocFiles,
+        },
+      });
+      this.isSavingCompany = false;
     },
-    docs: {
-      description: docDescription.value,
-      fileSource: docFileSource.value,
-      files: selectedDocFiles.value,
+
+    handleReset() {
+      this.companyForm = this.getCompanyFormDefaults(this.company);
+      this.syncAdditionalData(this.company);
+      this.syncTaskAssociatedContact(this.company);
+      this.docFileSource = "";
+      this.selectedDocFiles = [];
     },
-  });
-  isSavingCompany.value = false;
-};
-
-const handleReset = () => {
-  companyForm.value = getCompanyFormDefaults(props.company);
-  syncAdditionalData(props.company);
-  syncTaskAssociatedContact(props.company);
-  docFileSource.value = "";
-  selectedDocFiles.value = [];
-};
-
-watch(
-  currentUserName,
-  (name) => {
-    if (name) {
-      if (!companyForm.value.owner) {
-        companyForm.value.owner = name;
-      }
-      if (!taskAssignee.value) {
-        taskAssignee.value = resolveUserValue(name, assigneeOptions.value);
-      }
-    }
   },
-  { immediate: true },
-);
-
-// Remove redundant onMounted
+};
 </script>
 
 <template>
@@ -691,11 +750,11 @@ watch(
         class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
       >
         <h2 class="text-xl font-bold text-dark-base">
-          {{ props.company ? "Company Details" : "Add Contact / Details" }}
+          {{ company ? "Company Details" : "Add Contact / Details" }}
         </h2>
         <button
           @click="handleClose"
-          :disabled="props.isSubmitting"
+          :disabled="isSubmitting"
           class="p-2 hover:bg-light-base rounded-lg transition-colors"
         >
           <X :size="20" class="text-sub-text" />
@@ -1016,168 +1075,13 @@ watch(
           </div>
 
           <!-- NOTES SECTION -->
-          <div>
-            <button
-              type="button"
-              @click="showNotes = !showNotes"
-              class="flex items-center gap-2 w-full text-left mb-3"
-            >
-              <component
-                :is="showNotes ? ChevronDown : ChevronRight"
-                :size="16"
-                class="text-sub-text"
-              />
-              <span
-                class="text-sm font-semibold text-dark-base flex items-center gap-2"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
-                  />
-                  <polyline points="14 2 14 8 20 8" />
-                </svg>
-                Notes
-              </span>
-            </button>
-
-            <div
-              v-if="showNotes"
-              class="border border-outline rounded-lg overflow-hidden"
-            >
-              <!-- Toolbar -->
-              <div
-                class="flex items-center gap-1 px-3 py-2 border-b border-outline bg-light-base flex-wrap"
-              >
-                <button
-                  type="button"
-                  class="p-1 hover:bg-white rounded text-sub-text text-xs"
-                >
-                  â†©
-                </button>
-                <button
-                  type="button"
-                  class="p-1 hover:bg-white rounded text-sub-text text-xs"
-                >
-                  â†ª
-                </button>
-                <span class="text-outline mx-1">|</span>
-                <select
-                  class="text-xs border-none bg-transparent text-sub-text focus:outline-none"
-                >
-                  <option>Format</option>
-                  <option>Heading 1</option>
-                  <option>Heading 2</option>
-                  <option>Paragraph</option>
-                </select>
-                <span class="text-outline mx-1">|</span>
-                <button
-                  type="button"
-                  class="p-1 hover:bg-white rounded font-bold text-xs text-sub-text"
-                >
-                  B
-                </button>
-                <button
-                  type="button"
-                  class="p-1 hover:bg-white rounded italic text-xs text-sub-text"
-                >
-                  I
-                </button>
-                <button
-                  type="button"
-                  class="p-1 hover:bg-white rounded underline text-xs text-sub-text"
-                >
-                  U
-                </button>
-                <span class="text-outline mx-1">|</span>
-                <button
-                  type="button"
-                  class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                >
-                  ðŸ”—
-                </button>
-                <button
-                  type="button"
-                  class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                >
-                  âš“
-                </button>
-                <span class="text-outline mx-1">|</span>
-                <button
-                  type="button"
-                  class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                >
-                  â‰¡
-                </button>
-                <button
-                  type="button"
-                  class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                >
-                  â‰¡
-                </button>
-                <button
-                  type="button"
-                  class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                >
-                  â‰¡
-                </button>
-                <button
-                  type="button"
-                  class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                >
-                  â‰¡
-                </button>
-                <button
-                  type="button"
-                  class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                >
-                  â˜°
-                </button>
-                <button
-                  type="button"
-                  class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                >
-                  â˜°
-                </button>
-              </div>
-              <!-- Editor area -->
-              <textarea
-                v-model="noteContent"
-                rows="5"
-                class="w-full px-4 py-3 text-sm text-sub-text focus:outline-none resize-none"
-                placeholder="Tulis catatan..."
-              ></textarea>
-              <!-- Bottom actions -->
-              <div
-                class="flex items-center gap-4 px-4 py-2 border-t border-outline"
-              >
-                <button
-                  type="button"
-                  class="flex items-center gap-1.5 text-xs text-sub-text hover:text-dark-base"
-                >
-                  <MapPin :size="14" /> Add GPS Location
-                </button>
-                <button
-                  type="button"
-                  class="flex items-center gap-1.5 text-xs text-sub-text hover:text-dark-base"
-                >
-                  <Camera :size="14" /> Add Photo
-                </button>
-                <button
-                  type="button"
-                  class="flex items-center gap-1.5 text-xs text-sub-text hover:text-dark-base"
-                >
-                  <Mic :size="14" /> Start Recording
-                </button>
-              </div>
-            </div>
-          </div>
+          <NotesSection
+            v-model="noteContent"
+            title="Notes"
+            placeholder="Tulis catatan..."
+            :rows="5"
+            :isOpen="true"
+          />
 
           <!-- TASKS SECTION -->
           <div>
@@ -1238,13 +1142,13 @@ watch(
                     type="button"
                     class="p-1 hover:bg-white rounded text-sub-text text-xs"
                   >
-                    â†©
+                    ↩
                   </button>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-sub-text text-xs"
                   >
-                    â†ª
+                    ↪
                   </button>
                   <span class="text-outline mx-1">|</span>
                   <select
@@ -1278,50 +1182,50 @@ watch(
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    ðŸ”—
+                    📷
                   </button>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    âš“
+                    ⚔
                   </button>
                   <span class="text-outline mx-1">|</span>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    â‰¡
+                    ≡
                   </button>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    â‰¡
+                    ≡
                   </button>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    â‰¡
+                    ≡
                   </button>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    â‰¡
+                    ≡
                   </button>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    â˜°
+                    ☰
                   </button>
                   <button
                     type="button"
                     class="p-1 hover:bg-white rounded text-xs text-sub-text"
                   >
-                    â˜°
+                    ☰
                   </button>
                 </div>
                 <textarea
@@ -1453,13 +1357,13 @@ watch(
                   type="button"
                   class="p-1 hover:bg-white rounded text-sub-text text-xs"
                 >
-                  â†©
+                  ↩
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-sub-text text-xs"
                 >
-                  â†ª
+                  ↪
                 </button>
                 <span class="text-outline mx-1">|</span>
                 <select
@@ -1493,50 +1397,50 @@ watch(
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  ðŸ”—
+                  📷
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  âš“
+                  ⚔
                 </button>
                 <span class="text-outline mx-1">|</span>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  â‰¡
+                  ≡
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  â‰¡
+                  ≡
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  â‰¡
+                  ≡
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  â‰¡
+                  ≡
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  â˜°
+                  ☰
                 </button>
                 <button
                   type="button"
                   class="p-1 hover:bg-white rounded text-xs text-sub-text"
                 >
-                  â˜°
+                  ☰
                 </button>
               </div>
               <textarea
@@ -1583,7 +1487,7 @@ watch(
                       />
                     </svg>
                   </button>
-                  <!-- Dropdown list â€” terbuka ke ATAS -->
+                  <!-- Dropdown list -->
                   <ul
                     v-if="docDropdownOpen"
                     class="absolute bottom-full left-0 right-0 mb-1 bg-white border border-outline rounded-lg shadow-lg z-50 overflow-hidden"
@@ -1654,7 +1558,7 @@ watch(
                         @click="removeDocFile(i)"
                         class="ml-2 text-sub-text hover:text-red-500 shrink-0"
                       >
-                        âœ•
+                        ✕
                       </button>
                     </li>
                   </ul>
@@ -1672,7 +1576,7 @@ watch(
         <button
           type="button"
           @click="handleReset"
-          :disabled="props.isSubmitting"
+          :disabled="isSubmitting"
           class="text-sm text-red font-medium hover:underline"
         >
           Reset
@@ -1681,7 +1585,7 @@ watch(
           <button
             type="button"
             @click="handleBack"
-            :disabled="props.isSubmitting"
+            :disabled="isSubmitting"
             class="px-6 py-2 border border-outline rounded-lg text-sub-text hover:bg-light-base transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
@@ -1689,10 +1593,10 @@ watch(
           <button
             type="button"
             @click="handleSave"
-            :disabled="props.isSubmitting"
+            :disabled="isSubmitting"
             class="flex items-center gap-2 px-5 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <template v-if="props.isSubmitting">
+            <template v-if="isSubmitting">
               <span
                 class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"
               ></span>
@@ -1732,7 +1636,7 @@ watch(
   border-radius: 10px;
 }
 
-/* Slide from right — identik dengan AddContactForm */
+/* Slide from right */
 .slide-enter-active,
 .slide-leave-active {
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);

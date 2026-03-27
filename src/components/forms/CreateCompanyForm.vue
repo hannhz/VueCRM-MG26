@@ -5,6 +5,8 @@ import AddDealForm from "./AddDealForm.vue";
 import AddContactQuickForm from "./AddContactQuickForm.vue";
 import LocationSelector from "./component/LocationSelector.vue";
 import ContactDetailForm from "./DetailFormDuplicate.vue";
+import ContactAssociationForm from "./assoc/contacts.vue";
+import DealAssociationForm from "./assoc/deals.vue";
 import { alertService } from "@/services/alertService";
 import api from "@/api";
 
@@ -17,7 +19,10 @@ export default {
     ChevronDown,
     AddDealForm,
     AddContactQuickForm,
+    LocationSelector,
     ContactDetailForm,
+    ContactAssociationForm,
+    DealAssociationForm,
   },
 
   props: {
@@ -31,9 +36,7 @@ export default {
     return {
       isSubmitting: false,
       contactSearch: "",
-      dealSearch: "",
       isContactDropdownOpen: false,
-      isDealDropdownOpen: false,
       statuses: [],
 
       industryOptions: [
@@ -133,24 +136,9 @@ export default {
       );
     },
 
-    filteredDeals() {
-      if (!this.dealSearch) return this.dealOptions || [];
-      return (this.dealOptions || []).filter((d) =>
-        (d.deal_name || d.name || "")
-          .toLowerCase()
-          .includes(this.dealSearch.toLowerCase()),
-      );
-    },
-
     selectedContacts() {
       return (this.contactOptions || []).filter((c) =>
         this.formData.contactassoc.includes(c.id),
-      );
-    },
-
-    selectedDeals() {
-      return (this.dealOptions || []).filter((d) =>
-        this.formData.dealsassoc.includes(d.id),
       );
     },
   },
@@ -259,42 +247,18 @@ export default {
       return this.formData.contactassoc.includes(id);
     },
 
-    toggleDeal(deal) {
-      const index = this.formData.dealsassoc.indexOf(deal.id);
-      if (index === -1) {
-        this.formData.dealsassoc.push(deal.id);
-      } else {
-        this.formData.dealsassoc.splice(index, 1);
-      }
-    },
-
-    isDealSelected(id) {
-      return this.formData.dealsassoc.includes(id);
-    },
-
     toggleContactDropdown() {
       this.isContactDropdownOpen = !this.isContactDropdownOpen;
-    },
-
-    toggleDealDropdown() {
-      this.isDealDropdownOpen = !this.isDealDropdownOpen;
     },
 
     filterContacts() {
       this.isContactDropdownOpen = true;
     },
 
-    filterDeals() {
-      this.isDealDropdownOpen = true;
-    },
-
     handleClickOutside(e) {
       // Close dropdowns saat klik di luar
       if (!e.target.closest("[data-contacts-dropdown]")) {
         this.isContactDropdownOpen = false;
-      }
-      if (!e.target.closest("[data-deals-dropdown]")) {
-        this.isDealDropdownOpen = false;
       }
     },
 
@@ -344,8 +308,8 @@ export default {
       } catch (error) {
         alertService.error(
           error.response?.data?.message ||
-            error.message ||
-            "Gagal menambah company.",
+          error.message ||
+          "Gagal menambah company.",
         );
       } finally {
         this.isSubmitting = false;
@@ -373,7 +337,6 @@ export default {
         contactassoc: [],
       };
       this.contactSearch = "";
-      this.dealSearch = "";
     },
 
     async handleDealFormSubmit() {
@@ -387,6 +350,7 @@ export default {
     },
   },
 };
+
 </script>
 
 <template>
@@ -596,178 +560,26 @@ export default {
           </div>
 
           <!-- Contact Association -->
-          <div data-contacts-dropdown>
-            <label class="block text-sm font-medium text-dark-base mb-2">
-              Contact Association
-            </label>
-            <div class="relative">
-              <input
-                v-model="contactSearch"
-                type="text"
-                placeholder="Search contacts..."
-                @click="toggleContactDropdown"
-                @input="filterContacts"
-                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-              <ChevronDown
-                :size="16"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none transition-transform duration-200"
-                :class="{ 'rotate-180': isContactDropdownOpen }"
-              />
-
-              <!-- Dropdown -->
-              <div
-                v-if="isContactDropdownOpen && filteredContacts.length > 0"
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
-              >
-                <div
-                  v-for="contact in filteredContacts"
-                  :key="contact.id"
-                  @click="toggleContact(contact)"
-                  class="px-3 py-2 hover:bg-light-base cursor-pointer text-sm text-dark-base"
-                >
-                  {{ contact.first_name }} {{ contact.last_name }}
-                </div>
-              </div>
-
-              <!-- Empty State -->
-              <div
-                v-if="
-                  isContactDropdownOpen &&
-                  filteredContacts.length === 0 &&
-                  contactOptions.length > 0
-                "
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
-              >
-                <p class="text-sm text-sub-text">No contacts found</p>
-              </div>
-
-              <!-- Loading/No Data State -->
-              <div
-                v-if="isContactDropdownOpen && contactOptions.length === 0"
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
-              >
-                <p class="text-sm text-sub-text">Loading contacts...</p>
-              </div>
-            </div>
-
-            <!-- Selected Contacts -->
-            <div
-              v-if="selectedContacts.length > 0"
-              class="mt-2 flex flex-wrap gap-2"
-            >
-              <span
-                v-for="contact in selectedContacts"
-                :key="contact.id"
-                class="bg-light-base px-2 py-1 rounded text-xs text-dark-base flex items-center gap-1"
-              >
-                {{ contact.first_name }} {{ contact.last_name }}
-                <button
-                  type="button"
-                  @click="toggleContact(contact)"
-                  class="hover:text-red"
-                >
-                  <X :size="14" />
-                </button>
-              </span>
-            </div>
-
-            <button
-              type="button"
-              @click="showAddContactQuickForm = true"
-              class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
-            >
-              <Plus :size="14" />
-              Create Contact
-            </button>
-          </div>
+          <ContactAssociationForm v-model="formData.contactassoc" />
+          <button
+            type="button"
+            @click="showAddContactQuickForm = true"
+            class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
+          >
+            <Plus :size="14" />
+            Create Contact
+          </button>
 
           <!-- Deals Association -->
-          <div data-deals-dropdown>
-            <label class="block text-sm font-medium text-dark-base mb-2">
-              Deals Association
-            </label>
-            <div class="relative">
-              <input
-                v-model="dealSearch"
-                type="text"
-                placeholder="Search deals..."
-                @click="toggleDealDropdown"
-                @input="filterDeals"
-                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-              <ChevronDown
-                :size="16"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none transition-transform duration-200"
-                :class="{ 'rotate-180': isDealDropdownOpen }"
-              />
-
-              <!-- Dropdown -->
-              <div
-                v-if="isDealDropdownOpen && filteredDeals.length > 0"
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
-              >
-                <div
-                  v-for="deal in filteredDeals"
-                  :key="deal.id"
-                  @click="toggleDeal(deal)"
-                  class="px-3 py-2 hover:bg-light-base cursor-pointer text-sm text-dark-base"
-                >
-                  {{ deal.deal_name || deal.name || "Unnamed Deal" }}
-                </div>
-              </div>
-
-              <!-- Empty State -->
-              <div
-                v-if="
-                  isDealDropdownOpen &&
-                  filteredDeals.length === 0 &&
-                  dealOptions.length > 0
-                "
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
-              >
-                <p class="text-sm text-sub-text">No deals found</p>
-              </div>
-
-              <!-- Loading/No Data State -->
-              <div
-                v-if="isDealDropdownOpen && dealOptions.length === 0"
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
-              >
-                <p class="text-sm text-sub-text">Loading deals...</p>
-              </div>
-            </div>
-
-            <!-- Selected Deals -->
-            <div
-              v-if="selectedDeals.length > 0"
-              class="mt-2 flex flex-wrap gap-2"
-            >
-              <span
-                v-for="deal in selectedDeals"
-                :key="deal.id"
-                class="bg-light-base px-2 py-1 rounded text-xs text-dark-base flex items-center gap-1"
-              >
-                {{ deal.deal_name || deal.name }}
-                <button
-                  type="button"
-                  @click="toggleDeal(deal)"
-                  class="hover:text-red"
-                >
-                  <X :size="14" />
-                </button>
-              </span>
-            </div>
-
-            <button
-              type="button"
-              @click="showAddDealForm = true"
-              class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
-            >
-              <Plus :size="14" />
-              Add Another Deal
-            </button>
-          </div>
+          <DealAssociationForm v-model="formData.dealsassoc" />
+          <button
+            type="button"
+            @click="showAddDealForm = true"
+            class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
+          >
+            <Plus :size="14" />
+            Add Another Deal
+          </button>
         </form>
       </div>
 

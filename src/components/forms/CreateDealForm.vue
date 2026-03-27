@@ -1,6 +1,5 @@
-<script setup>
-import { ref, computed, onMounted, watch } from "vue";
-import { useStore } from "vuex";
+<script>
+import { mapGetters, mapState } from "vuex";
 import {
   X,
   Plus,
@@ -13,374 +12,368 @@ import ContactDetailForm from "./DetailFormDuplicate.vue";
 import AddCompanyForm from "./AddCompanyForm.vue";
 import AddContactQuickForm from "./AddContactQuickForm.vue";
 import { alertService } from "@/services/alertService";
+import ContactAssociationForm from "./assoc/contacts.vue";
 
-const store = useStore();
-
-const props = defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false,
+export default {
+  components: {
+    X,
+    Plus,
+    ChevronDown,
+    Paperclip,
+    Search,
+    Check,
+    ContactDetailForm,
+    AddCompanyForm,
+    AddContactQuickForm,
+    ContactAssociationForm,
   },
-});
-
-const emit = defineEmits(["close", "submit"]);
-
-const pipelineOptions = [
-  { value: "", label: "Select Data" },
-  { value: "prospect", label: "Prospect" },
-  { value: "qualified", label: "Qualified" },
-  { value: "offer", label: "Offer" },
-  { value: "negotiation", label: "Negotiation" },
-  { value: "closed_won", label: "Closed Won" },
-  { value: "closed_lost", label: "Closed Lost" },
-  { value: "closed_cancel", label: "Closed Cancel" },
-];
-
-const currencyOptions = [
-  { value: "IDR", label: "IDR" },
-  { value: "USD", label: "USD" },
-  { value: "SGD", label: "SGD" },
-  { value: "EUR", label: "EUR" },
-];
-
-const currentUserName = computed(() => {
-  const signedInUser =
-    store.getters["users/usersignin"] || store.state.auth?.user || null;
-  const fullName = [
-    signedInUser?.first_name || signedInUser?.firstname,
-    signedInUser?.last_name || signedInUser?.lastname,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-
-  return signedInUser?.name || signedInUser?.username || fullName || "";
-});
-
-const applyDefaultOwner = () => {
-  if (!formData.value.owner && currentUserName.value) {
-    formData.value.owner = currentUserName.value;
-  }
-};
-
-const contactOptions = computed(() => {
-  const contacts = store.getters["contacts/allContacts"] || [];
-  return [
-    { value: "", label: "Select Contact" },
-    ...contacts.map((c) => ({
-      value: c.id,
-      label: [c.first_name, c.last_name].filter(Boolean).join(" ") || "Unknown",
-    })),
-  ];
-});
-
-const companyOptions = computed(() => {
-  const companies = store.getters["company/allcompany"] || [];
-  return [
-    { value: "", label: "Select Company" },
-    ...companies.map((c) => ({
-      value: c.id,
-      label: c.company_name || c.name || "Unknown",
-    })),
-  ];
-});
-
-const priorityOptions = [
-  { value: "", label: "Select Data" },
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
-];
-
-const sourceOptions = [
-  { value: "", label: "Select Data" },
-  { value: "website", label: "Website" },
-  { value: "referral", label: "Referral" },
-  { value: "social_media", label: "Social Media" },
-  { value: "email_campaign", label: "Email Campaign" },
-  { value: "cold_call", label: "Cold Call" },
-  { value: "other", label: "Other" },
-];
-
-const customSource = ref("");
-const dealNameInput = ref(null);
-
-onMounted(() => {
-  store.dispatch("users/getusersignin");
-  store.dispatch("users/fetchAllusers");
-  store.dispatch("contacts/fetchAllContacts");
-  store.dispatch("company/fetchAllcompany");
-  applyDefaultOwner();
-  document.addEventListener("click", handleClickOutside);
-});
-
-watch(
-  () => props.isOpen,
-  (isOpen) => {
-    if (isOpen) {
-      Promise.allSettled([
-        store.dispatch("users/getusersignin"),
-        store.dispatch("users/fetchAllusers"),
-        store.dispatch("contacts/fetchAllContacts"),
-        store.dispatch("company/fetchAllcompany"),
-      ]).finally(applyDefaultOwner);
-      
-      // Auto-focus Deal Name field
-      setTimeout(() => {
-        if (dealNameInput.value) {
-          dealNameInput.value.focus();
-        }
-      }, 100);
-    }
+  props: {
+    isOpen: {
+      type: Boolean,
+      default: false,
+    },
   },
-);
-
-const showOptional = ref(false);
-const showDetailForm = ref(false);
-const showAddCompanyForm = ref(false);
-const showAddContactQuickForm = ref(false);
-const isSavingBeforeDetail = ref(false);
-
-// Search and dropdown states for associations
-const contactSearch = ref("");
-const companySearch = ref("");
-const isContactDropdownOpen = ref(false);
-const isCompanyDropdownOpen = ref(false);
-
-// Documents dropdown
-const docSourceOptions = [
-  { value: "", label: "Select File Source" },
-  { value: "local", label: "Local File" },
-  { value: "google_drive", label: "Google Drive" },
-  { value: "dropbox", label: "Dropbox" },
-  { value: "onedrive", label: "OneDrive" },
-];
-const selectedDocSource = ref("");
-const isDocDropdownOpen = ref(false);
-
-const selectDocSource = (value) => {
-  selectedDocSource.value = value;
-  isDocDropdownOpen.value = false;
-  if (value !== "local") {
-    formData.value.documents = null;
-  }
-};
-
-const formData = ref({
-  dealName: "",
-  pipeline: "",
-  currency: "IDR",
-  amount: "",
-  expectedCloseDate: "",
-  owner: "",
-  priority: "",
-  source: "",
-  description: "",
-  documents: null,
-  contactassoc: [],
-  companyassoc: [],
-});
-
-const handleFileChange = (e) => {
-  formData.value.documents = e.target.files[0] ?? null;
-};
-
-const handleClose = () => emit("close");
-
-const handleSubmit = async () => {
-  // Validation
-  if (!formData.value.dealName?.trim()) {
-    await alertService.toastError("Deal Name wajib diisi.");
-    return;
-  }
-  if (!formData.value.pipeline) {
-    await alertService.toastError("Pipeline/Stage wajib diisi.");
-    return;
-  }
-  if (!formData.value.amount && formData.value.amount !== 0) {
-    await alertService.toastError("Amount wajib diisi.");
-    return;
-  }
-
-  showDetailForm.value = true;
-};
-
-const allContacts = computed(() => store.getters["contacts/allContacts"] || []);
-const allCompanies = computed(() => store.getters["company/allcompany"] || []);
-
-const filteredContacts = computed(() => {
-  if (!contactSearch.value) return allContacts.value;
-  return allContacts.value.filter((c) => {
-    const fullName = `${c.first_name || ""} ${c.last_name || ""}`.toLowerCase();
-    const email = (c.email || "").toLowerCase();
-    return (
-      fullName.includes(contactSearch.value.toLowerCase()) ||
-      email.includes(contactSearch.value.toLowerCase())
-    );
-  });
-});
-
-const filteredCompanies = computed(() => {
-  if (!companySearch.value) return allCompanies.value;
-  return allCompanies.value.filter((c) => {
-    const name = (c.company_name || c.name || "").toLowerCase();
-    return name.includes(companySearch.value.toLowerCase());
-  });
-});
-
-const selectedContacts = computed(() => {
-  return allContacts.value.filter((c) =>
-    formData.value.contactassoc.includes(c.id),
-  );
-});
-
-const selectedCompanies = computed(() => {
-  return allCompanies.value.filter((c) =>
-    formData.value.companyassoc.includes(c.id),
-  );
-});
-
-const toggleContactDropdown = () => {
-  isContactDropdownOpen.value = !isContactDropdownOpen.value;
-};
-
-const toggleCompanyDropdown = () => {
-  isCompanyDropdownOpen.value = !isCompanyDropdownOpen.value;
-};
-
-const filterContacts = () => {
-  isContactDropdownOpen.value = true;
-};
-
-const filterCompanies = () => {
-  isCompanyDropdownOpen.value = true;
-};
-
-const toggleContact = (contact) => {
-  const index = formData.value.contactassoc.indexOf(contact.id);
-  if (index === -1) {
-    formData.value.contactassoc.push(contact.id);
-  } else {
-    formData.value.contactassoc.splice(index, 1);
-  }
-};
-
-const isContactSelected = (id) => {
-  return formData.value.contactassoc.includes(id);
-};
-
-const toggleCompany = (company) => {
-  const index = formData.value.companyassoc.indexOf(company.id);
-  if (index === -1) {
-    formData.value.companyassoc.push(company.id);
-  } else {
-    formData.value.companyassoc.splice(index, 1);
-  }
-};
-
-const isCompanySelected = (id) => {
-  return formData.value.companyassoc.includes(id);
-};
-
-const handleClickOutside = (e) => {
-  if (!e.target.closest("[data-contacts-dropdown]")) {
-    isContactDropdownOpen.value = false;
-  }
-  if (!e.target.closest("[data-companies-dropdown]")) {
-    isCompanyDropdownOpen.value = false;
-  }
-};
-
-const handleDetailSubmit = async (detailPayload) => {
-  if (isSavingBeforeDetail.value) {
-    return;
-  }
-
-  isSavingBeforeDetail.value = true;
-
-  try {
-    const submissionData = {
-      ...formData.value,
-      owner: formData.value.owner || currentUserName.value || "",
-      contactassoc: (formData.value.contactassoc || []).join(","),
-      companyassoc: (formData.value.companyassoc || []).join(","),
+  data() {
+    return {
+      pipelineOptions: [
+        { value: "", label: "Select Data" },
+        { value: "prospect", label: "Prospect" },
+        { value: "qualified", label: "Qualified" },
+        { value: "offer", label: "Offer" },
+        { value: "negotiation", label: "Negotiation" },
+        { value: "closed_won", label: "Closed Won" },
+        { value: "closed_lost", label: "Closed Lost" },
+        { value: "closed_cancel", label: "Closed Cancel" },
+      ],
+      currencyOptions: [
+        { value: "IDR", label: "IDR" },
+        { value: "USD", label: "USD" },
+        { value: "SGD", label: "SGD" },
+        { value: "EUR", label: "EUR" },
+      ],
+      priorityOptions: [
+        { value: "", label: "Select Data" },
+        { value: "low", label: "Low" },
+        { value: "medium", label: "Medium" },
+        { value: "high", label: "High" },
+      ],
+      sourceOptions: [
+        { value: "", label: "Select Data" },
+        { value: "website", label: "Website" },
+        { value: "referral", label: "Referral" },
+        { value: "social_media", label: "Social Media" },
+        { value: "email_campaign", label: "Email Campaign" },
+        { value: "cold_call", label: "Cold Call" },
+        { value: "other", label: "Other" },
+      ],
+      docSourceOptions: [
+        { value: "", label: "Select File Source" },
+        { value: "local", label: "Local File" },
+        { value: "google_drive", label: "Google Drive" },
+        { value: "dropbox", label: "Dropbox" },
+        { value: "onedrive", label: "OneDrive" },
+      ],
+      customSource: "",
+      dealNameInput: null,
+      showOptional: false,
+      showDetailForm: false,
+      showAddCompanyForm: false,
+      showAddContactQuickForm: false,
+      isSavingBeforeDetail: false,
+      contactSearch: "",
+      companySearch: "",
+      isContactDropdownOpen: false,
+      isCompanyDropdownOpen: false,
+      selectedDocSource: "",
+      isDocDropdownOpen: false,
+      formData: {
+        dealName: "",
+        pipeline: "",
+        currency: "IDR",
+        amount: "",
+        expectedCloseDate: "",
+        owner: "",
+        priority: "",
+        source: "",
+        description: "",
+        documents: null,
+        contactassoc: [],
+        companyassoc: [],
+      },
     };
+  },
+  computed: {
+    ...mapGetters("users", ["usersignin"]),
+    ...mapGetters("contacts", ["allContacts"]),
+    ...mapGetters("company", ["allcompany"]),
+    ...mapState("auth", { authUser: "user" }),
+    currentUserName() {
+      const signedInUser =
+        this.usersignin || this.authUser || null;
+      const fullName = [
+        signedInUser?.first_name || signedInUser?.firstname,
+        signedInUser?.last_name || signedInUser?.lastname,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
 
-    console.log("Submitting Deal Payload:", submissionData, detailPayload);
-
-    const response = await store.dispatch("deals/createDeal", submissionData);
-
-    if (response?.msg === "gagal") {
-      await alertService.error(
-        "Server returned 'gagal'. Please check the payload or choice parameter.",
+      return signedInUser?.name || signedInUser?.username || fullName || "";
+    },
+    contactOptions() {
+      const contacts = this.allContacts || [];
+      return [
+        { value: "", label: "Select Contact" },
+        ...contacts.map((c) => ({
+          value: c.id,
+          label: [c.first_name, c.last_name].filter(Boolean).join(" ") || "Unknown",
+        })),
+      ];
+    },
+    companyOptions() {
+      const companies = this.allcompany || [];
+      return [
+        { value: "", label: "Select Company" },
+        ...companies.map((c) => ({
+          value: c.id,
+          label: c.company_name || c.name || "Unknown",
+        })),
+      ];
+    },
+    allContacts_computed() {
+      return this.allContacts || [];
+    },
+    allCompanies_computed() {
+      return this.allcompany || [];
+    },
+    filteredContacts() {
+      if (!this.contactSearch) return this.allContacts_computed;
+      return this.allContacts_computed.filter((c) => {
+        const fullName = `${c.first_name || ""} ${c.last_name || ""}`.toLowerCase();
+        const email = (c.email || "").toLowerCase();
+        return (
+          fullName.includes(this.contactSearch.toLowerCase()) ||
+          email.includes(this.contactSearch.toLowerCase())
+        );
+      });
+    },
+    filteredCompanies() {
+      if (!this.companySearch) return this.allCompanies_computed;
+      return this.allCompanies_computed.filter((c) => {
+        const name = (c.company_name || c.name || "").toLowerCase();
+        return name.includes(this.companySearch.toLowerCase());
+      });
+    },
+    selectedContacts() {
+      return this.allContacts_computed.filter((c) =>
+        this.formData.contactassoc.includes(c.id),
       );
-      return;
-    }
+    },
+    selectedCompanies() {
+      return this.allCompanies_computed.filter((c) =>
+        this.formData.companyassoc.includes(c.id),
+      );
+    },
+  },
+  watch: {
+    isOpen(newVal) {
+      if (newVal) {
+        Promise.allSettled([
+          this.$store.dispatch("users/getusersignin"),
+          this.$store.dispatch("users/fetchAllusers"),
+          this.$store.dispatch("contacts/fetchAllContacts"),
+          this.$store.dispatch("company/fetchAllcompany"),
+        ]).finally(() => this.applyDefaultOwner());
 
-    if (response?.success === false) {
-      await alertService.error(response?.message || "Failed to save deal");
-      return;
-    }
+        // Auto-focus Deal Name field
+        this.$nextTick(() => {
+          setTimeout(() => {
+            if (this.$refs.dealNameInput) {
+              this.$refs.dealNameInput.focus();
+            }
+          }, 100);
+        });
+      }
+    },
+  },
+  mounted() {
+    this.$store.dispatch("users/getusersignin");
+    this.$store.dispatch("users/fetchAllusers");
+    this.$store.dispatch("contacts/fetchAllContacts");
+    this.$store.dispatch("company/fetchAllcompany");
+    this.applyDefaultOwner();
+    document.addEventListener("click", this.handleClickOutside);
+  },
+  beforeDestroy() {
+    document.removeEventListener("click", this.handleClickOutside);
+  },
+  methods: {
+    applyDefaultOwner() {
+      if (!this.formData.owner && this.currentUserName) {
+        this.formData.owner = this.currentUserName;
+      }
+    },
+    selectDocSource(value) {
+      this.selectedDocSource = value;
+      this.isDocDropdownOpen = false;
+      if (value !== "local") {
+        this.formData.documents = null;
+      }
+    },
+    handleFileChange(e) {
+      this.formData.documents = e.target.files[0] ?? null;
+    },
+    handleClose() {
+      this.$emit("close");
+    },
+    async handleSubmit() {
+      // Validation
+      if (!this.formData.dealName?.trim()) {
+        await alertService.toastError("Deal Name wajib diisi.");
+        return;
+      }
+      if (!this.formData.pipeline) {
+        await alertService.toastError("Pipeline/Stage wajib diisi.");
+        return;
+      }
+      if (!this.formData.amount && this.formData.amount !== 0) {
+        await alertService.toastError("Amount wajib diisi.");
+        return;
+      }
 
-    await alertService.toastSuccess(response?.msg || "Deal saved successfully");
-    handleReset();
-    emit("submit", response);
-    showDetailForm.value = false;
-    handleClose();
-  } catch (error) {
-    const message =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Gagal menyimpan deal";
-    await alertService.toastError(message);
-  } finally {
-    isSavingBeforeDetail.value = false;
-  }
-};
+      this.showDetailForm = true;
+    },
+    toggleContactDropdown() {
+      this.isContactDropdownOpen = !this.isContactDropdownOpen;
+    },
+    toggleCompanyDropdown() {
+      this.isCompanyDropdownOpen = !this.isCompanyDropdownOpen;
+    },
+    filterContacts() {
+      this.isContactDropdownOpen = true;
+    },
+    filterCompanies() {
+      this.isCompanyDropdownOpen = true;
+    },
+    toggleContact(contact) {
+      const index = this.formData.contactassoc.indexOf(contact.id);
+      if (index === -1) {
+        this.formData.contactassoc.push(contact.id);
+      } else {
+        this.formData.contactassoc.splice(index, 1);
+      }
+    },
+    isContactSelected(id) {
+      return this.formData.contactassoc.includes(id);
+    },
+    toggleCompany(company) {
+      const index = this.formData.companyassoc.indexOf(company.id);
+      if (index === -1) {
+        this.formData.companyassoc.push(company.id);
+      } else {
+        this.formData.companyassoc.splice(index, 1);
+      }
+    },
+    isCompanySelected(id) {
+      return this.formData.companyassoc.includes(id);
+    },
+    handleClickOutside(e) {
+      if (!e.target.closest("[data-contacts-dropdown]")) {
+        this.isContactDropdownOpen = false;
+      }
+      if (!e.target.closest("[data-companies-dropdown]")) {
+        this.isCompanyDropdownOpen = false;
+      }
+    },
+    async handleDetailSubmit(detailPayload) {
+      if (this.isSavingBeforeDetail) {
+        return;
+      }
 
-const handleAddCompanySubmit = async () => {
-  showAddCompanyForm.value = false;
-  await store.dispatch("company/fetchAllcompany");
-};
+      this.isSavingBeforeDetail = true;
 
-const handleAddContactQuickSubmit = async () => {
-  showAddContactQuickForm.value = false;
-  await store.dispatch("contacts/fetchAllContacts");
-};
+      try {
+        const submissionData = {
+          ...this.formData,
+          owner: this.formData.owner || this.currentUserName || "",
+          contactassoc: (this.formData.contactassoc || []).join(","),
+          companyassoc: (this.formData.companyassoc || []).join(","),
+        };
 
-const handleReset = () => {
-  formData.value = {
-    dealName: "",
-    pipeline: "",
-    currency: "IDR",
-    amount: "",
-    expectedCloseDate: "",
-    owner: currentUserName.value || "",
-    priority: "",
-    source: "",
-    description: "",
-    documents: null,
-    contactassoc: [],
-    companyassoc: [],
-  };
-  contactSearch.value = "";
-  companySearch.value = "";
-  showOptional.value = false;
+        console.log("Submitting Deal Payload:", submissionData, detailPayload);
+
+        const response = await this.$store.dispatch("deals/createDeal", submissionData);
+
+        if (response?.msg === "gagal") {
+          await alertService.error(
+            "Server returned 'gagal'. Please check the payload or choice parameter.",
+          );
+          return;
+        }
+
+        if (response?.success === false) {
+          await alertService.error(response?.message || "Failed to save deal");
+          return;
+        }
+
+        await alertService.toastSuccess(response?.msg || "Deal saved successfully");
+        this.handleReset();
+        this.$emit("submit", response);
+        this.showDetailForm = false;
+        this.handleClose();
+      } catch (error) {
+        const message =
+          error?.response?.data?.message ||
+          error?.message ||
+          "Gagal menyimpan deal";
+        await alertService.toastError(message);
+      } finally {
+        this.isSavingBeforeDetail = false;
+      }
+    },
+    async handleAddCompanySubmit() {
+      this.showAddCompanyForm = false;
+      await this.$store.dispatch("company/fetchAllcompany");
+    },
+    async handleAddContactQuickSubmit() {
+      this.showAddContactQuickForm = false;
+      await this.$store.dispatch("contacts/fetchAllContacts");
+    },
+    handleReset() {
+      this.formData = {
+        dealName: "",
+        pipeline: "",
+        currency: "IDR",
+        amount: "",
+        expectedCloseDate: "",
+        owner: this.currentUserName || "",
+        priority: "",
+        source: "",
+        description: "",
+        documents: null,
+        contactassoc: [],
+        companyassoc: [],
+      };
+      this.contactSearch = "";
+      this.companySearch = "";
+      this.showOptional = false;
+    },
+  },
 };
 </script>
 
 <template>
   <!-- Overlay Background -->
-  <Transition name="overlay">
+  <transition name="overlay">
     <div
       v-if="isOpen"
       class="fixed inset-0 bg-sub-text/80 z-40 transition-all duration-300"
       @click="handleClose"
     ></div>
-  </Transition>
+  </transition>
 
   <!-- Form Slide Panel -->
-  <Transition name="slide">
+  <transition name="slide">
     <div
       v-if="isOpen"
       class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-50 flex flex-col"
@@ -544,7 +537,7 @@ const handleReset = () => {
                   />
                 </div>
                 <!-- Custom Source Input -->
-                <Transition name="expand">
+                <transition name="expand">
                   <div v-if="formData.source === 'other'" class="mt-2">
                     <input
                       v-model="customSource"
@@ -554,7 +547,7 @@ const handleReset = () => {
                       @input="formData.source_other = customSource"
                     />
                   </div>
-                </Transition>
+                </transition>
               </div>
             </div>
           </div>
@@ -575,7 +568,7 @@ const handleReset = () => {
               >
             </label>
 
-            <Transition name="expand">
+            <transition name="expand">
               <div
                 v-if="showOptional"
                 class="border-t border-outline px-4 py-4 space-y-4"
@@ -647,7 +640,7 @@ const handleReset = () => {
                   </div>
 
                   <!-- Upload Area — muncul jika pilih Local File -->
-                  <Transition name="expand">
+                  <transition name="expand">
                     <div v-if="selectedDocSource === 'local'" class="mt-2">
                       <label class="relative block cursor-pointer">
                         <input
@@ -688,98 +681,22 @@ const handleReset = () => {
                         </div>
                       </label>
                     </div>
-                  </Transition>
+                  </transition>
                 </div>
               </div>
-            </Transition>
+            </transition>
           </div>
 
           <!-- Contact Association -->
-          <div data-contacts-dropdown>
-            <label class="block text-sm font-medium text-dark-base mb-2">
-              Contact Association
-            </label>
-            <div class="relative">
-              <input
-                v-model="contactSearch"
-                type="text"
-                placeholder="Search contacts..."
-                @click="toggleContactDropdown"
-                @input="filterContacts"
-                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-              <ChevronDown
-                :size="16"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none transition-transform duration-200"
-                :class="{ 'rotate-180': isContactDropdownOpen }"
-              />
-
-              <!-- Dropdown -->
-              <div
-                v-if="isContactDropdownOpen && filteredContacts.length > 0"
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
-              >
-                <div
-                  v-for="contact in filteredContacts"
-                  :key="contact.id"
-                  @click="toggleContact(contact)"
-                  class="px-3 py-2 hover:bg-light-base cursor-pointer text-sm text-dark-base"
-                >
-                  {{ contact.first_name }} {{ contact.last_name }}
-                </div>
-              </div>
-
-              <!-- Empty State -->
-              <div
-                v-if="
-                  isContactDropdownOpen &&
-                  filteredContacts.length === 0 &&
-                  allContacts.length > 0
-                "
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
-              >
-                <p class="text-sm text-sub-text">No contacts found</p>
-              </div>
-
-              <!-- Loading/No Data State -->
-              <div
-                v-if="isContactDropdownOpen && allContacts.length === 0"
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
-              >
-                <p class="text-sm text-sub-text">Loading contacts...</p>
-              </div>
-            </div>
-
-            <!-- Selected Contacts -->
-            <div
-              v-if="selectedContacts.length > 0"
-              class="mt-2 flex flex-wrap gap-2"
-            >
-              <span
-                v-for="contact in selectedContacts"
-                :key="contact.id"
-                class="bg-light-base px-2 py-1 rounded text-xs text-dark-base flex items-center gap-1"
-              >
-                {{ contact.first_name }} {{ contact.last_name }}
-                <button
-                  type="button"
-                  @click="toggleContact(contact)"
-                  class="hover:text-red"
-                >
-                  <X :size="14" />
-                </button>
-              </span>
-            </div>
-
-            <button
-              type="button"
-              @click="showAddContactQuickForm = true"
-              class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
-            >
-              <Plus :size="14" />
-              Create Contact
-            </button>
-          </div>
+          <ContactAssociationForm v-model="formData.contactassoc" />
+          <button
+            type="button"
+            @click="showAddContactQuickForm = true"
+            class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
+          >
+            <Plus :size="14" />
+            Create Contact
+          </button>
 
           <!-- Companies Association -->
           <div data-companies-dropdown>
@@ -903,7 +820,7 @@ const handleReset = () => {
         </div>
       </div>
     </div>
-  </Transition>
+  </transition>
 
   <!-- Contact Detail Form -->
   <ContactDetailForm
