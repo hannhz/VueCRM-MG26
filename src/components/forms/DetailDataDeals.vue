@@ -103,12 +103,13 @@ const fileSourceOptions = [
 
 const pipelineOptions = [
   { value: "", label: "Select Data" },
-  { value: "new", label: "New" },
+  { value: "prospect", label: "Prospect" },
   { value: "qualified", label: "Qualified" },
-  { value: "advanced", label: "Advanced" },
-  { value: "payment", label: "Payment" },
-  { value: "won", label: "Won" },
-  { value: "lost", label: "Lost" },
+  { value: "offer", label: "Offer" },
+  { value: "negotiation", label: "Negotiation" },
+  { value: "closed_won", label: "Closed Won" },
+  { value: "closed_lost", label: "Closed Lost" },
+  { value: "closed_cancel", label: "Closed Cancel" },
 ];
 
 const currencyOptions = [
@@ -574,13 +575,19 @@ const normalizePipelineValue = (rawValue) => {
 
   // Map database pipeline values to board stage values
   const dbToBoard = {
-    negotiation: "advanced",
-    proposal: "payment",
-    closed_won: "won",
-    closed_lost: "lost",
+    new: "prospect",
+    proposal: "offer",
+    payment: "offer",
+    negotiation: "negotiation",
+    advanced: "negotiation",
+    closed_won: "closed_won",
+    closed_lost: "closed_lost",
+    closed_cancel: "closed_cancel",
+    won: "closed_won",
+    lost: "closed_lost",
   };
 
-  return dbToBoard[val] || rawValue;
+  return dbToBoard[val] || val;
 };
 
 // Helper function to convert board stage to database pipeline value for submission
@@ -590,10 +597,17 @@ const boardStageToDbPipeline = (boardStage) => {
 
   // Map board stage values to database pipeline values
   const boardToDb = {
-    advanced: "negotiation",
-    payment: "proposal",
+    prospect: "prospect",
+    offer: "offer",
+    negotiation: "negotiation",
+    closed_won: "closed_won",
+    closed_lost: "closed_lost",
+    closed_cancel: "closed_cancel",
+    // Compatibility for cards
     won: "closed_won",
     lost: "closed_lost",
+    advanced: "negotiation",
+    payment: "offer",
   };
 
   return boardToDb[val] || boardStage;

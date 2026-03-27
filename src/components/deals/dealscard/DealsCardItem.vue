@@ -15,12 +15,13 @@ const props = defineProps({
 const emit = defineEmits(["viewDetail", "delete"]);
 
 const stageClass = (stage) => {
-  if (stage === "new") return "bg-slate-100 text-slate-700";
-  if (stage === "qualified") return "bg-green-100 text-green-700";
-  if (stage === "advanced" || stage === "payment")
-    return "bg-yellow-100 text-yellow-700";
-  if (stage === "won") return "bg-emerald-100 text-emerald-700";
-  if (stage === "lost") return "bg-red-100 text-red-700";
+  if (stage === "prospect") return "bg-slate-100 text-slate-700";
+  if (stage === "qualified") return "bg-blue-100 text-blue-700";
+  if (stage === "offer") return "bg-indigo-100 text-indigo-700";
+  if (stage === "negotiation") return "bg-yellow-100 text-yellow-700";
+  if (stage === "closed_won") return "bg-emerald-100 text-emerald-700";
+  if (stage === "closed_lost") return "bg-red-100 text-red-700";
+  if (stage === "closed_cancel") return "bg-gray-100 text-gray-500";
   return "bg-slate-100 text-slate-700";
 };
 

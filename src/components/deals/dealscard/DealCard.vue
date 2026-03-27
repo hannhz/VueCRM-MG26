@@ -41,12 +41,13 @@ const isDragging = ref(false);
 const isSyncingStage = ref(false);
 
 const boardMeta = [
-  { id: 1, key: "new", title: "New" },
+  { id: 1, key: "prospect", title: "Prospect" },
   { id: 2, key: "qualified", title: "Qualified" },
-  { id: 3, key: "advanced", title: "Advanced" },
-  { id: 4, key: "payment", title: "Payment" },
-  { id: 5, key: "won", title: "Won" },
-  { id: 6, key: "lost", title: "Lost" },
+  { id: 3, key: "offer", title: "Offer" },
+  { id: 4, key: "negotiation", title: "Negotiation" },
+  { id: 5, key: "closed_won", title: "Closed Won" },
+  { id: 6, key: "closed_lost", title: "Closed Lost" },
+  { id: 7, key: "closed_cancel", title: "Closed Cancel" },
 ];
 
 const boards = ref([]);
@@ -62,23 +63,17 @@ const searchQuery = computed({
  * LOGIC / NORMALIZATION
  */
 const normalizeStage = (rawStage) => {
-  const stage = String(rawStage || "new").toLowerCase();
+  const stage = String(rawStage || "prospect").toLowerCase();
+  
+  if (stage.includes("prospect") || stage === "new") return "prospect";
   if (stage.includes("qual")) return "qualified";
-  if (stage.includes("adv") || stage.includes("negot")) return "advanced";
-  if (stage.includes("pay") || stage.includes("proposal")) return "payment";
-  if (
-    stage.includes("won") ||
-    stage.includes("close_won") ||
-    stage.includes("closed_won")
-  )
-    return "won";
-  if (
-    stage.includes("lost") ||
-    stage.includes("close_lost") ||
-    stage.includes("closed_lost")
-  )
-    return "lost";
-  return "new";
+  if (stage.includes("offer") || stage.includes("proposal") || stage.includes("payment")) return "offer";
+  if (stage.includes("negot") || stage.includes("adv")) return "negotiation";
+  if (stage.includes("won") || stage.includes("closed_won")) return "closed_won";
+  if (stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
+  if (stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
+  
+  return "prospect";
 };
 
 const normalizeDeal = (deal) => ({
@@ -100,19 +95,20 @@ const normalizeDeal = (deal) => ({
 
 const rebuildBoards = (rawDeals) => {
   const grouped = {
-    new: [],
+    prospect: [],
     qualified: [],
-    advanced: [],
-    payment: [],
-    won: [],
-    lost: [],
+    offer: [],
+    negotiation: [],
+    closed_won: [],
+    closed_lost: [],
+    closed_cancel: [],
   };
 
   rawDeals.map(normalizeDeal).forEach((deal) => {
     if (grouped[deal.stage]) {
       grouped[deal.stage].push(deal);
     } else {
-      grouped.new.push(deal);
+      grouped.prospect.push(deal);
     }
   });
 
@@ -186,7 +182,7 @@ const handleViewDetail = (deal) => {
  * LIFECYCLE & WATCHERS
  */
 onMounted(async () => {
-  // Data sudah di-fetch oleh parent (deals.vue)
+  // Data fetched by parent
 });
 
 watch(
@@ -205,12 +201,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    :class="[
-      'bg-white rounded-lg shadow-sm h-147 border border-outline flex flex-col overflow-hidden',
-      isSidebarCollapsed ? 'max-w-full' : 'max-w-full',
-    ]"
-  >
+  <div class="bg-white rounded-lg shadow-sm h-147 border border-outline flex flex-col overflow-hidden w-full">
     <!-- Top Action Bar (Extracted) -->
     <DealsCardFilter
       v-model:searchQuery="searchQuery"
@@ -244,24 +235,20 @@ onBeforeUnmount(() => {
         <!-- Boards Wrapper -->
         <div class="flex h-full flex-nowrap gap-4 pl-6 pr-6 pb-10">
           <!-- Column Board Item -->
-          <div
+          <article
             v-for="board in boards"
             :key="board.id"
             class="w-72 shrink-0 flex flex-col bg-slate-50 border border-outline rounded-lg relative"
           >
             <!-- Board Header -->
-            <div
+            <header
               class="h-12 bg-white border-b border-outline flex items-center justify-between px-4 rounded-t-lg"
             >
-              <span class="text-dark-base text-sm font-bold">{{
-                board.title
-              }}</span>
-              <div
-                class="bg-slate-800 px-2 py-0.5 rounded text-[10px] font-bold text-white"
-              >
+              <h3 class="text-dark-base text-sm font-bold">{{ board.title }}</h3>
+              <div class="bg-slate-800 px-2 py-0.5 rounded text-[10px] font-bold text-white">
                 {{ board.items.length }}
               </div>
-            </div>
+            </header>
 
             <!-- Draggable Area -->
             <draggable
@@ -284,24 +271,17 @@ onBeforeUnmount(() => {
             </draggable>
 
             <!-- Board Footer with Total Amount -->
-            <div
+            <footer
               class="h-12 bg-white border-t border-outline flex items-center justify-center rounded-b-lg text-[11px] font-bold text-dark-base"
             >
-              TOTAL: Rp
-              {{
-                board.items.reduce((t, i) => t + i.value, 0).toLocaleString()
-              }}
-            </div>
-          </div>
+              TOTAL: Rp {{ board.items.reduce((t, i) => t + i.value, 0).toLocaleString() }}
+            </footer>
+          </article>
         </div>
 
         <!-- Visual Shadows for Scrolling -->
-        <div
-          class="pointer-events-none absolute top-0 left-0 h-full w-8 bg-gradient-to-r from-white/60 to-transparent z-10"
-        ></div>
-        <div
-          class="pointer-events-none absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-white/60 to-transparent z-10"
-        ></div>
+        <div class="pointer-events-none absolute top-0 left-0 h-full w-8 bg-gradient-to-r from-white/60 to-transparent z-10"></div>
+        <div class="pointer-events-none absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-white/60 to-transparent z-10"></div>
       </div>
     </div>
   </div>

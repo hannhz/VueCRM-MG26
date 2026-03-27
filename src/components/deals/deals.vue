@@ -2,8 +2,8 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "vuex";
 import { useRoute, useRouter } from "vue-router";
-import DealsCard from "./dealscard.vue";
-import DealsList from "./dealslist.vue";
+import DealsCard from "./dealscard/DealCard.vue";
+import DealsList from "./dealslist/DealsList.vue";
 import CreateDealForm from "@/components/forms/CreateDealForm.vue";
 import BulkAddDealForm from "@/components/forms/BulkAddDealForm.vue";
 import DetailDataDeals from "@/components/forms/DetailDataDeals.vue";

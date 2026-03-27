@@ -74,35 +74,36 @@ const mapCreateDealPayload = (formData = {}) => {
 
 const mapBoardStageToPipeline = (stage) => {
   const stageMap = {
-    new: "new",
+    prospect: "prospect",
     qualified: "qualified",
+    offer: "offer",
+    negotiation: "negotiation",
+    closed_won: "closed_won",
+    closed_lost: "closed_lost",
+    closed_cancel: "closed_cancel",
+    // Backward compatibility for old keys
+    new: "prospect",
     advanced: "negotiation",
-    payment: "proposal",
+    payment: "offer",
     won: "closed_won",
     lost: "closed_lost",
   };
 
-  return stageMap[stage] || stage || "new";
+  return stageMap[stage] || stage || "prospect";
 };
 
 const normalizeStage = (rawStage) => {
-  const stage = String(rawStage || "new").toLowerCase();
+  const stage = String(rawStage || "prospect").toLowerCase();
+
+  if (stage.includes("prospect") || stage === "new") return "prospect";
   if (stage.includes("qual")) return "qualified";
-  if (stage.includes("adv") || stage.includes("negot")) return "advanced";
-  if (stage.includes("pay") || stage.includes("proposal")) return "payment";
-  if (
-    stage.includes("won") ||
-    stage.includes("close_won") ||
-    stage.includes("closed_won")
-  )
-    return "won";
-  if (
-    stage.includes("lost") ||
-    stage.includes("close_lost") ||
-    stage.includes("closed_lost")
-  )
-    return "lost";
-  return "new";
+  if (stage.includes("offer") || stage.includes("proposal") || stage.includes("payment")) return "offer";
+  if (stage.includes("negot") || stage.includes("adv")) return "negotiation";
+  if (stage.includes("won") || stage.includes("closed_won")) return "closed_won";
+  if (stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
+  if (stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
+
+  return "prospect";
 };
 
 export default {
@@ -133,7 +134,7 @@ export default {
         ...deal,
         id: deal.id || Date.now(), // Fallback ID if missing
         name: deal.deal_name || deal.dealName || deal.name || "New Deal",
-        stage: deal.pipeline || deal.stage || "new",
+        stage: deal.pipeline || deal.stage || "prospect",
         amount: deal.amount_value || deal.amount || 0,
       };
       state.deals = [normalizedDeal, ...state.deals];
@@ -242,11 +243,11 @@ export default {
           commit(
             "SET_ERROR",
             serverMessage ||
-              (status
-                ? status === 404
-                  ? "Endpoint deals tidak ditemukan di server (404)."
-                  : `Fetch deals gagal (HTTP ${status})`
-                : error.message || "Failed to fetch deals"),
+            (status
+              ? status === 404
+                ? "Endpoint deals tidak ditemukan di server (404)."
+                : `Fetch deals gagal (HTTP ${status})`
+              : error.message || "Failed to fetch deals"),
           );
           commit("SET_LOADING", false);
         });
@@ -313,16 +314,16 @@ export default {
 
       const cAssoc = formatAssoc(
         existingDeal.contactassoc ||
-          existingDeal.dealsassoc ||
-          existingDeal.contacts_id ||
-          existingDeal.contact_id ||
-          existingDeal.id_contact,
+        existingDeal.dealsassoc ||
+        existingDeal.contacts_id ||
+        existingDeal.contact_id ||
+        existingDeal.id_contact,
       );
       const mAssoc = formatAssoc(
         existingDeal.companyassoc ||
-          existingDeal.companies_id ||
-          existingDeal.company_id ||
-          existingDeal.id_company,
+        existingDeal.companies_id ||
+        existingDeal.company_id ||
+        existingDeal.id_company,
       );
 
       const requestPayload = {
@@ -428,9 +429,9 @@ export default {
           commit(
             "SET_ERROR",
             serverMessage ||
-              (status
-                ? `Save deal gagal (HTTP ${status})`
-                : error?.message || "Failed to save deal"),
+            (status
+              ? `Save deal gagal (HTTP ${status})`
+              : error?.message || "Failed to save deal"),
           );
           commit("SET_LOADING", false);
         });
@@ -484,10 +485,10 @@ export default {
           { headers },
         );
         commit("DELETE_DEAL", dealId);
-        await dispatch("fetchAllDeals").catch(() => {});
+        await dispatch("fetchAllDeals").catch(() => { });
         return response.data;
       } catch (error) {
-        await dispatch("fetchAllDeals").catch(() => {});
+        await dispatch("fetchAllDeals").catch(() => { });
         throw error;
       }
     },
@@ -514,5 +515,30 @@ export default {
     },
 
     pagination: (state) => state.pagination,
+    uiDeals: (state, getters) => {
+      const normalizeStage = (rawStage) => {
+        const stage = String(rawStage || "prospect").toLowerCase();
+        if (stage.includes("prospect") || stage === "new") return "prospect";
+        if (stage.includes("qual")) return "qualified";
+        if (stage.includes("offer") || stage.includes("proposal") || stage.includes("payment")) return "offer";
+        if (stage.includes("negot") || stage.includes("adv")) return "negotiation";
+        if (stage.includes("won") || stage.includes("closed_won")) return "closed_won";
+        if (stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
+        if (stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
+        return "prospect";
+      };
+
+      return getters.filteredDeals.map((deal) => ({
+        ...deal,
+        name: deal.deal_name || deal.dealName || deal.name || "Untitled Deal",
+        stage: normalizeStage(deal.pipeline || deal.stage),
+        jumlah: deal.amount_value || deal.amount || "-",
+        tertanggal: deal.expected_close_date || deal.expectedCloseDate || "-",
+        contact: deal.contact_name || deal.contact || "-",
+        company: deal.company_name || deal.company || "-",
+        updatedAt: deal.updated_at || deal.updatedAt || "-",
+        owner: deal.owner_name || deal.owner || "-",
+      }));
+    },
   },
 };

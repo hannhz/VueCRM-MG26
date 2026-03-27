@@ -27,12 +27,13 @@ const emit = defineEmits(["close", "submit"]);
 
 const pipelineOptions = [
   { value: "", label: "Select Data" },
-  { value: "new", label: "New" },
+  { value: "prospect", label: "Prospect" },
   { value: "qualified", label: "Qualified" },
-  { value: "proposal", label: "Proposal" },
+  { value: "offer", label: "Offer" },
   { value: "negotiation", label: "Negotiation" },
   { value: "closed_won", label: "Closed Won" },
   { value: "closed_lost", label: "Closed Lost" },
+  { value: "closed_cancel", label: "Closed Cancel" },
 ];
 
 const currencyOptions = [
@@ -112,6 +113,9 @@ const sourceOptions = [
   { value: "other", label: "Other" },
 ];
 
+const customSource = ref("");
+const dealNameInput = ref(null);
+
 onMounted(() => {
   store.dispatch("users/getusersignin");
   store.dispatch("users/fetchAllusers");
@@ -128,7 +132,16 @@ watch(
       Promise.allSettled([
         store.dispatch("users/getusersignin"),
         store.dispatch("users/fetchAllusers"),
+        store.dispatch("contacts/fetchAllContacts"),
+        store.dispatch("company/fetchAllcompany"),
       ]).finally(applyDefaultOwner);
+      
+      // Auto-focus Deal Name field
+      setTimeout(() => {
+        if (dealNameInput.value) {
+          dealNameInput.value.focus();
+        }
+      }, 100);
     }
   },
 );
@@ -186,8 +199,17 @@ const handleFileChange = (e) => {
 const handleClose = () => emit("close");
 
 const handleSubmit = async () => {
-  if (!formData.value.dealName.trim()) {
+  // Validation
+  if (!formData.value.dealName?.trim()) {
     await alertService.toastError("Deal Name wajib diisi.");
+    return;
+  }
+  if (!formData.value.pipeline) {
+    await alertService.toastError("Pipeline/Stage wajib diisi.");
+    return;
+  }
+  if (!formData.value.amount && formData.value.amount !== 0) {
+    await alertService.toastError("Amount wajib diisi.");
     return;
   }
 
@@ -398,6 +420,7 @@ const handleReset = () => {
                 >Deal Name</label
               >
               <input
+                ref="dealNameInput"
                 v-model="formData.dealName"
                 type="text"
                 placeholder="Deal's Name"
@@ -535,23 +558,37 @@ const handleReset = () => {
               <label class="block text-sm font-medium text-dark-base mb-2"
                 >Source</label
               >
-              <div class="relative">
-                <select
-                  v-model="formData.source"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                >
-                  <option
-                    v-for="opt in sourceOptions"
-                    :key="opt.value"
-                    :value="opt.value"
+              <div class="space-y-2">
+                <div class="relative">
+                  <select
+                    v-model="formData.source"
+                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                   >
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                />
+                    <option
+                      v-for="opt in sourceOptions"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                  <ChevronDown
+                    :size="16"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                  />
+                </div>
+                <!-- Custom Source Input -->
+                <Transition name="expand">
+                  <div v-if="formData.source === 'other'" class="mt-2">
+                    <input
+                      v-model="customSource"
+                      type="text"
+                      placeholder="Specify source..."
+                      class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                      @input="formData.source_other = customSource"
+                    />
+                  </div>
+                </Transition>
               </div>
             </div>
           </div>
