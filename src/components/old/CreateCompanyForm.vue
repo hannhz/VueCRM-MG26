@@ -8,10 +8,6 @@ import ContactDetailForm from "./DetailFormDuplicate.vue";
 import ContactAssociationForm from "./assoc/contacts.vue";
 import DealAssociationForm from "./assoc/deals.vue";
 import { alertService } from "@/services/alertService";
-import NotesEditor from "@/components/widgets/NotesEditor.vue";
-import TaskEditor from "@/components/widgets/TaskEditor.vue";
-import DocsEditor from "@/components/widgets/DocsEditor.vue";
-
 import api from "@/api";
 
 export default {
@@ -27,9 +23,6 @@ export default {
     ContactDetailForm,
     ContactAssociationForm,
     DealAssociationForm,
-    NotesEditor,
-    TaskEditor,
-    DocsEditor
   },
 
   props: {
@@ -45,7 +38,6 @@ export default {
       contactSearch: "",
       isContactDropdownOpen: false,
       statuses: [],
-      activeTab: "master",
 
       industryOptions: [
         { value: "", label: "Select Industry" },
@@ -89,33 +81,6 @@ export default {
         type: "",
         dealsassoc: [],
         contactassoc: [],
-      },
-
-      task: {
-        name: "",
-        content: "",
-        status: "",
-        dueDate: "",
-        time: "",
-        priority: "",
-      },
-
-      statusOptions: [
-        { value: "not_started", label: "Not Started" },
-        { value: "in_progress", label: "In Progress" },
-        { value: "completed", label: "Completed" },
-      ],
-
-      priorityOptions: [
-        { value: "low", label: "Low" },
-        { value: "medium", label: "Medium" },
-        { value: "high", label: "High" },
-      ],
-
-      docs: {
-        description: "",
-        fileSource: "",
-        files: [],
       },
 
       showAddDealForm: false,
@@ -343,8 +308,8 @@ export default {
       } catch (error) {
         alertService.error(
           error.response?.data?.message ||
-            error.message ||
-            "Gagal menambah company.",
+          error.message ||
+          "Gagal menambah company.",
         );
       } finally {
         this.isSubmitting = false;
@@ -385,6 +350,7 @@ export default {
     },
   },
 };
+
 </script>
 
 <template>
@@ -417,252 +383,203 @@ export default {
         </button>
       </div>
 
-      <!-- Tabs -->
-      <div class="flex border-b border-outline px-6 bg-white">
-        <button
-          type="button"
-          @click="activeTab = 'master'"
-          :class="[
-            'px-4 py-2 text-sm font-medium border-b-2 transition',
-            activeTab === 'master'
-              ? 'border-dark-base text-dark-base'
-              : 'border-transparent text-sub-text hover:text-dark-base',
-          ]"
-        >
-          Master
-        </button>
-
-        <button
-          type="button"
-          @click="activeTab = 'detail'"
-          :class="[
-            'px-4 py-2 text-sm font-medium border-b-2 transition',
-            activeTab === 'detail'
-              ? 'border-dark-base text-dark-base'
-              : 'border-transparent text-sub-text hover:text-dark-base',
-          ]"
-        >
-          Detail
-        </button>
-      </div>
-
       <!-- Form Content (Scrollable) - halaman utama TIDAK ikut scroll -->
       <div class="flex-1 overflow-y-auto min-h-0">
-        <form @submit.prevent="handleSubmit">
-          <!-- master -->
-          <div v-if="activeTab === 'master'" class="p-6 space-y-6">
-            <!-- Company Name & Owner -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Company Name <span class="text-red-600">*</span></label
-                >
-                <input
-                  v-model="formData.company_name"
-                  type="text"
-                  placeholder="Ex Siap Soft"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Company Owner <span class="text-red-600">*</span></label
-                >
-                <input
-                  v-model="formData.company_owner"
-                  type="text"
-                  placeholder="Ex Abdul"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-            </div>
-
-            <!-- Description -->
+        <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
+          <!-- Company Name & Owner -->
+          <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2"
-                >Description</label
+                >Company Name <span class="text-red-600">*</span></label
               >
-              <textarea
-                v-model="formData.description"
-                placeholder="Ex Lorem ipsum dolor sit"
-                rows="3"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm resize-none"
-              ></textarea>
+              <input
+                v-model="formData.company_name"
+                type="text"
+                placeholder="Ex Siap Soft"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                required
+              />
             </div>
-
-            <!-- Email & Telephone -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Email <span class="text-red-600">*</span></label
-                >
-                <input
-                  v-model="formData.email"
-                  type="email"
-                  placeholder="Ex siapsoft@gmail.com"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Telephone</label
-                >
-                <input
-                  v-model="formData.telephone"
-                  type="text"
-                  placeholder="Ex +628234567891"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Company Owner <span class="text-red-600">*</span></label
+              >
+              <input
+                v-model="formData.company_owner"
+                type="text"
+                placeholder="Ex Abdul"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
             </div>
+          </div>
 
-            <!-- Website & Industry -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Website</label
+          <!-- Description -->
+          <div>
+            <label class="block text-sm font-medium text-dark-base mb-2"
+              >Description</label
+            >
+            <textarea
+              v-model="formData.description"
+              placeholder="Ex Lorem ipsum dolor sit"
+              rows="3"
+              class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm resize-none"
+            ></textarea>
+          </div>
+
+          <!-- Email & Telephone -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Email <span class="text-red-600">*</span></label
+              >
+              <input
+                v-model="formData.email"
+                type="email"
+                placeholder="Ex siapsoft@gmail.com"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Telephone</label
+              >
+              <input
+                v-model="formData.telephone"
+                type="text"
+                placeholder="Ex +628234567891"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
+            </div>
+          </div>
+
+          <!-- Website & Industry -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Website</label
+              >
+              <input
+                v-model="formData.website"
+                type="text"
+                placeholder="Ex siapsoft.com"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Industry</label
+              >
+              <div class="relative">
+                <select
+                  v-model="formData.industry"
+                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
-                <input
-                  v-model="formData.website"
-                  type="text"
-                  placeholder="Ex siapsoft.com"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Industry</label
-                >
-                <div class="relative">
-                  <select
-                    v-model="formData.industry"
-                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                  <option
+                    v-for="opt in industryOptions"
+                    :key="opt.value"
+                    :value="opt.value"
                   >
-                    <option
-                      v-for="opt in industryOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                  <ChevronDown
-                    :size="16"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                  />
-                </div>
+                    {{ opt.label }}
+                  </option>
+                </select>
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
               </div>
             </div>
+          </div>
 
             <LocationSelector v-model="formData" />
 
-            <!-- Pos Code & Source -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Pos Code</label
-                >
-                <input
-                  v-model="formData.pos_code"
-                  type="text"
-                  placeholder="Pos Code"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Source</label
-                >
-                <div class="relative">
-                  <select
-                    v-model="formData.source"
-                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                  >
-                    <option
-                      v-for="opt in sourceOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                  <ChevronDown
-                    :size="16"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                  />
-                </div>
-              </div>
+          <!-- Pos Code & Source -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Pos Code</label
+              >
+              <input
+                v-model="formData.pos_code"
+                type="text"
+                placeholder="Pos Code"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
             </div>
-
-            <!-- Type -->
-            <div class="grid grid-cols-1 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Type</label
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Source</label
+              >
+              <div class="relative">
+                <select
+                  v-model="formData.source"
+                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
-                <div class="relative">
-                  <select
-                    v-model.number="formData.type"
-                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                  <option
+                    v-for="opt in sourceOptions"
+                    :key="opt.value"
+                    :value="opt.value"
                   >
-                    <option value="" disabled selected>Select Type</option>
-                    <option
-                      v-for="status in statuses"
-                      :key="status.id"
-                      :value="status.id"
-                    >
-                      {{ status.name }}
-                    </option>
-                  </select>
-                  <ChevronDown
-                    :size="16"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Contact Association -->
-            <ContactAssociationForm v-model="formData.contactassoc" />
-            <!-- 
-            <button
-              type="button"
-              @click="showAddContactQuickForm = true"
-              class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
-            >
-              <Plus :size="14" />
-              Create Contact
-            </button> -->
-
-            <!-- Deals Association -->
-            <DealAssociationForm v-model="formData.dealsassoc" />
-            <button
-              type="button"
-              @click="showAddDealForm = true"
-              class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
-            >
-              <Plus :size="14" />
-              Add Another Deal
-            </button>
-          </div>
-
-          <!-- detail -->
-          <div v-if="activeTab === 'detail'" class="p-6 space-y-6">
-            <div class="flex-1 overflow-y-auto min-h-0">
-              <div>
-                <NotesEditor v-model="formData.notes" />
-
-                <TaskEditor
-                  v-model="task"
-                  :statusOptions="statusOptions"
-                  :priorityOptions="priorityOptions"
+                    {{ opt.label }}
+                  </option>
+                </select>
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
                 />
-
-                <DocsEditor v-model="docs" />
               </div>
             </div>
           </div>
+
+          <!-- Type -->
+          <div class="grid grid-cols-1 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Type</label
+              >
+              <div class="relative">
+                <select
+                  v-model.number="formData.type"
+                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                >
+                  <option value="" disabled selected>Select Type</option>
+                  <option
+                    v-for="status in statuses"
+                    :key="status.id"
+                    :value="status.id"
+                  >
+                    {{ status.name }}
+                  </option>
+                </select>
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
+              </div>
+            </div>
+    
+          </div>
+
+          <!-- Contact Association -->
+          <ContactAssociationForm v-model="formData.contactassoc" />
+          <button
+            type="button"
+            @click="showAddContactQuickForm = true"
+            class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
+          >
+            <Plus :size="14" />
+            Create Contact
+          </button>
+
+          <!-- Deals Association -->
+          <DealAssociationForm v-model="formData.dealsassoc" />
+          <button
+            type="button"
+            @click="showAddDealForm = true"
+            class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
+          >
+            <Plus :size="14" />
+            Add Another Deal
+          </button>
         </form>
       </div>
 
@@ -688,7 +605,7 @@ export default {
           </button>
           <button
             type="button"
-            @click="handlenext"
+            @click="handleSubmit"
             :disabled="isSubmitting"
             class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >

@@ -75,11 +75,28 @@
       </div>
     </div>
   </div>
+
+  <button
+    type="button"
+    @click="showAddContactQuickForm = true"
+    class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
+  >
+    <Plus :size="14" />
+    Create Contact
+  </button>
+
+
+  <AddContactQuickForm
+    :isOpen="showAddContactQuickForm"
+    @close="showAddContactQuickForm = false"
+    @submit="handleContactQuickSubmit"
+  />
 </template>
 
 <script>
 import { mapGetters } from "vuex";
-import { X, ChevronDown, Search, Check } from "lucide-vue-next";
+import { X, ChevronDown, Search, Check,Plus,  } from "lucide-vue-next";
+import AddContactQuickForm from "@/components/forms/AddContactQuickForm.vue";
 
 export default {
   name: "ContactAssociationForm",
@@ -89,6 +106,8 @@ export default {
     ChevronDown,
     Search,
     Check,
+    Plus,
+    AddContactQuickForm
   },
 
   props: {
@@ -102,6 +121,7 @@ export default {
     return {
       isContactDropdownOpen: false,
       contactSearch: "",
+      showAddContactQuickForm: false,
     };
   },
 
