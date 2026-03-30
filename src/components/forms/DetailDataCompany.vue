@@ -2,6 +2,7 @@
 import { useStatuses } from "@/composables/useStatuses";
 import LocationSelector from "./component/LocationSelector.vue";
 import NotesSection from "./details/NotesSection.vue";
+import TaskSection from "./details/TaskSection.vue";
 
 import {
   X,
@@ -20,6 +21,7 @@ export default {
   components: {
     LocationSelector,
     NotesSection,
+    TaskSection,
     X,
     ChevronDown,
     ChevronRight,
@@ -708,11 +710,13 @@ export default {
           priority: this.taskPriority,
           associatedContact: this.taskAssociatedContact,
         },
-        docs: {
-          description: this.docDescription,
-          fileSource: this.docFileSource,
-          files: this.selectedDocFiles,
-        },
+        //docs: {
+        //  description: this.docDescription,
+        //  fileSource: this.docFileSource,
+        //  files: this.selectedDocFiles,
+        //},
+
+        docs: this.docD
       });
       this.isSavingCompany = false;
     },
@@ -1084,225 +1088,26 @@ export default {
           />
 
           <!-- TASKS SECTION -->
-          <div>
-            <button
-              type="button"
-              @click="showTasks = !showTasks"
-              class="flex items-center gap-2 w-full text-left mb-3"
-            >
-              <component
-                :is="showTasks ? ChevronDown : ChevronRight"
-                :size="16"
-                class="text-sub-text"
-              />
-              <span
-                class="text-sm font-semibold text-dark-base flex items-center gap-2"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <polyline points="9 11 12 14 22 4" />
-                  <path
-                    d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
-                  />
-                </svg>
-                Tasks
-              </span>
-            </button>
-
-            <div
-              v-if="showTasks"
-              class="border border-outline rounded-lg overflow-hidden space-y-0"
-            >
-              <!-- Task Name -->
-              <div class="px-4 pt-4 pb-2">
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Name of Task</label
-                >
-                <input
-                  v-model="taskName"
-                  type="text"
-                  placeholder="Task name..."
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                />
-              </div>
-
-              <!-- Task Rich Text -->
-              <div class="px-4 pb-4">
-                <!-- Toolbar -->
-                <div
-                  class="flex items-center gap-1 px-3 py-2 border border-outline rounded-t-lg bg-light-base flex-wrap"
-                >
-                  <button
-                    type="button"
-                    class="p-1 hover:bg-white rounded text-sub-text text-xs"
-                  >
-                    ↩
-                  </button>
-                  <button
-                    type="button"
-                    class="p-1 hover:bg-white rounded text-sub-text text-xs"
-                  >
-                    ↪
-                  </button>
-                  <span class="text-outline mx-1">|</span>
-                  <select
-                    class="text-xs border-none bg-transparent text-sub-text focus:outline-none"
-                  >
-                    <option>Format</option>
-                    <option>Heading 1</option>
-                    <option>Paragraph</option>
-                  </select>
-                  <span class="text-outline mx-1">|</span>
-                  <button
-                    type="button"
-                    class="p-1 hover:bg-white rounded font-bold text-xs text-sub-text"
-                  >
-                    B
-                  </button>
-                  <button
-                    type="button"
-                    class="p-1 hover:bg-white rounded italic text-xs text-sub-text"
-                  >
-                    I
-                  </button>
-                  <button
-                    type="button"
-                    class="p-1 hover:bg-white rounded underline text-xs text-sub-text"
-                  >
-                    U
-                  </button>
-                  <span class="text-outline mx-1">|</span>
-                  <button
-                    type="button"
-                    class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                  >
-                    📷
-                  </button>
-                  <button
-                    type="button"
-                    class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                  >
-                    ⚔
-                  </button>
-                  <span class="text-outline mx-1">|</span>
-                  <button
-                    type="button"
-                    class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                  >
-                    ≡
-                  </button>
-                  <button
-                    type="button"
-                    class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                  >
-                    ≡
-                  </button>
-                  <button
-                    type="button"
-                    class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                  >
-                    ≡
-                  </button>
-                  <button
-                    type="button"
-                    class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                  >
-                    ≡
-                  </button>
-                  <button
-                    type="button"
-                    class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                  >
-                    ☰
-                  </button>
-                  <button
-                    type="button"
-                    class="p-1 hover:bg-white rounded text-xs text-sub-text"
-                  >
-                    ☰
-                  </button>
-                </div>
-                <textarea
-                  v-model="taskContent"
-                  rows="4"
-                  class="w-full px-3 py-3 text-sm text-sub-text border border-outline border-t-0 rounded-b-lg focus:outline-none resize-none"
-                  placeholder="Deskripsi task..."
-                ></textarea>
-              </div>
-
-              <!-- Status -->
-              <div class="grid grid-cols-1 gap-4 px-4 pb-4">
-                <div>
-                  <label class="block text-sm font-medium text-dark-base mb-2"
-                    >Status</label
-                  >
-                  <select
-                    v-model="taskStatus"
-                    class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
-                  >
-                    <option
-                      v-for="opt in statusOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Due Date & Time -->
-              <div class="grid grid-cols-2 gap-4 px-4 pb-4">
-                <div>
-                  <label class="block text-sm font-medium text-dark-base mb-2"
-                    >Due Date</label
-                  >
-                  <input
-                    v-model="taskDueDate"
-                    type="date"
-                    class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                  />
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-dark-base mb-2"
-                    >Time</label
-                  >
-                  <div class="relative">
-                    <input
-                      v-model="taskTime"
-                      type="time"
-                      class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Priority -->
-              <div class="px-4 pb-4">
-                <label class="block text-sm font-medium text-dark-base mb-2"
-                  >Priority</label
-                >
-                <select
-                  v-model="taskPriority"
-                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white"
-                >
-                  <option
-                    v-for="opt in priorityOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
-              </div>
-            </div>
-          </div>
+          <TaskSection
+            :task-name="taskName"
+            :task-content="taskContent"
+            :task-status="taskStatus"
+            :task-assignee="taskAssignee"
+            :task-due-date="taskDueDate"
+            :task-time="taskTime"
+            :task-priority="taskPriority"
+            :status-options="statusOptions"
+            :priority-options="priorityOptions"
+            :assignee-options="assigneeOptions"
+            :is-open="showTasks"
+            @update:task-name="taskName = $event"
+            @update:task-content="taskContent = $event"
+            @update:task-status="taskStatus = $event"
+            @update:task-assignee="taskAssignee = $event"
+            @update:task-due-date="taskDueDate = $event"
+            @update:task-time="taskTime = $event"
+            @update:task-priority="taskPriority = $event"
+          />
 
           <!-- DOCS SECTION -->
           <div>

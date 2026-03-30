@@ -58,6 +58,8 @@ export default {
     return {
       showNotes: this.isOpen,
       noteContent: this.value,
+      ChevronDown,
+      ChevronRight,
     };
   },
 

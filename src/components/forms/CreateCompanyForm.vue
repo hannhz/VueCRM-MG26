@@ -555,6 +555,7 @@ export default {
               </div>
             </div>
 
+            <!-- Address & City | Province & Country -->
             <LocationSelector v-model="formData" />
 
             <!-- Pos Code & Source -->

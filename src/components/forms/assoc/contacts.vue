@@ -169,6 +169,13 @@ export default {
   },
 
   methods: {
+    async handleContactQuickSubmit(formData) {
+      // Close the quick form
+      this.showAddContactQuickForm = false;
+      // Refresh contacts list from store
+      await this.$store.dispatch('contacts/fetchAllContacts');
+    },
+
     toggleContact(contact) {
       const contactId = String(contact.id).trim();
       const index = this.contactassoc.findIndex(

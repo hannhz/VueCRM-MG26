@@ -8,7 +8,7 @@
                 class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-10.5 bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
               >
                 <div
-                  v-if="contactForm.companyassoc.length === 0"
+                  v-if="!modelValue || modelValue.length === 0"
                   class="text-gray-400 text-sm"
                 >
                   Search and select companies
@@ -61,7 +61,7 @@
                     }}</span>
                     <div
                       v-if="isCompanySelected(company.value)"
-                      class="w-5 h-5 bg-dark-base rounded-full flex items-center justify-center"
+                      class="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center"
                     >
                       <Check :size="12" class="text-white" />
                     </div>
@@ -77,25 +77,75 @@
             </div>
 </template>
 <script>
+import { X, ChevronDown, Search, Check } from 'lucide-vue-next';
+
 export default {
     name: "CompanyAssociationForm",
+    components: { X, ChevronDown, Search, Check },
 
-    props: {
+  props: {
+    // v-model utama
+    modelValue: {
+      type: Array,
+      default: undefined,
+    },
+    // fallback untuk backward compatibility
     contactForm: {
       type: Object,
-      required: true,
+      default: null,
     },
     allCompanies: {
       type: Array,
       required: true,
     },
   },
-
   data() {
     return {
       isCompanyDropdownOpen: false,
       companySearch: "",
     };
   },
-}
+  computed: {
+    // Gunakan v-model jika ada, fallback ke contactForm.companyassoc
+    valueArray() {
+      if (this.modelValue !== undefined) return this.modelValue;
+      if (this.contactForm && Array.isArray(this.contactForm.companyassoc)) return this.contactForm.companyassoc;
+      return [];
+    },
+    selectedCompaniesList() {
+      return this.allCompanies
+        .filter((c) => this.valueArray.includes(c.id))
+        .map((c) => ({ value: c.id, label: c.company_name || c.name || "Unknown" }));
+    },
+    filteredCompanies() {
+      const search = this.companySearch?.toLowerCase() || "";
+      return this.allCompanies
+        .filter((c) => {
+          const name = (c.company_name || c.name || "").toLowerCase();
+          return name.includes(search);
+        })
+        .map((c) => ({ value: c.id, label: c.company_name || c.name || "Unknown" }));
+    },
+  },
+  methods: {
+    toggleCompany(company) {
+      let arr = this.valueArray.slice();
+      const idx = arr.indexOf(company.value);
+      if (idx === -1) {
+        arr.push(company.value);
+      } else {
+        arr.splice(idx, 1);
+      }
+      // emit v-model
+      this.$emit('update:modelValue', arr);
+      // fallback: update contactForm jika ada
+      if (this.contactForm && Array.isArray(this.contactForm.companyassoc)) {
+        this.contactForm.companyassoc.splice(0, this.contactForm.companyassoc.length, ...arr);
+      }
+    },
+    isCompanySelected(id) {
+      return this.valueArray.includes(id);
+    },
+  },
+};
 </script>

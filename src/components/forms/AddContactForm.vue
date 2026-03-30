@@ -6,7 +6,12 @@ import { useStatuses } from "@/composables/useStatuses";
 import AddCompanyForm from "./AddCompanyForm.vue";
 import AddDealForm from "./AddDealForm.vue";
 import ContactDetailForm from "./DetailForm.vue";
-import LocationSelector from "./component/LocationSelector.vue";
+import NotesSection from "@/components/forms/details/NotesSection.vue";
+import DocsSection from "@/components/forms/details/DocsSection.vue";
+import TaskSection from "@/components/forms/details/TaskSection.vue";
+import LocationSelector from "@/components/forms/component/LocationSelector.vue";
+
+import api from "@/api"; // Pastikan path ini benar sesuai struktur proyek Anda
 
 export default {
   name: "AddContactForm",
@@ -20,12 +25,27 @@ export default {
     AddDealForm,
     ContactDetailForm,
     LocationSelector,
+    NotesSection,
+    DocsSection,
+    TaskSection,
   },
 
   props: {
     isOpen: {
       type: Boolean,
       default: false,
+    },
+    saveButtonText: {
+      type: String,
+      default: "Save",
+    },
+    isSaving: {
+      type: Boolean,
+      default: false,
+    },
+    contactData: {
+      type: Object,
+      default: () => ({}),
     },
   },
 
@@ -83,7 +103,7 @@ export default {
         first_name: "",
         last_name: "",
         job_title: "",
-        owner: "",
+        id_owner: "",
         email: "",
         telephone_1: "",
         telephone_2: "",
@@ -103,6 +123,42 @@ export default {
         selectedCompanies: [],
         selectedDeals: [],
       },
+
+      task: {
+        name: "",
+        content: "",
+        status: "",
+        dueDate: "",
+        time: "",
+        priority: "",
+      },
+
+      statusOptions: [
+        { value: "not_started", label: "Not Started" },
+        { value: "in_progress", label: "In Progress" },
+        { value: "completed", label: "Completed" },
+      ],
+
+      priorityOptions: [
+        { value: "low", label: "Low" },
+        { value: "medium", label: "Medium" },
+        { value: "high", label: "High" },
+      ],
+
+      docs: {
+        description: "",
+        fileSource: "",
+        files: [],
+      },
+
+      noteContent: "",
+      isSubmitting: false,
+      companySearch: "",
+      activeTab: "master",
+      statuses: [],
+      isCompanyDropdownOpen: false,
+      isDealDropdownOpen: false,
+
       showAddCompanyForm: false,
       showAddDealForm: false,
       showDetailForm: false,
@@ -122,6 +178,28 @@ export default {
     },
     allDeals() {
       return this.allDealsData || [];
+    },
+    ownerOptions() {
+      const users = this.$store.getters["users/allUsers"] || [];
+      return [
+        { value: "", label: "Select Owner" },
+        ...users.map((user) => ({
+          value: user.id ?? "",
+          label: user.name || user.username || "Unknown",
+        })),
+      ];
+    },
+    currentUserId() {
+      const signedInUser =
+        this.$store.getters["users/usersignin"] ||
+        this.$store.state.auth?.user ||
+        null;
+
+      return (
+        signedInUser?.id ||
+        this.$store.getters["users/useridsignin"] ||
+        ""
+      );
     },
     currentUserName() {
       const signedInUser =
@@ -163,24 +241,71 @@ export default {
       saveContact: "contacts/createContact",
     }),
     applyDefaultOwner() {
-      if (!this.formData.owner && this.currentUserName) {
-        this.formData.owner = this.currentUserName;
+      if (!this.formData.id_owner && this.currentUserId) {
+        this.formData.id_owner = this.currentUserId;
       }
     },
     handleClose() {
       this.$emit("close");
     },
-    handleSubmit() {
-      // Just move to detail form without saving
-      // Data will be saved when user clicks "Save" in DetailForm
-      this.showDetailForm = true;
+    validateForm() {
+      // Validasi required fields
+      if (!this.formData.first_name?.trim()) {
+        toast.error("First Name is required");
+        this.activeTab = "master";
+        return false;
+      }
+      if (!this.formData.email?.trim()) {
+        toast.error("Email is required");
+        this.activeTab = "master";
+        return false;
+      }
+      return true;
+    },
+    handleSaveAll() {
+      if (!this.validateForm()) {
+        return;
+      }
+      
+      this.isSubmitting = true;
+      try {
+        // Gabungkan data master (formData) dan detail (noteContent, task, docs)
+        const now = new Date().toISOString();
+        const dataToSubmit = {
+          ...this.formData,
+          note: this.noteContent,
+          task: this.task,
+          docs: this.docs,
+          id_owner: this.formData.id_owner || this.currentUserId || "",
+          companiesAssociation: (this.formData.selectedCompanies || []).map(c => c.id).join(","),
+          dealsAssociation: (this.formData.selectedDeals || []).map(d => d.id).join(","),
+          created_at: now,
+          updated_at: now,
+        };
+        this.saveContact({ formdata: dataToSubmit })
+          .then(() => {
+            toast.success("Contact berhasil ditambahkan!");
+            this.handleReset();
+            this.activeTab = "master";
+            this.handleClose();
+          })
+          .catch((error) => {
+            toast.error(error?.message || "Gagal menambah contact.");
+          })
+          .finally(() => {
+            this.isSubmitting = false;
+          });
+      } catch (error) {
+        toast.error(error?.message || "Gagal menambah contact.");
+        this.isSubmitting = false;
+      }
     },
     handleReset() {
       this.formData = {
         first_name: "",
         last_name: "",
         job_title: "",
-        owner: "",
+        id_owner: "",
         email: "",
         telephone_1: "",
         telephone_2: "",
@@ -280,14 +405,40 @@ export default {
         </button>
       </div>
 
+      <!-- Tabs -->
+      <div class="flex border-b border-outline px-6 bg-white">
+        <button
+          type="button"
+          @click="activeTab = 'master'"
+          :class="[
+            'px-4 py-2 text-sm font-medium border-b-2 transition',
+            activeTab === 'master'
+              ? 'border-dark-base text-dark-base'
+              : 'border-transparent text-sub-text hover:text-dark-base',
+          ]"
+        >
+          Master
+        </button>
+
+        <button
+          type="button"
+          @click="activeTab = 'detail'"
+          :class="[
+            'px-4 py-2 text-sm font-medium border-b-2 transition',
+            activeTab === 'detail'
+              ? 'border-dark-base text-dark-base'
+              : 'border-transparent text-sub-text hover:text-dark-base',
+          ]"
+        >
+          Detail
+        </button>
+      </div>
+
       <!-- Form Content (Scrollable) -->
       <div class="flex-1 overflow-y-auto">
-        <form
-          id="addContactForm"
-          @submit.prevent="handleSubmit"
-          class="p-6 space-y-6"
-        >
-          <!-- Name Section -->
+        <!-- Master Tab -->
+        <form v-if="activeTab === 'master'" @submit.prevent id="addContactForm">
+          <div class="p-6 space-y-6">
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2">
@@ -396,6 +547,7 @@ export default {
             </div>
           </div>
 
+          <!-- Address & City | Province & Country -->
           <LocationSelector v-model="formData" />
 
           <!-- Pos Code & Source -->
@@ -611,7 +763,17 @@ export default {
               Add Another Deal
             </button>
           </div>
+          </div>
         </form>
+        <!-- Detail Tab -->
+        <div v-if="activeTab === 'detail'" class="p-6 space-y-6">
+          <div class="flex-1 overflow-y-auto min-h-0">
+            <NotesSection v-model="noteContent" />
+            <TaskSection v-model="task" :statusOptions="statusOptions" :priorityOptions="priorityOptions" />
+            <DocsSection v-model="docs" />
+          </div>
+        </div>
+          
       </div>
 
       <!-- Footer Actions (Sticky) -->
@@ -634,13 +796,13 @@ export default {
             Cancel
           </button>
           <button
-            type="submit"
-            form="addContactForm"
-            :disabled="isLoading"
-            class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium flex items-center gap-2 min-w-25 justify-center"
+            type="button"
+            @click="handleSaveAll"
+            :disabled="isSubmitting"
+            class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium flex items-center gap-2 min-w-25 justify-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Loader2 v-if="isLoading" :size="16" class="animate-spin" />
-            <span>{{ isLoading ? "Saving..." : "Next" }}</span>
+            <Loader2 v-if="isSubmitting" :size="16" class="animate-spin" />
+            <span>{{ isSubmitting ? "Saving..." : "Save" }}</span>
           </button>
         </div>
       </div>

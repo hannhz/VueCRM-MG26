@@ -13,6 +13,10 @@ import AddCompanyForm from "./AddCompanyForm.vue";
 import AddContactQuickForm from "./AddContactQuickForm.vue";
 import { alertService } from "@/services/alertService";
 import ContactAssociationForm from "./assoc/contacts.vue";
+import CompaniesAssociationForm from "./assoc/companies.vue";
+import NotesSection from "./details/NotesSection.vue";
+import DocsSection from "./details/DocsSection.vue";
+import TaskSection from "./details/TaskSection.vue";
 
 export default {
   components: {
@@ -26,6 +30,10 @@ export default {
     AddCompanyForm,
     AddContactQuickForm,
     ContactAssociationForm,
+    CompaniesAssociationForm,
+    NotesSection,
+    DocsSection,
+    TaskSection,
   },
   props: {
     isOpen: {
@@ -33,6 +41,7 @@ export default {
       default: false,
     },
   },
+    emits: ['close', 'submit'],
   data() {
     return {
       pipelineOptions: [
@@ -100,6 +109,28 @@ export default {
         contactassoc: [],
         companyassoc: [],
       },
+      activeTab: "master",
+      noteContent: "",
+      task: {
+        title: "",
+        dueDate: "",
+        status: "",
+        priority: "",
+      },
+      docs: [],
+      statusOptions: [
+        { value: "", label: "Select Data" },
+        { value: "todo", label: "To Do" },
+        { value: "in_progress", label: "In Progress" },
+        { value: "completed", label: "Completed" },
+      ],
+      priorityOptions: [
+        { value: "", label: "Select Data" },
+        { value: "low", label: "Low" },
+        { value: "medium", label: "Medium" },
+        { value: "high", label: "High" },
+      ],
+
     };
   },
   computed: {
@@ -392,9 +423,38 @@ export default {
         </button>
       </div>
 
+      <!-- Tabs -->
+      <div class="flex border-b border-outline px-6 bg-white">
+        <button
+          type="button"
+          @click="activeTab = 'master'"
+          :class="[
+            'px-4 py-2 text-sm font-medium border-b-2 transition',
+            activeTab === 'master'
+              ? 'border-dark-base text-dark-base'
+              : 'border-transparent text-sub-text hover:text-dark-base',
+          ]"
+        >
+          Master
+        </button>
+
+        <button
+          type="button"
+          @click="activeTab = 'detail'"
+          :class="[
+            'px-4 py-2 text-sm font-medium border-b-2 transition',
+            activeTab === 'detail'
+              ? 'border-dark-base text-dark-base'
+              : 'border-transparent text-sub-text hover:text-dark-base',
+          ]"
+        >
+          Detail
+        </button>
+      </div>
+
       <!-- Form Content (Scrollable) -->
       <div class="flex-1 overflow-y-auto min-h-0">
-        <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
+        <form v-if="activeTab === 'master'" @submit.prevent="handleSubmit" class="p-6 space-y-6">
           <!-- Deal Name & Pipeline -->
           <div class="grid grid-cols-2 gap-4">
             <div>
@@ -689,104 +749,28 @@ export default {
 
           <!-- Contact Association -->
           <ContactAssociationForm v-model="formData.contactassoc" />
-          <button
-            type="button"
-            @click="showAddContactQuickForm = true"
-            class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
-          >
-            <Plus :size="14" />
-            Create Contact
-          </button>
+          
 
           <!-- Companies Association -->
-          <div data-companies-dropdown>
-            <label class="block text-sm font-medium text-dark-base mb-2">
-              Companies Association
-            </label>
-            <div class="relative">
-              <input
-                v-model="companySearch"
-                type="text"
-                placeholder="Search companies..."
-                @click="toggleCompanyDropdown"
-                @input="filterCompanies"
-                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-              <ChevronDown
-                :size="16"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none transition-transform duration-200"
-                :class="{ 'rotate-180': isCompanyDropdownOpen }"
-              />
-
-              <!-- Dropdown -->
-              <div
-                v-if="isCompanyDropdownOpen && filteredCompanies.length > 0"
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
-              >
-                <div
-                  v-for="company in filteredCompanies"
-                  :key="company.id"
-                  @click="toggleCompany(company)"
-                  class="px-3 py-2 hover:bg-light-base cursor-pointer text-sm text-dark-base"
-                >
-                  {{
-                    company.company_name || company.name || "Unnamed Company"
-                  }}
-                </div>
-              </div>
-
-              <!-- Empty State -->
-              <div
-                v-if="
-                  isCompanyDropdownOpen &&
-                  filteredCompanies.length === 0 &&
-                  allCompanies.length > 0
-                "
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
-              >
-                <p class="text-sm text-sub-text">No companies found</p>
-              </div>
-
-              <!-- Loading/No Data State -->
-              <div
-                v-if="isCompanyDropdownOpen && allCompanies.length === 0"
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
-              >
-                <p class="text-sm text-sub-text">Loading companies...</p>
-              </div>
-            </div>
-
-            <!-- Selected Companies -->
-            <div
-              v-if="selectedCompanies.length > 0"
-              class="mt-2 flex flex-wrap gap-2"
-            >
-              <span
-                v-for="company in selectedCompanies"
-                :key="company.id"
-                class="bg-light-base px-2 py-1 rounded text-xs text-dark-base flex items-center gap-1"
-              >
-                {{ company.company_name || company.name }}
-                <button
-                  type="button"
-                  @click="toggleCompany(company)"
-                  class="hover:text-red"
-                >
-                  <X :size="14" />
-                </button>
-              </span>
-            </div>
-
-            <button
+          <CompaniesAssociationForm :allCompanies="allCompanies_computed" v-model="formData.companyassoc" />
+          <button
               type="button"
               @click="showAddCompanyForm = true"
               class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
             >
-              <Plus :size="14" />
+              <Plus :size="16" />
               Create Company
             </button>
-          </div>
+          
         </form>
+        <!-- Detail Tab -->
+        <div v-if="activeTab === 'detail'" class="p-6 space-y-6">
+          <div class="flex-1 overflow-y-auto min-h-0">
+            <NotesSection v-model="noteContent" />
+            <TaskSection v-model="task" :statusOptions="statusOptions" :priorityOptions="priorityOptions" />
+            <DocsSection v-model="docs" />
+          </div>
+          </div>
       </div>
 
       <!-- Footer Actions (Sticky) -->

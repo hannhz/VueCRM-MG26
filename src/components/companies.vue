@@ -575,12 +575,28 @@ export default {
 
       this.isDetailDataSubmitting = true;
 
+      // Gabungkan note, docs, dan task ke formdata
+      const formdata = {
+        ...payload.company,
+        updated_at: new Date().toISOString(),
+        note: payload.note,
+        docs: payload.docs,
+        // Jika ada payload.task, masukkan field task ke formdata
+        ...(payload.task && {
+          task_name: payload.task.name,
+          desktask: payload.task.content,
+          statustask: payload.task.status,
+          assignee: payload.task.assignee,
+          due_date: payload.task.dueDate,
+          task_time: payload.task.time,
+          prioritytask: payload.task.priority,
+          associated_contact: payload.task.associatedContact,
+        }),
+      };
+
       this.updatecompany({
         keyedit: companyId,
-        formdata: {
-          ...payload.company,
-          updated_at: new Date().toISOString(),
-        },
+        formdata,
       })
         .then(() => {
           alertService.success("Detail company berhasil diperbarui.");
