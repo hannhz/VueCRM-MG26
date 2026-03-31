@@ -93,6 +93,8 @@ const mapCreateDealPayload = (formData = {}) => {
     return null;
   };
 
+  
+
   return {
     // Mapping utama sesuai kolom DB
     deal_name: formData.dealName?.trim() || formData.deal_name?.trim() || null,
@@ -111,8 +113,7 @@ const mapCreateDealPayload = (formData = {}) => {
     // Support both 'notes' dan 'note' untuk backward compatibility
     note: (formData.note || formData.notes || "").trim() || null,
     task_json: extractTaskData(formData.task),
-    docs: formatDocs(formData.docs),
-    //docs: extractDocsData(formData.docs) || extractDocsData(formData.doc),
+    docs: extractDocsData(formData.docs),
     // Alias untuk kompatibilitas variasi backend
     name: formData.dealName?.trim() || formData.deal_name?.trim() || null,
     dealName: formData.dealName?.trim() || formData.deal_name?.trim() || null,
@@ -144,7 +145,16 @@ const mapBoardStageToPipeline = (stage) => {
 };
 
 const normalizeStage = (rawStage) => {
-  const stage = String(rawStage || "prospect").toLowerCase();
+  const stage = String(rawStage || "prospect").toLowerCase().trim();
+
+  // Handle encoded format "closed:won", "closed:lost", "closed:cancel"
+  if (stage.startsWith("closed:")) {
+    const [_, status] = stage.split(":");
+    if (status === "won") return "closed_won";
+    if (status === "lost") return "closed_lost";
+    if (status === "cancel") return "closed_cancel";
+    return "closed";
+  }
 
   if (stage.includes("prospect") || stage === "new") return "prospect";
   if (stage.includes("qual")) return "qualified";
@@ -153,6 +163,7 @@ const normalizeStage = (rawStage) => {
   if (stage.includes("won") || stage.includes("closed_won")) return "closed_won";
   if (stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
   if (stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
+  if (stage.includes("closed")) return "closed";
 
   return "prospect";
 };
@@ -609,7 +620,17 @@ export default {
     pagination: (state) => state.pagination,
     uiDeals: (state, getters) => {
       const normalizeStage = (rawStage) => {
-        const stage = String(rawStage || "prospect").toLowerCase();
+        const stage = String(rawStage || "prospect").toLowerCase().trim();
+        
+        // Handle encoded format "closed:won", "closed:lost", "closed:cancel"
+        if (stage.startsWith("closed:")) {
+          const [_, status] = stage.split(":");
+          if (status === "won") return "closed_won";
+          if (status === "lost") return "closed_lost";
+          if (status === "cancel") return "closed_cancel";
+          return "closed";
+        }
+        
         if (stage.includes("prospect") || stage === "new") return "prospect";
         if (stage.includes("qual")) return "qualified";
         if (stage.includes("offer") || stage.includes("proposal") || stage.includes("payment")) return "offer";
@@ -617,6 +638,7 @@ export default {
         if (stage.includes("won") || stage.includes("closed_won")) return "closed_won";
         if (stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
         if (stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
+        if (stage.includes("closed")) return "closed";
         return "prospect";
       };
 

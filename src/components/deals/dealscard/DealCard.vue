@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { useStore } from "vuex";
 import draggable from "vuedraggable";
+import Swal from "sweetalert2";
 import { alertService } from "@/services/alertService";
 
 // Sub-components
@@ -45,9 +46,7 @@ const boardMeta = [
   { id: 2, key: "qualified", title: "Qualified" },
   { id: 3, key: "offer", title: "Offer" },
   { id: 4, key: "negotiation", title: "Negotiation" },
-  { id: 5, key: "closed_won", title: "Closed Won" },
-  { id: 6, key: "closed_lost", title: "Closed Lost" },
-  { id: 7, key: "closed_cancel", title: "Closed Cancel" },
+  { id: 5, key: "closed", title: "Closed" },
 ];
 
 const boards = ref([]);
@@ -63,15 +62,29 @@ const searchQuery = computed({
  * LOGIC / NORMALIZATION
  */
 const normalizeStage = (rawStage) => {
-  const stage = String(rawStage || "prospect").toLowerCase();
+  const stage = String(rawStage || "prospect").toLowerCase().trim();
+  
+  // Handle encoded format "closed:won", "closed:lost", "closed:cancel"
+  if (stage.startsWith("closed:")) {
+    const [_, status] = stage.split(":");
+    if (status === "won") return "closed_won";
+    if (status === "lost") return "closed_lost";
+    if (status === "cancel") return "closed_cancel";
+    return "closed";
+  }
   
   if (stage.includes("prospect") || stage === "new") return "prospect";
   if (stage.includes("qual")) return "qualified";
   if (stage.includes("offer") || stage.includes("proposal") || stage.includes("payment")) return "offer";
   if (stage.includes("negot") || stage.includes("adv")) return "negotiation";
+  
+  // Handle semua variasi closed status - selalu return exact format yang consistent
   if (stage.includes("won") || stage.includes("closed_won")) return "closed_won";
   if (stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
   if (stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
+  
+  // Jika ada "closed" tapi tidak tu yang yang spesific, treat as generic closed
+  if (stage.includes("closed")) return "closed";
   
   return "prospect";
 };
@@ -99,15 +112,23 @@ const rebuildBoards = (rawDeals) => {
     qualified: [],
     offer: [],
     negotiation: [],
-    closed_won: [],
-    closed_lost: [],
-    closed_cancel: [],
+    closed: [],
   };
 
   rawDeals.map(normalizeDeal).forEach((deal) => {
-    if (grouped[deal.stage]) {
-      grouped[deal.stage].push(deal);
-    } else {
+    const stage = String(deal.stage || "").toLowerCase().trim();
+    
+    // Eksplisit: kalau stage mengandung "closed", masuk ke closed board
+    // Ini mencakup closed, closed_won, closed_lost, closed_cancel
+    if (stage.includes("closed")) {
+      grouped.closed.push(deal);
+    }
+    // Otherwise check other boards by stage key
+    else if (grouped.hasOwnProperty(stage)) {
+      grouped[stage].push(deal);
+    }
+    // Default ke prospect
+    else {
       grouped.prospect.push(deal);
     }
   });
@@ -140,7 +161,7 @@ const deleteDeal = async (deal) => {
 };
 
 let boardChangeTimeout = null;
-const handleBoardChange = (event, targetBoard) => {
+const handleBoardChange = async (event, targetBoard) => {
   if (!event || !event.added || !event.added.element || isSyncingStage.value)
     return;
 
@@ -150,29 +171,77 @@ const handleBoardChange = (event, targetBoard) => {
 
   if (previousStage === nextStage) return;
 
+  let finalStage = nextStage;
+  
+  // Jika drag ke "closed" board, minta user pilih status
+  if (nextStage === "closed") {
+    await Swal.fire({
+      title: "Closed Status",
+      text: "Pilih status deal yang ditutup:",
+      icon: "question",
+      html: `
+        <div class="flex flex-col gap-2">
+          <button id="btn-won" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">✓ Won</button>
+          <button id="btn-lost" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">✗ Lost</button>
+          <button id="btn-cancel-status" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">⊘ Cancel</button>
+        </div>
+      `,
+      showConfirmButton: false,
+      allowOutsideClick: false,
+      didOpen: () => {
+        document.getElementById('btn-won')?.addEventListener('click', () => {
+          window.closedChoice = 'won';
+          Swal.close();
+        });
+        document.getElementById('btn-lost')?.addEventListener('click', () => {
+          window.closedChoice = 'lost';
+          Swal.close();
+        });
+        document.getElementById('btn-cancel-status')?.addEventListener('click', () => {
+          window.closedChoice = 'cancel';
+          Swal.close();
+        });
+      },
+    });
+
+    if (!window.closedChoice) return;
+
+    const statusMap = {
+      won: "closed_won",
+      lost: "closed_lost",
+      cancel: "closed_cancel",
+    };
+    finalStage = statusMap[window.closedChoice];
+    window.closedChoice = null;
+  }
+
   // Optimistic update
-  movedDeal.stage = nextStage;
+  movedDeal.stage = finalStage;
   isSyncingStage.value = true;
 
   if (boardChangeTimeout) clearTimeout(boardChangeTimeout);
 
   boardChangeTimeout = setTimeout(async () => {
     try {
+      console.log(`[DealCard] Updating deal ${movedDeal.id} to stage: ${finalStage}`);
       await store.dispatch("deals/updateDealStage", {
         dealId: movedDeal.id,
-        newStage: nextStage,
+        newStage: finalStage,
       });
+      console.log(`[DealCard] Update successful for deal ${movedDeal.id}`);
+      
+      // Force refresh untuk ensure card appear di board yang benar
+      await store.dispatch("deals/fetchAllDeals").catch(() => {});
     } catch (error) {
       console.error("Failed to update deal stage:", error);
       movedDeal.stage = previousStage;
-      // Re-fetch only on error to fix state
+      // Re-fetch untuk revert state jika gagal
       await store.dispatch("deals/fetchAllDeals").catch(() => {});
     } finally {
       isSyncingStage.value = false;
     }
-  }, 300); // 300ms debounce
+  }, 300);
 };
-
 const handleViewDetail = (deal) => {
   if (isDragging.value) return;
   emit("viewDetail", deal);

@@ -201,14 +201,14 @@ const handleDetailDataDealsSubmit = async (payload) => {
 
 // Lifecycle: Fetch deals on mount
 onMounted(() => {
-  fetchData();
+  //fetchData();
 });
 
 // Unified watch for pagination and search
 let searchDebounceTimeout = null;
 
 watch([currentPage, itemsPerPage], () => {
-  fetchData();
+  //fetchData();
 });
 
 watch(searchQuery, (newVal, oldVal) => {
