@@ -147,6 +147,15 @@ const mapBoardStageToPipeline = (stage) => {
 const normalizeStage = (rawStage) => {
   const stage = String(rawStage || "prospect").toLowerCase().trim();
 
+  // Handle encoded format "closed:won", "closed:lost", "closed:cancel"
+  if (stage.startsWith("closed:")) {
+    const [_, status] = stage.split(":");
+    if (status === "won") return "closed_won";
+    if (status === "lost") return "closed_lost";
+    if (status === "cancel") return "closed_cancel";
+    return "closed";
+  }
+
   if (stage.includes("prospect") || stage === "new") return "prospect";
   if (stage.includes("qual")) return "qualified";
   if (stage.includes("offer") || stage.includes("proposal") || stage.includes("payment")) return "offer";
@@ -611,7 +620,17 @@ export default {
     pagination: (state) => state.pagination,
     uiDeals: (state, getters) => {
       const normalizeStage = (rawStage) => {
-        const stage = String(rawStage || "prospect").toLowerCase();
+        const stage = String(rawStage || "prospect").toLowerCase().trim();
+        
+        // Handle encoded format "closed:won", "closed:lost", "closed:cancel"
+        if (stage.startsWith("closed:")) {
+          const [_, status] = stage.split(":");
+          if (status === "won") return "closed_won";
+          if (status === "lost") return "closed_lost";
+          if (status === "cancel") return "closed_cancel";
+          return "closed";
+        }
+        
         if (stage.includes("prospect") || stage === "new") return "prospect";
         if (stage.includes("qual")) return "qualified";
         if (stage.includes("offer") || stage.includes("proposal") || stage.includes("payment")) return "offer";
@@ -619,6 +638,7 @@ export default {
         if (stage.includes("won") || stage.includes("closed_won")) return "closed_won";
         if (stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
         if (stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
+        if (stage.includes("closed")) return "closed";
         return "prospect";
       };
 

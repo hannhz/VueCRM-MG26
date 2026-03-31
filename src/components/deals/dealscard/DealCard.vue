@@ -62,15 +62,29 @@ const searchQuery = computed({
  * LOGIC / NORMALIZATION
  */
 const normalizeStage = (rawStage) => {
-  const stage = String(rawStage || "prospect").toLowerCase();
+  const stage = String(rawStage || "prospect").toLowerCase().trim();
+  
+  // Handle encoded format "closed:won", "closed:lost", "closed:cancel"
+  if (stage.startsWith("closed:")) {
+    const [_, status] = stage.split(":");
+    if (status === "won") return "closed_won";
+    if (status === "lost") return "closed_lost";
+    if (status === "cancel") return "closed_cancel";
+    return "closed";
+  }
   
   if (stage.includes("prospect") || stage === "new") return "prospect";
   if (stage.includes("qual")) return "qualified";
   if (stage.includes("offer") || stage.includes("proposal") || stage.includes("payment")) return "offer";
   if (stage.includes("negot") || stage.includes("adv")) return "negotiation";
+  
+  // Handle semua variasi closed status - selalu return exact format yang consistent
   if (stage.includes("won") || stage.includes("closed_won")) return "closed_won";
   if (stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
   if (stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
+  
+  // Jika ada "closed" tapi tidak tu yang yang spesific, treat as generic closed
+  if (stage.includes("closed")) return "closed";
   
   return "prospect";
 };
@@ -102,15 +116,18 @@ const rebuildBoards = (rawDeals) => {
   };
 
   rawDeals.map(normalizeDeal).forEach((deal) => {
-    // Jika stage ada di grouped, masukkan ke sana
-    if (grouped[deal.stage]) {
-      grouped[deal.stage].push(deal);
-    } 
-    // Jika stage termasuk closed_* maka masukkan ke closed
-    else if (deal.stage.includes("closed")) {
+    const stage = String(deal.stage || "").toLowerCase().trim();
+    
+    // Eksplisit: kalau stage mengandung "closed", masuk ke closed board
+    // Ini mencakup closed, closed_won, closed_lost, closed_cancel
+    if (stage.includes("closed")) {
       grouped.closed.push(deal);
-    } 
-    // Else default ke prospect
+    }
+    // Otherwise check other boards by stage key
+    else if (grouped.hasOwnProperty(stage)) {
+      grouped[stage].push(deal);
+    }
+    // Default ke prospect
     else {
       grouped.prospect.push(deal);
     }
@@ -154,26 +171,48 @@ const handleBoardChange = async (event, targetBoard) => {
 
   if (previousStage === nextStage) return;
 
-  // ✅ Jika drag ke "closed" board, tanya user pilih status
   let finalStage = nextStage;
+  
+  // Jika drag ke "closed" board, minta user pilih status
   if (nextStage === "closed") {
-    const closedStatus = await alertService.confirm(
-      "Select Closed Status",
-      "Pilih status deal yang ditutup:",
-      {
-        options: ["Won", "Lost", "Cancel"]  // Tanya user pilih mana
-      }
-    );
-    
-    if (!closedStatus) return; // User cancel
-    
-    // Map pilihan ke stage spesifik
+    await Swal.fire({
+      title: "Closed Status",
+      text: "Pilih status deal yang ditutup:",
+      icon: "question",
+      html: `
+        <div class="flex flex-col gap-2">
+          <button id="btn-won" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">✓ Won</button>
+          <button id="btn-lost" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">✗ Lost</button>
+          <button id="btn-cancel-status" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">⊘ Cancel</button>
+        </div>
+      `,
+      showConfirmButton: false,
+      allowOutsideClick: false,
+      didOpen: () => {
+        document.getElementById('btn-won')?.addEventListener('click', () => {
+          window.closedChoice = 'won';
+          Swal.close();
+        });
+        document.getElementById('btn-lost')?.addEventListener('click', () => {
+          window.closedChoice = 'lost';
+          Swal.close();
+        });
+        document.getElementById('btn-cancel-status')?.addEventListener('click', () => {
+          window.closedChoice = 'cancel';
+          Swal.close();
+        });
+      },
+    });
+
+    if (!window.closedChoice) return;
+
     const statusMap = {
-      "Won": "closed_won",
-      "Lost": "closed_lost",
-      "Cancel": "closed_cancel"
+      won: "closed_won",
+      lost: "closed_lost",
+      cancel: "closed_cancel",
     };
-    finalStage = statusMap[closedStatus];
+    finalStage = statusMap[window.closedChoice];
+    window.closedChoice = null;
   }
 
   // Optimistic update
@@ -184,13 +223,19 @@ const handleBoardChange = async (event, targetBoard) => {
 
   boardChangeTimeout = setTimeout(async () => {
     try {
+      console.log(`[DealCard] Updating deal ${movedDeal.id} to stage: ${finalStage}`);
       await store.dispatch("deals/updateDealStage", {
         dealId: movedDeal.id,
         newStage: finalStage,
       });
+      console.log(`[DealCard] Update successful for deal ${movedDeal.id}`);
+      
+      // Force refresh untuk ensure card appear di board yang benar
+      await store.dispatch("deals/fetchAllDeals").catch(() => {});
     } catch (error) {
       console.error("Failed to update deal stage:", error);
       movedDeal.stage = previousStage;
+      // Re-fetch untuk revert state jika gagal
       await store.dispatch("deals/fetchAllDeals").catch(() => {});
     } finally {
       isSyncingStage.value = false;
