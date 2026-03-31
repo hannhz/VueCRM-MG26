@@ -80,14 +80,14 @@
     </div>
   </div>
 
-  <button
+  <!-- <button
     type="button"
     @click="showAddContactQuickForm = true"
     class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
   >
     <Plus :size="14" />
     Create Contact
-  </button>
+  </button> -->
 
   <AddContactQuickForm
     :isOpen="showAddContactQuickForm"
@@ -126,6 +126,9 @@ export default {
       contactSearch: "",
       showAddContactQuickForm: false,
       page: 1,
+      debounceTimer: null,
+      hasMore: false,
+      selectedContactsCache: [],
     };
   },
 
@@ -160,9 +163,7 @@ export default {
     },
 
     selectedContacts() {
-      return (this.allContacts || []).filter((c) =>
-        this.contactassoc.includes(String(c.id).trim()),
-      );
+      return this.selectedContactsCache;
     },
   },
 
@@ -186,10 +187,13 @@ export default {
       });
 
       this.hasMore = res.next_page_url !== null;
-      this.page++;
+      if (this.hasMore) {
+        this.page++;
+      }
 
-      console.log("Fetched contacts:", res);
-      console.log("page:", this.page);
+      // console.log("Fetched contacts:", this.hasMore);
+      // console.log("Fetched contacts:", res);
+      // console.log("page:", this.page);
     },
 
     handleContactQuickSubmit(e) {
@@ -216,8 +220,12 @@ export default {
       let newValue;
       if (index === -1) {
         newValue = [...this.contactassoc, contactId];
+        this.selectedContactsCache.push(contact);
       } else {
         newValue = this.contactassoc.filter((id, i) => i !== index);
+        this.selectedContactsCache = this.selectedContactsCache.filter(
+          (c) => String(c.id) !== contactId,
+        );
       }
       this.contactassoc = newValue;
     },
@@ -245,9 +253,12 @@ export default {
       }
     },
 
-    contactSearch() {
-      this.page = 1;
-      this.fetchContacts();
+    contactSearch(e) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = setTimeout(() => {
+        this.page = 1; // reset page
+        this.fetchContacts();
+      }, 300);
     },
   },
 };

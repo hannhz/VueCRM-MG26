@@ -74,6 +74,7 @@ export default {
       selectedTabFlMenu: "tabs/getSelectedTabFlMenu",
       allContactsassoc: "assoc/allContacts",
       allDealsassoc: "assoc/allDeals",
+      allCompanysassoc: "assoc/allCompanys",
     }),
 
     isScrollable() {
@@ -128,6 +129,7 @@ export default {
       actlayoutweb: "settingsfe/actlayoutwebflmenu",
       getcontactsassoc: "assoc/getcontacts",
       getdealsassoc: "assoc/getdeals",
+      getcompanysassoc: "assoc/getcompanys",
     }),
 
     cekdatamaster() {
@@ -137,6 +139,10 @@ export default {
 
       if (!this.allDealsassoc || this.allDealsassoc.length === 0) {
         this.getdealsassoc();
+      }
+
+      if (!this.allCompanysassoc || this.allCompanysassoc.length === 0) {
+        this.getcompanysassoc();
       }
     },
 

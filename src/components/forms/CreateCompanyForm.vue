@@ -6,7 +6,7 @@ import AddContactQuickForm from "./AddContactQuickForm.vue";
 import LocationSelector from "./component/LocationSelector.vue";
 import ContactDetailForm from "./DetailFormDuplicate.vue";
 import ContactAssociationForm from "./assoc/contacts.vue";
-import DealAssociationForm from "./assoc/deals.vue";
+import DealAssociationForm from "./assoc/companies.vue";
 import { alertService } from "@/services/alertService";
 import NotesEditor from "@/components/widgets/NotesEditor.vue";
 import TaskEditor from "@/components/widgets/TaskEditor.vue";

@@ -34,16 +34,21 @@ const mutations = {
   appendContacts(state, payload) {
     state.contacts = [...state.contacts, ...payload];
   },
+
+  appendcompanys(state, payload) {
+    state.companys = [...state.companys, ...payload];
+  },
+
   setdeals(state, payload) {
     state.deals = payload;
   },
 };
 
 const actions = {
-  getcompanys(context) {
+  getcompanys(context,params ={}) {
     const promise = new Promise(async (resolve, reject) => {
       try {
-        let network = await api.get("assoc/company", {
+        let network = await api.getbydata("assoc/company", params, {
           headers: {
             Authorization: "Bearer " + cookies.get("token"),
           },
@@ -56,7 +61,14 @@ const actions = {
 
     promise
       .then((data) => {
-        context.commit("setcompanys", data);
+        console.log("Data received in getcompanys action:", data);
+        // context.commit("setcompanys", data);
+        if (!params.page || params.page === 1) {
+          context.commit("setcompanys", data.data);
+        } else {
+          // 🔥 kalau page berikutnya → append
+          context.commit("appendcompanys", data.data);
+        }
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -66,6 +78,9 @@ const actions = {
   },
 
   getcontacts(context, params = {}) {
+    // if (params.search !== "") {
+    //   params.page = 1; // reset page
+    // }
     const promise = new Promise(async (resolve, reject) => {
       try {
         let network = await api.getbydata("assoc/contact", params, {
