@@ -49,6 +49,50 @@ const mapCreateDealPayload = (formData = {}) => {
     return assoc || "";
   };
 
+  // Helper untuk extract task data
+  const extractTaskData = (task) => {
+    if (!task || (typeof task === 'object' && Object.keys(task).length === 0)) {
+      return null;
+    }
+    // Return as object - let backend handle serialization
+    if (typeof task === 'object') {
+      return {
+        name: task.name || "",
+        content: task.content || "",
+        status: task.status || "",
+        priority: task.priority || "",
+        dueDate: task.dueDate || "",
+      };
+    }
+    return null;
+  };
+
+  // Helper untuk extract docs data  
+  const extractDocsData = (docs) => {
+    if (!docs) {
+      return null;
+    }
+    // If it's object from DocsSection, extract files array
+    if (typeof docs === 'object' && !Array.isArray(docs)) {
+      const filesArray = docs.files || [];
+      if (filesArray.length === 0) {
+        return null;
+      }
+      // Return array objects - let backend handle serialization
+      return filesArray.map((f) => ({
+        name: f.name || f,
+      }));
+    }
+    // If already array
+    if (Array.isArray(docs)) {
+      if (docs.length === 0) {
+        return null;
+      }
+      return docs;
+    }
+    return null;
+  };
+
   return {
     // Mapping utama sesuai kolom DB
     deal_name: formData.dealName?.trim() || formData.deal_name?.trim() || null,
@@ -63,6 +107,12 @@ const mapCreateDealPayload = (formData = {}) => {
     // Associations
     contactassoc: formatAssoc(formData.contactassoc || formData.contacts_id),
     companyassoc: formatAssoc(formData.companyassoc || formData.companies_id),
+    // Notes, Tasks, & Docs - penting: backend expect lowercase singular keys
+    // Support both 'notes' dan 'note' untuk backward compatibility
+    note: (formData.note || formData.notes || "").trim() || null,
+    task_json: extractTaskData(formData.task),
+    docs: formatDocs(formData.docs),
+    //docs: extractDocsData(formData.docs) || extractDocsData(formData.doc),
     // Alias untuk kompatibilitas variasi backend
     name: formData.dealName?.trim() || formData.deal_name?.trim() || null,
     dealName: formData.dealName?.trim() || formData.deal_name?.trim() || null,
@@ -448,6 +498,18 @@ export default {
         ...formData,
         ...mappedData,
       };
+
+      console.log("� Store: Extracted data sebelum kirim ke backend:");
+      console.log("  note (from form):", formData.notes);
+      console.log("  note (after mapping):", mappedData.note);
+      console.log("  task_json:", mappedData.task_json);
+      console.log("  docs:", mappedData.docs);
+      console.log("🚀 Final payload ke backend:", {
+        note: mappedData.note,
+        task_json: mappedData.task_json,
+        docs: mappedData.docs,
+      });
+
       return dispatch("saveDeal", payload);
     },
 

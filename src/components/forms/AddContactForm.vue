@@ -10,6 +10,8 @@ import NotesSection from "@/components/forms/details/NotesSection.vue";
 import DocsSection from "@/components/forms/details/DocsSection.vue";
 import TaskSection from "@/components/forms/details/TaskSection.vue";
 import LocationSelector from "@/components/forms/component/LocationSelector.vue";
+import DealAssociationForm from "./assoc/deals.vue";
+import CompaniesAssociationForm from "./assoc/companies.vue";
 
 import api from "@/api"; // Pastikan path ini benar sesuai struktur proyek Anda
 
@@ -28,6 +30,9 @@ export default {
     NotesSection,
     DocsSection,
     TaskSection,
+    DealAssociationForm,
+    CompaniesAssociationForm,
+
   },
 
   props: {
@@ -588,96 +593,10 @@ export default {
             </div>
           </div>
 
-          <!-- Companies Association -->
-          <div data-companies-dropdown>
-            <label class="block text-sm font-medium text-dark-base mb-2">
-              Companies Association
-            </label>
-            <div class="relative">
-              <input
-                v-model="formData.companiesSearch"
-                type="text"
-                placeholder="Search companies..."
-                @click="toggleCompaniesDropdown"
-                @input="filterCompanies"
-                class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-              <ChevronDown
-                :size="16"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none transition-transform duration-200"
-                :class="{ 'rotate-180': showCompaniesDropdown }"
-              />
+          <!-- Companies Association 
+          <CompaniesAssociationForm :allCompanies="allCompanies" v-model="formData.selectedCompanies" /> -->
 
-              <!-- Dropdown -->
-              <div
-                v-if="showCompaniesDropdown && filteredCompanies.length > 0"
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
-              >
-                <div
-                  v-for="company in filteredCompanies"
-                  :key="company.id"
-                  @click="selectCompany(company)"
-                  class="px-3 py-2 hover:bg-light-base cursor-pointer text-sm text-dark-base"
-                >
-                  {{
-                    company.company_name || company.name || "Unnamed Company"
-                  }}
-                </div>
-              </div>
-
-              <!-- Empty State -->
-              <div
-                v-if="
-                  showCompaniesDropdown &&
-                  filteredCompanies.length === 0 &&
-                  allCompanies.length > 0
-                "
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
-              >
-                <p class="text-sm text-sub-text">No companies found</p>
-              </div>
-
-              <!-- Loading/No Data State -->
-              <div
-                v-if="showCompaniesDropdown && allCompanies.length === 0"
-                class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
-              >
-                <p class="text-sm text-sub-text">Loading companies...</p>
-              </div>
-            </div>
-
-            <!-- Selected Companies -->
-            <div
-              v-if="formData.selectedCompanies.length > 0"
-              class="mt-2 flex flex-wrap gap-2"
-            >
-              <span
-                v-for="company in formData.selectedCompanies"
-                :key="company.id"
-                class="bg-light-base px-2 py-1 rounded text-xs text-dark-base flex items-center gap-1"
-              >
-                {{ company.company_name || company.name }}
-                <button
-                  type="button"
-                  @click="removeCompany(company.id)"
-                  class="hover:text-red"
-                >
-                  <X :size="14" />
-                </button>
-              </span>
-            </div>
-
-            <button
-              type="button"
-              @click="showAddCompanyForm = true"
-              class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
-            >
-              <Plus :size="16" />
-              Create Company
-            </button>
-          </div>
-
-          <!-- Deals Association -->
+          <!-- Deals Association 
           <div data-deals-dropdown>
             <label class="block text-sm font-medium text-dark-base mb-2">
               Deals Association
@@ -697,7 +616,7 @@ export default {
                 :class="{ 'rotate-180': showDealsDropdown }"
               />
 
-              <!-- Dropdown -->
+              <!-- Dropdown 
               <div
                 v-if="showDealsDropdown && filteredDeals.length > 0"
                 class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
@@ -712,7 +631,7 @@ export default {
                 </div>
               </div>
 
-              <!-- Empty State -->
+              <!-- Empty State 
               <div
                 v-if="
                   showDealsDropdown &&
@@ -724,7 +643,7 @@ export default {
                 <p class="text-sm text-sub-text">No deals found</p>
               </div>
 
-              <!-- Loading/No Data State -->
+              <!-- Loading/No Data State 
               <div
                 v-if="showDealsDropdown && allDeals.length === 0"
                 class="absolute top-full left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-50 px-3 py-4 text-center"
@@ -733,7 +652,7 @@ export default {
               </div>
             </div>
 
-            <!-- Selected Deals -->
+            <!-- Selected Deals 
             <div
               v-if="formData.selectedDeals.length > 0"
               class="mt-2 flex flex-wrap gap-2"
@@ -762,7 +681,7 @@ export default {
               <Plus :size="16" />
               Add Another Deal
             </button>
-          </div>
+          </div> -->
           </div>
         </form>
         <!-- Detail Tab -->
@@ -816,12 +735,12 @@ export default {
     @submit="showAddCompanyForm = false"
   />
 
-  <!-- Add Deal Form (stacked on top) -->
+  <!-- Add Deal Form (stacked on top)
   <AddDealForm
     :isOpen="showAddDealForm"
     @close="showAddDealForm = false"
     @submit="showAddDealForm = false"
-  />
+  /> -->
 
   <!-- Contact Detail Form (Next step) -->
   <ContactDetailForm
