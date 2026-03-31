@@ -145,7 +145,7 @@ const mapBoardStageToPipeline = (stage) => {
 };
 
 const normalizeStage = (rawStage) => {
-  const stage = String(rawStage || "prospect").toLowerCase();
+  const stage = String(rawStage || "prospect").toLowerCase().trim();
 
   if (stage.includes("prospect") || stage === "new") return "prospect";
   if (stage.includes("qual")) return "qualified";
@@ -154,6 +154,7 @@ const normalizeStage = (rawStage) => {
   if (stage.includes("won") || stage.includes("closed_won")) return "closed_won";
   if (stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
   if (stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
+  if (stage.includes("closed")) return "closed";
 
   return "prospect";
 };
