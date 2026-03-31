@@ -88,7 +88,7 @@ export default {
     opentab() {
       const stored = JSON.parse(localStorage.getItem("openTabsflmenu")) ?? [];
       // const stored = localStorage.getItem("openTabs") ?? [];
-      console.log(stored);
+      // console.log(stored);
       return stored;
     },
   },
@@ -189,13 +189,13 @@ export default {
   watch: {
     nametabs(e) {},
     getlayoutmenuweb(e) {
-      console.log(e);
+      // console.log(e);
     },
     allContactsassoc(e) {
-      console.log("allContactsassoc",e);
+      // console.log("allContactsassoc",e);
     },  
     allDealsassoc(e) {
-      console.log("allDealsassoc",e);
+      // console.log("allDealsassoc",e);
     },  
   },
 };

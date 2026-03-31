@@ -35,6 +35,11 @@ export default {
       type: Boolean,
       default: false,
     },
+
+    initialData: {
+      type: Object,
+      default: null,
+    },
   },
 
   data() {
@@ -58,6 +63,7 @@ export default {
         city: "",
         pos_code: "",
         type: "",
+        notes:"",
         dealsassoc: [],
         contactassoc: [],
         task: {
@@ -79,7 +85,7 @@ export default {
       showAddDealForm: false,
       showAddContactQuickForm: false,
       showDetailForm: false,
-      isSubmitting:false,
+      isSubmitting: false,
     };
   },
 
@@ -91,8 +97,12 @@ export default {
       userSignin: "users/usersignin",
       industries: "company/industries",
       sources: "company/sources",
-      type: "company/type",
+      types: "company/type",
     }),
+
+    isEditMode() {
+      return !!this.initialData;
+    },
   },
 
   watch: {
@@ -101,8 +111,18 @@ export default {
         this.getinduestries();
         this.getsources();
         this.gettype();
+
+        if (this.initialData) {
+          this.setFormData(this.initialData);
+        } else {
+          this.resetForm();
+        }
       }
     },
+
+    formData(a){
+        console.log("FormData changed:", a);
+    }
   },
 
   mounted() {
@@ -125,6 +145,59 @@ export default {
       gettype: "company/gettype",
     }),
 
+    setFormData(data) {
+      console.log("Setting form data with:", data);
+      this.formData = {
+        company_name: data.company_name || "",
+        company_owner: data.company_owner || "",
+        owner: data.owner || "",
+        description: data.description || "",
+        email: data.email || "",
+        telephone: data.telephone || "",
+        website: data.website || "",
+        industry: data.industry || "",
+        source: data.source || "",
+        address: data.address || "",
+        country: data.country || "",
+        province: data.province || "",
+        city: data.city || "",
+        pos_code: data.pos_code || "",
+        type: data.type || "",
+        notes: data.notes || "",
+
+        // 🔥 penting (handle JSON/string)
+        dealsassoc: this.parseJSON(data.dealsassoc, []),
+        contactassoc: this.parseJSON(data.contactassoc, []),
+
+        task:  {
+          name: data.task_name || "",
+          content: data.desktask || "",
+          status: data.statustask || "",
+          dueDate: data.due_date || "",
+          time: data.task_time || "",
+          priority: data.prioritytask || "",
+        },
+
+        docs:  {
+          description: data.docs,
+          fileSource: "",
+          files: [],
+        },
+
+        
+      };
+    },
+
+    parseJSON(val, defaultVal) {
+      try {
+        if (!val) return defaultVal;
+        if (typeof val === "object") return val;
+        return JSON.parse(val);
+      } catch {
+        return defaultVal;
+      }
+    },
+
     handleClickOutside(e) {
       // Close dropdowns saat klik di luar
       if (!e.target.closest("[data-contacts-dropdown]")) {
@@ -138,88 +211,117 @@ export default {
 
     handleSave() {
       this.isSubmitting = true;
-      // const now = new Date().toISOString();
-      // const dataToSubmit = {
-      //   ...this.formData,
-      //   owner: this.formData.owner || this.currentUserName || "",
-      //   dealsassoc: (this.formData.dealsassoc || []).join(","),
-      //   contactassoc: (this.formData.contactassoc || []).join(","),
-      //   notes: detailPayload?.note || "",
-      //   task_name: detailPayload?.task?.name || "",
-      //   desktask: detailPayload?.task?.content || "",
-      //   statustask: detailPayload?.task?.status || "",
-      //   assignee: detailPayload?.task?.assignee || "",
-      //   due_date: detailPayload?.task?.dueDate || "",
-      //   task_time: detailPayload?.task?.time || "",
-      //   prioritytask: detailPayload?.task?.priority || "",
-      //   associated_contact: detailPayload?.task?.associatedContact || "",
-      //   docs: detailPayload?.docs?.description || "",
-      //   created_at: now,
-      //   updated_at: now,
-      // };
 
       console.log("Data to submit:", this.formData);
 
-      this.insertCompany({ formdata: this.formData }).then((data)=>{
-        alertService.success("Company berhasil ditambahkan!");
-        this.resetForm();
-        this.$emit("submit", data);
-        this.showDetailForm = false;
-        this.handleClose();
-      }).catch((error)=>{
-        alertService.error(
-          error.response?.data?.message ||
-            error.message ||
-            "Gagal menambah company.",
-        );
-      }).finally(()=>{
-        this.isSubmitting = false;
-      });
-
-      // try {
-      //   const response = await this.insertCompany({ formdata: dataToSubmit });
-      //   alertService.success("Company berhasil ditambahkan!");
-      //   this.resetForm();
-      //   this.$emit("submit", response);
-      //   this.showDetailForm = false;
-      //   this.handleClose();
-      // } catch (error) {
-      //   alertService.error(
-      //     error.response?.data?.message ||
-      //       error.message ||
-      //       "Gagal menambah company.",
-      //   );
-      // } finally {
-      //   this.isSubmitting = false;
-      // }
+      if (this.isEditMode) {
+        const payload = {
+          ...this.formData,
+          choice: this.isEditMode ? "u" : "i", // 🔥 penting
+          id: this.initialData?.id || null,
+        };
+        // console.log("Payload for update:", payload);
+        this.insertCompany({ formdata: payload })
+          .then((data) => {
+            alertService.success("Company berhasil ditambahkan!");
+            this.resetForm();
+            this.$emit("submit", data);
+            this.showDetailForm = false;
+            this.handleClose();
+          })
+          .catch((error) => {
+            alertService.error(
+              error.response?.data?.message ||
+                error.message ||
+                "Gagal menambah company.",
+            );
+          })
+          .finally(() => {
+            this.isSubmitting = false;
+            this.activeTab = "master";
+          });
+      } else {
+        this.insertCompany({ formdata: this.formData })
+          .then((data) => {
+            alertService.success("Company berhasil ditambahkan!");
+            this.resetForm();
+            this.$emit("submit", data);
+            this.showDetailForm = false;
+            this.handleClose();
+          })
+          .catch((error) => {
+            alertService.error(
+              error.response?.data?.message ||
+                error.message ||
+                "Gagal menambah company.",
+            );
+          })
+          .finally(() => {
+            this.isSubmitting = false;
+            this.activeTab = "master";
+          });
+      }
     },
 
     resetForm() {
+      // this.formData = {
+      //   company_name: "",
+      //   company_owner: "",
+      //   owner: this.currentUserName || "",
+      //   description: "",
+      //   email: "",
+      //   telephone: "",
+      //   website: "",
+      //   industry: "",
+      //   address: "",
+      //   country: "",
+      //   province: "",
+      //   city: "",
+      //   pos_code: "",
+      //   source: "",
+      //   type: "",
+      //   dealsassoc: [],
+      //   contactassoc: [],
+      // };
+      // this.contactSearch = "";
+
       this.formData = {
         company_name: "",
         company_owner: "",
-        owner: this.currentUserName || "",
+        owner: "",
         description: "",
         email: "",
         telephone: "",
         website: "",
         industry: "",
+        source: "",
         address: "",
         country: "",
         province: "",
         city: "",
         pos_code: "",
-        source: "",
         type: "",
+        notes:"",
         dealsassoc: [],
         contactassoc: [],
+        task: {
+          name: "",
+          content: "",
+          status: "",
+          dueDate: "",
+          time: "",
+          priority: "",
+        },
+
+        docs: {
+          description: "",
+          fileSource: "",
+          files: [],
+        },
       };
-      this.contactSearch = "";
     },
-    
-    handleDetailSubmit(){
-      
-    }
+
+    handleDetailSubmit() {},
   },
 };
 </script>
@@ -245,7 +347,9 @@ export default {
       <div
         class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
       >
-        <h2 class="text-xl font-bold text-dark-base">Create Company</h2>
+        <h2 class="text-xl font-bold text-dark-base">
+          {{ isEditMode ? "Edit Company" : "Create Company" }}
+        </h2>
         <button
           @click="handleClose"
           class="p-2 hover:bg-light-base rounded-lg transition-colors"
@@ -424,7 +528,7 @@ export default {
                 <div class="relative">
                   <v-select
                     v-model="formData.type"
-                    :options="type"
+                    :options="types"
                     label="label"
                     :reduce="(opt) => opt.value"
                     placeholder="Select Type"
@@ -434,8 +538,8 @@ export default {
             </div>
 
             <!-- Contact Association -->
-            <ContactAssociationForm v-model="formData.contactassoc" />
-            <DealAssociationForm v-model="formData.dealsassoc" />
+            <!-- <ContactAssociationForm v-model="formData.contactassoc" />
+            <DealAssociationForm v-model="formData.dealsassoc" /> -->
           </div>
 
           <!-- detail -->

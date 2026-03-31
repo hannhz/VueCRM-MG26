@@ -109,6 +109,7 @@ const state = {
   companyignin: null,
   companyidsignin: null,
   companybyid: [],
+  rescompany: [],
   token: cookies.get("token"),
   isLoading: false,
   error: null,
@@ -116,12 +117,14 @@ const state = {
   searchQuery: "",
   currentPage: 1,
   itemsPerPage: 10,
-  industries:[],
-  sources:[],
-  type:[],
+  industries: [],
+  sources: [],
+  type: [],
+  companys: [],
 };
 
 const getters = {
+  getrescompany: (state) => state.rescompany,
   industries: (state) => state.industries,
   sources: (state) => state.sources,
   type: (state) => state.type,
@@ -130,6 +133,7 @@ const getters = {
   companyidsignin: (state) => state.companyidsignin,
   companybyid: (state) => state.companybyid,
   allcompany: (state) => state.company,
+  allCompanys: (state) => state.companys,
   isLoading: (state) => state.isLoading,
   error: (state) => state.error,
   currentView: (state) => state.viewMode,
@@ -160,7 +164,41 @@ const actions = {
   setItemsPerPage({ commit }, items) {
     commit("SET_ITEMS_PER_PAGE", items);
   },
-  fetchAllcompany({ commit, state }, params = { page: 1, per_page: 100 }) {
+
+  fetchAllcompany(context, params) {
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        let network = await api.getbydata("company", params, {
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
+          },
+        });
+        resolve(network.data);
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    promise
+      .then((data) => {
+        // console.log("Data received in getcompanys companies page action:", data);
+        // context.commit("setcompanys", data);
+        context.commit("setrescompany", data.companies);
+        if (!params.page || params.page === 1) {
+          context.commit("setcompanys", data.companies.data);
+        } else {
+          // 🔥 kalau page berikutnya → append
+          context.commit("appendcompanys", data.companies.data);
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+
+    return promise;
+  },
+
+  oldfetchAllcompany({ commit, state }, params = { page: 1, per_page: 100 }) {
     // Always fetch fresh data to get all companies with pagination support
     commit("SET_LOADING", true);
     commit("SET_ERROR", null);
@@ -468,7 +506,7 @@ const actions = {
 
     promise
       .then((data) => {
-       context.commit("setindustries", data);
+        context.commit("setindustries", data);
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -476,7 +514,7 @@ const actions = {
 
     return promise;
   },
-  
+
   getsources(context) {
     const promise = new Promise(async (resolve, reject) => {
       try {
@@ -493,7 +531,7 @@ const actions = {
 
     promise
       .then((data) => {
-       context.commit("setsources", data);
+        context.commit("setsources", data);
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -518,7 +556,7 @@ const actions = {
 
     promise
       .then((data) => {
-       context.commit("settype", data);
+        context.commit("settype", data);
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -533,6 +571,20 @@ const actions = {
 };
 
 const mutations = {
+  setrescompany(state, rescompany) {
+    state.rescompany = rescompany;
+  },
+
+  setcompanys(state, payload) {
+    // state.companys = payload;
+    state.company = payload;
+  },
+
+  appendcompanys(state, payload) {
+    // state.companys = [...state.companys, ...payload];
+    state.company = [...state.company, ...payload];
+  },
+
   setcompany: (state, company) => {
     state.company = company;
   },
@@ -573,10 +625,10 @@ const mutations = {
   setsources(state, sources) {
     state.sources = sources;
   },
-  
+
   settype(state, type) {
     state.type = type;
-  }
+  },
 };
 
 export default {

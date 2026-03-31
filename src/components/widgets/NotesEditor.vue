@@ -42,6 +42,7 @@ export default {
 
   watch: {
     modelValue(val) {
+      console.log("modelValue noteseditor changed:", val);
       this.localValue = val;
     },
     localValue(val) {

@@ -10,7 +10,8 @@ import CompaniesTable from "./CompaniesTable.vue";
 import CreateCompanyForm from "../../forms/CreateCompanyForm.vue";
 import BulkAddCompanyForm from "../../forms/BulkAddCompanyForm.vue";
 import DetailForm from "../../forms/DetailFormDuplicate.vue";
-import DetailDataCompany from "../../forms/DetailDataCompany.vue";
+// import DetailDataCompany from "../../forms/DetailDataCompany.vue";
+import DetailDataCompany from "../../forms/CreateCompanyForm.vue";
 import { alertService } from "@/services/alertService";
 import {
   buildDetailFormPayload,
@@ -42,6 +43,7 @@ export default {
       isDetailFormSubmitting: false,
       detailFormEntityId: null,
       statuses: [],
+      debounceTimer: null,
     };
   },
 
@@ -73,7 +75,8 @@ export default {
     },
 
     ...mapGetters({
-      companies: "company/filteredCompanies",
+      companies: "company/companyList",
+      getrescompany: "company/getrescompany",
       isLoading: "company/isLoading",
       error: "company/error",
       allContacts: "contacts/allContacts",
@@ -85,7 +88,8 @@ export default {
     },
 
     totalPages() {
-      return Math.max(1, Math.ceil(this.totalCompanies / this.itemsPerPage));
+      return this.getrescompany.last_page || 0;
+      // return Math.max(1, Math.ceil(this.totalCompanies / this.itemsPerPage));
     },
 
     paginatedCompanies() {
@@ -140,7 +144,7 @@ export default {
     companiesStatusText() {
       if (this.isLoading) return "Searching company...";
       if (this.error) return `Error: ${this.error}`;
-      return `${this.totalCompanies.toLocaleString()} Total Companies`;
+      return `${this.getrescompany.total} Total Companies`;
     },
 
     companiesStatusClass() {
@@ -150,17 +154,9 @@ export default {
     },
   },
 
-  watch: {
-    totalCompanies() {
-      if (this.currentPage > this.totalPages) {
-        this.currentPage = this.totalPages;
-      }
-    },
-  },
-
   mounted() {
     // this.fetchStatuses();
-    // this.fetchAllcompany();
+    this.fetchData();
     // this.fetchAllContacts();
     // this.fetchAllDeals();
 
@@ -177,6 +173,7 @@ export default {
       "fetchcompanybyid",
       "updatecompany",
       "deletecompany",
+      "newfetchallcompany",
     ]),
     ...mapActions("contacts", ["fetchAllContacts"]),
     ...mapActions("deals", ["fetchAllDeals"]),
@@ -309,11 +306,19 @@ export default {
     },
 
     nextPage() {
-      if (this.currentPage < this.totalPages) this.currentPage++;
+      // if (this.currentPage < this.totalPages) this.currentPage++;
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+        this.fetchData();
+      }
     },
 
     prevPage() {
-      if (this.currentPage > 1) this.currentPage--;
+      // if (this.currentPage > 1) this.currentPage--;
+      if (this.currentPage > 1) {
+        this.currentPage--;
+        this.fetchData();
+      }
     },
 
     async openCompanyDetail(company) {
@@ -358,8 +363,6 @@ export default {
     },
 
     handleDetailDataCompanySubmit(payload) {
-
-
       // console.log(payload);
       const companyId = this.selectedCompany?.id;
       const companyName = payload?.company?.company_name?.trim();
@@ -566,19 +569,34 @@ export default {
       this.showBulkAddForm = true;
     },
 
-    fetchData() {
+    async fetchData() {
       this.showDropdown = false;
       this.showDownloadDropdown = false;
 
-      return this.fetchAllcompany({ forceRefresh: true }).catch((error) => {
+      try {
+        await this.fetchAllcompany({
+          page: this.currentPage,
+          per_page: this.itemsPerPage,
+          search: this.searchQuery,
+        });
+      } catch (error) {
         const message =
           error?.response?.data?.message ||
-          error?.response?.data?.error ||
           error?.message ||
-          "Gagal refresh data company";
+          "Gagal ambil data company";
 
         alertService.error(message);
-      });
+      }
+
+      // return this.fetchAllcompany({ forceRefresh: true }).catch((error) => {
+      //   const message =
+      //     error?.response?.data?.message ||
+      //     error?.response?.data?.error ||
+      //     error?.message ||
+      //     "Gagal refresh data company";
+
+      //   alertService.error(message);
+      // });
     },
 
     getTypeName(id) {
@@ -612,6 +630,28 @@ export default {
           { id: 7, name: "Qualified" },
         ];
       }
+    },
+  },
+
+  watch: {
+
+    totalCompanies() {
+      if (this.currentPage > this.totalPages) {
+        this.currentPage = this.totalPages;
+      }
+    },
+
+    selectedCompany(e) {
+      console.log("Selected company changed:", e);
+    },
+
+    searchQuery(val) {
+      clearTimeout(this.debounceTimer);
+
+      this.debounceTimer = setTimeout(() => {
+        this.currentPage = 1; // reset ke page 1
+        this.fetchData();
+      }, 400);
     },
   },
 };
@@ -689,7 +729,7 @@ export default {
     />
 
     <!-- Detail Form (Notes, Tasks, Docs) -->
-    <DetailForm
+    <!-- <DetailForm
       :isOpen="showDetailForm"
       :entityType="'company'"
       :contact="selectedCompany"
@@ -702,15 +742,28 @@ export default {
         showCreateCompanyForm = true;
       "
       @submit="handleDetailFormSubmit"
-    />
+    /> -->
 
-    <DetailDataCompany
+    <!-- <DetailDataCompany
       :isOpen="showDetailDataCompany"
       :company="selectedCompany"
       :isSubmitting="isDetailDataSubmitting"
       @close="closeDetailDataCompany"
       @back="closeDetailDataCompany"
       @submit="handleDetailDataCompanySubmit"
+    /> -->
+
+    <DetailDataCompany
+      :isOpen="showDetailDataCompany"
+      :initialData="selectedCompany"
+      @close="showDetailDataCompany = false"
+      @submit="
+        (data) => {
+          console.log('Company added:', data);
+          showDetailDataCompany = false;
+          showDetailForm = false;
+        }
+      "
     />
   </div>
 </template>

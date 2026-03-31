@@ -255,6 +255,10 @@ export default {
 
   watch: {
     isCompaniesDropdownOpen(e) {
+      if(e == false){
+        this.CompaniesSearch = "";
+        this.page = 1;
+      }
       if (e && (!this.allCompaniess || this.allCompaniess.length === 0)) {
         // this.fetchCompanies();
       }
