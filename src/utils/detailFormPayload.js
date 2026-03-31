@@ -104,9 +104,9 @@ export function getDetailSaveAction(entityType) {
  */
 export function getDetailEndpointCandidates(entityType) {
   const endpointMap = {
-    contact: ["contactdet/input", "contact/detail/input", "contact/input"],
+    contact: ["contact/input"],
     company: ["company/input"],
-    deal: ["dealsdet/input", "dealdet/input", "deals/input"],
+    deal: ["deals/input"],
   };
 
   return endpointMap[entityType] || [`${entityType}det/input`, `${entityType}/input`];

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { useStore } from "vuex";
 import draggable from "vuedraggable";
+import Swal from "sweetalert2";
 import { alertService } from "@/services/alertService";
 
 // Sub-components
@@ -45,9 +46,7 @@ const boardMeta = [
   { id: 2, key: "qualified", title: "Qualified" },
   { id: 3, key: "offer", title: "Offer" },
   { id: 4, key: "negotiation", title: "Negotiation" },
-  { id: 5, key: "closed_won", title: "Closed Won" },
-  { id: 6, key: "closed_lost", title: "Closed Lost" },
-  { id: 7, key: "closed_cancel", title: "Closed Cancel" },
+  { id: 5, key: "closed", title: "Closed" },
 ];
 
 const boards = ref([]);
@@ -99,15 +98,20 @@ const rebuildBoards = (rawDeals) => {
     qualified: [],
     offer: [],
     negotiation: [],
-    closed_won: [],
-    closed_lost: [],
-    closed_cancel: [],
+    closed: [],
   };
 
   rawDeals.map(normalizeDeal).forEach((deal) => {
+    // Jika stage ada di grouped, masukkan ke sana
     if (grouped[deal.stage]) {
       grouped[deal.stage].push(deal);
-    } else {
+    } 
+    // Jika stage termasuk closed_* maka masukkan ke closed
+    else if (deal.stage.includes("closed")) {
+      grouped.closed.push(deal);
+    } 
+    // Else default ke prospect
+    else {
       grouped.prospect.push(deal);
     }
   });
@@ -140,7 +144,7 @@ const deleteDeal = async (deal) => {
 };
 
 let boardChangeTimeout = null;
-const handleBoardChange = (event, targetBoard) => {
+const handleBoardChange = async (event, targetBoard) => {
   if (!event || !event.added || !event.added.element || isSyncingStage.value)
     return;
 
@@ -150,8 +154,30 @@ const handleBoardChange = (event, targetBoard) => {
 
   if (previousStage === nextStage) return;
 
+  // ✅ Jika drag ke "closed" board, tanya user pilih status
+  let finalStage = nextStage;
+  if (nextStage === "closed") {
+    const closedStatus = await alertService.confirm(
+      "Select Closed Status",
+      "Pilih status deal yang ditutup:",
+      {
+        options: ["Won", "Lost", "Cancel"]  // Tanya user pilih mana
+      }
+    );
+    
+    if (!closedStatus) return; // User cancel
+    
+    // Map pilihan ke stage spesifik
+    const statusMap = {
+      "Won": "closed_won",
+      "Lost": "closed_lost",
+      "Cancel": "closed_cancel"
+    };
+    finalStage = statusMap[closedStatus];
+  }
+
   // Optimistic update
-  movedDeal.stage = nextStage;
+  movedDeal.stage = finalStage;
   isSyncingStage.value = true;
 
   if (boardChangeTimeout) clearTimeout(boardChangeTimeout);
@@ -160,19 +186,17 @@ const handleBoardChange = (event, targetBoard) => {
     try {
       await store.dispatch("deals/updateDealStage", {
         dealId: movedDeal.id,
-        newStage: nextStage,
+        newStage: finalStage,
       });
     } catch (error) {
       console.error("Failed to update deal stage:", error);
       movedDeal.stage = previousStage;
-      // Re-fetch only on error to fix state
       await store.dispatch("deals/fetchAllDeals").catch(() => {});
     } finally {
       isSyncingStage.value = false;
     }
-  }, 300); // 300ms debounce
+  }, 300);
 };
-
 const handleViewDetail = (deal) => {
   if (isDragging.value) return;
   emit("viewDetail", deal);

@@ -730,22 +730,33 @@ watch(
   { immediate: true },
 );
 
-watch([localDealData, contactOptions, companyOptions], ([deal]) => {
-  if (deal) {
-    // Only initialize dealForm if it's a new deal ID or currently empty
-    if (!dealForm.value.deal_name) {
-      dealForm.value = getDealFormDefaults(deal);
-    } else {
-      // Only update associations reactively as they might load later
-      dealForm.value.contact_association =
-        resolveContactAssociationValues(deal);
-      dealForm.value.companies_association =
-        resolveCompanyAssociationValues(deal);
+// ✅ WATCHER BARU - Track deal ID untuk reset penuh
+watch(
+  () => props.deal?.id,
+  (newDealId, oldDealId) => {
+    if (newDealId && newDealId !== oldDealId) {
+      // FULL RESET form + detail sections
+      dealForm.value = getDealFormDefaults(props.deal);
+      noteContent.value = "";
+      taskName.value = "";
+      taskContent.value = "";
+      taskStatus.value = "";
+      taskAssignee.value = "";
+      taskDueDate.value = "";
+      taskTime.value = "";
+      taskPriority.value = "";
+      taskAssociatedContact.value = "";
+      docDescription.value = "";
+      docFileSource.value = "";
+      selectedDocFiles.value = [];
+      
+      if (newDealId) {
+        fetchFullDealDetails(newDealId);
+      }
     }
-
-    syncAdditionalData(deal);
-  }
-});
+  },
+  { immediate: true },
+);
 
 watch(
   () => props.isOpen,

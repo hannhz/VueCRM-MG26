@@ -93,6 +93,8 @@ const mapCreateDealPayload = (formData = {}) => {
     return null;
   };
 
+  
+
   return {
     // Mapping utama sesuai kolom DB
     deal_name: formData.dealName?.trim() || formData.deal_name?.trim() || null,
@@ -111,8 +113,7 @@ const mapCreateDealPayload = (formData = {}) => {
     // Support both 'notes' dan 'note' untuk backward compatibility
     note: (formData.note || formData.notes || "").trim() || null,
     task_json: extractTaskData(formData.task),
-    docs: formatDocs(formData.docs),
-    //docs: extractDocsData(formData.docs) || extractDocsData(formData.doc),
+    docs: extractDocsData(formData.docs),
     // Alias untuk kompatibilitas variasi backend
     name: formData.dealName?.trim() || formData.deal_name?.trim() || null,
     dealName: formData.dealName?.trim() || formData.deal_name?.trim() || null,

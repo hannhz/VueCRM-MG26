@@ -178,6 +178,8 @@ const handleSubmit = async () => {
       updated_at: now,
     };
 
+    console.log("Submitting Contact Payload:", payload);
+
     const response = await store.dispatch("contacts/createContact", payload);
     await alertService.toastSuccess(
       response?.msg || "Contact berhasil ditambahkan",
