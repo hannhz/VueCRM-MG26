@@ -28,7 +28,7 @@
 
     <!-- Dropdown Menu -->
     <div
-      v-if="isDealDropdownOpen"
+      v-show="isDealDropdownOpen"
       class="absolute z-50 w-full mt-1 bg-white border border-outline rounded-lg shadow-xl flex flex-col max-h-64"
     >
       <div class="p-2 border-b border-outline">
@@ -77,11 +77,27 @@
       </div>
     </div>
   </div>
+
+  <button
+    type="button"
+    @click="showAddDealForm = true"
+    class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
+  >
+    <Plus :size="14" />
+    Add Another Deal
+  </button>
+
+  <AddDealForm
+    :isOpen="showAddDealForm"
+    @close="showAddDealForm = false"
+    @submit="handleDealFormSubmit"
+  />
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-import { X, ChevronDown, Search, Check } from "lucide-vue-next";
+import { mapActions, mapGetters } from "vuex";
+import { X, ChevronDown, Search, Check, Plus } from "lucide-vue-next";
+import AddDealForm from "@/components/forms/AddDealForm.vue";
 
 export default {
   name: "DealAssociationForm",
@@ -91,6 +107,8 @@ export default {
     ChevronDown,
     Search,
     Check,
+    Plus,
+    AddDealForm,
   },
 
   props: {
@@ -104,12 +122,13 @@ export default {
     return {
       isDealDropdownOpen: false,
       dealSearch: "",
+      showAddDealForm: false,
     };
   },
 
   computed: {
     ...mapGetters({
-      allDeals: "deals/allDeals",
+      allDeals: "assoc/allDeals",
     }),
 
     dealsassoc: {
@@ -122,19 +141,36 @@ export default {
     },
 
     filteredDeals() {
-      if (!this.dealSearch) return this.allDeals || [];
+      // if (!this.dealSearch) return this.allDeals || [];
 
-      return (this.allDeals || []).filter((d) => {
+      // return (this.allDeals || []).filter((d) => {
+      //   const name = (d.deal_name || d.name || "").toLowerCase();
+      //   const search = this.dealSearch.toLowerCase();
+
+      //   return name.includes(search);
+      // });
+      const deals = this.allDeals || [];
+
+      if (!this.dealSearch) {
+        return deals.slice(0, 50); // 🔥 batasi 50 dulu
+      }
+
+      return deals.filter((d) => {
         const name = (d.deal_name || d.name || "").toLowerCase();
-        const search = this.dealSearch.toLowerCase();
-
-        return name.includes(search);
+        return name.includes(this.dealSearch.toLowerCase());
       });
     },
 
     selectedDeals() {
+      // return (this.allDeals || []).filter((d) =>
+      //   this.dealsassoc.includes(String(d.id).trim()),
+      // );
+
+      const selectedSet = new Set(
+        this.dealsassoc.map((id) => String(id).trim()),
+      );
       return (this.allDeals || []).filter((d) =>
-        this.dealsassoc.includes(String(d.id).trim()),
+        selectedSet.has(String(d.id).trim()),
       );
     },
   },
@@ -148,6 +184,12 @@ export default {
   },
 
   methods: {
+    ...mapActions({
+      getdeals: "assoc/getdeals",
+    }),
+
+    handleDealFormSubmit() {},
+
     toggleDeal(deal) {
       const dealId = String(deal.id).trim();
       const index = this.dealsassoc.findIndex(

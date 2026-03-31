@@ -22,21 +22,40 @@ export default {
       }),
     },
 
+    // statusOptions: [
+    //     { value: "not_started", label: "Not Started" },
+    //     { value: "in_progress", label: "In Progress" },
+    //     { value: "completed", label: "Completed" },
+    //   ],
+
+    //   priorityOptions: [
+    //     { value: "low", label: "Low" },
+    //     { value: "medium", label: "Medium" },
+    //     { value: "high", label: "High" },
+    //   ],
+
     statusOptions: {
       type: Array,
-      default: () => [],
+      default: () => [
+        { value: "not_started", label: "Not Started" },
+        { value: "in_progress", label: "In Progress" },
+        { value: "completed", label: "Completed" },
+      ],
     },
 
     priorityOptions: {
       type: Array,
-      default: () => [],
+      default: () => [
+        { value: "low", label: "Low" },
+        { value: "medium", label: "Medium" },
+        { value: "high", label: "High" },
+      ],
     },
 
     defaultOpen: {
       type: Boolean,
       default: true,
     },
-
   },
   computed: {
     currentIcon() {
@@ -76,11 +95,7 @@ export default {
       @click="showTasks = !showTasks"
       class="flex items-center gap-2 w-full text-left mb-3"
     >
-      <component
-        :is="currentIcon"
-        :size="16"
-        class="text-sub-text"
-      />
+      <component :is="currentIcon" :size="16" class="text-sub-text" />
 
       <span
         class="text-sm font-semibold text-dark-base flex items-center gap-2"

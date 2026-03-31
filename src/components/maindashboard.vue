@@ -72,6 +72,8 @@ export default {
       nametabs: "tabs/getNameTabs",
       selectedTab: "tabs/getSelectedTab",
       selectedTabFlMenu: "tabs/getSelectedTabFlMenu",
+      allContactsassoc: "assoc/allContacts",
+      allDealsassoc: "assoc/allDeals",
     }),
 
     isScrollable() {
@@ -124,7 +126,19 @@ export default {
       selectTabFlMenu: "tabs/selectTabFlMenu",
       handleOpenTabs: "tabs/handleOpenTabflmenu",
       actlayoutweb: "settingsfe/actlayoutwebflmenu",
+      getcontactsassoc: "assoc/getcontacts",
+      getdealsassoc: "assoc/getdeals",
     }),
+
+    cekdatamaster() {
+      if (!this.allContactsassoc || this.allContactsassoc.length === 0) {
+        this.getcontactsassoc();
+      }
+
+      if (!this.allDealsassoc || this.allDealsassoc.length === 0) {
+        this.getdealsassoc();
+      }
+    },
 
     activeTabIndex() {
       if (!this.selectedTabFlMenu) return 0;
@@ -162,11 +176,21 @@ export default {
       await this.actlayoutweb().then((e) => {});
     }
 
+    this.cekdatamaster();
     // this.loadTabsFromStorage();
   },
 
   watch: {
     nametabs(e) {},
+    getlayoutmenuweb(e) {
+      console.log(e);
+    },
+    allContactsassoc(e) {
+      console.log("allContactsassoc",e);
+    },  
+    allDealsassoc(e) {
+      console.log("allDealsassoc",e);
+    },  
   },
 };
 </script>

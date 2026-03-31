@@ -12,8 +12,6 @@ import NotesEditor from "@/components/widgets/NotesEditor.vue";
 import TaskEditor from "@/components/widgets/TaskEditor.vue";
 import DocsEditor from "@/components/widgets/DocsEditor.vue";
 
-import api from "@/api";
-
 export default {
   name: "CreateCompanyForm",
 
@@ -29,7 +27,7 @@ export default {
     DealAssociationForm,
     NotesEditor,
     TaskEditor,
-    DocsEditor
+    DocsEditor,
   },
 
   props: {
@@ -41,36 +39,9 @@ export default {
 
   data() {
     return {
-      isSubmitting: false,
       contactSearch: "",
-      isContactDropdownOpen: false,
       statuses: [],
       activeTab: "master",
-
-      industryOptions: [
-        { value: "", label: "Select Industry" },
-        { value: "technology", label: "Technology" },
-        { value: "finance", label: "Finance" },
-        { value: "healthcare", label: "Healthcare" },
-        { value: "education", label: "Education" },
-        { value: "retail", label: "Retail" },
-        { value: "manufacturing", label: "Manufacturing" },
-        { value: "consulting", label: "Consulting" },
-        { value: "other", label: "Other" },
-      ],
-
-      sourceOptions: [
-        { value: "", label: "Select Source" },
-        { value: "website", label: "Website" },
-        { value: "referral", label: "Referral" },
-        { value: "social_media", label: "Social Media" },
-        { value: "email_campaign", label: "Email Campaign" },
-        { value: "cold_call", label: "Cold Call" },
-        { value: "trade_show", label: "Trade Show" },
-        { value: "partner", label: "Partner" },
-        { value: "other", label: "Other" },
-      ],
-
       formData: {
         company_name: "",
         company_owner: "",
@@ -80,47 +51,35 @@ export default {
         telephone: "",
         website: "",
         industry: "",
+        source: "",
         address: "",
         country: "",
         province: "",
         city: "",
         pos_code: "",
-        source: "",
         type: "",
         dealsassoc: [],
         contactassoc: [],
-      },
+        task: {
+          name: "",
+          content: "",
+          status: "",
+          dueDate: "",
+          time: "",
+          priority: "",
+        },
 
-      task: {
-        name: "",
-        content: "",
-        status: "",
-        dueDate: "",
-        time: "",
-        priority: "",
-      },
-
-      statusOptions: [
-        { value: "not_started", label: "Not Started" },
-        { value: "in_progress", label: "In Progress" },
-        { value: "completed", label: "Completed" },
-      ],
-
-      priorityOptions: [
-        { value: "low", label: "Low" },
-        { value: "medium", label: "Medium" },
-        { value: "high", label: "High" },
-      ],
-
-      docs: {
-        description: "",
-        fileSource: "",
-        files: [],
+        docs: {
+          description: "",
+          fileSource: "",
+          files: [],
+        },
       },
 
       showAddDealForm: false,
       showAddContactQuickForm: false,
       showDetailForm: false,
+      isSubmitting:false,
     };
   },
 
@@ -130,64 +89,23 @@ export default {
       dealOptions: "deals/allDeals",
       allUsers: "users/allUsers",
       userSignin: "users/usersignin",
+      industries: "company/industries",
+      sources: "company/sources",
+      type: "company/type",
     }),
-
-    ownerOptions() {
-      const users = this.allUsers || [];
-      return [
-        { value: "", label: "Select Owner" },
-        ...users.map((user) => ({
-          value: user.name || user.username || user.id,
-          label: user.name || user.username || "Unknown",
-        })),
-      ];
-    },
-
-    currentUserName() {
-      const user = this.userSignin || null;
-      if (!user) return "";
-
-      const fullName = [
-        user.first_name || user.firstname,
-        user.last_name || user.lastname,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .trim();
-
-      return user.name || user.username || fullName || "";
-    },
-
-    filteredContacts() {
-      if (!this.contactSearch) return this.contactOptions || [];
-      return (this.contactOptions || []).filter(
-        (c) =>
-          `${c.first_name} ${c.last_name}`
-            .toLowerCase()
-            .includes(this.contactSearch.toLowerCase()) ||
-          (c.email || "")
-            .toLowerCase()
-            .includes(this.contactSearch.toLowerCase()),
-      );
-    },
-
-    selectedContacts() {
-      return (this.contactOptions || []).filter((c) =>
-        this.formData.contactassoc.includes(c.id),
-      );
-    },
   },
 
   watch: {
     isOpen(isOpen) {
       if (isOpen) {
-        this.fetchAssociationOptions().then(() => this.applyDefaultOwner());
+        this.getinduestries();
+        this.getsources();
+        this.gettype();
       }
     },
   },
 
   mounted() {
-    this.fetchAssociationOptions().then(() => this.applyDefaultOwner());
     document.addEventListener("click", this.handleClickOutside);
   },
 
@@ -202,93 +120,10 @@ export default {
       fetchAllContacts: "contacts/fetchAllContacts",
       fetchAllDeals: "deals/fetchAllDeals",
       insertCompany: "company/insertcompany",
+      getinduestries: "company/getinduestries",
+      getsources: "company/getsources",
+      gettype: "company/gettype",
     }),
-
-    async fetchStatuses() {
-      try {
-        if (!api || !api.get) {
-          this.setFallbackStatuses();
-          return;
-        }
-
-        const response = await api.get("statuses", {
-          headers: {
-            Authorization: `Bearer ${this.$cookies?.get("token") || ""}`,
-          },
-        });
-        this.statuses = response.data || [];
-      } catch (error) {
-        console.error("Failed to fetch statuses:", error);
-        this.setFallbackStatuses();
-      }
-    },
-
-    setFallbackStatuses() {
-      this.statuses = [
-        { id: 1, name: "Competitor" },
-        { id: 2, name: "Customer" },
-        { id: 3, name: "Ex Customer" },
-        { id: 4, name: "Lead" },
-        { id: 5, name: "Opportunity" },
-        { id: 6, name: "Partner" },
-        { id: 7, name: "Qualified" },
-      ];
-    },
-
-    applyDefaultOwner() {
-      if (!this.formData.owner && this.currentUserName) {
-        this.formData.owner = this.currentUserName;
-      }
-    },
-
-    async fetchAssociationOptions() {
-      const promises = [];
-
-      if (!this.userSignin) {
-        promises.push(this.getUserSignin());
-      }
-
-      if ((this.allUsers || []).length === 0) {
-        promises.push(this.fetchAllUsers());
-      }
-
-      if ((this.contactOptions || []).length === 0) {
-        promises.push(this.fetchAllContacts());
-      }
-
-      if ((this.dealOptions || []).length === 0) {
-        promises.push(this.fetchAllDeals());
-      }
-
-      if (this.statuses.length === 0) {
-        promises.push(this.fetchStatuses());
-      }
-
-      if (promises.length > 0) {
-        await Promise.allSettled(promises);
-      }
-    },
-
-    toggleContact(contact) {
-      const index = this.formData.contactassoc.indexOf(contact.id);
-      if (index === -1) {
-        this.formData.contactassoc.push(contact.id);
-      } else {
-        this.formData.contactassoc.splice(index, 1);
-      }
-    },
-
-    isContactSelected(id) {
-      return this.formData.contactassoc.includes(id);
-    },
-
-    toggleContactDropdown() {
-      this.isContactDropdownOpen = !this.isContactDropdownOpen;
-    },
-
-    filterContacts() {
-      this.isContactDropdownOpen = true;
-    },
 
     handleClickOutside(e) {
       // Close dropdowns saat klik di luar
@@ -301,54 +136,62 @@ export default {
       this.$emit("close");
     },
 
-    handleSubmit() {
-      if (!this.formData.company_name.trim()) {
-        alertService.error("Company Name wajib diisi!");
-        return;
-      }
-      this.showDetailForm = true;
-    },
-
-    async handleDetailSubmit(detailPayload) {
+    handleSave() {
       this.isSubmitting = true;
+      // const now = new Date().toISOString();
+      // const dataToSubmit = {
+      //   ...this.formData,
+      //   owner: this.formData.owner || this.currentUserName || "",
+      //   dealsassoc: (this.formData.dealsassoc || []).join(","),
+      //   contactassoc: (this.formData.contactassoc || []).join(","),
+      //   notes: detailPayload?.note || "",
+      //   task_name: detailPayload?.task?.name || "",
+      //   desktask: detailPayload?.task?.content || "",
+      //   statustask: detailPayload?.task?.status || "",
+      //   assignee: detailPayload?.task?.assignee || "",
+      //   due_date: detailPayload?.task?.dueDate || "",
+      //   task_time: detailPayload?.task?.time || "",
+      //   prioritytask: detailPayload?.task?.priority || "",
+      //   associated_contact: detailPayload?.task?.associatedContact || "",
+      //   docs: detailPayload?.docs?.description || "",
+      //   created_at: now,
+      //   updated_at: now,
+      // };
 
-      try {
-        const now = new Date().toISOString();
-        const dataToSubmit = {
-          ...this.formData,
-          owner: this.formData.owner || this.currentUserName || "",
-          dealsassoc: (this.formData.dealsassoc || []).join(","),
-          contactassoc: (this.formData.contactassoc || []).join(","),
-          notes: detailPayload?.note || "",
-          task_name: detailPayload?.task?.name || "",
-          desktask: detailPayload?.task?.content || "",
-          statustask: detailPayload?.task?.status || "",
-          assignee: detailPayload?.task?.assignee || "",
-          due_date: detailPayload?.task?.dueDate || "",
-          task_time: detailPayload?.task?.time || "",
-          prioritytask: detailPayload?.task?.priority || "",
-          associated_contact: detailPayload?.task?.associatedContact || "",
-          docs: detailPayload?.docs?.description || "",
-          created_at: now,
-          updated_at: now,
-        };
+      console.log("Data to submit:", this.formData);
 
-        const response = await this.insertCompany({ formdata: dataToSubmit });
-
+      this.insertCompany({ formdata: this.formData }).then((data)=>{
         alertService.success("Company berhasil ditambahkan!");
         this.resetForm();
-        this.$emit("submit", response);
+        this.$emit("submit", data);
         this.showDetailForm = false;
         this.handleClose();
-      } catch (error) {
+      }).catch((error)=>{
         alertService.error(
           error.response?.data?.message ||
             error.message ||
             "Gagal menambah company.",
         );
-      } finally {
+      }).finally(()=>{
         this.isSubmitting = false;
-      }
+      });
+
+      // try {
+      //   const response = await this.insertCompany({ formdata: dataToSubmit });
+      //   alertService.success("Company berhasil ditambahkan!");
+      //   this.resetForm();
+      //   this.$emit("submit", response);
+      //   this.showDetailForm = false;
+      //   this.handleClose();
+      // } catch (error) {
+      //   alertService.error(
+      //     error.response?.data?.message ||
+      //       error.message ||
+      //       "Gagal menambah company.",
+      //   );
+      // } finally {
+      //   this.isSubmitting = false;
+      // }
     },
 
     resetForm() {
@@ -373,16 +216,10 @@ export default {
       };
       this.contactSearch = "";
     },
-
-    async handleDealFormSubmit() {
-      this.showAddDealForm = false;
-      await this.fetchAssociationOptions();
-    },
-
-    async handleContactQuickSubmit() {
-      this.showAddContactQuickForm = false;
-      await this.fetchAssociationOptions();
-    },
+    
+    handleDetailSubmit(){
+      
+    }
   },
 };
 </script>
@@ -448,7 +285,7 @@ export default {
 
       <!-- Form Content (Scrollable) - halaman utama TIDAK ikut scroll -->
       <div class="flex-1 overflow-y-auto min-h-0">
-        <form @submit.prevent="handleSubmit">
+        <form>
           <!-- master -->
           <div v-if="activeTab === 'master'" class="p-6 space-y-6">
             <!-- Company Name & Owner -->
@@ -535,21 +372,12 @@ export default {
                   >Industry</label
                 >
                 <div class="relative">
-                  <select
+                  <v-select
                     v-model="formData.industry"
-                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                  >
-                    <option
-                      v-for="opt in industryOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                  <ChevronDown
-                    :size="16"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                    :options="industries"
+                    label="label"
+                    :reduce="(opt) => opt.value"
+                    placeholder="Select Industry"
                   />
                 </div>
               </div>
@@ -576,21 +404,12 @@ export default {
                   >Source</label
                 >
                 <div class="relative">
-                  <select
+                  <v-select
                     v-model="formData.source"
-                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                  >
-                    <option
-                      v-for="opt in sourceOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                  <ChevronDown
-                    :size="16"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                    :options="sources"
+                    label="label"
+                    :reduce="(opt) => opt.value"
+                    placeholder="Select Source"
                   />
                 </div>
               </div>
@@ -603,22 +422,12 @@ export default {
                   >Type</label
                 >
                 <div class="relative">
-                  <select
-                    v-model.number="formData.type"
-                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled selected>Select Type</option>
-                    <option
-                      v-for="status in statuses"
-                      :key="status.id"
-                      :value="status.id"
-                    >
-                      {{ status.name }}
-                    </option>
-                  </select>
-                  <ChevronDown
-                    :size="16"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                  <v-select
+                    v-model="formData.type"
+                    :options="type"
+                    label="label"
+                    :reduce="(opt) => opt.value"
+                    placeholder="Select Type"
                   />
                 </div>
               </div>
@@ -626,26 +435,7 @@ export default {
 
             <!-- Contact Association -->
             <ContactAssociationForm v-model="formData.contactassoc" />
-            <!-- 
-            <button
-              type="button"
-              @click="showAddContactQuickForm = true"
-              class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
-            >
-              <Plus :size="14" />
-              Create Contact
-            </button> -->
-
-            <!-- Deals Association -->
             <DealAssociationForm v-model="formData.dealsassoc" />
-            <button
-              type="button"
-              @click="showAddDealForm = true"
-              class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
-            >
-              <Plus :size="14" />
-              Add Another Deal
-            </button>
           </div>
 
           <!-- detail -->
@@ -654,13 +444,9 @@ export default {
               <div>
                 <NotesEditor v-model="formData.notes" />
 
-                <TaskEditor
-                  v-model="task"
-                  :statusOptions="statusOptions"
-                  :priorityOptions="priorityOptions"
-                />
+                <TaskEditor v-model="formData.task" />
 
-                <DocsEditor v-model="docs" />
+                <DocsEditor v-model="formData.docs" />
               </div>
             </div>
           </div>
@@ -689,7 +475,7 @@ export default {
           </button>
           <button
             type="button"
-            @click="handlenext"
+            @click="handleSave"
             :disabled="isSubmitting"
             class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
@@ -699,7 +485,7 @@ export default {
               ></span>
               <span>Saving...</span>
             </template>
-            <template v-else> Next </template>
+            <template v-else> Save </template>
           </button>
         </div>
       </div>
@@ -707,18 +493,18 @@ export default {
   </Transition>
 
   <!-- Add Deal Form -->
-  <AddDealForm
+  <!-- <AddDealForm
     :isOpen="showAddDealForm"
     @close="showAddDealForm = false"
     @submit="handleDealFormSubmit"
-  />
+  /> -->
 
   <!-- Add Contact Quick Form -->
-  <AddContactQuickForm
+  <!-- <AddContactQuickForm
     :isOpen="showAddContactQuickForm"
     @close="showAddContactQuickForm = false"
     @submit="handleContactQuickSubmit"
-  />
+  /> -->
 
   <ContactDetailForm
     :isOpen="showDetailForm"

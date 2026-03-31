@@ -13,6 +13,7 @@ import settingsfeModule from "./modules/settingsfe";
 import teamModule from "./modules/team";
 import activityModule from "./modules/activity";
 import userpermisions from "./modules/userpermisions";
+import assoc from "./modules/assoc";
 
 export default createStore({
   modules: {
@@ -30,5 +31,6 @@ export default createStore({
     team: teamModule,
     activity: activityModule,
     userpermisions: userpermisions,
+    assoc: assoc,
   },
 });

@@ -46,7 +46,11 @@
           />
         </div>
       </div>
-      <div class="flex-1 overflow-y-auto py-1">
+      <div
+        ref="scrollContainer"
+        class="flex-1 overflow-y-auto py-1"
+        @scroll="handleScroll"
+      >
         <div
           v-for="contact in filteredContacts"
           :key="contact.id"
@@ -85,7 +89,6 @@
     Create Contact
   </button>
 
-
   <AddContactQuickForm
     :isOpen="showAddContactQuickForm"
     @close="showAddContactQuickForm = false"
@@ -94,8 +97,8 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-import { X, ChevronDown, Search, Check,Plus,  } from "lucide-vue-next";
+import { mapActions, mapGetters } from "vuex";
+import { X, ChevronDown, Search, Check, Plus } from "lucide-vue-next";
 import AddContactQuickForm from "@/components/forms/AddContactQuickForm.vue";
 
 export default {
@@ -107,7 +110,7 @@ export default {
     Search,
     Check,
     Plus,
-    AddContactQuickForm
+    AddContactQuickForm,
   },
 
   props: {
@@ -122,12 +125,13 @@ export default {
       isContactDropdownOpen: false,
       contactSearch: "",
       showAddContactQuickForm: false,
+      page: 1,
     };
   },
 
   computed: {
     ...mapGetters({
-      allContacts: "contacts/allContacts",
+      allContacts: "assoc/allContacts",
     }),
 
     contactassoc: {
@@ -142,15 +146,17 @@ export default {
     filteredContacts() {
       if (!this.contactSearch) return this.allContacts || [];
 
-      return (this.allContacts || []).filter((c) => {
-        const name = `${c.first_name || ""} ${c.last_name || ""}`
-          .toLowerCase()
-          .trim();
-        const email = (c.email || "").toLowerCase();
-        const search = this.contactSearch.toLowerCase();
+      return this.allContacts;
 
-        return name.includes(search) || email.includes(search);
-      });
+      // return (this.allContacts || []).filter((c) => {
+      //   const name = `${c.first_name || ""} ${c.last_name || ""}`
+      //     .toLowerCase()
+      //     .trim();
+      //   const email = (c.email || "").toLowerCase();
+      //   const search = this.contactSearch.toLowerCase();
+
+      //   return name.includes(search) || email.includes(search);
+      // });
     },
 
     selectedContacts() {
@@ -169,11 +175,36 @@ export default {
   },
 
   methods: {
-    async handleContactQuickSubmit(formData) {
-      // Close the quick form
-      this.showAddContactQuickForm = false;
-      // Refresh contacts list from store
-      await this.$store.dispatch('contacts/fetchAllContacts');
+    ...mapActions({
+      getcontacts: "assoc/getcontacts",
+    }),
+
+    async fetchContacts() {
+      const res = await this.getcontacts({
+        page: this.page,
+        search: this.contactSearch,
+      });
+
+      this.hasMore = res.next_page_url !== null;
+      this.page++;
+
+      console.log("Fetched contacts:", res);
+      console.log("page:", this.page);
+    },
+
+    handleContactQuickSubmit(e) {
+      console.log("New contact created", e);
+    },
+
+    handleScroll() {
+      const el = this.$refs.scrollContainer;
+
+      if (!el) return;
+
+      const bottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
+      if (bottom) {
+        this.fetchContacts();
+      }
     },
 
     toggleContact(contact) {
@@ -204,6 +235,19 @@ export default {
       if (!this.$refs.contactDropdownRef?.contains(e.target)) {
         this.isContactDropdownOpen = false;
       }
+    },
+  },
+
+  watch: {
+    isContactDropdownOpen(e) {
+      if (e && (!this.allContacts || this.allContacts.length === 0)) {
+        // this.fetchContacts();
+      }
+    },
+
+    contactSearch() {
+      this.page = 1;
+      this.fetchContacts();
     },
   },
 };

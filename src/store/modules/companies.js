@@ -72,7 +72,8 @@ const normalizeCompanyPayload = (payload = {}) => {
     normalizeText(normalized.doc) ||
     normalizeText(normalized.doc_description);
 
-  const noteValue = normalizeText(normalized.note) || normalizeText(normalized.notes);
+  const noteValue =
+    normalizeText(normalized.note) || normalizeText(normalized.notes);
 
   // Send both key styles so backend mapper can bind whichever it expects.
   normalized.note = noteValue;
@@ -115,9 +116,15 @@ const state = {
   searchQuery: "",
   currentPage: 1,
   itemsPerPage: 10,
+  industries:[],
+  sources:[],
+  type:[],
 };
 
 const getters = {
+  industries: (state) => state.industries,
+  sources: (state) => state.sources,
+  type: (state) => state.type,
   companyList: (state) => state.company,
   companysignin: (state) => state.companysignin,
   companyidsignin: (state) => state.companyidsignin,
@@ -308,7 +315,6 @@ const actions = {
 
         // Refresh daftar HANYA setelah sukses dan tunggu sampai selesai
         await context.dispatch("fetchAllcompany");
-
         resolve(network.data);
       } catch (error) {
         reject(error);
@@ -353,7 +359,9 @@ const actions = {
     };
 
     const requestPayload = normalizeCompanyPayload(detailPayload);
-    const response = await api.post("company/input", requestPayload, { headers });
+    const response = await api.post("company/input", requestPayload, {
+      headers,
+    });
     await context.dispatch("fetchAllcompany").catch(() => {});
     return response.data;
   },
@@ -444,6 +452,81 @@ const actions = {
     return promise;
   },
 
+  getinduestries(context) {
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        let network = await api.get("company/industries", {
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
+          },
+        });
+        resolve(network.data);
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    promise
+      .then((data) => {
+       context.commit("setindustries", data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+
+    return promise;
+  },
+  
+  getsources(context) {
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        let network = await api.get("company/sources", {
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
+          },
+        });
+        resolve(network.data);
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    promise
+      .then((data) => {
+       context.commit("setsources", data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+
+    return promise;
+  },
+
+  gettype(context) {
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        let network = await api.get("company/type", {
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
+          },
+        });
+        resolve(network.data);
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    promise
+      .then((data) => {
+       context.commit("settype", data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+
+    return promise;
+  },
+
   setViewMode({ commit }, mode) {
     commit("SET_VIEW_MODE", mode);
   },
@@ -482,6 +565,18 @@ const mutations = {
   SET_ITEMS_PER_PAGE(state, items) {
     state.itemsPerPage = items;
   },
+
+  setindustries(state, industries) {
+    state.industries = industries;
+  },
+
+  setsources(state, sources) {
+    state.sources = sources;
+  },
+  
+  settype(state, type) {
+    state.type = type;
+  }
 };
 
 export default {
