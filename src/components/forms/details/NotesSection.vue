@@ -13,7 +13,7 @@ export default {
 
   props: {
     // v-model value
-    value: {
+    modelValue: {
       type: String,
       default: "",
     },
@@ -54,21 +54,23 @@ export default {
     },
   },
 
+  emits: ["update:modelValue"],
+
   data() {
     return {
       showNotes: this.isOpen,
-      noteContent: this.value,
+      noteContent: this.modelValue,
       ChevronDown,
       ChevronRight,
     };
   },
 
   watch: {
-    value(newVal) {
+    modelValue(newVal) {
       this.noteContent = newVal;
     },
     noteContent(newVal) {
-      this.$emit("input", newVal);
+      this.$emit("update:modelValue", newVal);
     },
   },
 

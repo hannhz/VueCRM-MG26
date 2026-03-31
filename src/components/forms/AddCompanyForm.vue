@@ -347,7 +347,7 @@ const handleReset = () => {
               </div>
             </div>
 
-            <!-- Deals Association -->
+            <!-- Deals Association 
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2"
                 >Deals Association</label
@@ -370,7 +370,7 @@ const handleReset = () => {
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
                 />
               </div>
-            </div>
+            </div> -->
 
             <!-- Contact Association -->
             <div>

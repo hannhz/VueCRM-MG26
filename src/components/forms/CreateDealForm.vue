@@ -8,7 +8,6 @@ import {
   Search,
   Check,
 } from "lucide-vue-next";
-import ContactDetailForm from "./DetailFormDuplicate.vue";
 import AddCompanyForm from "./AddCompanyForm.vue";
 import AddContactQuickForm from "./AddContactQuickForm.vue";
 import { alertService } from "@/services/alertService";
@@ -26,7 +25,6 @@ export default {
     Paperclip,
     Search,
     Check,
-    ContactDetailForm,
     AddCompanyForm,
     AddContactQuickForm,
     ContactAssociationForm,
@@ -85,7 +83,6 @@ export default {
       customSource: "",
       dealNameInput: null,
       showOptional: false,
-      showDetailForm: false,
       showAddCompanyForm: false,
       showAddContactQuickForm: false,
       isSavingBeforeDetail: false,
@@ -272,7 +269,8 @@ export default {
         return;
       }
 
-      this.showDetailForm = true;
+      // Langsung save tanpa detail form
+      await this.handleDetailSubmit({});
     },
     toggleContactDropdown() {
       this.isContactDropdownOpen = !this.isContactDropdownOpen;
@@ -329,9 +327,21 @@ export default {
           owner: this.formData.owner || this.currentUserName || "",
           contactassoc: (this.formData.contactassoc || []).join(","),
           companyassoc: (this.formData.companyassoc || []).join(","),
+          // Include Notes, Tasks, and Docs
+          notes: this.noteContent || "",
+          task: this.task || {},
+          docs: this.docs || [],
         };
 
-        console.log("Submitting Deal Payload:", submissionData, detailPayload);
+        console.log("🔍 DEBUG: Notes, Task, Docs Before Save");
+        console.log("  noteContent:", this.noteContent);
+        console.log("  task:", this.task);
+        console.log("  docs:", this.docs);
+        console.log("📤 Submitting Deal Payload:", { 
+          notes: submissionData.notes,
+          task: submissionData.task,
+          docs: submissionData.docs,
+        });
 
         const response = await this.$store.dispatch("deals/createDeal", submissionData);
 
@@ -350,7 +360,6 @@ export default {
         await alertService.toastSuccess(response?.msg || "Deal saved successfully");
         this.handleReset();
         this.$emit("submit", response);
-        this.showDetailForm = false;
         this.handleClose();
       } catch (error) {
         const message =
@@ -388,6 +397,14 @@ export default {
       this.contactSearch = "";
       this.companySearch = "";
       this.showOptional = false;
+      this.noteContent = "";
+      this.task = {
+        title: "",
+        dueDate: "",
+        status: "",
+        priority: "",
+      };
+      this.docs = [];
     },
   },
 };
@@ -753,14 +770,14 @@ export default {
 
           <!-- Companies Association -->
           <CompaniesAssociationForm :allCompanies="allCompanies_computed" v-model="formData.companyassoc" />
-          <button
+          <!-- <button
               type="button"
               @click="showAddCompanyForm = true"
               class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
             >
               <Plus :size="16" />
               Create Company
-            </button>
+            </button> -->
           
         </form>
         <!-- Detail Tab -->
@@ -799,24 +816,12 @@ export default {
             class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
             :class="{ 'opacity-60 cursor-not-allowed': isSavingBeforeDetail }"
           >
-            {{ isSavingBeforeDetail ? "Saving..." : "Next" }}
+            {{ isSavingBeforeDetail ? "Saving..." : "Save" }}
           </button>
         </div>
       </div>
     </div>
   </transition>
-
-  <!-- Contact Detail Form -->
-  <ContactDetailForm
-    :isOpen="showDetailForm"
-    title="Create Deal / Details"
-    saveButtonText="Save Deal"
-    entityType="deal"
-    :isSaving="isSavingBeforeDetail"
-    @close="showDetailForm = false"
-    @back="showDetailForm = false"
-    @submit="handleDetailSubmit"
-  />
 
   <!-- Add Company Form -->
   <AddCompanyForm
