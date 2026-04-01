@@ -1,5 +1,5 @@
 <template>
-  <div class="relative w-full max-w-[140px]">
+  <div class="relative w-full max-w-35">
     <button
       @click.stop="isOpen = !isOpen"
       :disabled="isSyncing"

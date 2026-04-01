@@ -26,9 +26,7 @@ const emit = defineEmits(["view", "toggle"]);
     </td>
 
     <!-- Deal Name Column -->
-    <td
-      class="px-6 py-4 text-sm text-gray-800 font-medium truncate max-w-[200px]"
-    >
+    <td class="px-6 py-4 text-sm text-gray-800 font-medium truncate max-w-50">
       {{ deal.name }}
     </td>
 
@@ -46,7 +44,7 @@ const emit = defineEmits(["view", "toggle"]);
     </td>
 
     <!-- Association Column -->
-    <td class="px-6 py-4 text-sm text-dark-base truncate max-w-[250px]">
+    <td class="px-6 py-4 text-sm text-dark-base truncate max-w-62.5">
       <div class="flex items-center gap-1.5 overflow-hidden">
         <span class="font-medium text-gray-600 shrink-0">{{
           deal.contact

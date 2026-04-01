@@ -353,7 +353,7 @@ onBeforeUnmount(() => {
               v-model="board.items"
               group="deals"
               item-key="id"
-              class="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar min-h-[100px]"
+              class="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar min-h-25"
               @start="isDragging = true"
               @end="isDragging = false"
               @change="(event) => handleBoardChange(event, board)"
@@ -382,10 +382,10 @@ onBeforeUnmount(() => {
 
         <!-- Visual Shadows for Scrolling -->
         <div
-          class="pointer-events-none absolute top-0 left-0 h-full w-8 bg-gradient-to-r from-white/60 to-transparent z-10"
+          class="pointer-events-none absolute top-0 left-0 h-full w-8 bg-linear-to-r from-white/60 to-transparent z-10"
         ></div>
         <div
-          class="pointer-events-none absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-white/60 to-transparent z-10"
+          class="pointer-events-none absolute top-0 right-0 h-full w-8 bg-linear-to-l from-white/60 to-transparent z-10"
         ></div>
       </div>
     </div>
