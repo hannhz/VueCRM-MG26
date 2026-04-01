@@ -62,7 +62,7 @@ const searchQuery = computed({
  * LOGIC / NORMALIZATION
  */
 const normalizeStage = (rawStage) => {
-  const stage = String(rawStage || "prospect").toLowerCase().trim();
+  let stage = String(rawStage || "prospect").toLowerCase().trim();
   
   // Handle encoded format "closed:won", "closed:lost", "closed:cancel"
   if (stage.startsWith("closed:")) {
@@ -78,12 +78,12 @@ const normalizeStage = (rawStage) => {
   if (stage.includes("offer") || stage.includes("proposal") || stage.includes("payment")) return "offer";
   if (stage.includes("negot") || stage.includes("adv")) return "negotiation";
   
-  // Handle semua variasi closed status - selalu return exact format yang consistent
-  if (stage.includes("won") || stage.includes("closed_won")) return "closed_won";
-  if (stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
-  if (stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
+  // Handle short format dari database: closed_los, closed_can, closed_won
+  if (stage === "closed_los" || stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
+  if (stage === "closed_can" || stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
+  if (stage === "closed_won" || stage.includes("won") || stage.includes("closed_won")) return "closed_won";
   
-  // Jika ada "closed" tapi tidak tu yang yang spesific, treat as generic closed
+  // Jika ada "closed" tapi bukan yang spesifik, treat as generic closed
   if (stage.includes("closed")) return "closed";
   
   return "prospect";
@@ -229,14 +229,9 @@ const handleBoardChange = async (event, targetBoard) => {
         newStage: finalStage,
       });
       console.log(`[DealCard] Update successful for deal ${movedDeal.id}`);
-      
-      // Force refresh untuk ensure card appear di board yang benar
-      await store.dispatch("deals/fetchAllDeals").catch(() => {});
     } catch (error) {
       console.error("Failed to update deal stage:", error);
       movedDeal.stage = previousStage;
-      // Re-fetch untuk revert state jika gagal
-      await store.dispatch("deals/fetchAllDeals").catch(() => {});
     } finally {
       isSyncingStage.value = false;
     }

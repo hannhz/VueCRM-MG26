@@ -171,19 +171,6 @@ const handleDetailDataDealsSubmit = async (payload) => {
       formdata,
     });
 
-    const { data: detailPayload, error: detailError } =
-      buildEntityDetailPayload({
-        entityType: "deal",
-        entityId: dealId,
-        payload,
-      });
-
-    if (detailError) {
-      throw new Error(detailError);
-    }
-
-    await store.dispatch("deals/saveDealDetail", detailPayload);
-
     alertService.success("Detail deal berhasil diperbarui.");
     closeDetailDataDeals();
   } catch (error) {

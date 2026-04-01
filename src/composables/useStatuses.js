@@ -54,10 +54,29 @@ export function useStatuses() {
             Authorization: "Bearer " + cookies.get("token"),
           },
         });
-        const data = response.data || [];
+        let data = response.data || [];
+
+        // Normalize object/array to standard {id, name} objects
+        if (Array.isArray(data)) {
+          data = data.map(item => ({
+            id: item.id_status || item.id || item.value,
+            name: item.status_name || item.name || item.label || item.status
+          }));
+        } else if (data && typeof data === 'object') {
+          data = Object.entries(data).map(([key, val]) => {
+            if (typeof val === 'object' && val !== null) {
+              return {
+                id: val.id_status || val.id || key,
+                name: val.status_name || val.name || val.label || key
+              };
+            }
+            return { id: key, name: val };
+          });
+        }
+
         cachedStatuses = data;
         statuses.value = data;
-        console.log("✅ Statuses loaded (cached):", data);
+        console.log("✅ Statuses loaded and normalized:", data);
         return data;
       } catch (error) {
         console.error("❌ Failed to fetch statuses:", error);

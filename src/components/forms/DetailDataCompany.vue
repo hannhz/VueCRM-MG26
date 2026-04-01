@@ -1,8 +1,8 @@
 <script>
 import { useStatuses } from "@/composables/useStatuses";
 import LocationSelector from "./component/LocationSelector.vue";
-import NotesSection from "./details/NotesSection.vue";
-import TaskSection from "./details/TaskSection.vue";
+import NotesSection from "@/components/widgets/NotesEditor.vue";
+import TaskSection from "@/components/widgets/TaskEditor.vue";
 
 import {
   X,

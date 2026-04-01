@@ -1,8 +1,8 @@
 <script>
 import { mapGetters } from "vuex";
-import DocsSection from "./details/DocsSection.vue";
-import NotesSection from "./details/NotesSection.vue";
-import TaskSection from "./details/TaskSection.vue";
+import NotesSection from "@/components/widgets/NotesEditor.vue";
+import DocsSection from "@/components/widgets/DocsEditor.vue";
+import TaskSection from "@/components/widgets/TaskEditor.vue";
 import LocationSelector from "./component/LocationSelector.vue";
 import {
   X,

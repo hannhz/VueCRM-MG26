@@ -6,9 +6,9 @@ import { useStatuses } from "@/composables/useStatuses";
 import AddCompanyForm from "./AddCompanyForm.vue";
 import AddDealForm from "./AddDealForm.vue";
 import ContactDetailForm from "./DetailForm.vue";
-import NotesSection from "@/components/forms/details/NotesSection.vue";
-import DocsSection from "@/components/forms/details/DocsSection.vue";
-import TaskSection from "@/components/forms/details/TaskSection.vue";
+import NotesSection from "@/components/widgets/NotesEditor.vue";
+import DocsSection from "@/components/widgets/DocsEditor.vue";
+import TaskSection from "@/components/widgets/TaskEditor.vue";
 import LocationSelector from "@/components/forms/component/LocationSelector.vue";
 import DealAssociationForm from "./assoc/deals.vue";
 import CompaniesAssociationForm from "./assoc/companies.vue";
@@ -57,8 +57,8 @@ export default {
   emits: ["close", "submit"],
 
   setup() {
-    const { statuses, fetchStatuses } = useStatuses();
-    return { statuses, fetchStatuses };
+    const { statuses: statusList, fetchStatuses } = useStatuses();
+    return { statusList, fetchStatuses };
   },
 
   mounted() {
@@ -160,7 +160,6 @@ export default {
       isSubmitting: false,
       companySearch: "",
       activeTab: "master",
-      statuses: [],
       isCompanyDropdownOpen: false,
       isDealDropdownOpen: false,
 
@@ -265,6 +264,11 @@ export default {
         this.activeTab = "master";
         return false;
       }
+      if (!this.formData.status) {
+        toast.error("Status is required");
+        this.activeTab = "master";
+        return false;
+      }
       return true;
     },
     handleSaveAll() {
@@ -282,12 +286,12 @@ export default {
           task: this.task,
           docs: this.docs,
           id_owner: this.formData.id_owner || this.currentUserId || "",
-          companiesAssociation: (this.formData.selectedCompanies || []).map(c => c.id).join(","),
-          dealsAssociation: (this.formData.selectedDeals || []).map(d => d.id).join(","),
+          companyassoc: (this.formData.selectedCompanies || []).map(c => c.id).join(","),
+          dealsassoc: (this.formData.selectedDeals || []).map(d => d.id).join(","),
           created_at: now,
           updated_at: now,
         };
-        this.saveContact({ formdata: dataToSubmit })
+        this.saveContact(dataToSubmit)
           .then(() => {
             toast.success("Contact berhasil ditambahkan!");
             this.handleReset();
@@ -511,7 +515,7 @@ export default {
                 >
                   <option value="" disabled selected>Select Status</option>
                   <option
-                    v-for="status in statuses"
+                    v-for="status in statusList"
                     :key="status.id"
                     :value="status.id"
                   >
