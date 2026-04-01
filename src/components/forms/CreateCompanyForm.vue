@@ -63,7 +63,7 @@ export default {
         city: "",
         pos_code: "",
         type: "",
-        notes:"",
+        // notes: "",
         dealsassoc: [],
         contactassoc: [],
         task: {
@@ -79,6 +79,14 @@ export default {
           description: "",
           fileSource: "",
           files: [],
+        },
+        noteData: {
+          body: "",
+          gps_address: null,
+          latitude: null,
+          longitude: null,
+          photos: [], // [{ id, src (base64), file (File object) }]
+          audioBlob: null, // Blob audio
         },
       },
 
@@ -120,9 +128,9 @@ export default {
       }
     },
 
-    formData(a){
-        console.log("FormData changed:", a);
-    }
+    formData(a) {
+      console.log("FormData changed:", a);
+    },
   },
 
   mounted() {
@@ -169,7 +177,7 @@ export default {
         dealsassoc: this.parseJSON(data.dealsassoc, []),
         contactassoc: this.parseJSON(data.contactassoc, []),
 
-        task:  {
+        task: {
           name: data.task_name || "",
           content: data.desktask || "",
           status: data.statustask || "",
@@ -178,13 +186,11 @@ export default {
           priority: data.prioritytask || "",
         },
 
-        docs:  {
+        docs: {
           description: data.docs,
           fileSource: "",
           files: [],
         },
-
-        
       };
     },
 
@@ -301,7 +307,7 @@ export default {
         city: "",
         pos_code: "",
         type: "",
-        notes:"",
+        notes: "",
         dealsassoc: [],
         contactassoc: [],
         task: {
@@ -546,7 +552,15 @@ export default {
           <div v-if="activeTab === 'detail'" class="p-6 space-y-6">
             <div class="flex-1 overflow-y-auto min-h-0">
               <div>
-                <NotesEditor v-model="formData.notes" />
+                <!-- <NotesEditor v-model="formData.notes" /> -->
+
+                <NotesEditor
+                  v-model:note-data="formData.noteData"
+                  :noteable-id="null"
+                  noteable-type="App\Models\Company"
+                  title="Notes"
+                  :default-open="true"
+                />
 
                 <TaskEditor v-model="formData.task" />
 

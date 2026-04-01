@@ -58,6 +58,7 @@
         min="1"
         :max="totalPages"
         @input="$emit('update:currentPage', Number($event.target.value))"
+        @keyup.enter="$emit('onEnter')"
         class="w-12 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-sub-text"
       />
 
@@ -93,6 +94,7 @@ export default {
     "search",
     "prev-page",
     "next-page",
+    "onEnter"
   ],
 };
 </script>

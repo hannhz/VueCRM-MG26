@@ -105,12 +105,15 @@ export default {
     },
 
     allSelected() {
-      const ids = this.paginatedCompanies.map((c) => c.id).filter(Boolean);
+      const ids = this.companies.map((c) => c.id).filter(Boolean);
       if (!ids.length) return false;
       return ids.every((id) => this.selectedIds.includes(id));
     },
 
     tableCompanies() {
+
+      // console.log("Computing tableCompanies with companies:", this.companies);
+      return this.companies;
       return this.paginatedCompanies.map((company) => {
         const contactLabels = this.getAssociatedContactLabels(company);
         const dealLabels = this.getAssociatedDealLabels(company);
@@ -543,7 +546,7 @@ export default {
     },
 
     toggleSelectAll(checked) {
-      const ids = this.paginatedCompanies.map((c) => c.id).filter(Boolean);
+      const ids = this.companies.map((c) => c.id).filter(Boolean);
       if (checked) {
         this.selectedIds = [...new Set([...this.selectedIds, ...ids])];
       } else {
@@ -634,7 +637,6 @@ export default {
   },
 
   watch: {
-
     totalCompanies() {
       if (this.currentPage > this.totalPages) {
         this.currentPage = this.totalPages;
@@ -653,6 +655,13 @@ export default {
         this.fetchData();
       }, 400);
     },
+
+    itemsPerPage() {
+      this.currentPage = 1; // reset ke page 1
+      this.fetchData();
+    },
+
+    
   },
 };
 </script>
@@ -690,6 +699,7 @@ export default {
         @prev-page="prevPage"
         @next-page="nextPage"
         @search="fetchData"
+        @onEnter="fetchData"
       />
 
       <CompaniesTable

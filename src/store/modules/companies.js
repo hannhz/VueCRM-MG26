@@ -188,7 +188,8 @@ const actions = {
           context.commit("setcompanys", data.companies.data);
         } else {
           // 🔥 kalau page berikutnya → append
-          context.commit("appendcompanys", data.companies.data);
+          // context.commit("appendcompanys", data.companies.data);
+          context.commit("setcompanys", data.companies.data);
         }
       })
       .catch((error) => {
@@ -348,6 +349,7 @@ const actions = {
         let network = await api.post("company/input", requestPayload, {
           headers: {
             Authorization: "Bearer " + cookies.get("token"),
+            "Content-Type": "multipart/form-data",
           },
         });
 
