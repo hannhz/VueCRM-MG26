@@ -308,8 +308,8 @@ export default {
       } catch (error) {
         alertService.error(
           error.response?.data?.message ||
-          error.message ||
-          "Gagal menambah company.",
+            error.message ||
+            "Gagal menambah company.",
         );
       } finally {
         this.isSubmitting = false;
@@ -350,7 +350,6 @@ export default {
     },
   },
 };
-
 </script>
 
 <template>
@@ -490,7 +489,7 @@ export default {
             </div>
           </div>
 
-            <LocationSelector v-model="formData" />
+          <LocationSelector v-model="formData" />
 
           <!-- Pos Code & Source -->
           <div class="grid grid-cols-2 gap-4">
@@ -556,7 +555,6 @@ export default {
                 />
               </div>
             </div>
-    
           </div>
 
           <!-- Contact Association -->

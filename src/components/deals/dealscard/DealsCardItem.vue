@@ -15,19 +15,38 @@ const props = defineProps({
 const emit = defineEmits(["viewDetail", "delete"]);
 
 const stageClass = (stage) => {
-  const s = String(stage || "").toLowerCase().trim();
-  
-  if (s === "prospect" || s.includes("prospect")) return "bg-slate-100 text-slate-700";
-  if (s === "qualified" || s.includes("qual")) return "bg-blue-100 text-blue-700";
-  if (s === "offer" || s.includes("offer")) return "bg-indigo-100 text-indigo-700";
-  if (s === "negotiation" || s.includes("negot")) return "bg-yellow-100 text-yellow-700";
-  
+  const s = String(stage || "")
+    .toLowerCase()
+    .trim();
+
+  if (s === "prospect" || s.includes("prospect"))
+    return "bg-slate-100 text-slate-700";
+  if (s === "qualified" || s.includes("qual"))
+    return "bg-blue-100 text-blue-700";
+  if (s === "offer" || s.includes("offer"))
+    return "bg-indigo-100 text-indigo-700";
+  if (s === "negotiation" || s.includes("negot"))
+    return "bg-yellow-100 text-yellow-700";
+
   // Handle closed variants - termasuk short format dari database
-  if (s === "closed_won" || s === "won" || s.includes("closed_won")) return "bg-emerald-100 text-emerald-700";
-  if (s === "closed_lost" || s === "lost" || s === "closed_los" || s.includes("closed_los")) return "bg-red-100 text-red-700";
-  if (s === "closed_cancel" || s === "cancel" || s === "closed_can" || s.includes("closed_can")) return "bg-gray-100 text-gray-500";
+  if (s === "closed_won" || s === "won" || s.includes("closed_won"))
+    return "bg-emerald-100 text-emerald-700";
+  if (
+    s === "closed_lost" ||
+    s === "lost" ||
+    s === "closed_los" ||
+    s.includes("closed_los")
+  )
+    return "bg-red-100 text-red-700";
+  if (
+    s === "closed_cancel" ||
+    s === "cancel" ||
+    s === "closed_can" ||
+    s.includes("closed_can")
+  )
+    return "bg-gray-100 text-gray-500";
   if (s.includes("closed")) return "bg-gray-100 text-gray-500";
-  
+
   return "bg-slate-100 text-slate-700";
 };
 

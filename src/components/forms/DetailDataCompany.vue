@@ -169,7 +169,7 @@ export default {
     typeDisplayName() {
       if (!this.companyForm.type) return "-";
       const typeStatus = this.statuses.find(
-        (s) => s.id == this.companyForm.type
+        (s) => s.id == this.companyForm.type,
       );
       return typeStatus ? typeStatus.name : this.companyForm.type;
     },
@@ -219,7 +219,7 @@ export default {
           `${c.first_name} ${c.last_name}`
             .toLowerCase()
             .includes(this.contactSearch.toLowerCase()) ||
-          c.email?.toLowerCase().includes(this.contactSearch.toLowerCase())
+          c.email?.toLowerCase().includes(this.contactSearch.toLowerCase()),
       );
     },
 
@@ -228,7 +228,7 @@ export default {
       return this.dealOptions.filter((d) =>
         (d.deal_name || d.name)
           ?.toLowerCase()
-          .includes(this.dealSearch.toLowerCase())
+          .includes(this.dealSearch.toLowerCase()),
       );
     },
 
@@ -236,7 +236,7 @@ export default {
       return this.contactOptions.filter((c) => {
         const contactId = String(c.id).trim();
         return this.companyForm.contactassoc.some(
-          (id) => String(id).trim() === contactId
+          (id) => String(id).trim() === contactId,
         );
       });
     },
@@ -245,7 +245,7 @@ export default {
       return this.dealOptions.filter((d) => {
         const dealId = String(d.id).trim();
         return this.companyForm.dealsassoc.some(
-          (id) => String(id).trim() === dealId
+          (id) => String(id).trim() === dealId,
         );
       });
     },
@@ -277,7 +277,7 @@ export default {
           if (!this.taskAssignee) {
             this.taskAssignee = this.resolveUserValue(
               name,
-              this.assigneeOptions
+              this.assigneeOptions,
             );
           }
         }
@@ -314,7 +314,7 @@ export default {
   methods: {
     async initializeStatuses() {
       const { statuses, fetchStatuses } = useStatuses();
-      this.statuses = Array.isArray(statuses) ? statuses : (statuses.value || []);
+      this.statuses = Array.isArray(statuses) ? statuses : statuses.value || [];
       await fetchStatuses();
     },
 
@@ -401,7 +401,7 @@ export default {
                 option.value ||
                 option.deal_id ||
                 option.contact_id ||
-                ""
+                "",
             ).trim();
             return optId === normalizedCandidate;
           });
@@ -409,7 +409,7 @@ export default {
 
           const matchedByLabel = options.find((option) => {
             const label = String(
-              option.name || option.deal_name || option.label || ""
+              option.name || option.deal_name || option.label || "",
             )
               .trim()
               .toLowerCase();
@@ -429,7 +429,7 @@ export default {
       const match = options.find(
         (opt) =>
           String(opt.value).trim().toLowerCase() === normalizedCandidate ||
-          String(opt.label).trim().toLowerCase() === normalizedCandidate
+          String(opt.label).trim().toLowerCase() === normalizedCandidate,
       );
 
       return match ? match.value : candidate;
@@ -448,7 +448,7 @@ export default {
           (data && data.deals_id) ||
           (data && data.deal_id) ||
           (data && data.deals) ||
-          (data && data.deal)
+          (data && data.deal),
       );
 
       const contacts = this.getAssociationCandidates(
@@ -457,7 +457,7 @@ export default {
           (data && data.contactAssociation) ||
           (data && data.contacts_id) ||
           (data && data.contact_id) ||
-          (data && data.contact)
+          (data && data.contact),
       );
 
       return {
@@ -479,11 +479,11 @@ export default {
           data && data.typeid
             ? Number(data.typeid)
             : data &&
-              !isNaN(data.type) &&
-              data.type !== "" &&
-              data.type !== null
-            ? Number(data.type)
-            : "",
+                !isNaN(data.type) &&
+                data.type !== "" &&
+                data.type !== null
+              ? Number(data.type)
+              : "",
         dealsassoc: deals,
         contactassoc: contacts,
       };
@@ -497,15 +497,14 @@ export default {
           (company && company.contactAssociation) ||
           (company && company.contacts_id) ||
           (company && company.contact_id) ||
-          (company && company.contact)
+          (company && company.contact),
       );
 
       const resolved = this.resolveAssociationValues(
         candidates,
-        this.associatedWithOptions
+        this.associatedWithOptions,
       );
-      this.taskAssociatedContact =
-        resolved.length > 0 ? resolved[0] : "";
+      this.taskAssociatedContact = resolved.length > 0 ? resolved[0] : "";
     },
 
     syncAssociationValues(company = null) {
@@ -523,34 +522,34 @@ export default {
         this.companyForm.dealsassoc.length > 0
           ? this.companyForm.dealsassoc
           : (company && company.dealsassoc) ||
-            (data && data.dealsassoc) ||
-            (data && data.dealsAssociation) ||
-            (data && data.deals_id) ||
-            (data && data.deals) ||
-            (data && data.deal_id) ||
-            (data && data.deal)
+              (data && data.dealsassoc) ||
+              (data && data.dealsAssociation) ||
+              (data && data.deals_id) ||
+              (data && data.deals) ||
+              (data && data.deal_id) ||
+              (data && data.deal),
       );
 
       this.companyForm.dealsassoc = this.resolveAssociationValues(
         dealsCandidates,
-        this.dealOptions
+        this.dealOptions,
       );
 
       const contactCandidates = this.getAssociationCandidates(
         this.companyForm.contactassoc.length > 0
           ? this.companyForm.contactassoc
           : (company && company.contactassoc) ||
-            (data && data.contactassoc) ||
-            (data && data.contactAssociation) ||
-            (data && data.contacts_id) ||
-            (data && data.contact) ||
-            (data && data.contact_id) ||
-            (data && data.contact)
+              (data && data.contactassoc) ||
+              (data && data.contactAssociation) ||
+              (data && data.contacts_id) ||
+              (data && data.contact) ||
+              (data && data.contact_id) ||
+              (data && data.contact),
       );
 
       this.companyForm.contactassoc = this.resolveAssociationValues(
         contactCandidates,
-        this.contactOptions
+        this.contactOptions,
       );
     },
 
@@ -586,7 +585,7 @@ export default {
         (data && data.status) || (data && data.statustask) || "";
       this.taskAssignee = this.resolveUserValue(
         data && data.assignee,
-        this.assigneeOptions
+        this.assigneeOptions,
       );
       this.taskDueDate = (data && data.due_date) || "";
 
@@ -605,7 +604,7 @@ export default {
     toggleContact(contact) {
       const contactId = String(contact.id).trim();
       const index = this.companyForm.contactassoc.findIndex(
-        (id) => String(id).trim() === contactId
+        (id) => String(id).trim() === contactId,
       );
       if (index === -1) {
         this.companyForm.contactassoc.push(contactId);
@@ -617,14 +616,14 @@ export default {
     isContactSelected(id) {
       const normalizedId = String(id).trim();
       return this.companyForm.contactassoc.some(
-        (assocId) => String(assocId).trim() === normalizedId
+        (assocId) => String(assocId).trim() === normalizedId,
       );
     },
 
     toggleDeal(deal) {
       const dealId = String(deal.id).trim();
       const index = this.companyForm.dealsassoc.findIndex(
-        (id) => String(id).trim() === dealId
+        (id) => String(id).trim() === dealId,
       );
       if (index === -1) {
         this.companyForm.dealsassoc.push(dealId);
@@ -636,7 +635,7 @@ export default {
     isDealSelected(id) {
       const normalizedId = String(id).trim();
       return this.companyForm.dealsassoc.some(
-        (assocId) => String(assocId).trim() === normalizedId
+        (assocId) => String(assocId).trim() === normalizedId,
       );
     },
 
@@ -674,7 +673,7 @@ export default {
 
           const response = await this.$store.dispatch(
             "companies/createOrUpdateCompany",
-            companyPayload
+            companyPayload,
           );
 
           console.log("Company saved successfully:", response);
@@ -683,7 +682,7 @@ export default {
           console.error("Failed to save company:", error);
           error(
             "Failed to save company: " +
-              (error.response?.data?.message || error.message)
+              (error.response?.data?.message || error.message),
           );
           this.isSavingCompany = false;
           return;
@@ -716,7 +715,7 @@ export default {
         //  files: this.selectedDocFiles,
         //},
 
-        docs: this.docD
+        docs: this.docD,
       });
       this.isSavingCompany = false;
     },

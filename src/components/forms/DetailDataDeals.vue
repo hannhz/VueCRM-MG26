@@ -721,7 +721,7 @@ watch(
       docDescription.value = "";
       docFileSource.value = "";
       selectedDocFiles.value = [];
-      
+
       if (newDealId) {
         fetchFullDealDetails(newDealId);
       }
@@ -729,7 +729,6 @@ watch(
   },
   { immediate: true },
 );
-
 
 const handleDocFileChange = (e) => {
   selectedDocFiles.value = Array.from(e.target.files);

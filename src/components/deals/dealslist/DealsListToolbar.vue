@@ -9,14 +9,23 @@ const props = defineProps({
   itemsPerPage: Number,
 });
 
-const emit = defineEmits(["toggleAll", "page", "update:itemsPerPage", "delete"]);
+const emit = defineEmits([
+  "toggleAll",
+  "page",
+  "update:itemsPerPage",
+  "delete",
+]);
 </script>
 
 <template>
-  <div class="px-6 py-4 flex items-center justify-between border-b border-gray-100">
+  <div
+    class="px-6 py-4 flex items-center justify-between border-b border-gray-100"
+  >
     <!-- LEFT: Selection & Bulk Actions -->
     <div class="flex items-center gap-4">
-      <label class="flex items-center gap-2 text-sm text-sub-text cursor-pointer hover:text-dark-base transition">
+      <label
+        class="flex items-center gap-2 text-sm text-sub-text cursor-pointer hover:text-dark-base transition"
+      >
         <input
           type="checkbox"
           :checked="isAllSelected"
@@ -55,36 +64,42 @@ const emit = defineEmits(["toggleAll", "page", "update:itemsPerPage", "delete"])
 
     <!-- RIGHT: Pagination Controls -->
     <div class="flex items-center gap-3 text-sm text-sub-text">
-        <button
-          @click="emit('page', currentPage - 1)"
-          class="p-2 rounded-lg hover:bg-gray-100 transition disabled:opacity-30 disabled:cursor-not-allowed group"
-          :disabled="currentPage <= 1"
-          title="Previous Page"
-        >
-          <ChevronLeft :size="18" class="text-sub-text group-hover:text-dark-base" />
-        </button>
+      <button
+        @click="emit('page', currentPage - 1)"
+        class="p-2 rounded-lg hover:bg-gray-100 transition disabled:opacity-30 disabled:cursor-not-allowed group"
+        :disabled="currentPage <= 1"
+        title="Previous Page"
+      >
+        <ChevronLeft
+          :size="18"
+          class="text-sub-text group-hover:text-dark-base"
+        />
+      </button>
 
-        <div class="flex items-center gap-2">
-            <span class="font-medium">Page</span>
-            <input
-                type="number"
-                :value="currentPage"
-                @input="emit('page', Number($event.target.value))"
-                min="1"
-                :max="totalPages"
-                class="w-12 px-2 py-1 border border-outline rounded text-center focus:outline-none focus:ring-1 focus:ring-sub-text text-dark-base font-bold bg-white"
-            />
-            <span class="text-gray-400">of {{ totalPages }}</span>
-        </div>
-
-        <button
-          @click="emit('page', currentPage + 1)"
-          class="p-2 rounded-lg hover:bg-gray-100 transition disabled:opacity-30 disabled:cursor-not-allowed group"
-          :disabled="currentPage >= totalPages"
-          title="Next Page"
-        >
-          <ChevronRight :size="18" class="text-sub-text group-hover:text-dark-base" />
-        </button>
+      <div class="flex items-center gap-2">
+        <span class="font-medium">Page</span>
+        <input
+          type="number"
+          :value="currentPage"
+          @input="emit('page', Number($event.target.value))"
+          min="1"
+          :max="totalPages"
+          class="w-12 px-2 py-1 border border-outline rounded text-center focus:outline-none focus:ring-1 focus:ring-sub-text text-dark-base font-bold bg-white"
+        />
+        <span class="text-gray-400">of {{ totalPages }}</span>
       </div>
+
+      <button
+        @click="emit('page', currentPage + 1)"
+        class="p-2 rounded-lg hover:bg-gray-100 transition disabled:opacity-30 disabled:cursor-not-allowed group"
+        :disabled="currentPage >= totalPages"
+        title="Next Page"
+      >
+        <ChevronRight
+          :size="18"
+          class="text-sub-text group-hover:text-dark-base"
+        />
+      </button>
+    </div>
   </div>
 </template>

@@ -249,7 +249,7 @@ const actions = {
 
     promise
       .then((data) => {
-        console.log("companies mod => ",data);
+        console.log("companies mod => ", data);
         context.commit("setcompany", data.data.companies);
         context.commit("SET_LOADING", false);
       })

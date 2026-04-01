@@ -7,7 +7,7 @@
     <v-select
       v-model="contactassoc"
       :options="allContacts"
-      :reduce="c => String(c.id)"
+      :reduce="(c) => String(c.id)"
       :get-option-label="getDisplayNameFromContact"
       multiple
       searchable
@@ -22,16 +22,14 @@
             {{ first_name }} {{ last_name }}
           </span>
           <span class="text-xs text-sub-text">
-            {{ email || 'No email' }}
+            {{ email || "No email" }}
           </span>
         </div>
       </template>
 
       <!-- SELECTED TAG -->
       <template #selected-option="{ first_name, last_name }">
-        <span>
-          {{ first_name }} {{ last_name }}
-        </span>
+        <span> {{ first_name }} {{ last_name }} </span>
       </template>
     </v-select>
 
@@ -126,10 +124,7 @@ export default {
 
       // auto select contact baru
       if (newContact?.id) {
-        this.contactassoc = [
-          ...this.contactassoc,
-          String(newContact.id),
-        ];
+        this.contactassoc = [...this.contactassoc, String(newContact.id)];
       }
     },
   },

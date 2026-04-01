@@ -249,7 +249,7 @@ export default {
   watch: {
     isContactDropdownOpen(e) {
       console.log("Dropdown open changed:", e);
-      if(e == false){
+      if (e == false) {
         this.contactSearch = "";
         this.page = 1;
         // this.hasMore = false;
@@ -257,7 +257,6 @@ export default {
         //   this.contactassoc.some((id) => String(id).trim() === String(c.id).trim()),
         // );
       }
-
 
       if (e && (!this.allContacts || this.allContacts.length === 0)) {
         // this.fetchContacts();

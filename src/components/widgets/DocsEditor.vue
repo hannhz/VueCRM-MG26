@@ -32,8 +32,6 @@ export default {
       type: Boolean,
       default: true,
     },
-
-    
   },
 
   data() {
@@ -76,10 +74,10 @@ export default {
   },
 
   computed: {
-      currentIcon() {
-        return this.showDocs ? ChevronDown : ChevronRight;
-      },
+    currentIcon() {
+      return this.showDocs ? ChevronDown : ChevronRight;
     },
+  },
 };
 </script>
 
@@ -91,11 +89,7 @@ export default {
       @click="showDocs = !showDocs"
       class="flex items-center gap-2 w-full text-left mb-3"
     >
-      <component
-        :is="currentIcon"
-        :size="16"
-        class="text-sub-text"
-      />
+      <component :is="currentIcon" :size="16" class="text-sub-text" />
 
       <span
         class="text-sm font-semibold text-dark-base flex items-center gap-2"

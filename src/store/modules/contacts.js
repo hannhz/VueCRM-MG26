@@ -148,7 +148,7 @@ const actions = {
     for (const endpoint of endpoints) {
       try {
         const response = await api.post(endpoint, detailPayload, { headers });
-        await dispatch("fetchAllContacts").catch(() => { });
+        await dispatch("fetchAllContacts").catch(() => {});
         return response.data;
       } catch (error) {
         const status = error?.response?.status;

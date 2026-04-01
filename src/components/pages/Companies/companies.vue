@@ -111,7 +111,6 @@ export default {
     },
 
     tableCompanies() {
-
       // console.log("Computing tableCompanies with companies:", this.companies);
       return this.companies;
       return this.paginatedCompanies.map((company) => {
@@ -660,8 +659,6 @@ export default {
       this.currentPage = 1; // reset ke page 1
       this.fetchData();
     },
-
-    
   },
 };
 </script>

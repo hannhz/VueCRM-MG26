@@ -62,8 +62,10 @@ const searchQuery = computed({
  * LOGIC / NORMALIZATION
  */
 const normalizeStage = (rawStage) => {
-  let stage = String(rawStage || "prospect").toLowerCase().trim();
-  
+  let stage = String(rawStage || "prospect")
+    .toLowerCase()
+    .trim();
+
   // Handle encoded format "closed:won", "closed:lost", "closed:cancel"
   if (stage.startsWith("closed:")) {
     const [_, status] = stage.split(":");
@@ -72,20 +74,40 @@ const normalizeStage = (rawStage) => {
     if (status === "cancel") return "closed_cancel";
     return "closed";
   }
-  
+
   if (stage.includes("prospect") || stage === "new") return "prospect";
   if (stage.includes("qual")) return "qualified";
-  if (stage.includes("offer") || stage.includes("proposal") || stage.includes("payment")) return "offer";
+  if (
+    stage.includes("offer") ||
+    stage.includes("proposal") ||
+    stage.includes("payment")
+  )
+    return "offer";
   if (stage.includes("negot") || stage.includes("adv")) return "negotiation";
-  
+
   // Handle short format dari database: closed_los, closed_can, closed_won
-  if (stage === "closed_los" || stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
-  if (stage === "closed_can" || stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
-  if (stage === "closed_won" || stage.includes("won") || stage.includes("closed_won")) return "closed_won";
-  
+  if (
+    stage === "closed_los" ||
+    stage.includes("lost") ||
+    stage.includes("closed_lost")
+  )
+    return "closed_lost";
+  if (
+    stage === "closed_can" ||
+    stage.includes("cancel") ||
+    stage.includes("closed_cancel")
+  )
+    return "closed_cancel";
+  if (
+    stage === "closed_won" ||
+    stage.includes("won") ||
+    stage.includes("closed_won")
+  )
+    return "closed_won";
+
   // Jika ada "closed" tapi bukan yang spesifik, treat as generic closed
   if (stage.includes("closed")) return "closed";
-  
+
   return "prospect";
 };
 
@@ -116,8 +138,10 @@ const rebuildBoards = (rawDeals) => {
   };
 
   rawDeals.map(normalizeDeal).forEach((deal) => {
-    const stage = String(deal.stage || "").toLowerCase().trim();
-    
+    const stage = String(deal.stage || "")
+      .toLowerCase()
+      .trim();
+
     // Eksplisit: kalau stage mengandung "closed", masuk ke closed board
     // Ini mencakup closed, closed_won, closed_lost, closed_cancel
     if (stage.includes("closed")) {
@@ -172,7 +196,7 @@ const handleBoardChange = async (event, targetBoard) => {
   if (previousStage === nextStage) return;
 
   let finalStage = nextStage;
-  
+
   // Jika drag ke "closed" board, minta user pilih status
   if (nextStage === "closed") {
     await Swal.fire({
@@ -189,18 +213,20 @@ const handleBoardChange = async (event, targetBoard) => {
       showConfirmButton: false,
       allowOutsideClick: false,
       didOpen: () => {
-        document.getElementById('btn-won')?.addEventListener('click', () => {
-          window.closedChoice = 'won';
+        document.getElementById("btn-won")?.addEventListener("click", () => {
+          window.closedChoice = "won";
           Swal.close();
         });
-        document.getElementById('btn-lost')?.addEventListener('click', () => {
-          window.closedChoice = 'lost';
+        document.getElementById("btn-lost")?.addEventListener("click", () => {
+          window.closedChoice = "lost";
           Swal.close();
         });
-        document.getElementById('btn-cancel-status')?.addEventListener('click', () => {
-          window.closedChoice = 'cancel';
-          Swal.close();
-        });
+        document
+          .getElementById("btn-cancel-status")
+          ?.addEventListener("click", () => {
+            window.closedChoice = "cancel";
+            Swal.close();
+          });
       },
     });
 
@@ -223,7 +249,9 @@ const handleBoardChange = async (event, targetBoard) => {
 
   boardChangeTimeout = setTimeout(async () => {
     try {
-      console.log(`[DealCard] Updating deal ${movedDeal.id} to stage: ${finalStage}`);
+      console.log(
+        `[DealCard] Updating deal ${movedDeal.id} to stage: ${finalStage}`,
+      );
       await store.dispatch("deals/updateDealStage", {
         dealId: movedDeal.id,
         newStage: finalStage,
@@ -265,7 +293,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="bg-white rounded-lg shadow-sm h-147 border border-outline flex flex-col overflow-hidden w-full">
+  <div
+    class="bg-white rounded-lg shadow-sm h-147 border border-outline flex flex-col overflow-hidden w-full"
+  >
     <!-- Top Action Bar (Extracted) -->
     <DealsCardFilter
       v-model:searchQuery="searchQuery"
@@ -308,8 +338,12 @@ onBeforeUnmount(() => {
             <header
               class="h-12 bg-white border-b border-outline flex items-center justify-between px-4 rounded-t-lg"
             >
-              <h3 class="text-dark-base text-sm font-bold">{{ board.title }}</h3>
-              <div class="bg-slate-800 px-2 py-0.5 rounded text-[10px] font-bold text-white">
+              <h3 class="text-dark-base text-sm font-bold">
+                {{ board.title }}
+              </h3>
+              <div
+                class="bg-slate-800 px-2 py-0.5 rounded text-[10px] font-bold text-white"
+              >
                 {{ board.items.length }}
               </div>
             </header>
@@ -338,14 +372,21 @@ onBeforeUnmount(() => {
             <footer
               class="h-12 bg-white border-t border-outline flex items-center justify-center rounded-b-lg text-[11px] font-bold text-dark-base"
             >
-              TOTAL: Rp {{ board.items.reduce((t, i) => t + i.value, 0).toLocaleString() }}
+              TOTAL: Rp
+              {{
+                board.items.reduce((t, i) => t + i.value, 0).toLocaleString()
+              }}
             </footer>
           </article>
         </div>
 
         <!-- Visual Shadows for Scrolling -->
-        <div class="pointer-events-none absolute top-0 left-0 h-full w-8 bg-gradient-to-r from-white/60 to-transparent z-10"></div>
-        <div class="pointer-events-none absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-white/60 to-transparent z-10"></div>
+        <div
+          class="pointer-events-none absolute top-0 left-0 h-full w-8 bg-gradient-to-r from-white/60 to-transparent z-10"
+        ></div>
+        <div
+          class="pointer-events-none absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-white/60 to-transparent z-10"
+        ></div>
       </div>
     </div>
   </div>

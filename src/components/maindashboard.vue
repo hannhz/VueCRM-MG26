@@ -193,10 +193,10 @@ export default {
     },
     allContactsassoc(e) {
       // console.log("allContactsassoc",e);
-    },  
+    },
     allDealsassoc(e) {
       // console.log("allDealsassoc",e);
-    },  
+    },
   },
 };
 </script>

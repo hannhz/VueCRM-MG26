@@ -109,7 +109,9 @@ export function getDetailEndpointCandidates(entityType) {
     deal: ["deals/input"],
   };
 
-  return endpointMap[entityType] || [`${entityType}det/input`, `${entityType}/input`];
+  return (
+    endpointMap[entityType] || [`${entityType}det/input`, `${entityType}/input`]
+  );
 }
 
 /**

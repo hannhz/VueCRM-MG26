@@ -26,7 +26,9 @@ const emit = defineEmits(["view", "toggle"]);
     </td>
 
     <!-- Deal Name Column -->
-    <td class="px-6 py-4 text-sm text-gray-800 font-medium truncate max-w-[200px]">
+    <td
+      class="px-6 py-4 text-sm text-gray-800 font-medium truncate max-w-[200px]"
+    >
       {{ deal.name }}
     </td>
 
@@ -46,7 +48,9 @@ const emit = defineEmits(["view", "toggle"]);
     <!-- Association Column -->
     <td class="px-6 py-4 text-sm text-dark-base truncate max-w-[250px]">
       <div class="flex items-center gap-1.5 overflow-hidden">
-        <span class="font-medium text-gray-600 shrink-0">{{ deal.contact }}</span>
+        <span class="font-medium text-gray-600 shrink-0">{{
+          deal.contact
+        }}</span>
         <span class="text-gray-300 shrink-0">—</span>
         <span class="text-gray-500 truncate">{{ deal.company }}</span>
       </div>
@@ -60,8 +64,10 @@ const emit = defineEmits(["view", "toggle"]);
     <!-- Owner Column -->
     <td class="px-6 py-4 text-sm text-gray-700 font-medium whitespace-nowrap">
       <div class="flex items-center gap-2">
-        <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-500 font-bold border border-slate-200">
-          {{ (deal.owner || 'U').charAt(0).toUpperCase() }}
+        <div
+          class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-500 font-bold border border-slate-200"
+        >
+          {{ (deal.owner || "U").charAt(0).toUpperCase() }}
         </div>
         <span>{{ deal.owner }}</span>
       </div>

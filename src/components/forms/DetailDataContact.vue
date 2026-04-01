@@ -4,14 +4,7 @@ import NotesSection from "@/components/widgets/NotesEditor.vue";
 import DocsSection from "@/components/widgets/DocsEditor.vue";
 import TaskSection from "@/components/widgets/TaskEditor.vue";
 import LocationSelector from "./component/LocationSelector.vue";
-import {
-  X,
-  ChevronDown,
-  Plus,
-  Search,
-  Check,
-  Loader2,
-} from "lucide-vue-next";
+import { X, ChevronDown, Plus, Search, Check, Loader2 } from "lucide-vue-next";
 
 export default {
   name: "DetailDataContact",
@@ -175,7 +168,7 @@ export default {
       return this.companyOptions
         .filter((opt) => opt.value !== "")
         .filter((c) =>
-          c.label.toLowerCase().includes(this.companySearch.toLowerCase())
+          c.label.toLowerCase().includes(this.companySearch.toLowerCase()),
         );
     },
     filteredDeals() {
@@ -185,7 +178,7 @@ export default {
       return this.dealOptions
         .filter((opt) => opt.value !== "")
         .filter((d) =>
-          d.label.toLowerCase().includes(this.dealSearch.toLowerCase())
+          d.label.toLowerCase().includes(this.dealSearch.toLowerCase()),
         );
     },
     selectedCompaniesList() {
@@ -193,7 +186,7 @@ export default {
         const companyId = String(c.value || c.id).trim();
         if (!companyId) return false;
         return this.contactForm.companyassoc.some(
-          (id) => String(id).trim() === companyId
+          (id) => String(id).trim() === companyId,
         );
       });
     },
@@ -202,7 +195,7 @@ export default {
         const dealId = String(d.value || d.id).trim();
         if (!dealId) return false;
         return this.contactForm.dealsassoc.some(
-          (id) => String(id).trim() === dealId
+          (id) => String(id).trim() === dealId,
         );
       });
     },
@@ -251,13 +244,13 @@ export default {
         if (!this.contactForm.id_owner) {
           this.contactForm.id_owner = this.resolveUserValue(
             name,
-            this.associatedWithOptions
+            this.associatedWithOptions,
           );
         }
         if (!this.taskData.assignee) {
           this.taskData.assignee = this.resolveUserValue(
             name,
-            this.assigneeOptions
+            this.assigneeOptions,
           );
         }
       }
@@ -313,7 +306,7 @@ export default {
                 option.value ??
                 option.deal_id ??
                 option.contact_id ??
-                ""
+                "",
             ).trim();
             return optId === normalizedCandidate;
           });
@@ -325,7 +318,7 @@ export default {
                 option.deal_name ??
                 option.company_name ??
                 option.label ??
-                ""
+                "",
             )
               .trim()
               .toLowerCase();
@@ -344,7 +337,7 @@ export default {
       const match = options.find(
         (opt) =>
           String(opt.value).trim().toLowerCase() === normalizedCandidate ||
-          String(opt.label).trim().toLowerCase() === normalizedCandidate
+          String(opt.label).trim().toLowerCase() === normalizedCandidate,
       );
 
       return match ? match.value : candidate;
@@ -384,7 +377,7 @@ export default {
           data?.company_id ||
           data?.companies_id ||
           data?.company ||
-          data?.company_name
+          data?.company_name,
       );
 
       const dealsCandidates = this.getAssociationCandidates(
@@ -394,7 +387,7 @@ export default {
           data?.deal_id ||
           data?.deals_id ||
           data?.deal ||
-          data?.deal_name
+          data?.deal_name,
       );
 
       return {
@@ -439,12 +432,12 @@ export default {
               data?.deal_id ||
               data?.deals_id ||
               data?.deal ||
-              data?.deal_name
+              data?.deal_name,
       );
 
       const resolvedDeals = this.resolveAssociationValues(
         dealsCandidates,
-        this.dealOptions
+        this.dealOptions,
       );
       if (resolvedDeals.length > 0) {
         this.contactForm.dealsassoc = resolvedDeals;
@@ -461,12 +454,12 @@ export default {
               data?.company_id ||
               data?.companies_id ||
               data?.company ||
-              data?.company_name
+              data?.company_name,
       );
 
       const resolvedCompanies = this.resolveAssociationValues(
         companyCandidates,
-        this.companyOptions
+        this.companyOptions,
       );
       if (resolvedCompanies.length > 0) {
         this.contactForm.companyassoc = resolvedCompanies;
@@ -496,7 +489,7 @@ export default {
         priority: data.priority || data.prioritytask || "",
         associatedContact: this.resolveUserValue(
           data.associated_contact || data.associatedContact,
-          this.associatedWithOptions
+          this.associatedWithOptions,
         ),
       };
 
@@ -512,7 +505,7 @@ export default {
       try {
         const data = await this.$store.dispatch(
           "contacts/fetchContactById",
-          id
+          id,
         );
         if (data) {
           this.contactForm = this.getContactFormDefaults(data);
@@ -537,7 +530,7 @@ export default {
     async fetchStatuses() {
       try {
         // Fetch statuses from store or API
-        this.statuses = await this.$store.dispatch("getStatuses") || [];
+        this.statuses = (await this.$store.dispatch("getStatuses")) || [];
       } catch (error) {
         console.error("Failed to fetch statuses:", error);
       }
@@ -545,7 +538,7 @@ export default {
     toggleCompany(company) {
       const companyId = String(company.value || company.id).trim();
       const index = this.contactForm.companyassoc.findIndex(
-        (id) => String(id).trim() === companyId
+        (id) => String(id).trim() === companyId,
       );
       if (index === -1) {
         this.contactForm.companyassoc.push(companyId);
@@ -556,13 +549,13 @@ export default {
     isCompanySelected(id) {
       const normalizedId = String(id).trim();
       return this.contactForm.companyassoc.some(
-        (assocId) => String(assocId).trim() === normalizedId
+        (assocId) => String(assocId).trim() === normalizedId,
       );
     },
     toggleDeal(deal) {
       const dealId = String(deal.value || deal.id).trim();
       const index = this.contactForm.dealsassoc.findIndex(
-        (id) => String(id).trim() === dealId
+        (id) => String(id).trim() === dealId,
       );
       if (index === -1) {
         this.contactForm.dealsassoc.push(dealId);
@@ -573,17 +566,14 @@ export default {
     isDealSelected(id) {
       const normalizedId = String(id).trim();
       return this.contactForm.dealsassoc.some(
-        (assocId) => String(assocId).trim() === normalizedId
+        (assocId) => String(assocId).trim() === normalizedId,
       );
     },
     handleClickOutside(event) {
       const companyDropdownRef = this.$refs.companyDropdownRef;
       const dealDropdownRef = this.$refs.dealDropdownRef;
 
-      if (
-        companyDropdownRef &&
-        !companyDropdownRef.contains(event.target)
-      ) {
+      if (companyDropdownRef && !companyDropdownRef.contains(event.target)) {
         this.isCompanyDropdownOpen = false;
       }
       if (dealDropdownRef && !dealDropdownRef.contains(event.target)) {
@@ -671,7 +661,9 @@ export default {
           >
             <div class="flex flex-col items-center gap-2">
               <Loader2 class="w-8 h-8 animate-spin text-sub-text" />
-              <span class="text-sm font-medium text-sub-text">Loading details...</span>
+              <span class="text-sm font-medium text-sub-text"
+                >Loading details...</span
+              >
             </div>
           </div>
 
@@ -1001,10 +993,7 @@ export default {
             />
 
             <!-- DOCS SECTION -->
-            <DocsSection
-              v-model="docsData"
-              :is-open="showDocs"
-            />
+            <DocsSection v-model="docsData" :is-open="showDocs" />
           </div>
         </div>
 

@@ -59,7 +59,7 @@ const mapCreateDealPayload = (formData = {}) => {
 
   // Helper untuk extract task data
   const extractTaskData = (task) => {
-    if (!task || (typeof task === 'object' && Object.keys(task).length === 0)) {
+    if (!task || (typeof task === "object" && Object.keys(task).length === 0)) {
       return null;
     }
 
@@ -83,7 +83,7 @@ const mapCreateDealPayload = (formData = {}) => {
     }
 
     // Return as object - let backend handle serialization
-    if (typeof task === 'object') {
+    if (typeof task === "object") {
       return {
         name: task.name || "",
         content: task.content || "",
@@ -95,19 +95,16 @@ const mapCreateDealPayload = (formData = {}) => {
     return null;
   };
 
-   // Helper untuk extract deskripsi docs (mirip normalizeCompanyPayload)
- let docsValue = null;
+  // Helper untuk extract deskripsi docs (mirip normalizeCompanyPayload)
+  let docsValue = null;
   if (formData.docs) {
-    if (typeof formData.docs === 'string') {
+    if (typeof formData.docs === "string") {
       docsValue = formData.docs.trim() || null;
-    } else if (typeof formData.docs === 'object') {
+    } else if (typeof formData.docs === "object") {
       // bentuk { description, fileSource, files }
-      docsValue = (formData.docs.description || '').trim() || null;
+      docsValue = (formData.docs.description || "").trim() || null;
     }
   }
-
-
-  
 
   return {
     // Mapping utama sesuai kolom DB
@@ -164,7 +161,9 @@ const mapBoardStageToPipeline = (stage) => {
 };
 
 const normalizeStage = (rawStage) => {
-  const stage = String(rawStage || "prospect").toLowerCase().trim();
+  const stage = String(rawStage || "prospect")
+    .toLowerCase()
+    .trim();
 
   // Handle encoded format "closed:won", "closed:lost", "closed:cancel"
   if (stage.startsWith("closed:")) {
@@ -177,13 +176,21 @@ const normalizeStage = (rawStage) => {
 
   if (stage.includes("prospect") || stage === "new") return "prospect";
   if (stage.includes("qual")) return "qualified";
-  if (stage.includes("offer") || stage.includes("proposal") || stage.includes("payment")) return "offer";
+  if (
+    stage.includes("offer") ||
+    stage.includes("proposal") ||
+    stage.includes("payment")
+  )
+    return "offer";
   if (stage.includes("negot") || stage.includes("adv")) return "negotiation";
   if (stage === "closed_los") return "closed_lost";
   if (stage === "closed_can") return "closed_cancel";
-  if (stage.includes("won") || stage.includes("closed_won")) return "closed_won";
-  if (stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
-  if (stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
+  if (stage.includes("won") || stage.includes("closed_won"))
+    return "closed_won";
+  if (stage.includes("lost") || stage.includes("closed_lost"))
+    return "closed_lost";
+  if (stage.includes("cancel") || stage.includes("closed_cancel"))
+    return "closed_cancel";
   if (stage.includes("closed")) return "closed";
 
   return "prospect";
@@ -326,11 +333,11 @@ export default {
           commit(
             "SET_ERROR",
             serverMessage ||
-            (status
-              ? status === 404
-                ? "Endpoint deals tidak ditemukan di server (404)."
-                : `Fetch deals gagal (HTTP ${status})`
-              : error.message || "Failed to fetch deals"),
+              (status
+                ? status === 404
+                  ? "Endpoint deals tidak ditemukan di server (404)."
+                  : `Fetch deals gagal (HTTP ${status})`
+                : error.message || "Failed to fetch deals"),
           );
           commit("SET_LOADING", false);
         });
@@ -397,16 +404,16 @@ export default {
 
       const cAssoc = formatAssoc(
         existingDeal.contactassoc ||
-        existingDeal.dealsassoc ||
-        existingDeal.contacts_id ||
-        existingDeal.contact_id ||
-        existingDeal.id_contact,
+          existingDeal.dealsassoc ||
+          existingDeal.contacts_id ||
+          existingDeal.contact_id ||
+          existingDeal.id_contact,
       );
       const mAssoc = formatAssoc(
         existingDeal.companyassoc ||
-        existingDeal.companies_id ||
-        existingDeal.company_id ||
-        existingDeal.id_company,
+          existingDeal.companies_id ||
+          existingDeal.company_id ||
+          existingDeal.id_company,
       );
 
       const requestPayload = {
@@ -501,8 +508,13 @@ export default {
             },
           });
 
-          if (response?.data?.msg === "gagal" || response?.data?.success === false) {
-            throw new Error(response?.data?.message || "Backend gagal menyimpan deal.");
+          if (
+            response?.data?.msg === "gagal" ||
+            response?.data?.success === false
+          ) {
+            throw new Error(
+              response?.data?.message || "Backend gagal menyimpan deal.",
+            );
           }
 
           // Refresh daftar dengan parameter yang sama agar tampilan tidak reset
@@ -528,9 +540,9 @@ export default {
           commit(
             "SET_ERROR",
             serverMessage ||
-            (status
-              ? `Save deal gagal (HTTP ${status})`
-              : error?.message || "Failed to save deal"),
+              (status
+                ? `Save deal gagal (HTTP ${status})`
+                : error?.message || "Failed to save deal"),
           );
           commit("SET_LOADING", false);
         });
@@ -582,7 +594,7 @@ export default {
       };
 
       return dispatch("saveDeal", requestPayload);
-    }, 
+    },
 
     async saveDealDetail({ dispatch }, detailPayload) {
       const headers = {
@@ -614,41 +626,41 @@ export default {
     },
 
     async deleteDeal({ commit, dispatch }, dealId) {
-  const headers = {
-    Authorization: "Bearer " + cookies.get("token"),
-  };
+      const headers = {
+        Authorization: "Bearer " + cookies.get("token"),
+      };
 
-  try {
-    const response = await api.post(
-      "deals/input",
-      {
-        choice: "d",
-        id: dealId,
-        // Tambahkan semua field yang ada (isi kosong) untuk kompatibilitas
-        deal_name: "",
-        pipeline: "",
-        currency: "",
-        amount_value: "",
-        expected_close_date: "",
-        owner: "",
-        priority: "",
-        source: "",
-        description: "",
-        contactassoc: "",
-        companyassoc: "",
-        notes: "",
-        docs: "",
-      },
-      { headers },
-    );
-    commit("DELETE_DEAL", dealId);
-    await dispatch("fetchAllDeals").catch(() => {});
-    return response.data;
-  } catch (error) {
-    await dispatch("fetchAllDeals").catch(() => {});
-    throw error;
-  }
-},
+      try {
+        const response = await api.post(
+          "deals/input",
+          {
+            choice: "d",
+            id: dealId,
+            // Tambahkan semua field yang ada (isi kosong) untuk kompatibilitas
+            deal_name: "",
+            pipeline: "",
+            currency: "",
+            amount_value: "",
+            expected_close_date: "",
+            owner: "",
+            priority: "",
+            source: "",
+            description: "",
+            contactassoc: "",
+            companyassoc: "",
+            notes: "",
+            docs: "",
+          },
+          { headers },
+        );
+        commit("DELETE_DEAL", dealId);
+        await dispatch("fetchAllDeals").catch(() => {});
+        return response.data;
+      } catch (error) {
+        await dispatch("fetchAllDeals").catch(() => {});
+        throw error;
+      }
+    },
   },
 
   getters: {
@@ -674,8 +686,10 @@ export default {
     pagination: (state) => state.pagination,
     uiDeals: (state, getters) => {
       const normalizeStage = (rawStage) => {
-        const stage = String(rawStage || "prospect").toLowerCase().trim();
-        
+        const stage = String(rawStage || "prospect")
+          .toLowerCase()
+          .trim();
+
         // Handle encoded format "closed:won", "closed:lost", "closed:cancel"
         if (stage.startsWith("closed:")) {
           const [_, status] = stage.split(":");
@@ -684,16 +698,25 @@ export default {
           if (status === "cancel") return "closed_cancel";
           return "closed";
         }
-        
+
         if (stage.includes("prospect") || stage === "new") return "prospect";
         if (stage.includes("qual")) return "qualified";
-        if (stage.includes("offer") || stage.includes("proposal") || stage.includes("payment")) return "offer";
-        if (stage.includes("negot") || stage.includes("adv")) return "negotiation";
+        if (
+          stage.includes("offer") ||
+          stage.includes("proposal") ||
+          stage.includes("payment")
+        )
+          return "offer";
+        if (stage.includes("negot") || stage.includes("adv"))
+          return "negotiation";
         if (stage === "closed_los") return "closed_lost";
         if (stage === "closed_can") return "closed_cancel";
-        if (stage.includes("won") || stage.includes("closed_won")) return "closed_won";
-        if (stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
-        if (stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
+        if (stage.includes("won") || stage.includes("closed_won"))
+          return "closed_won";
+        if (stage.includes("lost") || stage.includes("closed_lost"))
+          return "closed_lost";
+        if (stage.includes("cancel") || stage.includes("closed_cancel"))
+          return "closed_cancel";
         if (stage.includes("closed")) return "closed";
         return "prospect";
       };
