@@ -40,6 +40,14 @@ const resolveDealId = (responseData, fallbackId = null) => {
 
 const mapCreateDealPayload = (formData = {}) => {
   const normalizedAmount = normalizeNumber(formData.amount);
+  const normalizedDealName =
+    formData.dealName?.trim() ||
+    formData.deal_name?.trim() ||
+    formData.name?.trim() ||
+    formData.title?.trim() ||
+    null;
+  const normalizedPipeline =
+    formData.pipeline || formData.stage || formData.status || "prospect";
 
   // Helper to ensure association is a string
   const formatAssoc = (assoc) => {
@@ -51,11 +59,31 @@ const mapCreateDealPayload = (formData = {}) => {
 
   // Helper untuk extract task data
   const extractTaskData = (task) => {
-    if (!task || (typeof task === 'object' && Object.keys(task).length === 0)) {
+    if (!task || (typeof task === "object" && Object.keys(task).length === 0)) {
       return null;
     }
+
+    const isBlank = (v) =>
+      v === null || v === undefined || String(v).trim() === "";
+
+    // Abaikan task object default yang hanya berisi field kosong/null.
+    if (typeof task === "object") {
+      const rawValues = [
+        task.name,
+        task.title,
+        task.content,
+        task.status,
+        task.priority,
+        task.dueDate,
+      ];
+
+      if (rawValues.every(isBlank)) {
+        return null;
+      }
+    }
+
     // Return as object - let backend handle serialization
-    if (typeof task === 'object') {
+    if (typeof task === "object") {
       return {
         name: task.name || "",
         content: task.content || "",
@@ -67,38 +95,21 @@ const mapCreateDealPayload = (formData = {}) => {
     return null;
   };
 
-  // Helper untuk extract docs data  
-  const extractDocsData = (docs) => {
-    if (!docs) {
-      return null;
+  // Helper untuk extract deskripsi docs (mirip normalizeCompanyPayload)
+  let docsValue = null;
+  if (formData.docs) {
+    if (typeof formData.docs === "string") {
+      docsValue = formData.docs.trim() || null;
+    } else if (typeof formData.docs === "object") {
+      // bentuk { description, fileSource, files }
+      docsValue = (formData.docs.description || "").trim() || null;
     }
-    // If it's object from DocsSection, extract files array
-    if (typeof docs === 'object' && !Array.isArray(docs)) {
-      const filesArray = docs.files || [];
-      if (filesArray.length === 0) {
-        return null;
-      }
-      // Return array objects - let backend handle serialization
-      return filesArray.map((f) => ({
-        name: f.name || f,
-      }));
-    }
-    // If already array
-    if (Array.isArray(docs)) {
-      if (docs.length === 0) {
-        return null;
-      }
-      return docs;
-    }
-    return null;
-  };
-
-  
+  }
 
   return {
     // Mapping utama sesuai kolom DB
-    deal_name: formData.dealName?.trim() || formData.deal_name?.trim() || null,
-    pipeline: formData.pipeline || null,
+    deal_name: normalizedDealName,
+    pipeline: normalizedPipeline,
     currency: formData.currency || "IDR",
     amount_value: normalizedAmount,
     expected_close_date:
@@ -112,13 +123,15 @@ const mapCreateDealPayload = (formData = {}) => {
     // Notes, Tasks, & Docs - penting: backend expect lowercase singular keys
     // Support both 'notes' dan 'note' untuk backward compatibility
     note: (formData.note || formData.notes || "").trim() || null,
+    notes: (formData.note || formData.notes || "").trim() || null,
     task_json: extractTaskData(formData.task),
-    docs: extractDocsData(formData.docs),
+    docs: docsValue,
+    doc: docsValue,
     // Alias untuk kompatibilitas variasi backend
-    name: formData.dealName?.trim() || formData.deal_name?.trim() || null,
-    dealName: formData.dealName?.trim() || formData.deal_name?.trim() || null,
+    name: normalizedDealName,
+    dealName: normalizedDealName,
     amount: normalizedAmount,
-    stage: formData.pipeline || "new",
+    stage: normalizedPipeline,
     expectedCloseDate:
       formData.expectedCloseDate || formData.expected_close_date || null,
   };
@@ -139,13 +152,18 @@ const mapBoardStageToPipeline = (stage) => {
     payment: "offer",
     won: "closed_won",
     lost: "closed_lost",
+    cancel: "closed_cancel",
+    closed_los: "closed_lost",
+    closed_can: "closed_cancel",
   };
 
   return stageMap[stage] || stage || "prospect";
 };
 
 const normalizeStage = (rawStage) => {
-  const stage = String(rawStage || "prospect").toLowerCase().trim();
+  const stage = String(rawStage || "prospect")
+    .toLowerCase()
+    .trim();
 
   // Handle encoded format "closed:won", "closed:lost", "closed:cancel"
   if (stage.startsWith("closed:")) {
@@ -158,11 +176,21 @@ const normalizeStage = (rawStage) => {
 
   if (stage.includes("prospect") || stage === "new") return "prospect";
   if (stage.includes("qual")) return "qualified";
-  if (stage.includes("offer") || stage.includes("proposal") || stage.includes("payment")) return "offer";
+  if (
+    stage.includes("offer") ||
+    stage.includes("proposal") ||
+    stage.includes("payment")
+  )
+    return "offer";
   if (stage.includes("negot") || stage.includes("adv")) return "negotiation";
-  if (stage.includes("won") || stage.includes("closed_won")) return "closed_won";
-  if (stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
-  if (stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
+  if (stage === "closed_los") return "closed_lost";
+  if (stage === "closed_can") return "closed_cancel";
+  if (stage.includes("won") || stage.includes("closed_won"))
+    return "closed_won";
+  if (stage.includes("lost") || stage.includes("closed_lost"))
+    return "closed_lost";
+  if (stage.includes("cancel") || stage.includes("closed_cancel"))
+    return "closed_cancel";
   if (stage.includes("closed")) return "closed";
 
   return "prospect";
@@ -305,11 +333,11 @@ export default {
           commit(
             "SET_ERROR",
             serverMessage ||
-            (status
-              ? status === 404
-                ? "Endpoint deals tidak ditemukan di server (404)."
-                : `Fetch deals gagal (HTTP ${status})`
-              : error.message || "Failed to fetch deals"),
+              (status
+                ? status === 404
+                  ? "Endpoint deals tidak ditemukan di server (404)."
+                  : `Fetch deals gagal (HTTP ${status})`
+                : error.message || "Failed to fetch deals"),
           );
           commit("SET_LOADING", false);
         });
@@ -376,16 +404,16 @@ export default {
 
       const cAssoc = formatAssoc(
         existingDeal.contactassoc ||
-        existingDeal.dealsassoc ||
-        existingDeal.contacts_id ||
-        existingDeal.contact_id ||
-        existingDeal.id_contact,
+          existingDeal.dealsassoc ||
+          existingDeal.contacts_id ||
+          existingDeal.contact_id ||
+          existingDeal.id_contact,
       );
       const mAssoc = formatAssoc(
         existingDeal.companyassoc ||
-        existingDeal.companies_id ||
-        existingDeal.company_id ||
-        existingDeal.id_company,
+          existingDeal.companies_id ||
+          existingDeal.company_id ||
+          existingDeal.id_company,
       );
 
       const requestPayload = {
@@ -456,17 +484,38 @@ export default {
         try {
           // Tentukan choice: 'i' untuk insert, 'u' untuk update
           const choice = formData.choice || (formData.id ? "u" : "i");
+          const mappedData = mapCreateDealPayload(formData);
 
           const requestPayload = {
-            choice: choice,
             ...formData,
+            ...mappedData,
+            choice: choice,
           };
+
+          if (choice === "i") {
+            // Hindari backend salah jalur update saat create.
+            delete requestPayload.id;
+            delete requestPayload.id_deals;
+          }
+
+          if (!requestPayload.deal_name) {
+            throw new Error("Deal name wajib diisi.");
+          }
 
           const response = await api.post("deals/input", requestPayload, {
             headers: {
               Authorization: "Bearer " + cookies.get("token"),
             },
           });
+
+          if (
+            response?.data?.msg === "gagal" ||
+            response?.data?.success === false
+          ) {
+            throw new Error(
+              response?.data?.message || "Backend gagal menyimpan deal.",
+            );
+          }
 
           // Refresh daftar dengan parameter yang sama agar tampilan tidak reset
           await dispatch("fetchAllDeals", {
@@ -491,9 +540,9 @@ export default {
           commit(
             "SET_ERROR",
             serverMessage ||
-            (status
-              ? `Save deal gagal (HTTP ${status})`
-              : error?.message || "Failed to save deal"),
+              (status
+                ? `Save deal gagal (HTTP ${status})`
+                : error?.message || "Failed to save deal"),
           );
           commit("SET_LOADING", false);
         });
@@ -505,12 +554,12 @@ export default {
       // Gunakan mapCreateDealPayload untuk memastikan key sesuai backend (deal_name, etc.)
       const mappedData = mapCreateDealPayload(formData);
       const payload = {
-        choice: "i",
         ...formData,
         ...mappedData,
+        choice: "i",
       };
 
-      console.log("� Store: Extracted data sebelum kirim ke backend:");
+      console.log("Store: Extracted data sebelum kirim ke backend:");
       console.log("  note (from form):", formData.notes);
       console.log("  note (after mapping):", mappedData.note);
       console.log("  task_json:", mappedData.task_json);
@@ -584,14 +633,31 @@ export default {
       try {
         const response = await api.post(
           "deals/input",
-          { choice: "d", id: dealId },
+          {
+            choice: "d",
+            id: dealId,
+            // Tambahkan semua field yang ada (isi kosong) untuk kompatibilitas
+            deal_name: "",
+            pipeline: "",
+            currency: "",
+            amount_value: "",
+            expected_close_date: "",
+            owner: "",
+            priority: "",
+            source: "",
+            description: "",
+            contactassoc: "",
+            companyassoc: "",
+            notes: "",
+            docs: "",
+          },
           { headers },
         );
         commit("DELETE_DEAL", dealId);
-        await dispatch("fetchAllDeals").catch(() => { });
+        await dispatch("fetchAllDeals").catch(() => {});
         return response.data;
       } catch (error) {
-        await dispatch("fetchAllDeals").catch(() => { });
+        await dispatch("fetchAllDeals").catch(() => {});
         throw error;
       }
     },
@@ -620,8 +686,10 @@ export default {
     pagination: (state) => state.pagination,
     uiDeals: (state, getters) => {
       const normalizeStage = (rawStage) => {
-        const stage = String(rawStage || "prospect").toLowerCase().trim();
-        
+        const stage = String(rawStage || "prospect")
+          .toLowerCase()
+          .trim();
+
         // Handle encoded format "closed:won", "closed:lost", "closed:cancel"
         if (stage.startsWith("closed:")) {
           const [_, status] = stage.split(":");
@@ -630,14 +698,25 @@ export default {
           if (status === "cancel") return "closed_cancel";
           return "closed";
         }
-        
+
         if (stage.includes("prospect") || stage === "new") return "prospect";
         if (stage.includes("qual")) return "qualified";
-        if (stage.includes("offer") || stage.includes("proposal") || stage.includes("payment")) return "offer";
-        if (stage.includes("negot") || stage.includes("adv")) return "negotiation";
-        if (stage.includes("won") || stage.includes("closed_won")) return "closed_won";
-        if (stage.includes("lost") || stage.includes("closed_lost")) return "closed_lost";
-        if (stage.includes("cancel") || stage.includes("closed_cancel")) return "closed_cancel";
+        if (
+          stage.includes("offer") ||
+          stage.includes("proposal") ||
+          stage.includes("payment")
+        )
+          return "offer";
+        if (stage.includes("negot") || stage.includes("adv"))
+          return "negotiation";
+        if (stage === "closed_los") return "closed_lost";
+        if (stage === "closed_can") return "closed_cancel";
+        if (stage.includes("won") || stage.includes("closed_won"))
+          return "closed_won";
+        if (stage.includes("lost") || stage.includes("closed_lost"))
+          return "closed_lost";
+        if (stage.includes("cancel") || stage.includes("closed_cancel"))
+          return "closed_cancel";
         if (stage.includes("closed")) return "closed";
         return "prospect";
       };

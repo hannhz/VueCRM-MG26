@@ -45,7 +45,7 @@ const mutations = {
 };
 
 const actions = {
-  getcompanys(context,params ={}) {
+  getcompanys(context, params = {}) {
     const promise = new Promise(async (resolve, reject) => {
       try {
         let network = await api.getbydata("assoc/company", params, {

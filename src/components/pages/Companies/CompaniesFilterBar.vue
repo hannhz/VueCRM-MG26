@@ -94,7 +94,7 @@ export default {
     "search",
     "prev-page",
     "next-page",
-    "onEnter"
+    "onEnter",
   ],
 };
 </script>

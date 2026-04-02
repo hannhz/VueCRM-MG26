@@ -150,7 +150,9 @@ const handleSubmit = async () => {
 
     const response = await store.dispatch("deals/createDeal", payload);
     await store.dispatch("deals/fetchAllDeals");
-    await alertService.toastSuccess(response?.msg || "Deal berhasil ditambahkan");
+    await alertService.toastSuccess(
+      response?.msg || "Deal berhasil ditambahkan",
+    );
 
     emit("submit", response);
     handleReset();

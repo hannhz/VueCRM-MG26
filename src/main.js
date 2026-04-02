@@ -1,5 +1,5 @@
 import { createApp } from "vue";
-import VueSelect  from "vue-select";
+import VueSelect from "vue-select";
 import App from "./App.vue";
 import store from "./store";
 import router from "./router";
@@ -18,7 +18,7 @@ const app = createApp(App);
 app.use(store);
 app.use(router);
 app.use(Toast);
-app.component("v-select", VueSelect)
+app.component("v-select", VueSelect);
 // app.use(VueCookies)
 app.mount("#app");
 

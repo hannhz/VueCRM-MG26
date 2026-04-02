@@ -6,9 +6,9 @@ import { useStatuses } from "@/composables/useStatuses";
 import AddCompanyForm from "./AddCompanyForm.vue";
 import AddDealForm from "./AddDealForm.vue";
 import ContactDetailForm from "./DetailForm.vue";
-import NotesSection from "@/components/forms/details/NotesSection.vue";
-import DocsSection from "@/components/forms/details/DocsSection.vue";
-import TaskSection from "@/components/forms/details/TaskSection.vue";
+import NotesSection from "@/components/widgets/NotesEditor.vue";
+import DocsSection from "@/components/widgets/DocsEditor.vue";
+import TaskSection from "@/components/widgets/TaskEditor.vue";
 import LocationSelector from "@/components/forms/component/LocationSelector.vue";
 import DealAssociationForm from "./assoc/deals.vue";
 import CompaniesAssociationForm from "./assoc/companies.vue";
@@ -32,7 +32,6 @@ export default {
     TaskSection,
     DealAssociationForm,
     CompaniesAssociationForm,
-
   },
 
   props: {
@@ -57,8 +56,8 @@ export default {
   emits: ["close", "submit"],
 
   setup() {
-    const { statuses, fetchStatuses } = useStatuses();
-    return { statuses, fetchStatuses };
+    const { statuses: statusList, fetchStatuses } = useStatuses();
+    return { statusList, fetchStatuses };
   },
 
   mounted() {
@@ -160,7 +159,6 @@ export default {
       isSubmitting: false,
       companySearch: "",
       activeTab: "master",
-      statuses: [],
       isCompanyDropdownOpen: false,
       isDealDropdownOpen: false,
 
@@ -201,9 +199,7 @@ export default {
         null;
 
       return (
-        signedInUser?.id ||
-        this.$store.getters["users/useridsignin"] ||
-        ""
+        signedInUser?.id || this.$store.getters["users/useridsignin"] || ""
       );
     },
     currentUserName() {
@@ -265,13 +261,18 @@ export default {
         this.activeTab = "master";
         return false;
       }
+      if (!this.formData.status) {
+        toast.error("Status is required");
+        this.activeTab = "master";
+        return false;
+      }
       return true;
     },
     handleSaveAll() {
       if (!this.validateForm()) {
         return;
       }
-      
+
       this.isSubmitting = true;
       try {
         // Gabungkan data master (formData) dan detail (noteContent, task, docs)
@@ -282,12 +283,16 @@ export default {
           task: this.task,
           docs: this.docs,
           id_owner: this.formData.id_owner || this.currentUserId || "",
-          companiesAssociation: (this.formData.selectedCompanies || []).map(c => c.id).join(","),
-          dealsAssociation: (this.formData.selectedDeals || []).map(d => d.id).join(","),
+          companyassoc: (this.formData.selectedCompanies || [])
+            .map((c) => c.id)
+            .join(","),
+          dealsassoc: (this.formData.selectedDeals || [])
+            .map((d) => d.id)
+            .join(","),
           created_at: now,
           updated_at: now,
         };
-        this.saveContact({ formdata: dataToSubmit })
+        this.saveContact(dataToSubmit)
           .then(() => {
             toast.success("Contact berhasil ditambahkan!");
             this.handleReset();
@@ -444,159 +449,159 @@ export default {
         <!-- Master Tab -->
         <form v-if="activeTab === 'master'" @submit.prevent id="addContactForm">
           <div class="p-6 space-y-6">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">
-                First Name <span class="text-red-600">*</span>
-              </label>
-              <input
-                v-model="formData.first_name"
-                type="text"
-                placeholder="First Name"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                required
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">
-                Last Name
-              </label>
-              <input
-                v-model="formData.last_name"
-                type="text"
-                placeholder="Last Name"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                required
-              />
-            </div>
-          </div>
-
-          <!-- Job Title -->
-          <div class="grid grid-cols-1 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">
-                Job Title
-              </label>
-              <input
-                v-model="formData.job_title"
-                type="text"
-                placeholder="Job Title"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-            </div>
-          </div>
-
-          <!-- Email & Status -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">
-                Email
-              </label>
-              <input
-                v-model="formData.email"
-                type="email"
-                placeholder="youremail@gmail.com"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-                required
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">
-                Status
-              </label>
-              <div class="relative">
-                <select
-                  v-model.number="formData.status"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                >
-                  <option value="" disabled selected>Select Status</option>
-                  <option
-                    v-for="status in statuses"
-                    :key="status.id"
-                    :value="status.id"
-                  >
-                    {{ status.name }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2">
+                  First Name <span class="text-red-600">*</span>
+                </label>
+                <input
+                  v-model="formData.first_name"
+                  type="text"
+                  placeholder="First Name"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2">
+                  Last Name
+                </label>
+                <input
+                  v-model="formData.last_name"
+                  type="text"
+                  placeholder="Last Name"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                  required
                 />
               </div>
             </div>
-          </div>
 
-          <!--Telephone 1 & 2-->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">
-                Telephone 1
-              </label>
-              <input
-                v-model="formData.telephone_1"
-                type="text"
-                placeholder="Telephone 1"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">
-                Telephone 2
-              </label>
-              <input
-                v-model="formData.telephone_2"
-                type="text"
-                placeholder="Telephone 2"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-            </div>
-          </div>
-
-          <!-- Address & City | Province & Country -->
-          <LocationSelector v-model="formData" />
-
-          <!-- Pos Code & Source -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">
-                Pos Code
-              </label>
-              <input
-                v-model="formData.pos_code"
-                type="text"
-                placeholder="Pos Code"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">
-                Source
-              </label>
-              <div class="relative">
-                <select
-                  v-model="formData.source"
-                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-                >
-                  <option
-                    v-for="option in sourceOptions"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="16"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+            <!-- Job Title -->
+            <div class="grid grid-cols-1 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2">
+                  Job Title
+                </label>
+                <input
+                  v-model="formData.job_title"
+                  type="text"
+                  placeholder="Job Title"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
                 />
               </div>
             </div>
-          </div>
 
-          <!-- Companies Association 
+            <!-- Email & Status -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2">
+                  Email
+                </label>
+                <input
+                  v-model="formData.email"
+                  type="email"
+                  placeholder="youremail@gmail.com"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2">
+                  Status
+                </label>
+                <div class="relative">
+                  <select
+                    v-model.number="formData.status"
+                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                  >
+                    <option value="" disabled selected>Select Status</option>
+                    <option
+                      v-for="status in statusList"
+                      :key="status.id"
+                      :value="status.id"
+                    >
+                      {{ status.name }}
+                    </option>
+                  </select>
+                  <ChevronDown
+                    :size="16"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!--Telephone 1 & 2-->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2">
+                  Telephone 1
+                </label>
+                <input
+                  v-model="formData.telephone_1"
+                  type="text"
+                  placeholder="Telephone 1"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2">
+                  Telephone 2
+                </label>
+                <input
+                  v-model="formData.telephone_2"
+                  type="text"
+                  placeholder="Telephone 2"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                />
+              </div>
+            </div>
+
+            <!-- Address & City | Province & Country -->
+            <LocationSelector v-model="formData" />
+
+            <!-- Pos Code & Source -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2">
+                  Pos Code
+                </label>
+                <input
+                  v-model="formData.pos_code"
+                  type="text"
+                  placeholder="Pos Code"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-dark-base mb-2">
+                  Source
+                </label>
+                <div class="relative">
+                  <select
+                    v-model="formData.source"
+                    class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                  >
+                    <option
+                      v-for="option in sourceOptions"
+                      :key="option.value"
+                      :value="option.value"
+                    >
+                      {{ option.label }}
+                    </option>
+                  </select>
+                  <ChevronDown
+                    :size="16"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Companies Association 
           <CompaniesAssociationForm :allCompanies="allCompanies" v-model="formData.selectedCompanies" /> -->
 
-          <!-- Deals Association 
+            <!-- Deals Association 
           <div data-deals-dropdown>
             <label class="block text-sm font-medium text-dark-base mb-2">
               Deals Association
@@ -688,11 +693,14 @@ export default {
         <div v-if="activeTab === 'detail'" class="p-6 space-y-6">
           <div class="flex-1 overflow-y-auto min-h-0">
             <NotesSection v-model="noteContent" />
-            <TaskSection v-model="task" :statusOptions="statusOptions" :priorityOptions="priorityOptions" />
+            <TaskSection
+              v-model="task"
+              :statusOptions="statusOptions"
+              :priorityOptions="priorityOptions"
+            />
             <DocsSection v-model="docs" />
           </div>
         </div>
-          
       </div>
 
       <!-- Footer Actions (Sticky) -->

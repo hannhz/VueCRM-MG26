@@ -128,7 +128,7 @@ export default {
       page: 1,
       debounceTimer: null,
       hasMore: false,
-      selectedCompaniesCache: []
+      selectedCompaniesCache: [],
     };
   },
 
@@ -164,7 +164,6 @@ export default {
 
     selectedCompanies() {
       return this.selectedCompaniesCache;
-     
     },
   },
 
@@ -221,16 +220,15 @@ export default {
       );
 
       // console.log("Toggling Companies with ID:", CompaniesId,index);
-      
+
       let newValue;
       if (index === -1) {
         newValue = [...this.Companiesassoc, CompaniesId];
-         this.selectedCompaniesCache.push(Companies);
-        
+        this.selectedCompaniesCache.push(Companies);
       } else {
         newValue = this.Companiesassoc.filter((id, i) => i !== index);
         this.selectedCompaniesCache = this.selectedCompaniesCache.filter(
-          (c) => String(c.id) !== CompaniesId
+          (c) => String(c.id) !== CompaniesId,
         );
       }
       // console.log("Toggling Companies with ID:", CompaniesId,index,newValue);
@@ -244,8 +242,6 @@ export default {
       );
     },
 
-
-
     handleClickOutside(e) {
       if (!this.$refs.CompaniesDropdownRef?.contains(e.target)) {
         this.isCompaniesDropdownOpen = false;
@@ -255,7 +251,7 @@ export default {
 
   watch: {
     isCompaniesDropdownOpen(e) {
-      if(e == false){
+      if (e == false) {
         this.CompaniesSearch = "";
         this.page = 1;
       }

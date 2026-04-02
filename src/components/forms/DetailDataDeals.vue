@@ -702,34 +702,6 @@ const loadReferenceData = async () => {
   }
 };
 
-watch(
-  currentUserName,
-  (name) => {
-    if (name) {
-      if (!dealForm.value.owner) {
-        dealForm.value.owner = name;
-      }
-      if (!taskAssignee.value) {
-        taskAssignee.value = resolveUserValue(name, assigneeOptions.value);
-      }
-    }
-  },
-  { immediate: true },
-);
-
-watch(
-  () => props.deal,
-  (newDeal) => {
-    if (newDeal) {
-      localDealData.value = { ...newDeal };
-      if (newDeal.id) {
-        fetchFullDealDetails(newDeal.id);
-      }
-    }
-  },
-  { immediate: true },
-);
-
 // ✅ WATCHER BARU - Track deal ID untuk reset penuh
 watch(
   () => props.deal?.id,
@@ -749,22 +721,9 @@ watch(
       docDescription.value = "";
       docFileSource.value = "";
       selectedDocFiles.value = [];
-      
+
       if (newDealId) {
         fetchFullDealDetails(newDealId);
-      }
-    }
-  },
-  { immediate: true },
-);
-
-watch(
-  () => props.isOpen,
-  (isOpen) => {
-    if (isOpen) {
-      loadReferenceData();
-      if (props.deal?.id) {
-        fetchFullDealDetails(props.deal.id);
       }
     }
   },

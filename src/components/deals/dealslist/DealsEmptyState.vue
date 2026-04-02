@@ -5,8 +5,12 @@ import { Search } from "lucide-vue-next";
 <template>
   <tr>
     <td colspan="7" class="px-6 py-20 text-center text-sub-text bg-slate-50/50">
-      <div class="flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
-        <div class="w-16 h-16 bg-white shadow-sm border border-outline rounded-full flex items-center justify-center">
+      <div
+        class="flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300"
+      >
+        <div
+          class="w-16 h-16 bg-white shadow-sm border border-outline rounded-full flex items-center justify-center"
+        >
           <Search :size="32" class="text-gray-300" />
         </div>
         <div class="space-y-1">

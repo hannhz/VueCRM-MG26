@@ -62,7 +62,9 @@ const isPipelineOpen = ref(false);
           >
             <span class="whitespace-nowrap">
               Currency:
-              <span class="text-dark-base font-bold">{{ selectedCurrency }}</span>
+              <span class="text-dark-base font-bold">{{
+                selectedCurrency
+              }}</span>
             </span>
             <ChevronDown
               :size="16"
@@ -102,7 +104,9 @@ const isPipelineOpen = ref(false);
           >
             <span class="whitespace-nowrap">
               Pipeline:
-              <span class="text-dark-base font-bold">{{ selectedPipeline }}</span>
+              <span class="text-dark-base font-bold">{{
+                selectedPipeline
+              }}</span>
             </span>
             <ChevronDown
               :size="16"

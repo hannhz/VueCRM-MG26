@@ -1,5 +1,5 @@
 <script>
-import { mapGetters, mapState } from "vuex";
+import { mapGetters, mapState, mapActions } from "vuex";
 import {
   X,
   Plus,
@@ -13,9 +13,9 @@ import AddContactQuickForm from "./AddContactQuickForm.vue";
 import { alertService } from "@/services/alertService";
 import ContactAssociationForm from "./assoc/contacts.vue";
 import CompaniesAssociationForm from "./assoc/companies.vue";
-import NotesSection from "./details/NotesSection.vue";
-import DocsSection from "./details/DocsSection.vue";
-import TaskSection from "./details/TaskSection.vue";
+import NotesSection from "@/components/widgets/NotesEditor.vue";
+import DocsSection from "@/components/widgets/DocsEditor.vue";
+import TaskSection from "@/components/widgets/TaskEditor.vue";
 
 export default {
   components: {
@@ -39,7 +39,7 @@ export default {
       default: false,
     },
   },
-    emits: ['close', 'submit'],
+  emits: ["close", "submit"],
   data() {
     return {
       pipelineOptions: [
@@ -105,16 +105,29 @@ export default {
         documents: null,
         contactassoc: [],
         companyassoc: [],
+        task: {
+          title: "",
+          dueDate: "",
+          status: "",
+          priority: "",
+        },
+        //docs: [],
+        docs: {
+          description: "",
+          fileSource: "",
+          files: [],
+        },
+        noteData: {
+          body: "",
+          gps_address: null,
+          latitude: null,
+          longitude: null,
+          photos: [], // [{ id, src (base64), file (File object) }]
+          audioBlob: null, // Blob audio
+        },
       },
       activeTab: "master",
       noteContent: "",
-      task: {
-        title: "",
-        dueDate: "",
-        status: "",
-        priority: "",
-      },
-      docs: [],
       statusOptions: [
         { value: "", label: "Select Data" },
         { value: "todo", label: "To Do" },
@@ -127,7 +140,6 @@ export default {
         { value: "medium", label: "Medium" },
         { value: "high", label: "High" },
       ],
-
     };
   },
   computed: {
@@ -136,8 +148,7 @@ export default {
     ...mapGetters("company", ["allcompany"]),
     ...mapState("auth", { authUser: "user" }),
     currentUserName() {
-      const signedInUser =
-        this.usersignin || this.authUser || null;
+      const signedInUser = this.usersignin || this.authUser || null;
       const fullName = [
         signedInUser?.first_name || signedInUser?.firstname,
         signedInUser?.last_name || signedInUser?.lastname,
@@ -154,7 +165,8 @@ export default {
         { value: "", label: "Select Contact" },
         ...contacts.map((c) => ({
           value: c.id,
-          label: [c.first_name, c.last_name].filter(Boolean).join(" ") || "Unknown",
+          label:
+            [c.first_name, c.last_name].filter(Boolean).join(" ") || "Unknown",
         })),
       ];
     },
@@ -177,7 +189,8 @@ export default {
     filteredContacts() {
       if (!this.contactSearch) return this.allContacts_computed;
       return this.allContacts_computed.filter((c) => {
-        const fullName = `${c.first_name || ""} ${c.last_name || ""}`.toLowerCase();
+        const fullName =
+          `${c.first_name || ""} ${c.last_name || ""}`.toLowerCase();
         const email = (c.email || "").toLowerCase();
         return (
           fullName.includes(this.contactSearch.toLowerCase()) ||
@@ -236,6 +249,7 @@ export default {
     document.removeEventListener("click", this.handleClickOutside);
   },
   methods: {
+    ...mapActions({ createDeal: "deals/createDeal" }),
     applyDefaultOwner() {
       if (!this.formData.owner && this.currentUserName) {
         this.formData.owner = this.currentUserName;
@@ -269,8 +283,11 @@ export default {
         return;
       }
 
+      console.log(this.formData);
+
+      await this.createDeal(this.formData);
       // Langsung save tanpa detail form
-      await this.handleDetailSubmit({});
+      // await this.handleDetailSubmit({});
     },
     toggleContactDropdown() {
       this.isContactDropdownOpen = !this.isContactDropdownOpen;
@@ -322,6 +339,21 @@ export default {
       this.isSavingBeforeDetail = true;
 
       try {
+        const hasTaskContent =
+          !!this.task &&
+          [
+            this.task.title,
+            this.task.name,
+            this.task.content,
+            this.task.dueDate,
+            this.task.status,
+            this.task.priority,
+          ].some((value) => String(value || "").trim() !== "");
+
+        const hasDocsContent =
+          (this.docs.description && this.docs.description.trim() !== "") ||
+          (Array.isArray(this.docs.files) && this.docs.files.length > 0);
+
         const submissionData = {
           ...this.formData,
           owner: this.formData.owner || this.currentUserName || "",
@@ -329,21 +361,24 @@ export default {
           companyassoc: (this.formData.companyassoc || []).join(","),
           // Include Notes, Tasks, and Docs
           notes: this.noteContent || "",
-          task: this.task || {},
-          docs: this.docs || [],
+          task: hasTaskContent ? this.task : null,
+          docs: hasDocsContent ? this.docs : null,
         };
 
         console.log("🔍 DEBUG: Notes, Task, Docs Before Save");
         console.log("  noteContent:", this.noteContent);
         console.log("  task:", this.task);
         console.log("  docs:", this.docs);
-        console.log("📤 Submitting Deal Payload:", { 
+        console.log("📤 Submitting Deal Payload:", {
           notes: submissionData.notes,
           task: submissionData.task,
           docs: submissionData.docs,
         });
 
-        const response = await this.$store.dispatch("deals/createDeal", submissionData);
+        const response = await this.$store.dispatch(
+          "deals/createDeal",
+          submissionData,
+        );
 
         if (response?.msg === "gagal") {
           await alertService.error(
@@ -357,7 +392,9 @@ export default {
           return;
         }
 
-        await alertService.toastSuccess(response?.msg || "Deal saved successfully");
+        await alertService.toastSuccess(
+          response?.msg || "Deal saved successfully",
+        );
         this.handleReset();
         this.$emit("submit", response);
         this.handleClose();
@@ -404,7 +441,11 @@ export default {
         status: "",
         priority: "",
       };
-      this.docs = [];
+      this.docs = {
+        description: "",
+        fileSource: "",
+        files: [],
+      };
     },
   },
 };
@@ -471,7 +512,11 @@ export default {
 
       <!-- Form Content (Scrollable) -->
       <div class="flex-1 overflow-y-auto min-h-0">
-        <form v-if="activeTab === 'master'" @submit.prevent="handleSubmit" class="p-6 space-y-6">
+        <form
+          v-if="activeTab === 'master'"
+          @submit.prevent="handleSubmit"
+          class="p-6 space-y-6"
+        >
           <!-- Deal Name & Pipeline -->
           <div class="grid grid-cols-2 gap-4">
             <div>
@@ -766,10 +811,12 @@ export default {
 
           <!-- Contact Association -->
           <ContactAssociationForm v-model="formData.contactassoc" />
-          
 
           <!-- Companies Association -->
-          <CompaniesAssociationForm :allCompanies="allCompanies_computed" v-model="formData.companyassoc" />
+          <CompaniesAssociationForm
+            :allCompanies="allCompanies_computed"
+            v-model="formData.companyassoc"
+          />
           <!-- <button
               type="button"
               @click="showAddCompanyForm = true"
@@ -778,16 +825,19 @@ export default {
               <Plus :size="16" />
               Create Company
             </button> -->
-          
         </form>
         <!-- Detail Tab -->
         <div v-if="activeTab === 'detail'" class="p-6 space-y-6">
           <div class="flex-1 overflow-y-auto min-h-0">
-            <NotesSection v-model="noteContent" />
-            <TaskSection v-model="task" :statusOptions="statusOptions" :priorityOptions="priorityOptions" />
-            <DocsSection v-model="docs" />
+            <NotesSection v-model:note-data="formData.noteData" />
+            <TaskSection
+              v-model="formData.task"
+              :statusOptions="statusOptions"
+              :priorityOptions="priorityOptions"
+            />
+            <DocsSection v-model="formData.docs" />
           </div>
-          </div>
+        </div>
       </div>
 
       <!-- Footer Actions (Sticky) -->
