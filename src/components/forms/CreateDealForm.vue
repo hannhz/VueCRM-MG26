@@ -1,5 +1,5 @@
 <script>
-import { mapGetters, mapState, mapActions } from "vuex";
+import { useStore, mapGetters, mapState, mapActions } from "vuex";
 import {
   X,
   Plus,
@@ -38,8 +38,12 @@ export default {
       type: Boolean,
       default: false,
     },
+    initialData: {
+      type: Object,
+      default: null,
+    },
   },
-  emits: ["close", "submit"],
+  emits: ["close", "submit", "back"],
   data() {
     return {
       pipelineOptions: [
@@ -159,89 +163,26 @@ export default {
 
       return signedInUser?.name || signedInUser?.username || fullName || "";
     },
-    contactOptions() {
-      const contacts = this.allContacts || [];
-      return [
-        { value: "", label: "Select Contact" },
-        ...contacts.map((c) => ({
-          value: c.id,
-          label:
-            [c.first_name, c.last_name].filter(Boolean).join(" ") || "Unknown",
-        })),
-      ];
-    },
-    companyOptions() {
-      const companies = this.allcompany || [];
-      return [
-        { value: "", label: "Select Company" },
-        ...companies.map((c) => ({
-          value: c.id,
-          label: c.company_name || c.name || "Unknown",
-        })),
-      ];
-    },
-    allContacts_computed() {
-      return this.allContacts || [];
-    },
-    allCompanies_computed() {
-      return this.allcompany || [];
-    },
-    filteredContacts() {
-      if (!this.contactSearch) return this.allContacts_computed;
-      return this.allContacts_computed.filter((c) => {
-        const fullName =
-          `${c.first_name || ""} ${c.last_name || ""}`.toLowerCase();
-        const email = (c.email || "").toLowerCase();
-        return (
-          fullName.includes(this.contactSearch.toLowerCase()) ||
-          email.includes(this.contactSearch.toLowerCase())
-        );
-      });
-    },
-    filteredCompanies() {
-      if (!this.companySearch) return this.allCompanies_computed;
-      return this.allCompanies_computed.filter((c) => {
-        const name = (c.company_name || c.name || "").toLowerCase();
-        return name.includes(this.companySearch.toLowerCase());
-      });
-    },
-    selectedContacts() {
-      return this.allContacts_computed.filter((c) =>
-        this.formData.contactassoc.includes(c.id),
-      );
-    },
-    selectedCompanies() {
-      return this.allCompanies_computed.filter((c) =>
-        this.formData.companyassoc.includes(c.id),
-      );
+    isEditMode() {
+      return !!(this.initialData && Object.keys(this.initialData).length);
     },
   },
   watch: {
-    isOpen(newVal) {
-      if (newVal) {
-        Promise.allSettled([
-          this.$store.dispatch("users/getusersignin"),
-          this.$store.dispatch("users/fetchAllusers"),
-          this.$store.dispatch("contacts/fetchAllContacts"),
-          this.$store.dispatch("company/fetchAllcompany"),
-        ]).finally(() => this.applyDefaultOwner());
+    isOpen(isOpen) {
+      if (isOpen) {
+        // 🔄 Reset dulu ke default bersih
+        this.handleReset();
 
-        // Auto-focus Deal Name field
-        this.$nextTick(() => {
-          setTimeout(() => {
-            if (this.$refs.dealNameInput) {
-              this.$refs.dealNameInput.focus();
-            }
-          }, 100);
-        });
+        if (this.initialData) {
+          // Gunakan nextTick agar reset selesai sempurna
+          this.$nextTick(() => {
+            this.setFormData(this.initialData);
+          });
+        }
       }
     },
   },
   mounted() {
-    this.$store.dispatch("users/getusersignin");
-    this.$store.dispatch("users/fetchAllusers");
-    this.$store.dispatch("contacts/fetchAllContacts");
-    this.$store.dispatch("company/fetchAllcompany");
     this.applyDefaultOwner();
     document.addEventListener("click", this.handleClickOutside);
   },
@@ -250,6 +191,127 @@ export default {
   },
   methods: {
     ...mapActions({ createDeal: "deals/createDeal" }),
+
+    // Parse JSON safely untuk handle associasi dari database
+    parseJSON(val, defaultVal) {
+      try {
+        if (!val) return defaultVal;
+        if (typeof val === "object") return val;
+        return JSON.parse(val);
+      } catch {
+        return defaultVal;
+      }
+    },
+
+    // Helper untuk mengekstrak array of IDs dari association array of objects
+    extractIdsFromAssoc(assocArray) {
+      if (!Array.isArray(assocArray)) return [];
+      return assocArray.map((item) => item.id).filter(Boolean);
+    },
+
+    setFormData(data) {
+      // Cek apakah data memiliki properti 'deals' (response dari fetchById)
+      let dealData = data;
+      let companiesAssoc = [];
+      let contactsAssoc = [];
+
+      if (data?.deals && Array.isArray(data.deals) && data.deals.length > 0) {
+        dealData = data.deals[0];
+        companiesAssoc = data.companiesassoc || [];
+        contactsAssoc = data.contactassoc || [];
+      } else {
+        // Fallback: mungkin data langsung object deal
+        companiesAssoc = data.companyassoc || data.companiesassoc || [];
+        contactsAssoc = data.contactassoc || [];
+      }
+
+      // Isi formData
+      this.formData = {
+        dealName: dealData.deal_name || dealData.dealName || "",
+        pipeline: this.normalizePipelineValue(
+          dealData.pipeline || dealData.stage || "",
+        ),
+        currency: dealData.currency || "IDR",
+        amount: dealData.amount_value || dealData.amount || "",
+        expectedCloseDate:
+          dealData.expected_close_date || dealData.expectedCloseDate || "",
+        owner: dealData.owner || "",
+        priority: dealData.priority || "",
+        source: dealData.source || "",
+        description: dealData.description || "",
+        documents: null,
+        // Ubah array of objects menjadi array of IDs
+        companyassoc: this.extractIdsFromAssoc(companiesAssoc),
+        contactassoc: this.extractIdsFromAssoc(contactsAssoc),
+        task: {
+          title: dealData.task_name || "",
+          dueDate: dealData.due_date || "",
+          status: dealData.statustask || "",
+          priority: dealData.prioritytask || "",
+        },
+        docs: {
+          description: dealData.docs || "",
+          fileSource: "",
+          files: [],
+        },
+        noteData: {
+          body: dealData.notes || "",
+          gps_address: null,
+          latitude: null,
+          longitude: null,
+          photos: [],
+          audioBlob: null,
+        },
+      };
+
+      // Reset UI state
+      this.showOptional = !!(
+        this.formData.description || this.formData.docs.description
+      );
+      this.selectedDocSource = this.formData.docs.fileSource || "";
+      this.customSource = "";
+    },
+
+    normalizePipelineValue(value) {
+      const raw = String(value || "")
+        .toLowerCase()
+        .trim();
+
+      if (!raw) return "";
+      if (raw === "prospect" || raw === "new") return "prospect";
+      if (raw.includes("qual")) return "qualified";
+      if (
+        raw.includes("offer") ||
+        raw.includes("proposal") ||
+        raw === "payment"
+      )
+        return "offer";
+      if (
+        raw.includes("negotia") ||
+        raw.includes("negotiatio") ||
+        raw.includes("negot")
+      )
+        return "negotiation";
+      if (raw.includes("closed_won") || raw.includes("won"))
+        return "closed_won";
+      if (
+        raw.includes("closed_lost") ||
+        raw.includes("lost") ||
+        raw === "closed_los"
+      )
+        return "closed_lost";
+      if (
+        raw.includes("closed_cancel") ||
+        raw.includes("cancel") ||
+        raw === "closed_can"
+      )
+        return "closed_cancel";
+
+      return value;
+    },
+
+    // Prefill form data dari database (untuk edit mode)
+
     applyDefaultOwner() {
       if (!this.formData.owner && this.currentUserName) {
         this.formData.owner = this.currentUserName;
@@ -266,6 +328,9 @@ export default {
       this.formData.documents = e.target.files[0] ?? null;
     },
     handleClose() {
+      // Reset semua state sebelum close
+      this.handleReset();
+      this.activeTab = "master";
       this.$emit("close");
     },
     async handleSubmit() {
@@ -283,11 +348,65 @@ export default {
         return;
       }
 
-      console.log(this.formData);
+      this.isSavingBeforeDetail = true;
 
-      await this.createDeal(this.formData);
-      // Langsung save tanpa detail form
-      // await this.handleDetailSubmit({});
+      try {
+        const submissionData = {
+          deal_name: this.formData.dealName,
+          stage: this.formData.pipeline,
+          currency: this.formData.currency,
+          amount: this.formData.amount,
+          expected_close_date: this.formData.expectedCloseDate,
+          owner: this.formData.owner || this.currentUserName || "",
+          priority: this.formData.priority,
+          source: this.formData.source,
+          description: this.formData.description,
+          contactassoc: (this.formData.contactassoc || []).join(","),
+          companyassoc: (this.formData.companyassoc || []).join(","),
+          notes: this.formData.noteData?.body || "",
+          task_name: this.formData.task?.title || "",
+          due_date: this.formData.task?.dueDate || "",
+          statustask: this.formData.task?.status || "",
+          prioritytask: this.formData.task?.priority || "",
+          docs: this.formData.docs?.description || "",
+        };
+
+        if (this.isEditMode) {
+          submissionData.choice = "u";
+          submissionData.id = this.initialData?.id || null;
+        } else {
+          submissionData.choice = "i";
+        }
+
+        const response = await this.createDeal(submissionData);
+
+        if (response?.msg === "gagal") {
+          await alertService.error(
+            "Server returned 'gagal'. Please check the payload or choice parameter.",
+          );
+          return;
+        }
+
+        if (response?.success === false) {
+          await alertService.error(response?.message || "Gagal menyimpan deal");
+          return;
+        }
+
+        await alertService.toastSuccess(
+          response?.msg || "Deal berhasil disimpan",
+        );
+        this.handleReset();
+        this.$emit("submit", response);
+        this.handleClose();
+      } catch (error) {
+        const message =
+          error?.response?.data?.message ||
+          error?.message ||
+          "Gagal menyimpan deal";
+        await alertService.toastError(message);
+      } finally {
+        this.isSavingBeforeDetail = false;
+      }
     },
     toggleContactDropdown() {
       this.isContactDropdownOpen = !this.isContactDropdownOpen;
@@ -408,14 +527,7 @@ export default {
         this.isSavingBeforeDetail = false;
       }
     },
-    async handleAddCompanySubmit() {
-      this.showAddCompanyForm = false;
-      await this.$store.dispatch("company/fetchAllcompany");
-    },
-    async handleAddContactQuickSubmit() {
-      this.showAddContactQuickForm = false;
-      await this.$store.dispatch("contacts/fetchAllContacts");
-    },
+
     handleReset() {
       this.formData = {
         dealName: "",
@@ -430,22 +542,37 @@ export default {
         documents: null,
         contactassoc: [],
         companyassoc: [],
+        task: {
+          title: "",
+          dueDate: "",
+          status: "",
+          priority: "",
+        },
+        docs: {
+          description: "",
+          fileSource: "",
+          files: [],
+        },
+        noteData: {
+          body: "",
+          gps_address: null,
+          latitude: null,
+          longitude: null,
+          photos: [],
+          audioBlob: null,
+        },
       };
+
+      // Reset UI state
       this.contactSearch = "";
       this.companySearch = "";
       this.showOptional = false;
-      this.noteContent = "";
-      this.task = {
-        title: "",
-        dueDate: "",
-        status: "",
-        priority: "",
-      };
-      this.docs = {
-        description: "",
-        fileSource: "",
-        files: [],
-      };
+      this.selectedDocSource = "";
+      this.customSource = "";
+      this.isContactDropdownOpen = false;
+      this.isCompanyDropdownOpen = false;
+      this.isDocDropdownOpen = false;
+      this.activeTab = "master";
     },
   },
 };
@@ -472,7 +599,9 @@ export default {
       <div
         class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
       >
-        <h2 class="text-xl font-bold text-dark-base">Create Deal</h2>
+        <h2 class="text-xl font-bold text-dark-base">
+          {{ isEditMode ? "Edit Deal" : "Create Deal" }}
+        </h2>
         <button
           @click="handleClose"
           class="p-2 hover:bg-light-base rounded-lg transition-colors"
@@ -521,8 +650,8 @@ export default {
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2"
-                >Deal Name</label
-              >
+                >Deal Name <span class="text-red-600">*</span>
+              </label>
               <input
                 ref="dealNameInput"
                 v-model="formData.dealName"
@@ -533,9 +662,9 @@ export default {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Pipeline</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">
+                Pipeline/Stage <span class="text-red-600">*</span>
+              </label>
               <div class="relative">
                 <select
                   v-model="formData.pipeline"
@@ -583,9 +712,9 @@ export default {
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Amount / Value</label
-              >
+              <label class="block text-sm font-medium text-dark-base mb-2">
+                Amount / Value <span class="text-red-600">*</span>
+              </label>
               <input
                 v-model="formData.amount"
                 type="number"
@@ -810,11 +939,14 @@ export default {
           </div>
 
           <!-- Contact Association -->
-          <ContactAssociationForm v-model="formData.contactassoc" />
+          <ContactAssociationForm
+            v-model="formData.contactassoc"
+            :contacts="allContacts"
+          />
 
           <!-- Companies Association -->
           <CompaniesAssociationForm
-            :allCompanies="allCompanies_computed"
+            :companies="allcompany"
             v-model="formData.companyassoc"
           />
           <!-- <button
@@ -872,20 +1004,6 @@ export default {
       </div>
     </div>
   </transition>
-
-  <!-- Add Company Form -->
-  <AddCompanyForm
-    :isOpen="showAddCompanyForm"
-    @close="showAddCompanyForm = false"
-    @submit="handleAddCompanySubmit"
-  />
-
-  <!-- Add Contact Quick Form -->
-  <AddContactQuickForm
-    :isOpen="showAddContactQuickForm"
-    @close="showAddContactQuickForm = false"
-    @submit="handleAddContactQuickSubmit"
-  />
 </template>
 
 <style scoped>
@@ -955,6 +1073,7 @@ input[type="number"]::-webkit-outer-spin-button {
   margin: 0;
 }
 input[type="number"] {
+  appearance: textfield;
   -moz-appearance: textfield;
 }
 </style>

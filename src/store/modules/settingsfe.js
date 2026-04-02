@@ -1,4 +1,9 @@
 import api from "@/api";
+
+
+import { useCookies } from "vue3-cookies";
+
+const { cookies } = useCookies();
 const state = {
   loading: false,
   datasetingall: null,
@@ -228,6 +233,7 @@ const actions = {
       .then((data) => {
         context.commit("setloading", false);
         context.commit("setlayoutweb", data);
+        cookies.set("layoutweb", data, "10h");
 
         // Log the dbmenu2 array specifically as requested
         if (data && data.dbmenu2) {

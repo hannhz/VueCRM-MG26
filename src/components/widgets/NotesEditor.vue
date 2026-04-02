@@ -54,7 +54,8 @@ export default {
       // State internal editor
       gpsAddress: null,
       coords: { lat: null, lng: null },
-      photos: [], // [{ id, src (base64 preview), file (File object) }]
+      photos: [], // langsung array of File
+      photoPreviews: [], // pisahkan untuk preview 
       audioBlob: null, // Blob hasil rekaman
 
       // Recording state
@@ -195,6 +196,7 @@ export default {
     //   });
     //   event.target.value = "";
     // },
+
     async onPhotoSelected(event) {
       const files = Array.from(event.target.files);
 
@@ -235,6 +237,8 @@ export default {
 
       event.target.value = "";
     },
+
+    
     removePhoto(id) {
       //   this.photos = this.photos.filter((p) => p.id !== id);
       //   this.emitData();

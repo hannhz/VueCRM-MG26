@@ -32,14 +32,14 @@ const displayCount = (value) => {
   return isSummaryLoading.value ? "..." : formatCount(value);
 };
 
-onMounted(async () => {
+/* onMounted(async () => {
   await Promise.allSettled([
     store.dispatch("contacts/fetchAllContacts"),
     store.dispatch("company/fetchAllcompany"),
     store.dispatch("deals/fetchAllDeals"),
     store.dispatch("tasks/fetchAllTasks"),
   ]);
-});
+}); */
 </script>
 
 <template>

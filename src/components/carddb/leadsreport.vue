@@ -235,7 +235,7 @@ const handleClickOutside = (event) => {
   }
 };
 
-onMounted(async () => {
+/* onMounted(async () => {
   document.addEventListener("click", handleClickOutside);
 
   const requests = [];
@@ -257,7 +257,7 @@ onMounted(async () => {
   if (requests.length > 0) {
     await Promise.all(requests);
   }
-});
+}); */
 
 onBeforeUnmount(() => {
   document.removeEventListener("click", handleClickOutside);
