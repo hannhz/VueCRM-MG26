@@ -6,6 +6,7 @@ import {
   Camera,
   Mic,
 } from "lucide-vue-next";
+import imageCompression from "browser-image-compression";
 
 export default {
   name: "NotesEditor",

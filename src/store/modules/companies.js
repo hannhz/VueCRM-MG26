@@ -349,7 +349,6 @@ const actions = {
         let network = await api.post("company/input", requestPayload, {
           headers: {
             Authorization: "Bearer " + cookies.get("token"),
-            "Content-Type": "multipart/form-data",
           },
         });
 

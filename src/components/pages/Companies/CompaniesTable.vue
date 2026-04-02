@@ -29,23 +29,39 @@
             >
               <div class="flex items-center gap-2">
                 Company Name
-                <ChevronDown :size="16" class="text-gray-400" />
+                <!-- <ChevronDown :size="16" class="text-gray-400" /> -->
               </div>
             </th>
             <th
               class="w-[22%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
             >
               <div class="flex items-center gap-2">
-                Info Company
-                <ChevronDown :size="16" class="text-gray-400" />
+                Address
+                <!-- <ChevronDown :size="16" class="text-gray-400" /> -->
+              </div>
+            </th>
+            <th
+              class="w-[22%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
+            >
+              <div class="flex items-center gap-2">
+                Province
+                <!-- <ChevronDown :size="16" class="text-gray-400" /> -->
+              </div>
+            </th>
+            <th
+              class="w-[22%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
+            >
+              <div class="flex items-center gap-2">
+                City
+                <!-- <ChevronDown :size="16" class="text-gray-400" /> -->
               </div>
             </th>
             <th
               class="w-[20%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
             >
               <div class="flex items-center gap-2">
-                Associated with
-                <ChevronDown :size="16" class="text-gray-400" />
+                Telephone
+                <!-- <ChevronDown :size="16" class="text-gray-400" /> -->
               </div>
             </th>
             <th
@@ -53,23 +69,16 @@
             >
               <div class="flex items-center gap-2">
                 Type
-                <ChevronDown :size="16" class="text-gray-400" />
+                <!-- <ChevronDown :size="16" class="text-gray-400" /> -->
               </div>
             </th>
-            <th
-              class="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
-            >
-              <div class="flex items-center gap-2">
-                Created/Update
-                <ChevronDown :size="16" class="text-gray-400" />
-              </div>
-            </th>
+
             <th
               class="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
             >
               <div class="flex items-center gap-2">
                 Owner
-                <ChevronDown :size="16" class="text-gray-400" />
+                <!-- <ChevronDown :size="16" class="text-gray-400" /> -->
               </div>
             </th>
           </tr>
@@ -113,23 +122,25 @@
             <td
               class="px-6 py-4 text-sm text-dark-base whitespace-nowrap overflow-hidden text-ellipsis"
             >
-              {{ company.website }}
-            </td>
-            <td class="px-6 py-4 text-sm text-dark-base leading-5">
-              <div class="whitespace-nowrap overflow-hidden text-ellipsis">
-                {{ company.contactLabelsText }}
-              </div>
-              <div class="whitespace-nowrap overflow-hidden text-ellipsis">
-                {{ company.dealLabelsText }}
-              </div>
-            </td>
-            <td class="px-6 py-4 text-sm text-dark-base">
-              {{ company.typeName || company.type }}
+              {{ company.address }}
             </td>
             <td
               class="px-6 py-4 text-sm text-dark-base whitespace-nowrap overflow-hidden text-ellipsis"
             >
-              {{ company.updatedAtText }}
+              {{ company.province }}
+            </td>
+            <td
+              class="px-6 py-4 text-sm text-dark-base whitespace-nowrap overflow-hidden text-ellipsis"
+            >
+              {{ company.city }}
+            </td>
+            <td class="px-6 py-4 text-sm text-dark-base leading-5">
+              <div class="whitespace-nowrap overflow-hidden text-ellipsis">
+                {{ company.telephone }}
+              </div>
+            </td>
+            <td class="px-6 py-4 text-sm text-dark-base">
+              {{ company.typeName || company.type }}
             </td>
             <td
               class="px-6 py-4 text-sm text-dark-base whitespace-nowrap overflow-hidden text-ellipsis"

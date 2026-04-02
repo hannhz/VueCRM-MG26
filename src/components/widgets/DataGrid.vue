@@ -1,352 +1,355 @@
 <template>
-  <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
-    <DxDataGrid
-      ref="dataGridRef"
-      :dataSource="dataSource"
-      :columnAutoWidth="columnAutoWidth"
-      :allowColumnResizing="allowColumnResizing"
-      :allowColumnReordering="allowColumnReordering"
-      :showBorders="showBorders"
-      :keyExpr="keyExpr"
-      :focusedRowEnabled="isFocusEnabled"
-      :focusedRowKey="focusedRowKey"
-      :height="height"
-      :rowAlternationEnabled="rowAlternationEnabled"
-      :hoverStateEnabled="hoverStateEnabled"
-      :wordWrapEnabled="wordwrap"
-      :columnHidingEnabled="columnHidingEnabled"
-      @exporting="onExporting"
-      @rowRemoving="handleRowRemoving"
-      @optionChanged="handleOptionChanged"
-      @cellPrepared="onCellPrepared"
-      @rowPrepared="onRowPrepared"
-      @content-ready="handlecontentready"
-      @onRowClick="handleFocusedRowChanged"
-    >
-      <!-- @focusedRowChanged="handleFocusedRowChanged" -->
-      <DxColumn
-        v-for="col in computedColumns"
-        :key="col.dataField || col.caption"
-        v-bind="col"
-      />
-
-      <DxColumnChooser
-        :enabled="false"
-        mode="select"
-        :position="{
-          my: 'right top',
-          at: 'right bottom',
-          of: '.dx-datagrid-column-chooser-button',
-          offset: '0 5',
-        }"
-      />
-
-      <DxSummary v-if="summaries.length || avg.length">
-        <DxTotalItem
-          v-for="(summary, index) in summaries"
-          :key="'sum-' + index"
-          :column="typeof summary === 'object' ? summary.column : summary"
-          summaryType="sum"
-          :valueFormat="'#,##0'"
-          :displayFormat="'{0}'"
-          :alignment="'right'"
-        />
-        <DxTotalItem
-          v-for="(summary, index) in avg"
-          :key="'avg-' + index"
-          :column="typeof summary === 'object' ? summary.column : summary"
-          summaryType="avg"
-          :valueFormat="'#,##0'"
-          :displayFormat="'{0}'"
-          :alignment="'right'"
+  <div class="mt-4 flex-1 min-h-1 relative">
+    <div class="h-full overflow-hidden">
+      <DxDataGrid
+        ref="dataGridRef"
+        :dataSource="dataSource"
+        :columnAutoWidth="columnAutoWidth"
+        :allowColumnResizing="allowColumnResizing"
+        :allowColumnReordering="allowColumnReordering"
+        :showBorders="showBorders"
+        :keyExpr="keyExpr"
+        :focusedRowEnabled="isFocusEnabled"
+        :focusedRowKey="focusedRowKey"
+        :height="height"
+        :rowAlternationEnabled="rowAlternationEnabled"
+        :hoverStateEnabled="hoverStateEnabled"
+        :wordWrapEnabled="wordwrap"
+        :columnHidingEnabled="columnHidingEnabled"
+        @exporting="onExporting"
+        @rowRemoving="handleRowRemoving"
+        @optionChanged="handleOptionChanged"
+        @cellPrepared="onCellPrepared"
+        @rowPrepared="onRowPrepared"
+        @content-ready="handlecontentready"
+        @onRowClick="handleFocusedRowChanged"
+        @rowDblClick="handleFocusedRowChanged"
+      >
+        <!-- @focusedRowChanged="handleFocusedRowChanged" -->
+        <DxColumn
+          v-for="col in computedColumns"
+          :key="col.dataField || col.caption"
+          v-bind="col"
         />
 
-        <DxGroupItem
-          v-for="(col, index) in summaries"
-          :key="'group-sum-' + index"
-          :column="typeof col === 'object' ? col.column : col"
-          summary-type="sum"
-          :alignByColumn="true"
-          :showInGroupFooter="true"
-          valueFormat="#,##0"
-          displayFormat="{0}"
-          :alignment="'right'"
+        <DxColumnChooser
+          :enabled="false"
+          mode="select"
+          :position="{
+            my: 'right top',
+            at: 'right bottom',
+            of: '.dx-datagrid-column-chooser-button',
+            offset: '0 5',
+          }"
         />
 
-        <DxGroupItem
-          v-for="(col, index) in avg"
-          :key="'group-avg-' + index"
-          :column="typeof col === 'object' ? col.column : col"
-          summary-type="avg"
-          :alignByColumn="true"
-          :showInGroupFooter="true"
-          valueFormat="#,##0"
-          displayFormat="{0}"
-          :alignment="'right'"
+        <DxSummary v-if="summaries.length || avg.length">
+          <DxTotalItem
+            v-for="(summary, index) in summaries"
+            :key="'sum-' + index"
+            :column="typeof summary === 'object' ? summary.column : summary"
+            summaryType="sum"
+            :valueFormat="'#,##0'"
+            :displayFormat="'{0}'"
+            :alignment="'right'"
+          />
+          <DxTotalItem
+            v-for="(summary, index) in avg"
+            :key="'avg-' + index"
+            :column="typeof summary === 'object' ? summary.column : summary"
+            summaryType="avg"
+            :valueFormat="'#,##0'"
+            :displayFormat="'{0}'"
+            :alignment="'right'"
+          />
+
+          <DxGroupItem
+            v-for="(col, index) in summaries"
+            :key="'group-sum-' + index"
+            :column="typeof col === 'object' ? col.column : col"
+            summary-type="sum"
+            :alignByColumn="true"
+            :showInGroupFooter="true"
+            valueFormat="#,##0"
+            displayFormat="{0}"
+            :alignment="'right'"
+          />
+
+          <DxGroupItem
+            v-for="(col, index) in avg"
+            :key="'group-avg-' + index"
+            :column="typeof col === 'object' ? col.column : col"
+            summary-type="avg"
+            :alignByColumn="true"
+            :showInGroupFooter="true"
+            valueFormat="#,##0"
+            displayFormat="{0}"
+            :alignment="'right'"
+          />
+        </DxSummary>
+
+        <DxScrolling
+          :mode="scrollingMode"
+          :showScrollbar="showScrollbar"
+          :columnRenderingMode="columnRenderingMode"
         />
-      </DxSummary>
-
-      <DxScrolling
-        :mode="scrollingMode"
-        :showScrollbar="showScrollbar"
-        :columnRenderingMode="columnRenderingMode"
-      />
-      <DxExport :enabled="false" :allowExportSelectedData="false" />
-      <DxPaging v-if="useBuiltInPager" :pageSize="pageSize" />
-      <DxPaging v-else :enabled="false" />
-      <DxPager
-        v-if="showPager && useBuiltInPager"
-        :visible="true"
-        :allowedPageSizes="allowedPageSizes"
-        :showPageSizeSelector="showPageSizeSelector"
-        :showNavigationButtons="showNavigationButtons"
-      />
-      <DxPager v-else :visible="false" />
-      <DxHeaderFilter :visible="true" />
-      <DxSearchPanel
-        v-if="filterSettings.showSearchPanel"
-        :visible="true"
-        :width="searchPanelWidth"
-        :placeholder="searchPlaceholder"
-      />
-
-      <DxEditing
-        :allowUpdating="allowUpdating"
-        :allowDeleting="allowDeleting"
-        :allowAdding="allowAdding"
-      />
-
-      <DxRowDragging
-        :allowReordering="true"
-        :showDragIcons="false"
-        :onReorder="onRowReorder"
-      />
-      <DxHeaderFilter :visible="filterSettings.showHeaderFilter" />
-
-      <DxGrouping
-        :contextMenuEnabled="true"
-        expandMode="rowClick"
-        :autoExpandAll="autoExpandAll"
-      />
-      <DxGroupPanel
-        :visible="showGroupPanel"
-        emptyPanelText="Drag a column header here to group by that column"
-      />
-
-      <DxToolbar v-if="showToolbar">
-        <DxItem location="before" template="headerToolbarTemplate" />
-        <DxItem name="groupPanel" location="before" />
-        <DxItem
-          location="before"
-          v-if="isColumnGrouped"
-          template="checkboxExpandTemplate"
+        <DxExport :enabled="false" :allowExportSelectedData="false" />
+        <DxPaging v-if="useBuiltInPager" :pageSize="pageSize" />
+        <DxPaging v-else :enabled="false" />
+        <DxPager
+          v-if="showPager && useBuiltInPager"
+          :visible="true"
+          :allowedPageSizes="allowedPageSizes"
+          :showPageSizeSelector="showPageSizeSelector"
+          :showNavigationButtons="showNavigationButtons"
         />
-        <DxItem
-          v-if="showAddButton"
-          location="after"
-          widget="dxButton"
-          :options="addButtonOptions"
-        />
-        <DxItem
-          v-if="showPrintButton"
-          location="after"
-          widget="dxButton"
-          :options="printButtonOptions"
+        <DxPager v-else :visible="false" />
+        <DxHeaderFilter :visible="true" />
+        <DxSearchPanel
+          v-if="filterSettings.showSearchPanel"
+          :visible="true"
+          :width="searchPanelWidth"
+          :placeholder="searchPlaceholder"
         />
 
-        <!-- <DxItem location="after" widget="dxButton" :options="{
+        <DxEditing
+          :allowUpdating="allowUpdating"
+          :allowDeleting="allowDeleting"
+          :allowAdding="allowAdding"
+        />
+
+        <DxRowDragging
+          :allowReordering="true"
+          :showDragIcons="false"
+          :onReorder="onRowReorder"
+        />
+        <DxHeaderFilter :visible="filterSettings.showHeaderFilter" />
+
+        <DxGrouping
+          :contextMenuEnabled="true"
+          expandMode="rowClick"
+          :autoExpandAll="autoExpandAll"
+        />
+        <DxGroupPanel
+          :visible="showGroupPanel"
+          emptyPanelText="Drag a column header here to group by that column"
+        />
+
+        <DxToolbar v-if="showToolbar">
+          <DxItem location="before" template="headerToolbarTemplate" />
+          <DxItem name="groupPanel" location="before" />
+          <DxItem
+            location="before"
+            v-if="isColumnGrouped"
+            template="checkboxExpandTemplate"
+          />
+          <DxItem
+            v-if="showAddButton"
+            location="after"
+            widget="dxButton"
+            :options="addButtonOptions"
+          />
+          <DxItem
+            v-if="showPrintButton"
+            location="after"
+            widget="dxButton"
+            :options="printButtonOptions"
+          />
+
+          <!-- <DxItem location="after" widget="dxButton" :options="{
           icon: 'revert',  // bisa juga pakai 'refresh' tapi beda warna/icon biar jelas
           hint: 'Reset Grid',
           elementAttr: { class: 'reset-button' },
           onClick: resetGrid,
         }" /> -->
-        <DxItem
-          v-if="showRefreshButton"
-          location="after"
-          widget="dxButton"
-          :options="refreshButtonOptions"
-        />
-        <!-- <DxItem
+          <DxItem
+            v-if="showRefreshButton"
+            location="after"
+            widget="dxButton"
+            :options="refreshButtonOptions"
+          />
+          <!-- <DxItem
           v-if="showExportButton"
           location="after"
           widget="dxButton"
           :options="exportButtonOptions"
         /> -->
-        <!-- <DxItem
+          <!-- <DxItem
           v-if="showFilterButton"
           location="after"
           widget="dxButton"
           :options="filterButtonOptions"
         /> -->
-        <DxItem name="columnChooserButton" location="after" />
-        <!-- <DxItem
+          <DxItem name="columnChooserButton" location="after" />
+          <!-- <DxItem
           location="after"
           widget="dxButton"
           :options="filterListButtonOptions"
         /> -->
 
-        <DxItem
-          v-for="(item, index) in customToolbarItems"
-          :key="`custom-${index}`"
-          :location="item.location || 'after'"
-          :widget="item.widget"
-          :options="item.options"
-        />
-        <DxItem v-if="showSearchPanel" name="searchPanel" location="after" />
-        <DxItem
-          v-if="customsearch"
-          location="after"
-          widget="dxTextBox"
-          :options="customSearchOptions"
-        />
-      </DxToolbar>
+          <DxItem
+            v-for="(item, index) in customToolbarItems"
+            :key="`custom-${index}`"
+            :location="item.location || 'after'"
+            :widget="item.widget"
+            :options="item.options"
+          />
+          <DxItem v-if="showSearchPanel" name="searchPanel" location="after" />
+          <DxItem
+            v-if="customsearch"
+            location="after"
+            widget="dxTextBox"
+            :options="customSearchOptions"
+          />
+        </DxToolbar>
 
-      <template #headerToolbarTemplate>
-        <slot name="header-toolbar"></slot>
-      </template>
+        <template #headerToolbarTemplate>
+          <slot name="header-toolbar"></slot>
+        </template>
 
-      <template #checkboxExpandTemplate>
-        <DxCheckBox
-          id="autoExpand"
-          @valueChanged="handleExpandAllChange"
-          v-model="autoExpandAll"
-          text="Expand All Groups"
-          :elementAttr="{ class: 'expand-all-checkbox' }"
-        />
-      </template>
+        <template #checkboxExpandTemplate>
+          <DxCheckBox
+            id="autoExpand"
+            @valueChanged="handleExpandAllChange"
+            v-model="autoExpandAll"
+            text="Expand All Groups"
+            :elementAttr="{ class: 'expand-all-checkbox' }"
+          />
+        </template>
 
-      <template
-        #action-cell-template="{ data: templateOptions }"
-        v-if="showActionColumn"
-      >
-        <div class="flex gap-2 justify-center items-center">
-          <button
-            v-if="showEditAction"
-            @click="handleEdit(templateOptions)"
-            class="inline-flex items-center justify-center w-8 h-8 text-blue-500 hover:text-blue-700 transition-colors duration-200"
-            :title="editActionTitle"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+        <template
+          #action-cell-template="{ data: templateOptions }"
+          v-if="showActionColumn"
+        >
+          <div class="flex gap-2 justify-center items-center">
+            <button
+              v-if="showEditAction"
+              @click="handleEdit(templateOptions)"
+              class="inline-flex items-center justify-center w-8 h-8 text-blue-500 hover:text-blue-700 transition-colors duration-200"
+              :title="editActionTitle"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              />
-            </svg>
-          </button>
-          <button
-            v-if="showDeleteAction"
-            @click="handleDelete(templateOptions)"
-            class="inline-flex items-center justify-center w-8 h-8 text-red-500 hover:text-red-700 transition-colors duration-200"
-            :title="deleteActionTitle"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+            </button>
+            <button
+              v-if="showDeleteAction"
+              @click="handleDelete(templateOptions)"
+              class="inline-flex items-center justify-center w-8 h-8 text-red-500 hover:text-red-700 transition-colors duration-200"
+              :title="deleteActionTitle"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1v3M4 7h16"
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1v3M4 7h16"
+                />
+              </svg>
+            </button>
+            <button
+              v-for="(action, index) in customActions"
+              :key="`action-${index}`"
+              @click="action.handler(templateOptions)"
+              :class="
+                action.class ||
+                'inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-700 transition-colors duration-200'
+              "
+              :title="action.title"
+            >
+              <component
+                :is="action.icon"
+                v-if="typeof action.icon === 'object'"
+                class="w-4 h-4"
               />
-            </svg>
-          </button>
-          <button
-            v-for="(action, index) in customActions"
-            :key="`action-${index}`"
-            @click="action.handler(templateOptions)"
-            :class="
-              action.class ||
-              'inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-700 transition-colors duration-200'
-            "
-            :title="action.title"
-          >
-            <component
-              :is="action.icon"
-              v-if="typeof action.icon === 'object'"
-              class="w-4 h-4"
-            />
-            <div
-              v-else-if="typeof action.icon === 'string'"
-              v-html="action.icon"
-              class="w-4 h-4"
-            ></div>
-          </button>
-        </div>
-      </template>
+              <div
+                v-else-if="typeof action.icon === 'string'"
+                v-html="action.icon"
+                class="w-4 h-4"
+              ></div>
+            </button>
+          </div>
+        </template>
 
-      <template
-        v-for="template in customCellTemplates"
-        :key="template.name"
-        v-slot:[template.name]="templateData"
+        <template
+          v-for="template in customCellTemplates"
+          :key="template.name"
+          v-slot:[template.name]="templateData"
+        >
+          <component
+            :is="template.component"
+            :data="templateData"
+            v-bind="template.props"
+          />
+        </template>
+
+        <slot />
+      </DxDataGrid>
+      <DxPopup
+        :visible="filterListPopupVisible"
+        :show-title="true"
+        title="Filter List"
+        :width="260"
+        :height="undefined"
+        :shading="false"
+        :position="{
+          my: 'right top',
+          at: 'right bottom',
+          of: '.filter-list-button',
+          offset: '0 5',
+        }"
+        :onHidden="
+          () => {
+            filterListPopupVisible = false;
+          }
+        "
       >
-        <component
-          :is="template.component"
-          :data="templateData"
-          v-bind="template.props"
-        />
-      </template>
+        <template #contentTemplate>
+          <div class="p-4 space-y-4">
+            <div class="flex justify-between items-center">
+              <div>Search Panel</div>
+              <DxCheckBox
+                :value="filterSettings.showSearchPanel"
+                @valueChanged="() => toggleFilterOption('showSearchPanel')"
+              />
+            </div>
 
-      <slot />
-    </DxDataGrid>
-    <DxPopup
-      :visible="filterListPopupVisible"
-      :show-title="true"
-      title="Filter List"
-      :width="260"
-      :height="undefined"
-      :shading="false"
-      :position="{
-        my: 'right top',
-        at: 'right bottom',
-        of: '.filter-list-button',
-        offset: '0 5',
-      }"
-      :onHidden="
-        () => {
-          filterListPopupVisible = false;
-        }
-      "
-    >
-      <template #contentTemplate>
-        <div class="p-4 space-y-4">
-          <div class="flex justify-between items-center">
-            <div>Search Panel</div>
-            <DxCheckBox
-              :value="filterSettings.showSearchPanel"
-              @valueChanged="() => toggleFilterOption('showSearchPanel')"
-            />
-          </div>
+            <div class="flex justify-between items-center">
+              <div>Filter Row</div>
+              <DxCheckBox
+                :value="filterSettings.showFilterRow"
+                @valueChanged="() => toggleFilterOption('showFilterRow')"
+              />
+            </div>
 
-          <div class="flex justify-between items-center">
-            <div>Filter Row</div>
-            <DxCheckBox
-              :value="filterSettings.showFilterRow"
-              @valueChanged="() => toggleFilterOption('showFilterRow')"
-            />
+            <div class="flex justify-between items-center">
+              <div>Header Filter</div>
+              <DxCheckBox
+                :value="filterSettings.showHeaderFilter"
+                @valueChanged="() => toggleFilterOption('showHeaderFilter')"
+              />
+            </div>
           </div>
-
-          <div class="flex justify-between items-center">
-            <div>Header Filter</div>
-            <DxCheckBox
-              :value="filterSettings.showHeaderFilter"
-              @valueChanged="() => toggleFilterOption('showHeaderFilter')"
-            />
-          </div>
-        </div>
-      </template>
-    </DxPopup>
+        </template>
+      </DxPopup>
+    </div>
   </div>
 </template>
 
@@ -382,7 +385,7 @@ import debounce from "lodash.debounce";
 import DxPopup from "devextreme-vue/popup";
 
 export default {
-  name: "ReusableDataGrid",
+  name: "DataGrid",
   components: {
     DxDataGrid,
     DxFilterRow,
@@ -412,7 +415,7 @@ export default {
       searchValue: "",
       dataGridRef: null,
       focusedRowKey: null,
-      dataSource: [],
+      // dataSource: [],
       tempPageNumber: this.page,
       isExporting: false,
       autoExpandAll: true,
@@ -421,8 +424,8 @@ export default {
       filterListPopupVisible: false,
       filterSettings: {
         showSearchPanel: false,
-        showFilterRow: true,
-        showHeaderFilter: true,
+        showFilterRow: false,
+        showHeaderFilter: false,
       },
     };
   },
@@ -515,7 +518,7 @@ export default {
     },
     columnRenderingMode: {
       type: String,
-      default: "virtual",
+      default: "DxScrolling",
     },
     showToolbar: {
       type: Boolean,
@@ -835,7 +838,7 @@ export default {
           dataField: key,
           caption: caption,
           // visible: key !== "keyindex" && key !== "PageTotal",
-          visible: ![...this.disablecol, "keyindex", "PageTotal"].includes(key),
+          visible: ![...this.disablecol, "keyindex", "PageTotal","id"].includes(key),
         };
       });
 
@@ -877,7 +880,7 @@ export default {
     },
     dataSource: {
       handler(newVal) {
-        this.dataSource = newVal;
+        // this.dataSource = newVal;
       },
       immediate: true,
     },
@@ -1218,7 +1221,7 @@ export default {
       this.$emit("row-removing", e);
     },
     handleFocusedRowChanged(e) {
-      console.log(e);
+      console.log("Focused row changed:", e);
       this.focusedRowKey = e.row ? e.row.key : null;
       this.$emit("focused-row-changed", e);
     },
@@ -1278,11 +1281,11 @@ export default {
         );
 
         if (headerContainer) {
-          headerContainer.style.overflowX = "hidden";
+          // headerContainer.style.overflowX = "hidden";
         }
 
         if (headerScrollContainer) {
-          headerScrollContainer.style.overflowX = "hidden";
+          // headerScrollContainer.style.overflowX = "hidden";
           headerScrollContainer.addEventListener("scroll", (e) => {
             e.target.scrollLeft = 0;
           });
@@ -1313,6 +1316,7 @@ export default {
 
 <style scoped>
 /* Sembunyikan scrollbar horizontal di header */
+/*
 :deep(.dx-datagrid-headers) {
   overflow: hidden !important;
 }
@@ -1320,6 +1324,8 @@ export default {
 :deep(.dx-datagrid-headers .dx-datagrid-scroll-container) {
   overflow-x: hidden !important;
 }
+
+*/
 
 :deep(.dx-datagrid-header-panel) {
   overflow: hidden !important;

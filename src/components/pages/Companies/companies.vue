@@ -18,6 +18,8 @@ import {
   getUpdateAction,
 } from "@/utils/detailFormPayload";
 
+import DataGrid from "@/components/widgets/DataGrid.vue";
+
 export default {
   components: {
     CompaniesHeader,
@@ -27,6 +29,7 @@ export default {
     BulkAddCompanyForm,
     DetailForm,
     DetailDataCompany,
+    DataGrid
   },
 
   data() {
@@ -171,6 +174,14 @@ export default {
   },
 
   methods: {
+    handleFocusedRowChanged(e) {
+      const company = e?.data;
+
+      console.log("Focused company:", company);
+      if (company) {
+        this.openCompanyDetail(company);
+      }
+    },
     ...mapActions("company", [
       "fetchAllcompany",
       "fetchcompanybyid",
@@ -336,6 +347,8 @@ export default {
 
       try {
         const response = await this.fetchcompanybyid(companyId);
+
+        console.log("Fetched company detail:", response.data.companies[0]);
         const companyDetail =
           response?.data?.company ||
           response?.data?.data ||
@@ -344,7 +357,8 @@ export default {
           response?.companies ||
           company;
 
-        this.selectedCompany = { ...company, ...companyDetail };
+        // this.selectedCompany = { ...company, ...companyDetail };
+        this.selectedCompany = response.data.companies[0] ?? [];
         this.showDetailDataCompany = true;
       } catch (error) {
         this.selectedCompany = { ...company };
@@ -702,7 +716,7 @@ export default {
         @onEnter="fetchData"
       />
 
-      <CompaniesTable
+      <!-- <CompaniesTable
         :companies="tableCompanies"
         :isLoading="isLoading"
         :selectedIds="selectedIds"
@@ -710,7 +724,10 @@ export default {
         @update:selectedIds="selectedIds = $event"
         @toggle-select-all="toggleSelectAll"
         @row-click="openCompanyDetail"
-      />
+      /> -->
+
+
+      <DataGrid :dataSource="tableCompanies" :keyExpr=" 'id' " @focused-row-changed="handleFocusedRowChanged" :showActionColumn="false"/>
     </div>
 
     <!-- Add Company Form -->
