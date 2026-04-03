@@ -335,20 +335,34 @@ const actions = {
     return context.dispatch("saveCompany", payload);
   },
 
-  saveCompany(context, formData) {
+  saveCompany(context, payload) {
     const promise = new Promise(async (resolve, reject) => {
       try {
-        // Tentukan choice: 'i' untuk insert, 'u' untuk update
-        const choice = formData.choice || (formData.id ? "u" : "i");
 
-        const requestPayload = normalizeCompanyPayload({
-          choice: choice,
-          ...formData,
-        });
+        let requestPayload;
+
+        // 🔥 DETECT FormData
+        if (payload instanceof FormData) {
+          // tambahkan choice langsung ke FormData
+          const choice =
+            payload.get("choice") || (payload.get("id") ? "u" : "i");
+          payload.append("choice", choice);
+
+          requestPayload = payload;
+        } else {
+          // 🔥 kalau object biasa
+          const choice = payload.choice || (payload.id ? "u" : "i");
+
+          requestPayload = normalizeCompanyPayload({
+            choice: choice,
+            ...payload,
+          });
+        }
 
         let network = await api.post("company/input", requestPayload, {
           headers: {
             Authorization: "Bearer " + cookies.get("token"),
+            "Content-Type": "multipart/form-data",
           },
         });
 

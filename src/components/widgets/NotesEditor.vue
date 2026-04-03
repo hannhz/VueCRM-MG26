@@ -195,53 +195,99 @@ export default {
     //   });
     //   event.target.value = "";
     // },
+    // async onPhotoSelected(event) {
+    //   const files = Array.from(event.target.files);
+
+    //   for (const file of files) {
+    //     try {
+    //       // validasi size awal (opsional)
+    //       if (file.size > 10 * 1024 * 1024) {
+    //         alert("File terlalu besar (max 10MB)");
+    //         continue;
+    //       }
+
+    //       // options compression
+    //       const options = {
+    //         maxSizeMB: 1, // max 1MB
+    //         maxWidthOrHeight: 1024, // resize max 1024px
+    //         useWebWorker: true, // biar gak nge-lag UI
+    //         fileType: "image/webp",
+    //       };
+
+    //       // compress
+    //       const compressedFile = await imageCompression(file, options);
+
+    //       // preview
+    //       const previewUrl = URL.createObjectURL(compressedFile);
+
+    //       this.photos.push({
+    //         id: Date.now() + Math.random(),
+    //         src: previewUrl, // preview hasil compress
+    //         file: compressedFile, // file hasil compress
+    //       });
+
+    //       this.emitData();
+    //     } catch (error) {
+    //       console.error("Compress error:", error);
+    //       alert("Gagal compress gambar");
+    //     }
+    //   }
+
+    //   event.target.value = "";
+    // },
+
     async onPhotoSelected(event) {
       const files = Array.from(event.target.files);
 
       for (const file of files) {
         try {
-          // validasi size awal (opsional)
           if (file.size > 10 * 1024 * 1024) {
             alert("File terlalu besar (max 10MB)");
             continue;
           }
 
-          // options compression
           const options = {
-            maxSizeMB: 1, // max 1MB
-            maxWidthOrHeight: 1024, // resize max 1024px
-            useWebWorker: true, // biar gak nge-lag UI
+            maxSizeMB: 1,
+            maxWidthOrHeight: 1024,
+            useWebWorker: true,
             fileType: "image/webp",
           };
 
-          // compress
           const compressedFile = await imageCompression(file, options);
 
-          // preview
-          const previewUrl = URL.createObjectURL(compressedFile);
-
-          this.photos.push({
-            id: Date.now() + Math.random(),
-            src: previewUrl, // preview hasil compress
-            file: compressedFile, // file hasil compress
-          });
-
-          this.emitData();
+          // ✅ langsung simpan File
+          this.photos.push(compressedFile);
         } catch (error) {
           console.error("Compress error:", error);
-          alert("Gagal compress gambar");
         }
       }
 
+      this.emitData();
       event.target.value = "";
+    },
+
+    getPreview(file) {
+      if (!file._preview) {
+        file._preview = URL.createObjectURL(file);
+      }
+      return file._preview;
     },
     removePhoto(id) {
       //   this.photos = this.photos.filter((p) => p.id !== id);
       //   this.emitData();
-      const photo = this.photos.find((p) => p.id === id);
-      if (photo?.src) URL.revokeObjectURL(photo.src);
+      // const photo = this.photos.find((p) => p.id === id);
+      // if (photo?.src) URL.revokeObjectURL(photo.src);
 
-      this.photos = this.photos.filter((p) => p.id !== id);
+      // this.photos = this.photos.filter((p) => p.id !== id);
+      // this.emitData();
+
+      const file = this.photos[index];
+
+      if (file?._preview) {
+        URL.revokeObjectURL(file._preview);
+      }
+
+      this.photos.splice(index, 1);
       this.emitData();
     },
 
@@ -310,6 +356,12 @@ export default {
     if (this.mediaRecorder && this.mediaRecorder.state !== "inactive") {
       this.mediaRecorder.stop();
     }
+
+    // this.photos.forEach((file) => {
+    //   if (file._preview) {
+    //     URL.revokeObjectURL(file._preview);
+    //   }
+    // });
   },
 };
 </script>
@@ -572,7 +624,7 @@ export default {
       </div>
 
       <!-- ── PHOTO PREVIEWS ── -->
-      <div
+      <!-- <div
         v-if="photos.length"
         class="flex gap-2 flex-wrap px-4 py-3 border-t border-outline"
       >
@@ -591,6 +643,27 @@ export default {
             @click="removePhoto(photo.id)"
             class="photo-remove-btn"
             title="Hapus foto"
+          >
+            ✕
+          </button>
+        </div>
+      </div> -->
+
+      <div
+        v-if="photos.length"
+        class="flex gap-2 flex-wrap px-4 py-3 border-t border-outline"
+      >
+        <div
+          v-for="(file, index) in photos"
+          :key="index"
+          class="relative w-16 h-16 rounded-lg overflow-hidden border border-outline group"
+        >
+          <img :src="getPreview(file)" class="w-full h-full object-cover" />
+
+          <button
+            type="button"
+            @click="removePhoto(index)"
+            class="photo-remove-btn"
           >
             ✕
           </button>

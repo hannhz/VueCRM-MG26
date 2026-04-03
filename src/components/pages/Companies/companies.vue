@@ -472,7 +472,11 @@ export default {
             );
             this.showDetailForm = false;
             this.detailFormEntityId = null;
-            return this.fetchAllcompany();
+            return this.fetchAllcompany({
+          page: this.currentPage,
+          per_page: this.itemsPerPage,
+          search: this.searchQuery,
+        });
           })
           .catch((submitError) => {
             const message =
@@ -506,7 +510,11 @@ export default {
           this.showDetailForm = false;
           this.detailFormEntityId = null;
           // Refresh data setelah save
-          return this.fetchAllcompany();
+          return this.fetchAllcompany({
+          page: this.currentPage,
+          per_page: this.itemsPerPage,
+          search: this.searchQuery,
+        });
         })
         .catch((error) => {
           const message =

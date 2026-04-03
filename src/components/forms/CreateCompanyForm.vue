@@ -11,6 +11,7 @@ import { alertService } from "@/services/alertService";
 import NotesEditor from "@/components/widgets/NotesEditor.vue";
 import TaskEditor from "@/components/widgets/TaskEditor.vue";
 import DocsEditor from "@/components/widgets/DocsEditor.vue";
+import { buildFormData } from "@/utils/buildFormData";
 
 export default {
   name: "CreateCompanyForm",
@@ -129,7 +130,7 @@ export default {
     },
 
     formData(a) {
-      console.log("FormData changed:", a);
+      // console.log("FormData changed:", a);
     },
   },
 
@@ -219,6 +220,15 @@ export default {
       this.isSubmitting = true;
 
       console.log("Data to submit:", this.formData);
+
+      const fd = buildFormData(
+        this.formData,
+        this.isEditMode,
+        this.initialData?.id,
+      );
+      for (let pair of fd.entries()) {
+        console.log(pair[0], pair[1]);
+      }
 
       if (this.isEditMode) {
         const payload = {
