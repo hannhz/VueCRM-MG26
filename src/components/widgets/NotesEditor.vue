@@ -54,7 +54,8 @@ export default {
       // State internal editor
       gpsAddress: null,
       coords: { lat: null, lng: null },
-      photos: [], // [{ id, src (base64 preview), file (File object) }]
+      photos: [], // langsung array of File
+      photoPreviews: [], // pisahkan untuk preview 
       audioBlob: null, // Blob hasil rekaman
 
       // Recording state

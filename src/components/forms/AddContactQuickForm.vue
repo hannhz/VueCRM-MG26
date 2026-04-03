@@ -71,9 +71,9 @@ const applyDefaultOwner = () => {
   }
 };
 
-onMounted(() => {
+/* onMounted(() => {
   fetchAssociationOptions().finally(applyDefaultOwner);
-});
+}); */
 
 watch(
   () => props.isOpen,
@@ -264,10 +264,10 @@ const handleClickOutside = (e) => {
   }
 };
 
-onMounted(() => {
+/* onMounted(() => {
   fetchAssociationOptions().finally(applyDefaultOwner);
   document.addEventListener("click", handleClickOutside);
-});
+}); */
 
 watch(
   () => props.isOpen,

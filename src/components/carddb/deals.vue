@@ -129,7 +129,7 @@ const handleClickOutside = (event) => {
 
 onMounted(async () => {
   document.addEventListener("click", handleClickOutside);
-  await store.dispatch("deals/fetchAllDeals").catch(() => {});
+  //await store.dispatch("deals/fetchAllDeals").catch(() => {});
 });
 
 onBeforeUnmount(() => {

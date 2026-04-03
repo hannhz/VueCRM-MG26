@@ -838,7 +838,12 @@ export default {
           dataField: key,
           caption: caption,
           // visible: key !== "keyindex" && key !== "PageTotal",
-          visible: ![...this.disablecol, "keyindex", "PageTotal","id"].includes(key),
+          visible: ![
+            ...this.disablecol,
+            "keyindex",
+            "PageTotal",
+            "id",
+          ].includes(key),
         };
       });
 
@@ -1194,6 +1199,8 @@ export default {
           e.cellElement.style.textAlign = "left";
         }
       }
+
+    
     },
 
     onRowReorder(e) {
@@ -1338,14 +1345,14 @@ export default {
 
 /* Hover pada row data */
 :deep(.dx-datagrid-rowsview .dx-row.dx-state-hover td) {
-  background-color: #e8f4fd !important;
+  background-color: #acb3b9 !important;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 /* Hover lebih gelap untuk row alternation (zebra) */
 :deep(.dx-datagrid-rowsview .dx-row-alt.dx-state-hover td) {
-  background-color: #d0e8f8 !important;
+  background-color: #acb3b9 !important;
 }
 
 /* Hover dengan border kiri sebagai indikator */
@@ -1357,4 +1364,106 @@ export default {
 :deep(.dx-datagrid-rowsview .dx-row.dx-state-focused td) {
   background-color: #bae0ff !important;
 }
+
+
+
+
+/* new style */
+
+:deep(.dx-datagrid) {
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+  font-size: 14px;
+  border: none !important;
+  background: #fff;
+}
+
+/* Header kolom — style seperti di gambar */
+:deep(.dx-datagrid-headers .dx-datagrid-table .dx-header-row td) {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  font-size: 13px;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid #e5e7eb !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  padding: 12px 16px !important;
+}
+
+
+:deep(.dx-datagrid-headers .dx-datagrid-table .dx-header-row td:hover) {
+  /* background-color: #4791db !important; */
+   background-color: #acb3b9 !important;
+  color: #374151 !important;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Hilangkan border vertikal antar kolom */
+:deep(.dx-datagrid-rowsview .dx-row td) {
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  padding: 16px 16px !important;
+  vertical-align: middle !important;
+  color: #111827;
+}
+
+/* Row alternation — matikan warna zebra default DevExtreme */
+/* :deep(.dx-datagrid-rowsview .dx-row-alt td) {
+  background-color: #ffffff !important;
+} */
+
+/* Contact Name — bold seperti di gambar */
+:deep(.dx-datagrid-rowsview .dx-row td:nth-child(1)) {
+  font-weight: 700;
+  color: #111827;
+}
+
+/* Hover row */
+/* :deep(.dx-datagrid-rowsview .dx-row.dx-state-hover td) {
+  background-color: #f9fafb !important;
+  cursor: pointer;
+  border-left: none !important;
+} */
+
+:deep(.dx-datagrid-rowsview .dx-row.dx-state-hover td:first-child) {
+  border-left: none !important;
+}
+
+/* Focused row */
+/* :deep(.dx-datagrid-rowsview .dx-row.dx-state-focused td) {
+  background-color: #eff6ff !important;
+} */
+
+/* Hilangkan border luar grid */
+:deep(.dx-datagrid-borders > .dx-datagrid-headers),
+:deep(.dx-datagrid-borders > .dx-datagrid-rowsview),
+:deep(.dx-datagrid-borders > .dx-datagrid-total-footer) {
+  border-left: none !important;
+  border-right: none !important;
+}
+
+/* Status badge — mirip di gambar */
+:deep(.dx-datagrid-rowsview .status-badge) {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Toolbar bersih */
+:deep(.dx-toolbar) {
+  background: transparent !important;
+  border: none !important;
+  padding: 8px 0 !important;
+}
+
+
+
 </style>

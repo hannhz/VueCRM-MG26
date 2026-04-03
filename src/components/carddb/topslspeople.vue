@@ -33,7 +33,7 @@ const salespeople = computed(() =>
 
 onMounted(async () => {
   if (allUsers.value.length > 0) return;
-  await store.dispatch("users/fetchAllusers").catch(() => null);
+  //await store.dispatch("users/fetchAllusers").catch(() => null);
 });
 </script>
 
