@@ -92,6 +92,7 @@
           :mode="scrollingMode"
           :showScrollbar="showScrollbar"
           :columnRenderingMode="columnRenderingMode"
+          :rowRenderingMode="rowRenderingMode"
         />
         <DxExport :enabled="false" :allowExportSelectedData="false" />
         <DxPaging v-if="useBuiltInPager" :pageSize="pageSize" />
@@ -473,7 +474,7 @@ export default {
 
     height: {
       type: String,
-      default: "calc(100vh - 179px)",
+      default: "calc(100vh - 220px)",
     },
     wordwrap: {
       type: Boolean,
@@ -519,6 +520,10 @@ export default {
     columnRenderingMode: {
       type: String,
       default: "DxScrolling",
+    },
+    rowRenderingMode: {
+      type: String,
+      default: "virtual",
     },
     showToolbar: {
       type: Boolean,
@@ -697,6 +702,7 @@ export default {
     //   this.filterListPopupVisible = false;
     // },
     isFocusEnabled() {
+      // return false;
       return Array.isArray(this.dataSource) && this.dataSource.length > 0;
     },
     customSearchOptions() {
@@ -1191,16 +1197,12 @@ export default {
         const value = e.value;
         if (typeof value === "number") {
           e.cellElement.style.textAlign = "right";
-          e.cellElement.innerText = new Intl.NumberFormat("en-US", {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-          }).format(value);
+          // HAPUS baris ini:
+          // e.cellElement.innerText = new Intl.NumberFormat(...).format(value);
         } else {
           e.cellElement.style.textAlign = "left";
         }
       }
-
-    
     },
 
     onRowReorder(e) {
@@ -1365,13 +1367,10 @@ export default {
   background-color: #bae0ff !important;
 }
 
-
-
-
 /* new style */
 
 :deep(.dx-datagrid) {
-  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+  font-family: "DM Sans", "Segoe UI", sans-serif;
   font-size: 14px;
   border: none !important;
   background: #fff;
@@ -1391,13 +1390,14 @@ export default {
   padding: 12px 16px !important;
 }
 
-
 :deep(.dx-datagrid-headers .dx-datagrid-table .dx-header-row td:hover) {
   /* background-color: #4791db !important; */
-   background-color: #acb3b9 !important;
+  background-color: #acb3b9 !important;
   color: #374151 !important;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 /* Hilangkan border vertikal antar kolom */
@@ -1464,6 +1464,7 @@ export default {
   padding: 8px 0 !important;
 }
 
-
-
+:deep(.dx-datagrid-rowsview) {
+  padding-bottom: 16px !important;
+}
 </style>

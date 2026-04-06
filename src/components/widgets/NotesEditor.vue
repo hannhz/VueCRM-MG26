@@ -175,7 +175,6 @@ export default {
       this.coords = { lat: null, lng: null };
       this.emitData();
     },
-
     // ─── PHOTO ────────────────────────────────────────────────────────────────
     triggerPhoto() {
       this.$refs.photoInput.click();
