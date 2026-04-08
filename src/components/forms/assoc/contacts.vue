@@ -118,6 +118,10 @@ export default {
       type: Array,
       default: () => [],
     },
+    contacts: {
+      type: Array,
+      default: () => [],
+    },
   },
 
   data() {
@@ -128,7 +132,6 @@ export default {
       page: 1,
       debounceTimer: null,
       hasMore: false,
-      selectedContactsCache: [],
     };
   },
 
@@ -147,9 +150,9 @@ export default {
     },
 
     filteredContacts() {
-      if (!this.contactSearch) return this.allContacts || [];
+      if (!this.contactSearch) return this.contactOptions;
 
-      return this.allContacts;
+      return this.contactOptions;
 
       // return (this.allContacts || []).filter((c) => {
       //   const name = `${c.first_name || ""} ${c.last_name || ""}`
@@ -162,8 +165,23 @@ export default {
       // });
     },
 
+    contactOptions() {
+      if (Array.isArray(this.contacts) && this.contacts.length > 0) {
+        return this.contacts;
+      }
+      return this.allContacts || [];
+    },
+
     selectedContacts() {
-      return this.selectedContactsCache;
+      if (!Array.isArray(this.contactassoc) || this.contactassoc.length === 0) {
+        return [];
+      }
+
+      return this.contactOptions.filter((contact) =>
+        this.contactassoc.some(
+          (id) => String(id).trim() === String(contact.id).trim(),
+        ),
+      );
     },
   },
 
@@ -220,12 +238,8 @@ export default {
       let newValue;
       if (index === -1) {
         newValue = [...this.contactassoc, contactId];
-        this.selectedContactsCache.push(contact);
       } else {
         newValue = this.contactassoc.filter((id, i) => i !== index);
-        this.selectedContactsCache = this.selectedContactsCache.filter(
-          (c) => String(c.id) !== contactId,
-        );
       }
       this.contactassoc = newValue;
     },
@@ -258,8 +272,8 @@ export default {
         // );
       }
 
-      if (e && (!this.allContacts || this.allContacts.length === 0)) {
-        // this.fetchContacts();
+      if (e && (!this.contactOptions || this.contactOptions.length === 0)) {
+        this.fetchContacts();
       }
     },
 

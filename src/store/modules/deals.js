@@ -39,7 +39,15 @@ const resolveDealId = (responseData, fallbackId = null) => {
 };
 
 const mapCreateDealPayload = (formData = {}) => {
-  const normalizedAmount = normalizeNumber(formData.amount);
+  const normalizeText = (value) => {
+    if (value === undefined || value === null) return "";
+    if (typeof value === "string") return value;
+    return String(value);
+  };
+
+  const normalizedAmount = normalizeNumber(
+    formData.amount ?? formData.amount_value,
+  );
   const normalizedDealName =
     formData.dealName?.trim() ||
     formData.deal_name?.trim() ||
@@ -52,29 +60,56 @@ const mapCreateDealPayload = (formData = {}) => {
   // Helper to ensure association is a string
   const formatAssoc = (assoc) => {
     if (Array.isArray(assoc)) {
-      return assoc.filter(Boolean).join(",");
+      const normalized = assoc
+        .map((item) => (item === undefined || item === null ? "" : item))
+        .map((item) => String(item).trim())
+        .filter(Boolean);
+      return normalized.length ? normalized.join(",") : null;
     }
-    return assoc || "";
+
+    if (assoc === undefined || assoc === null) {
+      return null;
+    }
+
+    const normalized = String(assoc).trim();
+    return normalized || null;
   };
 
   // Helper untuk extract task data
   const extractTaskData = (task) => {
-    if (!task || (typeof task === "object" && Object.keys(task).length === 0)) {
-      return null;
-    }
+    const fallbackTask = {
+      name: formData.task_name || formData.title || "",
+      content: formData.desktask || formData.task_content || "",
+      status: formData.statustask || formData.status || "",
+      priority: formData.prioritytask || "",
+      dueDate: formData.due_date || formData.dueDate || "",
+      time: formData.task_time || formData.time || "",
+      task_name: formData.task_name || formData.title || "",
+      desktask: formData.desktask || formData.task_content || "",
+      statustask: formData.statustask || formData.status || "",
+      prioritytask: formData.prioritytask || "",
+      due_date: formData.due_date || formData.dueDate || "",
+      task_time: formData.task_time || formData.time || "",
+    };
+
+    const taskCandidate =
+      task && typeof task === "object" && Object.keys(task).length > 0
+        ? task
+        : fallbackTask;
 
     const isBlank = (v) =>
       v === null || v === undefined || String(v).trim() === "";
 
     // Abaikan task object default yang hanya berisi field kosong/null.
-    if (typeof task === "object") {
+    if (typeof taskCandidate === "object") {
       const rawValues = [
-        task.name,
-        task.title,
-        task.content,
-        task.status,
-        task.priority,
-        task.dueDate,
+        taskCandidate.name,
+        taskCandidate.title,
+        taskCandidate.content,
+        taskCandidate.status,
+        taskCandidate.priority,
+        taskCandidate.dueDate,
+        taskCandidate.time,
       ];
 
       if (rawValues.every(isBlank)) {
@@ -82,29 +117,56 @@ const mapCreateDealPayload = (formData = {}) => {
       }
     }
 
-    // Return as object - let backend handle serialization
-    if (typeof task === "object") {
+    if (typeof taskCandidate === "object") {
       return {
-        name: task.name || "",
-        content: task.content || "",
-        status: task.status || "",
-        priority: task.priority || "",
-        dueDate: task.dueDate || "",
+        name: normalizeText(taskCandidate.name || taskCandidate.title),
+        content: normalizeText(taskCandidate.content),
+        status: normalizeText(taskCandidate.status),
+        priority: normalizeText(taskCandidate.priority),
+        dueDate: normalizeText(taskCandidate.dueDate),
+        time: normalizeText(taskCandidate.time),
+        task_name: normalizeText(
+          taskCandidate.task_name || taskCandidate.name || taskCandidate.title,
+        ),
+        desktask: normalizeText(
+          taskCandidate.desktask || taskCandidate.content,
+        ),
+        statustask: normalizeText(
+          taskCandidate.statustask || taskCandidate.status,
+        ),
+        prioritytask: normalizeText(
+          taskCandidate.prioritytask || taskCandidate.priority,
+        ),
+        due_date: normalizeText(
+          taskCandidate.due_date || taskCandidate.dueDate,
+        ),
+        task_time: normalizeText(
+          taskCandidate.task_time || taskCandidate.time,
+        ),
       };
     }
+
     return null;
   };
 
-  // Helper untuk extract deskripsi docs (mirip normalizeCompanyPayload)
-  let docsValue = null;
-  if (formData.docs) {
-    if (typeof formData.docs === "string") {
-      docsValue = formData.docs.trim() || null;
-    } else if (typeof formData.docs === "object") {
-      // bentuk { description, fileSource, files }
-      docsValue = (formData.docs.description || "").trim() || null;
-    }
-  }
+  const docsDescription =
+    normalizeText(formData.docs?.description || formData.docs || formData.doc)
+      .trim() || null;
+
+  const docsPayload = docsDescription
+    ? {
+        description: docsDescription,
+        fileSource: normalizeText(formData.docs?.fileSource).trim() || "",
+        files: Array.isArray(formData.docs?.files)
+          ? formData.docs.files.map((file) =>
+              typeof file === "string" ? file : file?.name || "",
+            )
+          : [],
+      }
+    : null;
+
+  const taskPayload = extractTaskData(formData.task);
+  const taskJsonValue = taskPayload ? JSON.stringify(taskPayload) : null;
 
   return {
     // Mapping utama sesuai kolom DB
@@ -122,11 +184,16 @@ const mapCreateDealPayload = (formData = {}) => {
     companyassoc: formatAssoc(formData.companyassoc || formData.companies_id),
     // Notes, Tasks, & Docs - penting: backend expect lowercase singular keys
     // Support both 'notes' dan 'note' untuk backward compatibility
-    note: (formData.note || formData.notes || "").trim() || null,
-    notes: (formData.note || formData.notes || "").trim() || null,
-    task_json: extractTaskData(formData.task),
-    docs: docsValue,
-    doc: docsValue,
+    note:
+      normalizeText(formData.note || formData.notes || formData.noteData?.body)
+        .trim() || null,
+    notes:
+      normalizeText(formData.note || formData.notes || formData.noteData?.body)
+        .trim() || null,
+    task_json: taskJsonValue,
+    task: taskPayload,
+    docs: docsPayload,
+    doc: docsDescription,
     // Alias untuk kompatibilitas variasi backend
     name: normalizedDealName,
     dealName: normalizedDealName,
@@ -397,9 +464,30 @@ export default {
 
       // Helper to ensure association is a string
       const formatAssoc = (assoc) => {
-        if (Array.isArray(assoc)) return assoc.filter(Boolean).join(",");
-        if (assoc && typeof assoc === "object") return assoc.id || "";
-        return assoc || "";
+        if (Array.isArray(assoc)) {
+          const normalized = assoc
+            .map((item) => (item === undefined || item === null ? "" : item))
+            .map((item) => String(item).trim())
+            .filter(Boolean);
+          return normalized.length ? normalized.join(",") : null;
+        }
+        if (assoc && typeof assoc === "object") {
+          const normalized = String(assoc.id || "").trim();
+          return normalized || null;
+        }
+        if (assoc === undefined || assoc === null) return null;
+        const normalized = String(assoc).trim();
+        return normalized || null;
+      };
+
+      const parseJSON = (value, fallback = null) => {
+        try {
+          if (!value) return fallback;
+          if (typeof value === "object") return value;
+          return JSON.parse(value);
+        } catch {
+          return fallback;
+        }
       };
 
       const cAssoc = formatAssoc(
@@ -415,6 +503,31 @@ export default {
           existingDeal.company_id ||
           existingDeal.id_company,
       );
+
+      const firstContactId = cAssoc ? String(cAssoc).split(",")[0] || "" : "";
+      const firstCompanyId = mAssoc ? String(mAssoc).split(",")[0] || "" : "";
+
+      const taskFromDb = parseJSON(existingDeal.task_json, null);
+      const stageTask =
+        taskFromDb && typeof taskFromDb === "object"
+          ? taskFromDb
+          : {
+              name: existingDeal.task_name || "",
+              content: existingDeal.desktask || "",
+              status: existingDeal.statustask || "",
+              priority: existingDeal.prioritytask || "",
+              dueDate: existingDeal.due_date || "",
+              time: existingDeal.task_time || "",
+            };
+
+      const hasStageTask = Object.values(stageTask).some(
+        (value) => String(value || "").trim() !== "",
+      );
+
+      const docsDescription =
+        (typeof existingDeal.docs === "object"
+          ? existingDeal.docs?.description
+          : existingDeal.docs || existingDeal.doc || "") || "";
 
       const requestPayload = {
         choice: "u",
@@ -445,14 +558,21 @@ export default {
         // Backend strongly requires these association fields (Flattened)
         contactassoc: cAssoc,
         companyassoc: mAssoc,
-        contacts_id: cAssoc.split(",")[0] || "",
-        companies_id: mAssoc.split(",")[0] || "",
-        contact_id: cAssoc.split(",")[0] || "",
-        company_id: mAssoc.split(",")[0] || "",
+        contacts_id: firstContactId,
+        companies_id: firstCompanyId,
+        contact_id: firstContactId,
+        company_id: firstCompanyId,
 
         // Notes, Tasks, & Docs
+        note: existingDeal.note || existingDeal.notes || "",
         notes: existingDeal.notes || "",
-        docs: existingDeal.docs || "",
+        task: hasStageTask ? stageTask : null,
+        docs: docsDescription
+          ? {
+              description: String(docsDescription),
+            }
+          : null,
+        doc: docsDescription || null,
       };
 
       try {
@@ -551,24 +671,12 @@ export default {
     },
 
     createDeal({ dispatch }, formData) {
-      // Gunakan mapCreateDealPayload untuk memastikan key sesuai backend (deal_name, etc.)
       const mappedData = mapCreateDealPayload(formData);
       const payload = {
         ...formData,
         ...mappedData,
-        choice: "i",
+        choice: formData.choice || (formData.id ? "u" : "i"),
       };
-
-      console.log("Store: Extracted data sebelum kirim ke backend:");
-      console.log("  note (from form):", formData.notes);
-      console.log("  note (after mapping):", mappedData.note);
-      console.log("  task_json:", mappedData.task_json);
-      console.log("  docs:", mappedData.docs);
-      console.log("🚀 Final payload ke backend:", {
-        note: mappedData.note,
-        task_json: mappedData.task_json,
-        docs: mappedData.docs,
-      });
 
       return dispatch("saveDeal", payload);
     },
@@ -685,6 +793,42 @@ export default {
 
     pagination: (state) => state.pagination,
     uiDeals: (state, getters) => {
+      const normalizeAssocText = (value) => {
+        if (value === null || value === undefined) return "";
+
+        if (Array.isArray(value)) {
+          return value
+            .map((item) => {
+              if (item && typeof item === "object") {
+                return (
+                  item.name ||
+                  item.contact_name ||
+                  item.company_name ||
+                  item.label ||
+                  item.id ||
+                  ""
+                );
+              }
+              return item;
+            })
+            .filter(Boolean)
+            .join(", ");
+        }
+
+        if (typeof value === "object") {
+          return (
+            value.name ||
+            value.contact_name ||
+            value.company_name ||
+            value.label ||
+            value.id ||
+            ""
+          );
+        }
+
+        return String(value).trim();
+      };
+
       const normalizeStage = (rawStage) => {
         const stage = String(rawStage || "prospect")
           .toLowerCase()
@@ -721,17 +865,38 @@ export default {
         return "prospect";
       };
 
-      return getters.filteredDeals.map((deal) => ({
-        ...deal,
-        name: deal.deal_name || deal.dealName || deal.name || "Untitled Deal",
-        stage: normalizeStage(deal.pipeline || deal.stage),
-        jumlah: deal.amount_value || deal.amount || "-",
-        tertanggal: deal.expected_close_date || deal.expectedCloseDate || "-",
-        contact: deal.contact_name || deal.contact || "-",
-        company: deal.company_name || deal.company || "-",
-        updatedAt: deal.updated_at || deal.updatedAt || "-",
-        owner: deal.owner_name || deal.owner || "-",
-      }));
+      return getters.filteredDeals.map((deal) => {
+        const contactText =
+          normalizeAssocText(deal.associated_contact) ||
+          normalizeAssocText(deal.contact_name) ||
+          normalizeAssocText(deal.contact) ||
+          normalizeAssocText(deal.contactassoc);
+
+        const companyText =
+          normalizeAssocText(deal.associated_company) ||
+          normalizeAssocText(deal.company_name) ||
+          normalizeAssocText(deal.company) ||
+          normalizeAssocText(deal.companyassoc);
+
+        const amountValue = deal.amount_value ?? deal.amount ?? "-";
+        const updatedValue =
+          deal.updated_at || deal.updatedAt || deal.update_at || "-";
+
+        return {
+          ...deal,
+          name: deal.deal_name || deal.dealName || deal.name || "Untitled Deal",
+          stage: normalizeStage(deal.pipeline || deal.stage),
+          amount: amountValue,
+          jumlah: amountValue,
+          tertanggal: deal.expected_close_date || deal.expectedCloseDate || "-",
+          associated_contact: contactText || "-",
+          contact: contactText || "-",
+          company: companyText || "-",
+          updated_at: updatedValue,
+          updatedAt: updatedValue,
+          owner: deal.owner_name || deal.owner || "-",
+        };
+      });
     },
   },
 };

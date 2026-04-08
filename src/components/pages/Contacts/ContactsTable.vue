@@ -1,3 +1,18 @@
+<style scoped>
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 20;
+}
+
+.resize-handle:hover {
+  background-color: #1c2434b2;
+}
+</style>
 <template>
   <div class="mt-4 flex-1 min-h-0 relative">
     <div
@@ -11,66 +26,102 @@
     </div>
 
     <div class="h-full overflow-auto overflow-x-auto">
-      <table class="w-full table-fixed">
+      <table class="table-fixed min-w-max">
         <thead
           class="sticky top-0 z-10 bg-white shadow-sm ring-1 ring-gray-200"
         >
           <tr class="border-b border-gray-200">
-            <th class="w-16 px-6 py-4 text-left bg-white">
+            <!-- CHECKBOX -->
+            <th
+              :style="{ width: columns[0] + 'px' }"
+              class="relative px-6 py-4 text-left bg-white"
+            >
               <input
                 type="checkbox"
                 class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
                 :checked="allSelected"
                 @change="$emit('toggle-select-all', $event.target.checked)"
               />
+
+              <div class="resize-handle" @mousedown="startResize($event, 0)"></div>
             </th>
+
+            <!-- CONTACT NAME -->
             <th
-              class="w-[18%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
+              :style="{ width: columns[1] + 'px' }"
+              class="relative px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
             >
               <div class="flex items-center gap-2">
                 Contact Name
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
+
+              <div class="resize-handle" @mousedown="startResize($event, 1)"></div>
             </th>
+
+            <!-- CONTACT INFO -->
             <th
-              class="w-[22%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
+              :style="{ width: columns[2] + 'px' }"
+              class="relative px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
             >
               <div class="flex items-center gap-2">
                 Contact Info
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
+
+              <div class="resize-handle" @mousedown="startResize($event, 2)"></div>
             </th>
+
+            <!-- ASSOCIATED -->
             <th
-              class="w-[20%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
+              :style="{ width: columns[3] + 'px' }"
+              class="relative px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
             >
               <div class="flex items-center gap-2">
                 Associated with
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
+
+              <div class="resize-handle" @mousedown="startResize($event, 3)"></div>
             </th>
+
+            <!-- STATUS -->
             <th
-              class="w-[10%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
+              :style="{ width: columns[4] + 'px' }"
+              class="relative px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
             >
               <div class="flex items-center gap-2">
                 Status
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
+
+              <div class="resize-handle" @mousedown="startResize($event, 4)"></div>
             </th>
+
+            <!-- CREATED -->
             <th
-              class="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
+              :style="{ width: columns[5] + 'px' }"
+              class="relative px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
             >
               <div class="flex items-center gap-2">
                 Created/Update
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
+
+              <div class="resize-handle" @mousedown="startResize($event, 5)"></div>
             </th>
+
+            <!-- OWNER -->
             <th
-              class="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
+              :style="{ width: columns[6] + 'px' }"
+              class="relative px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-white"
             >
               <div class="flex items-center gap-2">
                 Owner
                 <ChevronDown :size="16" class="text-gray-400" />
               </div>
+
+              <div class="resize-handle" @mousedown="startResize($event, 6)"></div>
             </th>
           </tr>
         </thead>
@@ -104,7 +155,9 @@
             class="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer"
             @click="$emit('row-click', contact)"
           >
-            <td class="px-6 py-4" @click.stop>
+            <td class="px-6 py-4" 
+            :style="{ width: columns[0] + 'px' }"
+            @click.stop>
               <input
                 type="checkbox"
                 class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
@@ -113,23 +166,38 @@
               />
             </td>
 
-            <td class="px-6 py-4 text-sm text-gray-800 font-medium">
+            <td 
+              class="px-6 py-4 text-sm text-gray-800 font-medium"
+              :style="{ width: columns[1] + 'px' }"
+            >
               {{ contact.first_name }} {{ contact.last_name }}
             </td>
 
-            <td class="px-6 py-4 text-sm text-dark-base">
+            <td 
+              class="px-6 py-4 text-sm text-dark-base"
+              :style="{ width: columns[2] + 'px' }"
+              >
               <div>{{ contact.email || "-" }}</div>
-              <div class="text-xs text-sub-text">
+              <div 
+                class="text-xs text-sub-text"
+                :style="{ width: columns[2] + 'px' }"
+              >
                 {{ contact.telephone_1 || "-" }}
               </div>
             </td>
 
-            <td class="px-6 py-4 text-sm text-dark-base leading-5">
+            <td 
+              class="px-6 py-4 text-sm text-dark-base leading-5"
+              :style="{ width: columns[3] + 'px' }"
+            >
               <div>{{ contact.companyLabelsText }}</div>
               <div>{{ contact.dealLabelsText }}</div>
             </td>
 
-            <td class="px-6 py-4">
+            <td 
+              class="px-6 py-4"
+              :style="{ width: columns[4] + 'px' }"  
+            >
               <span
                 class="px-3 py-1 rounded-full text-xs font-medium"
                 :class="contact.statusClass"
@@ -138,11 +206,17 @@
               </span>
             </td>
 
-            <td class="px-6 py-4 text-sm text-dark-base">
+            <td 
+              class="px-6 py-4 text-sm text-dark-base"
+              :style="{ width: columns[5] + 'px' }"
+              >
               {{ contact.updatedAtText }}
             </td>
 
-            <td class="px-6 py-4 text-sm text-dark-base">
+            <td 
+              class="px-6 py-4 text-sm text-dark-base"
+              :style="{ width: columns[6] + 'px' }"
+            >
               {{ contact.owner || "-" }}
             </td>
           </tr>
@@ -164,20 +238,63 @@ export default {
     selectedIds: { type: Array, default: () => [] },
     allSelected: { type: Boolean, default: false },
   },
+
   emits: [
     "row-click",
     "open-add-single",
     "toggle-select-all",
     "update:selectedIds",
   ],
-  methods: {
-    onToggleRow(id, checked) {
-      const next = checked
-        ? Array.from(new Set([...this.selectedIds, id]))
-        : this.selectedIds.filter((x) => x !== id);
 
-      this.$emit("update:selectedIds", next);
+  methods: {
+    startResize(e, index) {
+      this.resizing = {
+        index,
+        startX: e.clientX,
+        startWidth: this.columns[index],
+      };
+
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+
+      document.addEventListener("mousemove", this.onResize);
+      document.addEventListener("mouseup", this.stopResize);
     },
+
+    onResize(e) {
+      if (!this.resizing) return;
+
+      const diff = e.clientX - this.resizing.startX;
+      const newWidth = this.resizing.startWidth + diff;
+
+      this.columns[this.resizing.index] =
+        newWidth < 80 ? 80 : newWidth;
+    },
+
+    stopResize() {
+      document.removeEventListener("mousemove", this.onResize);
+      document.removeEventListener("mouseup", this.stopResize);
+
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+
+      this.resizing = null;
+    },
+  },
+
+  data() {
+    return {
+      columns: [
+        70,   // checkbox
+        220,  // name
+        260,  // info
+        240,  // associated
+        140,  // status
+        200,  // created
+        180,  // owner
+      ],
+      resizing: null,
+    };
   },
 };
 </script>

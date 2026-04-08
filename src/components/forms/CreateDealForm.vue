@@ -42,6 +42,11 @@ export default {
       type: Object,
       default: null,
     },
+    computed: {
+      isEditMode() {
+        return !!this.initialData;
+      },
+    },
   },
   emits: ["close", "submit", "back"],
   data() {
@@ -110,8 +115,10 @@ export default {
         contactassoc: [],
         companyassoc: [],
         task: {
-          title: "",
+          name: "",
+          content: "",
           dueDate: "",
+          time: "",
           status: "",
           priority: "",
         },
@@ -138,12 +145,6 @@ export default {
         { value: "in_progress", label: "In Progress" },
         { value: "completed", label: "Completed" },
       ],
-      priorityOptions: [
-        { value: "", label: "Select Data" },
-        { value: "low", label: "Low" },
-        { value: "medium", label: "Medium" },
-        { value: "high", label: "High" },
-      ],
     };
   },
   computed: {
@@ -168,18 +169,34 @@ export default {
     },
   },
   watch: {
-    isOpen(isOpen) {
-      if (isOpen) {
-        // 🔄 Reset dulu ke default bersih
-        this.handleReset();
-
-        if (this.initialData) {
-          // Gunakan nextTick agar reset selesai sempurna
-          this.$nextTick(() => {
+    isOpen: {
+      immediate: true,
+      handler(isOpen) {
+        if (isOpen) {
+          if (this.initialData) {
             this.setFormData(this.initialData);
-          });
+            this.activeTab = "master";
+          } else {
+            this.handleReset();
+            this.activeTab = "master";
+          }
         }
-      }
+      },
+    },
+    initialData: {
+      deep: true,
+      handler(nextData) {
+        // Tangani kasus data detail datang belakangan saat drawer sudah terbuka.
+        if (!this.isOpen) return;
+
+        if (nextData && Object.keys(nextData).length) {
+          this.setFormData(nextData);
+          this.activeTab = "master";
+        } else {
+          this.handleReset();
+          this.activeTab = "master";
+        }
+      },
     },
   },
   mounted() {
@@ -206,7 +223,56 @@ export default {
     // Helper untuk mengekstrak array of IDs dari association array of objects
     extractIdsFromAssoc(assocArray) {
       if (!Array.isArray(assocArray)) return [];
-      return assocArray.map((item) => item.id).filter(Boolean);
+      return assocArray
+        .map((item) => {
+          if (item && typeof item === "object") return item.id;
+          return item;
+        })
+        .filter((item) => item !== undefined && item !== null && item !== "");
+    },
+
+    normalizeAssocInput(value) {
+      if (!value) return [];
+      if (Array.isArray(value)) return value;
+      if (typeof value === "string") {
+        const parsed = this.parseJSON(value, null);
+        if (Array.isArray(parsed)) return parsed;
+
+        return value
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+          .map((item) => {
+            const maybeNumber = Number(item);
+            return Number.isFinite(maybeNumber) ? maybeNumber : item;
+          });
+      }
+      return [];
+    },
+
+    resolveTaskData(dealData) {
+      const parsedTask = this.parseJSON(dealData?.task_json, null);
+      const taskObj =
+        parsedTask && typeof parsedTask === "object" ? parsedTask : {};
+
+      return {
+        name: dealData?.task_name || taskObj.name || taskObj.title || "",
+        content: dealData?.desktask || taskObj.content || "",
+        dueDate: dealData?.due_date || taskObj.dueDate || "",
+        time: dealData?.task_time || taskObj.time || "",
+        status: dealData?.statustask || taskObj.status || "",
+        priority: dealData?.prioritytask || taskObj.priority || "",
+      };
+    },
+
+    resolveInitialDealId() {
+      const root = this.initialData || {};
+      const nestedDeal =
+        Array.isArray(root.deals) && root.deals.length > 0
+          ? root.deals[0]
+          : null;
+
+      return nestedDeal?.id || root?.id || root?.deal_id || null;
     },
 
     setFormData(data) {
@@ -217,13 +283,20 @@ export default {
 
       if (data?.deals && Array.isArray(data.deals) && data.deals.length > 0) {
         dealData = data.deals[0];
-        companiesAssoc = data.companiesassoc || [];
-        contactsAssoc = data.contactassoc || [];
+        companiesAssoc =
+          data.companiesassoc ||
+          data.companyassoc ||
+          dealData.companyassoc ||
+          [];
+        contactsAssoc = data.contactassoc || dealData.contactassoc || [];
       } else {
         // Fallback: mungkin data langsung object deal
         companiesAssoc = data.companyassoc || data.companiesassoc || [];
         contactsAssoc = data.contactassoc || [];
       }
+
+      const normalizedCompaniesAssoc = this.normalizeAssocInput(companiesAssoc);
+      const normalizedContactsAssoc = this.normalizeAssocInput(contactsAssoc);
 
       // Isi formData
       this.formData = {
@@ -241,21 +314,20 @@ export default {
         description: dealData.description || "",
         documents: null,
         // Ubah array of objects menjadi array of IDs
-        companyassoc: this.extractIdsFromAssoc(companiesAssoc),
-        contactassoc: this.extractIdsFromAssoc(contactsAssoc),
-        task: {
-          title: dealData.task_name || "",
-          dueDate: dealData.due_date || "",
-          status: dealData.statustask || "",
-          priority: dealData.prioritytask || "",
-        },
+        companyassoc: this.extractIdsFromAssoc(normalizedCompaniesAssoc),
+        contactassoc: this.extractIdsFromAssoc(normalizedContactsAssoc),
+        task: this.resolveTaskData(dealData),
         docs: {
-          description: dealData.docs || "",
+          description:
+            dealData?.docs?.description ||
+            dealData?.docs ||
+            dealData?.doc ||
+            "",
           fileSource: "",
           files: [],
         },
         noteData: {
-          body: dealData.notes || "",
+          body: dealData.note || dealData.notes || "",
           gps_address: null,
           latitude: null,
           longitude: null,
@@ -351,29 +423,89 @@ export default {
       this.isSavingBeforeDetail = true;
 
       try {
+        const hasTaskContent =
+          !!this.formData.task &&
+          [
+            this.formData.task.name,
+            this.formData.task.content,
+            this.formData.task.dueDate,
+            this.formData.task.time,
+            this.formData.task.status,
+            this.formData.task.priority,
+          ].some((value) => String(value || "").trim() !== "");
+
+        const hasDocsContent =
+          (this.formData.docs?.description || "").trim() !== "" ||
+          (Array.isArray(this.formData.docs?.files) &&
+            this.formData.docs.files.length > 0);
+
+        const normalizedTask = hasTaskContent
+          ? {
+              name: this.formData.task?.name || null,
+              content: this.formData.task?.content || null,
+              status: this.formData.task?.status || null,
+              priority: this.formData.task?.priority || null,
+              dueDate: this.formData.task?.dueDate || null,
+              time: this.formData.task?.time || null,
+              task_name: this.formData.task?.name || null,
+              desktask: this.formData.task?.content || null,
+              statustask: this.formData.task?.status || null,
+              prioritytask: this.formData.task?.priority || null,
+              due_date: this.formData.task?.dueDate || null,
+              task_time: this.formData.task?.time || null,
+            }
+          : null;
+
         const submissionData = {
+          dealName: this.formData.dealName,
           deal_name: this.formData.dealName,
+          pipeline: this.formData.pipeline,
           stage: this.formData.pipeline,
           currency: this.formData.currency,
           amount: this.formData.amount,
+          expectedCloseDate: this.formData.expectedCloseDate,
           expected_close_date: this.formData.expectedCloseDate,
           owner: this.formData.owner || this.currentUserName || "",
           priority: this.formData.priority,
           source: this.formData.source,
           description: this.formData.description,
-          contactassoc: (this.formData.contactassoc || []).join(","),
-          companyassoc: (this.formData.companyassoc || []).join(","),
+          contactassoc: this.formData.contactassoc || [],
+          companyassoc: this.formData.companyassoc || [],
+          note: this.formData.noteData?.body || "",
           notes: this.formData.noteData?.body || "",
-          task_name: this.formData.task?.title || "",
+          noteData: { ...this.formData.noteData },
+          task: normalizedTask,
+          task_name:
+            this.formData.task?.name || this.formData.task?.title || "",
+          desktask: this.formData.task?.content || "",
           due_date: this.formData.task?.dueDate || "",
+          task_time: this.formData.task?.time || "",
           statustask: this.formData.task?.status || "",
           prioritytask: this.formData.task?.priority || "",
-          docs: this.formData.docs?.description || "",
+          docs: hasDocsContent
+            ? {
+                description: this.formData.docs?.description || "",
+                fileSource: this.formData.docs?.fileSource || "",
+                files: (this.formData.docs?.files || []).map(
+                  (file) => file?.name || "",
+                ),
+              }
+            : null,
+          doc: this.formData.docs?.description || "",
         };
 
         if (this.isEditMode) {
+          const dealId = this.resolveInitialDealId();
+          if (!dealId) {
+            await alertService.toastError(
+              "ID deal tidak ditemukan. Silakan tutup lalu buka lagi detail deal.",
+            );
+            return;
+          }
+
           submissionData.choice = "u";
-          submissionData.id = this.initialData?.id || null;
+          submissionData.id = dealId;
+          submissionData.id_deals = dealId;
         } else {
           submissionData.choice = "i";
         }
@@ -459,19 +591,21 @@ export default {
 
       try {
         const hasTaskContent =
-          !!this.task &&
+          !!this.formData.task &&
           [
-            this.task.title,
-            this.task.name,
-            this.task.content,
-            this.task.dueDate,
-            this.task.status,
-            this.task.priority,
+            this.formData.task.name,
+            this.formData.task.content,
+            this.formData.task.dueDate,
+            this.formData.task.time,
+            this.formData.task.status,
+            this.formData.task.priority,
           ].some((value) => String(value || "").trim() !== "");
 
         const hasDocsContent =
-          (this.docs.description && this.docs.description.trim() !== "") ||
-          (Array.isArray(this.docs.files) && this.docs.files.length > 0);
+          (this.formData.docs.description &&
+            this.formData.docs.description.trim() !== "") ||
+          (Array.isArray(this.formData.docs.files) &&
+            this.formData.docs.files.length > 0);
 
         const submissionData = {
           ...this.formData,
@@ -479,15 +613,15 @@ export default {
           contactassoc: (this.formData.contactassoc || []).join(","),
           companyassoc: (this.formData.companyassoc || []).join(","),
           // Include Notes, Tasks, and Docs
-          notes: this.noteContent || "",
-          task: hasTaskContent ? this.task : null,
-          docs: hasDocsContent ? this.docs : null,
+          notes: this.formData.noteData?.body || "",
+          task: hasTaskContent ? this.formData.task : null,
+          docs: hasDocsContent ? this.formData.docs : null,
         };
 
         console.log("🔍 DEBUG: Notes, Task, Docs Before Save");
-        console.log("  noteContent:", this.noteContent);
-        console.log("  task:", this.task);
-        console.log("  docs:", this.docs);
+        console.log("  noteData:", this.formData.noteData);
+        console.log("  task:", this.formData.task);
+        console.log("  docs:", this.formData.docs);
         console.log("📤 Submitting Deal Payload:", {
           notes: submissionData.notes,
           task: submissionData.task,
@@ -543,8 +677,10 @@ export default {
         contactassoc: [],
         companyassoc: [],
         task: {
-          title: "",
+          name: "",
+          content: "",
           dueDate: "",
+          time: "",
           status: "",
           priority: "",
         },

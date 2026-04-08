@@ -61,6 +61,18 @@ export default {
     currentIcon() {
       return this.showTasks ? ChevronDown : ChevronRight;
     },
+    isAnyFieldFilled() {
+      return (
+        this.localTask.content ||
+        this.localTask.status ||
+        this.localTask.dueDate ||
+        this.localTask.time ||
+        this.localTask.priority
+      );
+    },
+    isNameInvalid() {
+      return this.isAnyFieldFilled && !this.localTask.name;
+    },
   },
 
   data() {
@@ -129,8 +141,13 @@ export default {
           v-model="localTask.name"
           type="text"
           placeholder="Task name..."
-          class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+          :class="[
+              'w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm',
+              isNameInvalid ? 'border-red-500' : 'border-outline']"
         />
+        <p v-if="isNameInvalid" class="text-red-500 text-xs mt-1">
+          Nama task wajib diisi jika field lain diisi
+        </p>
       </div>
 
       <!-- Rich Text -->

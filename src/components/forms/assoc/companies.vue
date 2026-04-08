@@ -128,7 +128,6 @@ export default {
       page: 1,
       debounceTimer: null,
       hasMore: false,
-      selectedCompaniesCache: [],
     };
   },
 
@@ -163,7 +162,18 @@ export default {
     },
 
     selectedCompanies() {
-      return this.selectedCompaniesCache;
+      if (
+        !Array.isArray(this.Companiesassoc) ||
+        this.Companiesassoc.length === 0
+      ) {
+        return [];
+      }
+
+      return (this.allCompanies || []).filter((company) =>
+        this.Companiesassoc.some(
+          (id) => String(id).trim() === String(company.id).trim(),
+        ),
+      );
     },
   },
 
@@ -224,12 +234,8 @@ export default {
       let newValue;
       if (index === -1) {
         newValue = [...this.Companiesassoc, CompaniesId];
-        this.selectedCompaniesCache.push(Companies);
       } else {
         newValue = this.Companiesassoc.filter((id, i) => i !== index);
-        this.selectedCompaniesCache = this.selectedCompaniesCache.filter(
-          (c) => String(c.id) !== CompaniesId,
-        );
       }
       // console.log("Toggling Companies with ID:", CompaniesId,index,newValue);
       this.Companiesassoc = newValue;

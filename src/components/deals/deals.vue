@@ -260,7 +260,7 @@ export default {
     // Di dalam methods deals.vue
     async openDealDetail(deal) {
       try {
-        this.$store.commit("deals/setLoading", true);
+        //this.$store.commit("deals/setLoading", true);
         // Ambil detail deal by id – asumsikan response sudah berbentuk object dengan properti deals, companiesassoc, contactassoc
         const response = await this.$store.dispatch(
           "deals/fetchDealById",
@@ -274,7 +274,7 @@ export default {
         console.error("Gagal mengambil detail deal:", error);
         alertService.error("Gagal memuat detail deal");
       } finally {
-        this.$store.commit("deals/setLoading", false);
+        //this.$store.commit("deals/setLoading", false);
       }
     },
 
@@ -477,6 +477,7 @@ export default {
           >
             <button
               @click="
+                selectedDeal = null;
                 showCreateDealForm = true;
                 showDropdown = false;
               "
@@ -623,10 +624,11 @@ export default {
 
     <!-- DetailDataDeals adalah alias untuk CreateDealForm -->
     <DetailDataDeals
-      v-if="showDetailDataDeals"
-      :isOpen="true"
+      :isOpen="showDetailDataDeals"
       :initialData="selectedDeal"
-      :key="selectedDeal?.id || 'detail-deal-form'"
+      :key="
+        selectedDeal?.deals?.[0]?.id || selectedDeal?.id || 'detail-deal-form'
+      "
       :isSubmitting="isDetailDataDealsSubmitting"
       @close="closeDetailDataDeals"
       @back="closeDetailDataDeals"

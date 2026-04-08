@@ -51,7 +51,7 @@ const boardMeta = [
 
 const boards = ref([]);
 
-const allDeals = computed(() => store.getters["deals/filteredDeals"] || []);
+const allDeals = computed(() => store.getters["deals/uiDeals"] || []);
 
 const searchQuery = computed({
   get: () => store.state.deals.searchQuery,
