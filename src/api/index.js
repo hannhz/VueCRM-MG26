@@ -127,6 +127,8 @@ const httpGetbydata = (url, params = {}, config = {}) => {
 };
 
 const httpPost = (url, data = {}, config = {}) => {
+  const isFormData = typeof FormData !== "undefined" && data instanceof FormData;
+
   return Api.request({
     method: "post",
     url: "api" + devPath + url,
@@ -134,7 +136,7 @@ const httpPost = (url, data = {}, config = {}) => {
     ...config,
     headers: {
       Authorization: "Bearer " + cookies.get("token"),
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(config.headers || {}),
     },
   });

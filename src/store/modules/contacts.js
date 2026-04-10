@@ -1,6 +1,7 @@
 import api from "@/api";
 import { useCookies } from "vue3-cookies";
 import { getDetailEndpointCandidates } from "@/utils/detailFormPayload";
+import { buildFormData } from "@/utils/buildFormData";
 
 const { cookies } = useCookies();
 
@@ -99,13 +100,20 @@ const actions = {
     const choice = contactData.id ? "u" : "i";
 
     const requestPayload = {
-      choice: choice,
+      choice,
       ...contactData,
     };
 
+    const { id, ...payloadForFormData } = requestPayload;
+    const formPayload = buildFormData(
+      payloadForFormData,
+      choice === "u",
+      id || null,
+    );
+
     const promise = new Promise(async (resolve, reject) => {
       try {
-        const response = await api.post("contact/input", requestPayload, {
+        const response = await api.post("contact/input", formPayload, {
           headers: {
             Authorization: "Bearer " + cookies.get("token"),
           },

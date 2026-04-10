@@ -265,6 +265,65 @@ export default {
       };
     },
 
+    resolveDocsData(dealData) {
+      const parsedDocs = this.parseJSON(dealData?.docs, null);
+      const docsObject =
+        parsedDocs && typeof parsedDocs === "object" ? parsedDocs : null;
+
+      const rawFiles = Array.isArray(docsObject?.files)
+        ? docsObject.files
+        : Array.isArray(dealData?.docs?.files)
+          ? dealData.docs.files
+          : [];
+
+      const normalizedFiles = rawFiles
+        .map((file) => {
+          if (!file) return null;
+
+          if (typeof file === "string") {
+            return file;
+          }
+
+          if (typeof File !== "undefined" && file instanceof File) {
+            return file;
+          }
+
+          if (typeof Blob !== "undefined" && file instanceof Blob) {
+            return file;
+          }
+
+          if (typeof file === "object") {
+            return {
+              ...file,
+              name:
+                file.name || file.filename || file.original_name || "document",
+              url: file.url || file.path || file.src || "",
+            };
+          }
+
+          return null;
+        })
+        .filter(Boolean);
+
+      const description =
+        docsObject?.description ||
+        dealData?.docs?.description ||
+        dealData?.docs ||
+        dealData?.doc ||
+        "";
+
+      const fileSource =
+        docsObject?.fileSource ||
+        dealData?.docs?.fileSource ||
+        (normalizedFiles.length > 0 ? "local" : "");
+
+      return {
+        description,
+        fileSource,
+        files: normalizedFiles,
+      };
+    },
+
     resolveInitialDealId() {
       const root = this.initialData || {};
       const nestedDeal =
@@ -310,22 +369,14 @@ export default {
           dealData.expected_close_date || dealData.expectedCloseDate || "",
         owner: dealData.owner || "",
         priority: dealData.priority || "",
-        source: dealData.source || "",
+        source: this.normalizeSourceValue(dealData.source || ""),
         description: dealData.description || "",
         documents: null,
         // Ubah array of objects menjadi array of IDs
         companyassoc: this.extractIdsFromAssoc(normalizedCompaniesAssoc),
         contactassoc: this.extractIdsFromAssoc(normalizedContactsAssoc),
         task: this.resolveTaskData(dealData),
-        docs: {
-          description:
-            dealData?.docs?.description ||
-            dealData?.docs ||
-            dealData?.doc ||
-            "",
-          fileSource: "",
-          files: [],
-        },
+        docs: this.resolveDocsData(dealData),
         noteData: {
           body: dealData.note || dealData.notes || "",
           gps_address: null,
@@ -382,6 +433,33 @@ export default {
       return value;
     },
 
+    normalizeSourceValue(value) {
+      const raw = String(value || "")
+        .toLowerCase()
+        .trim();
+
+      if (!raw) return "";
+
+      const compact = raw.replace(/[\s-]+/g, "_");
+      const aliases = {
+        website: "website",
+        referral: "referral",
+        social_media: "social_media",
+        socialmedia: "social_media",
+        "social media": "social_media",
+        email_campaign: "email_campaign",
+        email_camp: "email_campaign",
+        emailcampaign: "email_campaign",
+        "email campaign": "email_campaign",
+        cold_call: "cold_call",
+        coldcall: "cold_call",
+        "cold call": "cold_call",
+        other: "other",
+      };
+
+      return aliases[raw] || aliases[compact] || compact;
+    },
+
     // Prefill form data dari database (untuk edit mode)
 
     applyDefaultOwner() {
@@ -389,15 +467,131 @@ export default {
         this.formData.owner = this.currentUserName;
       }
     },
+    isUploadableFile(file) {
+      if (!file) return false;
+
+      if (typeof File !== "undefined" && file instanceof File) return true;
+      if (typeof Blob !== "undefined" && file instanceof Blob) return true;
+
+      return false;
+    },
+    isAllowedLocalDocument(file) {
+      const name = String(file?.name || "").toLowerCase();
+      const type = String(file?.type || "").toLowerCase();
+
+      return (
+        name.endsWith(".pdf") ||
+        name.endsWith(".doc") ||
+        name.endsWith(".docx") ||
+        name.endsWith(".xls") ||
+        name.endsWith(".xlsx") ||
+        name.endsWith(".jpg") ||
+        name.endsWith(".jpeg") ||
+        name.endsWith(".png") ||
+        type === "application/pdf" ||
+        type === "application/msword" ||
+        type ===
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        type === "application/vnd.ms-excel" ||
+        type ===
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+        type === "image/jpeg" ||
+        type === "image/png"
+      );
+    },
+    getLocalUploadFiles() {
+      return Array.isArray(this.formData.docs?.files)
+        ? this.formData.docs.files.filter((file) => this.isUploadableFile(file))
+        : [];
+    },
+    getLocalUploadLabel(file) {
+      return file?.name || "document";
+    },
+    formatLocalUploadSize(file) {
+      const size = Number(file?.size || 0);
+      if (!size) return "";
+
+      const units = ["B", "KB", "MB", "GB"];
+      let value = size;
+      let unitIndex = 0;
+
+      while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex += 1;
+      }
+
+      return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+    },
+    mergeUniqueFiles(primaryFiles = [], extraFiles = []) {
+      const merged = [...primaryFiles];
+
+      extraFiles.forEach((file) => {
+        if (!merged.some((existing) => existing === file)) {
+          merged.push(file);
+        }
+      });
+
+      return merged;
+    },
     selectDocSource(value) {
       this.selectedDocSource = value;
       this.isDocDropdownOpen = false;
       if (value !== "local") {
         this.formData.documents = null;
+        if (this.formData.docs && Array.isArray(this.formData.docs.files)) {
+          this.formData.docs.files = [];
+        }
       }
     },
     handleFileChange(e) {
-      this.formData.documents = e.target.files[0] ?? null;
+      const selectedFiles = Array.from(e.target.files || []);
+      const validFiles = selectedFiles.filter((file) => {
+        if (!this.isAllowedLocalDocument(file)) {
+          return false;
+        }
+        return true;
+      });
+
+      if (!validFiles.length) {
+        this.$nextTick(() => {
+          e.target.value = "";
+        });
+        return;
+      }
+
+      if (!this.formData.docs || typeof this.formData.docs !== "object") {
+        this.formData.docs = {
+          description: "",
+          fileSource: "local",
+          files: [],
+        };
+      }
+
+      const existingFiles = this.getLocalUploadFiles();
+      const mergedFiles = this.mergeUniqueFiles(existingFiles, validFiles);
+
+      this.formData.docs.fileSource = "local";
+      this.formData.docs.files = mergedFiles;
+      this.formData.documents = mergedFiles[0] || null;
+
+      this.$nextTick(() => {
+        e.target.value = "";
+      });
+    },
+    removeLocalUploadFile(index) {
+      const localFiles = this.getLocalUploadFiles();
+      const targetFile = localFiles[index];
+
+      if (!targetFile || !Array.isArray(this.formData.docs?.files)) {
+        return;
+      }
+
+      this.formData.docs.files = this.formData.docs.files.filter(
+        (file) => file !== targetFile,
+      );
+
+      const remaining = this.getLocalUploadFiles();
+      this.formData.documents = remaining[0] || null;
     },
     handleClose() {
       // Reset semua state sebelum close
@@ -423,38 +617,37 @@ export default {
       this.isSavingBeforeDetail = true;
 
       try {
-        const hasTaskContent =
-          !!this.formData.task &&
-          [
-            this.formData.task.name,
-            this.formData.task.content,
-            this.formData.task.dueDate,
-            this.formData.task.time,
-            this.formData.task.status,
-            this.formData.task.priority,
-          ].some((value) => String(value || "").trim() !== "");
+        // SELALU kirim task values, jangan null - backend SP akan filter kalau kosong
+        const normalizedTask = {
+          name: this.formData.task?.name || "",
+          content: this.formData.task?.content || "",
+          status: this.formData.task?.status || "",
+          priority: this.formData.task?.priority || "",
+          dueDate: this.formData.task?.dueDate || "",
+          time: this.formData.task?.time || "",
+          task_name: this.formData.task?.name || "",
+          desktask: this.formData.task?.content || "",
+          statustask: this.formData.task?.status || "",
+          prioritytask: this.formData.task?.priority || "",
+          due_date: this.formData.task?.dueDate || "",
+          task_time: this.formData.task?.time || "",
+        };
 
-        const hasDocsContent =
-          (this.formData.docs?.description || "").trim() !== "" ||
-          (Array.isArray(this.formData.docs?.files) &&
-            this.formData.docs.files.length > 0);
+        const docsFiles = Array.isArray(this.formData.docs?.files)
+          ? this.formData.docs.files
+          : [];
 
-        const normalizedTask = hasTaskContent
-          ? {
-              name: this.formData.task?.name || null,
-              content: this.formData.task?.content || null,
-              status: this.formData.task?.status || null,
-              priority: this.formData.task?.priority || null,
-              dueDate: this.formData.task?.dueDate || null,
-              time: this.formData.task?.time || null,
-              task_name: this.formData.task?.name || null,
-              desktask: this.formData.task?.content || null,
-              statustask: this.formData.task?.status || null,
-              prioritytask: this.formData.task?.priority || null,
-              due_date: this.formData.task?.dueDate || null,
-              task_time: this.formData.task?.time || null,
-            }
-          : null;
+        const masterDocsFile = this.isUploadableFile(this.formData.documents)
+          ? [this.formData.documents]
+          : [];
+
+        const mergedDocsFiles = this.mergeUniqueFiles(
+          docsFiles,
+          masterDocsFile,
+        );
+
+        const primaryDocument =
+          this.formData.documents || mergedDocsFiles[0] || null;
 
         const submissionData = {
           dealName: this.formData.dealName,
@@ -471,26 +664,29 @@ export default {
           description: this.formData.description,
           contactassoc: this.formData.contactassoc || [],
           companyassoc: this.formData.companyassoc || [],
+          // SELALU kirim notes dan task (SP akan ignore kalau kosong)
           note: this.formData.noteData?.body || "",
           notes: this.formData.noteData?.body || "",
           noteData: { ...this.formData.noteData },
-          task: normalizedTask,
-          task_name:
-            this.formData.task?.name || this.formData.task?.title || "",
-          desktask: this.formData.task?.content || "",
-          due_date: this.formData.task?.dueDate || "",
-          task_time: this.formData.task?.time || "",
-          statustask: this.formData.task?.status || "",
-          prioritytask: this.formData.task?.priority || "",
-          docs: hasDocsContent
-            ? {
-                description: this.formData.docs?.description || "",
-                fileSource: this.formData.docs?.fileSource || "",
-                files: (this.formData.docs?.files || []).map(
-                  (file) => file?.name || "",
-                ),
-              }
-            : null,
+          task: normalizedTask, // Always send task object now
+          task_name: normalizedTask.name || "",
+          desktask: normalizedTask.content || "",
+          due_date: normalizedTask.dueDate || "",
+          task_time: normalizedTask.time || "",
+          statustask: normalizedTask.status || "",
+          prioritytask: normalizedTask.priority || "",
+          documents: primaryDocument,
+          // Docs conditional - only send if has content
+          docs:
+            (this.formData.docs?.description || "").trim() !== "" ||
+            mergedDocsFiles.length > 0 ||
+            masterDocsFile.length > 0
+              ? {
+                  description: this.formData.docs?.description || "",
+                  fileSource: this.formData.docs?.fileSource || "",
+                  files: mergedDocsFiles,
+                }
+              : null,
           doc: this.formData.docs?.description || "",
         };
 
@@ -522,6 +718,30 @@ export default {
         if (response?.success === false) {
           await alertService.error(response?.message || "Gagal menyimpan deal");
           return;
+        }
+
+        // VERIFY: Cek apakah data benar-benar tersimpan dengan fetch detail
+        let dealId = null;
+        if (this.isEditMode) {
+          dealId = this.resolveInitialDealId();
+        }
+
+        if (dealId) {
+          try {
+            const verifyResponse = await this.$store.dispatch(
+              "deals/fetchDealById",
+              dealId,
+            );
+            if (!verifyResponse?.deals?.length) {
+              throw new Error("Data tidak tersimpan");
+            }
+          } catch (verifyError) {
+            console.error("Verification error:", verifyError);
+            await alertService.error(
+              "Peringatan: Ada error saat verifikasi. Mohon refresh dan cek.",
+            );
+            return;
+          }
         }
 
         await alertService.toastSuccess(
@@ -607,6 +827,13 @@ export default {
           (Array.isArray(this.formData.docs.files) &&
             this.formData.docs.files.length > 0);
 
+        const detailDocsFiles = Array.isArray(this.formData.docs?.files)
+          ? this.formData.docs.files
+          : [];
+
+        const primaryDocument =
+          this.formData.documents || detailDocsFiles[0] || null;
+
         const submissionData = {
           ...this.formData,
           owner: this.formData.owner || this.currentUserName || "",
@@ -615,6 +842,7 @@ export default {
           // Include Notes, Tasks, and Docs
           notes: this.formData.noteData?.body || "",
           task: hasTaskContent ? this.formData.task : null,
+          documents: primaryDocument,
           docs: hasDocsContent ? this.formData.docs : null,
         };
 
@@ -1033,6 +1261,7 @@ export default {
                         <input
                           type="file"
                           accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                          multiple
                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                           @change="handleFileChange"
                         />
@@ -1055,18 +1284,45 @@ export default {
                             />
                           </svg>
                           <span
-                            v-if="!formData.documents"
+                            v-if="!getLocalUploadFiles().length"
                             class="text-sub-text font-medium"
                             >Klik untuk pilih file</span
                           >
-                          <span v-else class="text-dark-base font-medium">{{
-                            formData.documents.name
-                          }}</span>
+                          <span v-else class="text-dark-base font-medium">
+                            {{ getLocalUploadFiles().length }} file dipilih
+                          </span>
                           <span class="text-xs text-sub-text/70"
                             >PDF, DOC, XLS, JPG, PNG</span
                           >
                         </div>
                       </label>
+
+                      <ul
+                        v-if="getLocalUploadFiles().length"
+                        class="mt-2 space-y-1"
+                      >
+                        <li
+                          v-for="(file, i) in getLocalUploadFiles()"
+                          :key="`${file.name}-${file.lastModified || i}`"
+                          class="flex items-center justify-between text-xs px-3 py-1.5 bg-light-base rounded-lg"
+                        >
+                          <div class="min-w-0">
+                            <p class="truncate text-dark-base">
+                              {{ getLocalUploadLabel(file) }}
+                            </p>
+                            <p class="text-[10px] text-sub-text">
+                              {{ formatLocalUploadSize(file) }}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            @click="removeLocalUploadFile(i)"
+                            class="ml-2 text-sub-text hover:text-red-500 shrink-0"
+                          >
+                            ✕
+                          </button>
+                        </li>
+                      </ul>
                     </div>
                   </transition>
                 </div>

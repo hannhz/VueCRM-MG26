@@ -327,10 +327,14 @@ const actions = {
   },
 
   insertcompany(context, data) {
-    // Gunakan saveCompany dengan choice='i' untuk backward compatibility
+    // Jika sudah FormData, teruskan langsung
+    if (data instanceof FormData) {
+      return context.dispatch("saveCompany", data);
+    }
+    // Jika object, bungkus seperti biasa (backward compatibility)
     const payload = {
       choice: "i",
-      ...data.formdata,
+      ...(data?.formdata || data),
     };
     return context.dispatch("saveCompany", payload);
   },
@@ -397,11 +401,15 @@ const actions = {
   },
 
   updatecompany(context, data) {
-    // Gunakan saveCompany dengan choice='u' untuk backward compatibility
+    // Jika sudah FormData, teruskan langsung
+    if (data instanceof FormData) {
+      return context.dispatch("saveCompany", data);
+    }
+    // Jika object, bungkus seperti biasa (backward compatibility)
     const payload = {
       choice: "u",
-      id: data.keyedit,
-      ...data.formdata,
+      id: data?.keyedit || data?.id,
+      ...(data?.formdata || data),
     };
     return context.dispatch("saveCompany", payload);
   },
@@ -415,7 +423,7 @@ const actions = {
     const response = await api.post("company/input", requestPayload, {
       headers,
     });
-    await context.dispatch("fetchAllcompany").catch(() => {});
+    await context.dispatch("fetchAllcompany").catch(() => { });
     return response.data;
   },
 

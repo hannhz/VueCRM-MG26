@@ -87,6 +87,17 @@ export default {
         ]).finally(() => this.applyDefaultOwner());
       }
     },
+    contactData: {
+      handler(newVal) {
+        if (newVal && Object.keys(newVal).length > 0) {
+          this.populateForm(newVal);
+        } else {
+          this.handleReset();
+        }
+      },
+      immediate: true,
+      deep: true,
+    },
   },
 
   data() {
@@ -155,7 +166,15 @@ export default {
         files: [],
       },
 
-      noteContent: "",
+      noteData: {
+        body: "",
+        gps_address: null,
+        latitude: null,
+        longitude: null,
+        photos: [],
+        audioBlob: null,
+      },
+
       isSubmitting: false,
       companySearch: "",
       activeTab: "master",
@@ -246,6 +265,126 @@ export default {
         this.formData.id_owner = this.currentUserId;
       }
     },
+    populateForm(data) {
+      if (!data) return;
+
+      // Extract raw data from possible nested contacts array (backward compatibility)
+      const rawData =
+        data && data.contacts && data.contacts.length > 0
+          ? data.contacts[0]
+          : data;
+
+      // Association Candidates Logic (similar to DetailDataContact)
+      const getCandidates = (value) => {
+        if (!value) return [];
+        if (Array.isArray(value))
+          return value
+            .map((v) =>
+              typeof v === "object" && v !== null
+                ? (v.id ??
+                  v.deal_id ??
+                  v.company_id ??
+                  v.id_deal ??
+                  v.id_company ??
+                  v.value)
+                : v,
+            )
+            .filter(Boolean);
+        if (typeof value === "string")
+          return value
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+        return [value];
+      };
+
+      const companyIds = getCandidates(
+        rawData.companyassoc ||
+          rawData.companiesAssociation ||
+          rawData.company_id ||
+          rawData.id_company,
+      );
+      const dealIds = getCandidates(
+        rawData.dealsassoc ||
+          rawData.dealsAssociation ||
+          rawData.deal_id ||
+          rawData.id_deal,
+      );
+
+      const selectedCompanies = companyIds.map((id) => {
+        const found = this.allCompanies.find(
+          (c) => String(c.id) === String(id),
+        );
+        return found || { id };
+      });
+      const selectedDeals = dealIds.map((id) => {
+        const found = this.allDeals.find((d) => String(d.id) === String(id));
+        return found || { id };
+      });
+
+      this.formData = {
+        id: rawData.id,
+        first_name: rawData.first_name || rawData.firstname || "",
+        last_name: rawData.last_name || rawData.lastname || "",
+        job_title: rawData.job_title || rawData.jobTitle || "",
+        id_owner: "", // set below
+        email: rawData.email || "",
+        telephone_1:
+          rawData.telephone_1 || rawData.phone || rawData.telephone1 || "",
+        telephone_2: rawData.telephone_2 || rawData.telephone2 || "",
+        status: "", // set below
+        address: rawData.address || rawData.address_1 || "",
+        country: rawData.country || "",
+        province: rawData.province || rawData.state || "",
+        city: rawData.city || "",
+        pos_code: rawData.pos_code || rawData.zip || rawData.posCode || "",
+        source: rawData.source || "",
+        selectedCompanies: selectedCompanies,
+        selectedDeals: selectedDeals,
+      };
+
+      // Robust Owner Resolution
+      const rawOwner = rawData.id_owner || rawData.owner_id || rawData.owner;
+      if (rawOwner) {
+        const matchingOwner = this.ownerOptions.find(
+          (o) =>
+            String(o.value) === String(rawOwner) ||
+            o.label.toLowerCase() === String(rawOwner).toLowerCase(),
+        );
+        this.formData.id_owner = matchingOwner ? matchingOwner.value : rawOwner;
+      }
+
+      // Robust Status Resolution
+      if (rawData.status) {
+        // If it looks like a number, keep as ID
+        if (!isNaN(rawData.status) && rawData.status !== "") {
+          this.formData.status = Number(rawData.status);
+        } else {
+          // If it's a name, we might need a statusList search
+          const matchingStatus = (this.statusList || []).find(
+            (s) =>
+              s.name.toLowerCase() === String(rawData.status).toLowerCase(),
+          );
+          if (matchingStatus) this.formData.status = matchingStatus.id;
+        }
+      }
+
+      this.noteData = {
+        body: rawData.notes || rawData.note || "",
+        gps_address: null,
+        latitude: null,
+        longitude: null,
+        photos: [],
+        audioBlob: null,
+      };
+
+      this.docs = {
+        description:
+          rawData?.docs?.description || rawData?.docs || rawData?.doc || "",
+        fileSource: rawData?.docs?.fileSource || "",
+        files: Array.isArray(rawData?.docs?.files) ? rawData.docs.files : [],
+      };
+    },
     handleClose() {
       this.$emit("close");
     },
@@ -279,7 +418,9 @@ export default {
         const now = new Date().toISOString();
         const dataToSubmit = {
           ...this.formData,
-          note: this.noteContent,
+          note: this.noteData?.body || "",
+          notes: this.noteData?.body || "",
+          noteData: this.noteData,
           task: this.task,
           docs: this.docs,
           id_owner: this.formData.id_owner || this.currentUserId || "",
@@ -294,7 +435,10 @@ export default {
         };
         this.saveContact(dataToSubmit)
           .then(() => {
-            toast.success("Contact berhasil ditambahkan!");
+            const msg = dataToSubmit.id
+              ? "Contact berhasil diperbarui!"
+              : "Contact berhasil ditambahkan!";
+            toast.success(msg);
             this.handleReset();
             this.activeTab = "master";
             this.handleClose();
@@ -334,6 +478,30 @@ export default {
         dealsSearch: "",
         selectedCompanies: [],
         selectedDeals: [],
+      };
+
+      this.task = {
+        name: "",
+        content: "",
+        status: "",
+        dueDate: "",
+        time: "",
+        priority: "",
+      };
+
+      this.docs = {
+        description: "",
+        fileSource: "",
+        files: [],
+      };
+
+      this.noteData = {
+        body: "",
+        gps_address: null,
+        latitude: null,
+        longitude: null,
+        photos: [],
+        audioBlob: null,
       };
     },
     toggleCompaniesDropdown() {
@@ -406,7 +574,9 @@ export default {
       <div
         class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
       >
-        <h2 class="text-xl font-bold text-dark-base">Add Contact</h2>
+        <h2 class="text-xl font-bold text-dark-base">
+          {{ formData.id ? "Edit Contact" : "Add Contact" }}
+        </h2>
         <button
           @click="handleClose"
           class="p-2 hover:bg-light-base rounded-lg transition-colors"
@@ -692,7 +862,7 @@ export default {
         <!-- Detail Tab -->
         <div v-if="activeTab === 'detail'" class="p-6 space-y-6">
           <div class="flex-1 overflow-y-auto min-h-0">
-            <NotesSection v-model="noteContent" />
+            <NotesSection v-model:note-data="noteData" />
             <TaskSection
               v-model="task"
               :statusOptions="statusOptions"

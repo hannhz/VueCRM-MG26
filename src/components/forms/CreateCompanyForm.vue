@@ -219,64 +219,35 @@ export default {
     handleSave() {
       this.isSubmitting = true;
 
-      console.log("Data to submit:", this.formData);
-
+      // 🚀 Gunakan buildFormData untuk menghandle file upload (docs[], noteData[photos][], dll)
       const fd = buildFormData(
         this.formData,
         this.isEditMode,
-        this.initialData?.id,
+        this.initialData?.id || null,
       );
-      for (let pair of fd.entries()) {
-        console.log(pair[0], pair[1]);
-      }
 
-      if (this.isEditMode) {
-        const payload = {
-          ...this.formData,
-          choice: this.isEditMode ? "u" : "i", // 🔥 penting
-          id: this.initialData?.id || null,
-        };
-        // console.log("Payload for update:", payload);
-        this.insertCompany({ formdata: payload })
-          .then((data) => {
-            alertService.success("Company berhasil ditambahkan!");
-            this.resetForm();
-            this.$emit("submit", data);
-            this.showDetailForm = false;
-            this.handleClose();
-          })
-          .catch((error) => {
-            alertService.error(
-              error.response?.data?.message ||
-                error.message ||
-                "Gagal menambah company.",
-            );
-          })
-          .finally(() => {
-            this.isSubmitting = false;
-            this.activeTab = "master";
-          });
-      } else {
-        this.insertCompany({ formdata: this.formData })
-          .then((data) => {
-            alertService.success("Company berhasil ditambahkan!");
-            this.resetForm();
-            this.$emit("submit", data);
-            this.showDetailForm = false;
-            this.handleClose();
-          })
-          .catch((error) => {
-            alertService.error(
-              error.response?.data?.message ||
-                error.message ||
-                "Gagal menambah company.",
-            );
-          })
-          .finally(() => {
-            this.isSubmitting = false;
-            this.activeTab = "master";
-          });
-      }
+      this.insertCompany(fd)
+        .then((data) => {
+          const message = this.isEditMode
+            ? "Company berhasil diperbarui!"
+            : "Company berhasil ditambahkan!";
+          alertService.success(message);
+          this.resetForm();
+          this.$emit("submit", data);
+          this.showDetailForm = false;
+          this.handleClose();
+        })
+        .catch((error) => {
+          alertService.error(
+            error.response?.data?.message ||
+              error.message ||
+              "Gagal menyimpan company.",
+          );
+        })
+        .finally(() => {
+          this.isSubmitting = false;
+          this.activeTab = "master";
+        });
     },
 
     resetForm() {

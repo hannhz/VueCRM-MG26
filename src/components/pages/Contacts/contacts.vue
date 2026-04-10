@@ -30,7 +30,7 @@
         @search="handleSearch"
       />
 
-      <ContactsTable
+      <!-- <ContactsTable
         :contacts="tableContacts"
         :isLoading="isLoading"
         :selectedIds="selectedIds"
@@ -39,14 +39,33 @@
         @toggle-select-all="toggleSelectAll"
         @row-click="openContactDetail"
         @open-add-single="openAddSingle"
-      />
+      /> -->
+
+      <DataGrid 
+        ref="contactGrid"
+        :dataSource="tableContacts" 
+        :keyExpr="'id'" 
+        @focused-row-changed="handleFocusedRowChanged" 
+        @cell-prepared="handleCellPrepared"
+        @contentready="handleContentReady"
+        :showActionColumn="false"
+        :wordwrap="true"
+        :columnAutoWidth="false"
+        :disablecol="['id', 'email', 'phone', 'first_name', 'last_name', 'job_title', 'id_owner', 'telephone_1', 'telephone_2', 'status', 'address', 'country', 'province', 'city', 'pos_code', 'source', 'companyassoc', 'dealsassoc', 'notes', 'created_at', 'updated_at', 'owner_name']"
+      >
+        <DxSelection 
+          mode="multiple" 
+          showCheckBoxesMode="always" 
+        />
+      </DataGrid>
     </div>
 
     <!-- Add Contact Form -->
     <AddContactForm
       :isOpen="showAddContactForm"
-      @close="showAddContactForm = false"
-      @submit="handleAddContact"
+      :contactData="selectedContact"
+      @close="closeAddContactForm"
+      @submit="fetchData"
     />
 
     <!-- Contact Detail Form -->
@@ -90,6 +109,8 @@ import { mapActions, mapGetters } from "vuex";
 import { alertService } from "@/services/alertService";
 import { useStatuses } from "@/composables/useStatuses";
 
+import { DxSelection } from "devextreme-vue/data-grid";
+
 import ContactsHeader from "./ContactsHeader.vue";
 import ContactsFilterBar from "./ContactsFilterBar.vue";
 import ContactsTable from "./ContactsTable.vue";
@@ -111,6 +132,8 @@ import {
   getUpdateAction,
 } from "@/utils/detailFormPayload";
 
+import DataGrid from "@/components/widgets/DataGrid.vue";
+
 export default {
   name: "Contacts",
 
@@ -122,6 +145,8 @@ export default {
     BulkAddContactForm,
     DetailForm,
     DetailDataContact,
+    DataGrid,
+    DxSelection,
   },
 
   data() {
@@ -148,6 +173,7 @@ export default {
       isDetailDataSubmitting: false,
       isDetailFormSubmitting: false,
       detailFormEntityId: null,
+      gridInitialized: false,
     };
   },
 
@@ -234,18 +260,26 @@ export default {
           dealOptions,
         );
 
+        const companyStr = (companyLabels.length ? companyLabels : ["-"]).join(
+          ", ",
+        );
+        const dealStr = (dealLabels.length ? dealLabels : ["-"]).join(", ");
+
         return {
           ...contact,
-          companyLabelsText: (companyLabels.length
-            ? companyLabels
-            : ["-"]
-          ).join(", "),
-          dealLabelsText: (dealLabels.length ? dealLabels : ["-"]).join(", "),
-          updatedAtText: this.formatDate(
+          id: contact.id,
+          email: contact.email,
+          phone: contact.telephone_1,
+          "Contact Name": `${contact.first_name || ""} ${
+            contact.last_name || ""
+          }`.trim(),
+          "Contact Info": `${contact.email || "-"}\n${contact.telephone_1 || "-"}`,
+          "Associated with": `${companyStr}\n${dealStr}`,
+          "Status": this.getStatusName(contact.status),
+          "Created/Update": this.formatDate(
             contact.updated_at || contact.created_at,
           ),
-          statusClass: this.getStatusClass(contact.status),
-          statusName: this.getStatusName(contact.status),
+          "Owner": contact.owner_name || contact.owner || "-",
         };
       });
     },
@@ -262,6 +296,64 @@ export default {
   },
 
   methods: {
+    handleFocusedRowChanged(e) {
+      const contact = e?.data;
+      if (contact) {
+        this.openContactDetail(contact);
+      }
+    },
+    handleContentReady(e) {
+      if (!this.gridInitialized && e.component) {
+        const instance = e.component;
+        
+        // Define widths
+        instance.columnOption("Contact Name", "width", 250);
+        instance.columnOption("Contact Info", "width", 240);
+        instance.columnOption("Associated with", "width", 240);
+        instance.columnOption("Status", "width", 130);
+        instance.columnOption("Created/Update", "width", 180);
+        instance.columnOption("Owner", "width", 180);
+
+        // Define robust stacked templates
+        instance.columnOption("Contact Name", "cellTemplate", (container, options) => {
+          const val = options.displayValue || "-";
+          container.innerHTML = `<div style="font-weight: bold; color: #1e293b;">${val}</div>`;
+        });
+
+        instance.columnOption("Contact Info", "cellTemplate", (container, options) => {
+          const email = options.data.email || "-";
+          const phone = options.data.phone || "-";
+          container.innerHTML = `
+            <div style="display: block; width: 100%;">
+              <div style="color: #1e293b; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${email}</div>
+              <div style="color: #64748b; font-size: 12px; margin-top: 2px; display: block;">${phone}</div>
+            </div>
+          `;
+        });
+
+        instance.columnOption("Associated with", "cellTemplate", (container, options) => {
+          const val = options.displayValue || "-";
+          const parts = val.split("\n");
+          container.innerHTML = `
+            <div style="display: block; width: 100%;">
+              ${parts.map((text, idx) => `
+                <div style="color: ${idx === 0 ? "#1e293b" : "#64748b"}; font-size: ${idx === 0 ? "13px" : "12px"}; margin-top: ${idx > 0 ? "2px" : "0"}; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  ${text}
+                </div>
+              `).join("")}
+            </div>
+          `;
+        });
+
+        this.gridInitialized = true;
+      }
+    },
+    handleSelectionChanged(e) {
+      this.selectedIds = e.selectedRowKeys || [];
+    },
+    handleCellPrepared(e) {
+      // We moved rendering to cellTemplate for robustness
+    },
     ...mapActions({
       fetchAllContacts: "contacts/fetchAllContacts",
       fetchAllcompany: "company/fetchAllcompany",
@@ -341,13 +433,12 @@ export default {
     // Detail modal
     // ========================
     openContactDetail(contact) {
-      // kontak dari tableContacts masih punya field tambahan, aman
       this.selectedContact = { ...contact };
-      this.showDetailDataContact = true;
+      this.showAddContactForm = true;
     },
 
-    closeDetailDataContact() {
-      this.showDetailDataContact = false;
+    closeAddContactForm() {
+      this.showAddContactForm = false;
       this.selectedContact = null;
     },
 
@@ -581,6 +672,16 @@ export default {
     this.fetchData();
     this.fetchAllcompany();
     this.fetchAllDeals();
+
+    // Attach selection listener to internal DxDataGrid instance
+    this.$nextTick(() => {
+      const grid = this.$refs.contactGrid;
+      if (grid && grid.getInstance) {
+        grid.getInstance().on("selectionChanged", (e) => {
+          this.handleSelectionChanged(e);
+        });
+      }
+    });
   },
 
   beforeUnmount() {

@@ -9,6 +9,8 @@ export default {
     ChevronRight,
   },
 
+  emits: ["update:modelValue"],
+
   props: {
     modelValue: {
       type: Object,
@@ -38,7 +40,7 @@ export default {
     return {
       showDocs: this.defaultOpen,
       docDropdownOpen: false,
-      localDocs: { ...this.modelValue },
+      localDocs: this.createLocalDocs(this.modelValue),
     };
   },
 
@@ -46,7 +48,7 @@ export default {
     modelValue: {
       deep: true,
       handler(val) {
-        this.localDocs = { ...val };
+        this.localDocs = this.createLocalDocs(val);
       },
     },
     localDocs: {
@@ -58,12 +60,147 @@ export default {
   },
 
   methods: {
+    createLocalDocs(value) {
+      const safeValue = value || {};
+
+      return {
+        description: safeValue.description || "",
+        fileSource: safeValue.fileSource || "",
+        files: Array.isArray(safeValue.files) ? [...safeValue.files] : [],
+      };
+    },
+
+    isAllowedDocFile(file) {
+      const name = String(file?.name || "").toLowerCase();
+      const type = String(file?.type || "").toLowerCase();
+
+      return (
+        name.endsWith(".pdf") ||
+        name.endsWith(".doc") ||
+        name.endsWith(".docx") ||
+        name.endsWith(".xls") ||
+        name.endsWith(".xlsx") ||
+        type === "application/pdf" ||
+        type === "application/msword" ||
+        type ===
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        type === "application/vnd.ms-excel" ||
+        type ===
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
+    },
+
+    getDocKind(file) {
+      const name = String(file?.name || file || "").toLowerCase();
+
+      if (name.endsWith(".pdf")) return "pdf";
+      if (name.endsWith(".doc") || name.endsWith(".docx")) return "doc";
+      if (name.endsWith(".xls") || name.endsWith(".xlsx")) return "sheet";
+      return "file";
+    },
+
+    getDocLabel(file) {
+      if (typeof file === "string") {
+        return file.split("/").pop() || file;
+      }
+
+      if (file?.name) {
+        return file.name;
+      }
+
+      return "Dokumen";
+    },
+
+    formatFileSize(file) {
+      const size = Number(file?.size || 0);
+
+      if (!size) {
+        return "";
+      }
+
+      const units = ["B", "KB", "MB", "GB"];
+      let value = size;
+      let unitIndex = 0;
+
+      while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex += 1;
+      }
+
+      return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+    },
+
+    getDocPreviewUrl(file) {
+      if (!file) {
+        return "";
+      }
+
+      if (typeof file === "string") {
+        return file;
+      }
+
+      if (file.url) {
+        return file.url;
+      }
+
+      if (file.src) {
+        return file.src;
+      }
+
+      if (file instanceof File) {
+        if (!file._preview) {
+          file._preview = URL.createObjectURL(file);
+        }
+
+        return file._preview;
+      }
+
+      return "";
+    },
+
+    openDocFile(file) {
+      const previewUrl = this.getDocPreviewUrl(file);
+
+      if (!previewUrl) {
+        return;
+      }
+
+      window.open(previewUrl, "_blank", "noopener,noreferrer");
+    },
+
+    cleanupDocFile(file) {
+      if (file && typeof file === "object" && file._preview) {
+        URL.revokeObjectURL(file._preview);
+        delete file._preview;
+      }
+    },
+
     handleDocFileChange(e) {
       const files = Array.from(e.target.files);
-      this.localDocs.files = [...this.localDocs.files, ...files];
+      const validFiles = [];
+
+      files.forEach((file) => {
+        if (!this.isAllowedDocFile(file)) {
+          alert(
+            `File ${file.name} tidak didukung. Gunakan PDF, DOC, DOCX, XLS, atau XLSX.`,
+          );
+          return;
+        }
+
+        validFiles.push(file);
+      });
+
+      this.localDocs.files = [...this.localDocs.files, ...validFiles];
+      this.localDocs.fileSource = "local";
+      this.docDropdownOpen = false;
+
+      this.$nextTick(() => {
+        e.target.value = "";
+      });
     },
 
     removeDocFile(index) {
+      this.cleanupDocFile(this.localDocs.files[index]);
       this.localDocs.files.splice(index, 1);
     },
 
@@ -77,6 +214,16 @@ export default {
     currentIcon() {
       return this.showDocs ? ChevronDown : ChevronRight;
     },
+
+    docAccept() {
+      return ".pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    },
+  },
+
+  beforeUnmount() {
+    (this.localDocs.files || []).forEach((file) => {
+      this.cleanupDocFile(file);
+    });
   },
 };
 </script>
@@ -202,10 +349,13 @@ export default {
           <label
             class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-outline rounded-lg cursor-pointer hover:bg-light-base"
           >
-            <span class="text-xs">Klik untuk pilih file</span>
+            <span class="text-xs"
+              >Klik untuk pilih file PDF, DOC, atau Excel</span
+            >
             <input
               type="file"
               multiple
+              :accept="docAccept"
               class="hidden"
               @change="handleDocFileChange"
             />
@@ -215,10 +365,39 @@ export default {
             <li
               v-for="(file, i) in localDocs.files"
               :key="i"
-              class="flex justify-between text-xs px-3 py-1.5 bg-light-base rounded-lg"
+              class="flex items-center justify-between gap-3 text-xs px-3 py-2 bg-light-base rounded-lg"
             >
-              <span class="truncate">{{ file.name }}</span>
-              <button @click="removeDocFile(i)">✕</button>
+              <div class="flex min-w-0 items-center gap-2">
+                <span
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white border border-outline text-[10px] font-semibold text-dark-base uppercase"
+                >
+                  {{ getDocKind(file) }}
+                </span>
+
+                <div class="min-w-0">
+                  <p class="truncate text-dark-base">{{ getDocLabel(file) }}</p>
+                  <p class="text-[10px] text-sub-text">
+                    {{ formatFileSize(file) }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  class="text-xs text-sub-text hover:text-dark-base"
+                  @click="openDocFile(file)"
+                >
+                  Open
+                </button>
+                <button
+                  type="button"
+                  class="text-xs text-sub-text hover:text-red-600"
+                  @click="removeDocFile(i)"
+                >
+                  ✕
+                </button>
+              </div>
             </li>
           </ul>
         </div>

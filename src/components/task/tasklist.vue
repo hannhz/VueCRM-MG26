@@ -86,15 +86,12 @@
               {{ isQuickAdding ? "Saving..." : "Quick Add" }}
             </button>
           </div>
-          <p class="mt-1 text-xs text-sub-text">
-            Owner otomatis: {{ quickAddOwnerLabel }}
-          </p>
         </div>
       </div>
     </div>
 
     <!-- select sama page total -->
-    <div class="px-6 py-4 flex items-center">
+    <div class="px-6 py-2 flex items-center">
       <!-- KIRI -->
       <label class="flex items-center gap-2 text-sm text-sub-text">
         <input
@@ -138,7 +135,7 @@
     </div>
 
     <!-- Table -->
-    <div class="mt-4 flex-1 min-h-0 overflow-auto relative">
+    <div class="flex-1 min-h-0 overflow-auto relative">
       <!-- Loading Overlay -->
       <div
         v-if="isLoading"
@@ -150,175 +147,14 @@
         </div>
       </div>
 
-      <!-- Table -->
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead>
-            <tr class="border-b border-gray-200">
-              <th class="px-6 py-4 text-left">
-                <input
-                  type="checkbox"
-                  @change="toggleSelectAll"
-                  :checked="allSelected"
-                  class="w-4 h-4 rounded border-gray-300"
-                />
-              </th>
-              <th
-                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
-              >
-                <div class="flex items-center gap-2">
-                  Task Name
-                  <ChevronDown :size="16" class="text-gray-400" />
-                </div>
-              </th>
-              <th
-                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
-              >
-                <div class="flex items-center gap-2">
-                  Stage
-                  <ChevronDown :size="16" class="text-gray-400" />
-                </div>
-              </th>
-              <th
-                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
-              >
-                <div class="flex items-center gap-2">
-                  Due Date / Time
-                  <ChevronDown :size="16" class="text-gray-400" />
-                </div>
-              </th>
-              <th
-                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
-              >
-                <div class="flex items-center gap-2">
-                  Associated With
-                  <ChevronDown :size="16" class="text-gray-400" />
-                </div>
-              </th>
-              <th
-                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
-              >
-                <div class="flex items-center gap-2">
-                  Created / Updated
-                  <ChevronDown :size="16" class="text-gray-400" />
-                </div>
-              </th>
-              <th
-                class="px-6 py-4 text-left text-sm font-semibold text-gray-700"
-              >
-                <div class="flex items-center gap-2">
-                  Owner
-                  <ChevronDown :size="16" class="text-gray-400" />
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Empty State -->
-            <tr v-if="tasks.length === 0">
-              <td colspan="7" class="px-6 py-20 text-center text-sub-text">
-                <div class="flex flex-col items-center gap-3">
-                  <div
-                    class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center"
-                  >
-                    <Search :size="32" class="text-gray-400" />
-                  </div>
-                  <p class="text-lg font-medium">No task found</p>
-                  <p class="text-sm text-gray-400">
-                    Start adding task to see them here
-                  </p>
-                </div>
-              </td>
-            </tr>
-
-            <!-- Data Rows -->
-            <tr
-              v-for="task in paginatedTasks"
-              :key="task.id"
-              class="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer"
-              @click="openTaskDetail(task)"
-            >
-              <td class="px-6 py-4">
-                <input
-                  type="checkbox"
-                  :checked="selectedTasks.includes(task.id)"
-                  @change="toggleSelect(task.id)"
-                  @click.stop
-                  class="w-4 h-4"
-                />
-              </td>
-
-              <td class="px-6 py-4">{{ task.title || task.name }}</td>
-
-              <td class="px-6 py-4" @click.stop>
-                <div class="relative">
-                  <button
-                    @click.stop="toggleStageDropdown(task.id)"
-                    :disabled="isSyncingStage && updatingTaskId === task.id"
-                    :class="[
-                      getStageColor(task.status || task.stage),
-                      openStageDropdown === task.id
-                        ? 'ring-1 ring-sub-text border-sub-text'
-                        : '',
-                    ]"
-                    class="w-full px-3 py-1.5 rounded-md text-xs font-medium inline-flex items-center justify-between gap-2 border border-gray-200 transition hover:border-gray-300 disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    <span>{{ getStageLabel(task.status || task.stage) }}</span>
-                    <ChevronDown
-                      :size="14"
-                      :class="openStageDropdown === task.id ? 'rotate-180' : ''"
-                      class="transition-transform"
-                    />
-                  </button>
-
-                  <!-- Stage Dropdown Menu -->
-                  <transition name="stage-dropdown">
-                    <div
-                      v-if="openStageDropdown === task.id"
-                      class="absolute top-full mt-1 left-0 right-0 bg-white border border-outline rounded-lg shadow-lg z-20 min-w-max"
-                      @click.stop
-                    >
-                      <button
-                        v-for="opt in stageOptions"
-                        :key="opt.value"
-                        @click.stop="handleChangeStage(task, opt.value)"
-                        :disabled="isSyncingStage && updatingTaskId === task.id"
-                        :class="
-                          (task.status || task.stage) === opt.value
-                            ? 'font-semibold bg-gray-50 text-sub-text'
-                            : 'text-gray-700'
-                        "
-                        class="w-full text-left px-4 py-2 text-sm transition hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                      >
-                        <span
-                          v-if="(task.status || task.stage) === opt.value"
-                          class="text-sub-text"
-                        >
-                          ✓
-                        </span>
-                        <span v-else class="w-3"></span>
-                        <span>{{ opt.label }}</span>
-                      </button>
-                    </div>
-                  </transition>
-                </div>
-              </td>
-
-              <td class="px-6 py-4">{{ task.dueDate || task.time || "-" }}</td>
-
-              <td class="px-6 py-4">—</td>
-
-              <td class="px-6 py-4">
-                {{ task.created_at || task.createdAt || "-" }}
-              </td>
-
-              <td class="px-6 py-4">
-                {{ task.owner || task.assignee || "-" }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <!-- DataGrid List -->
+      <DataGrid
+        class="mt-0!"
+        :dataSource="tableTasks"
+        :keyExpr="'id'"
+        :showActionColumn="false"
+        @focused-row-changed="handleFocusedRowChanged"
+      />
     </div>
 
     <!-- Error Message -->
@@ -337,11 +173,11 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   RefreshCw,
   Trash,
 } from "lucide-vue-next";
 import { alertService } from "@/services/alertService";
+import DataGrid from "@/components/widgets/DataGrid.vue";
 
 export default {
   name: "TaskList",
@@ -350,9 +186,9 @@ export default {
     Search,
     ChevronLeft,
     ChevronRight,
-    ChevronDown,
     RefreshCw,
     Trash,
+    DataGrid,
   },
   emits: ["viewDetail", "taskSelection"],
   data() {
@@ -421,6 +257,16 @@ export default {
           this.selectedTasks.includes(task.id),
         )
       );
+    },
+    tableTasks() {
+      return this.paginatedTasks.map((task) => ({
+        "Task Name": task.title || task.name || "-",
+        Stage: this.getStageLabel(task.status || task.stage),
+        "Due Date / Time": task.dueDate || task.time || "-",
+        "Created / Updated": task.created_at || task.createdAt || "-",
+        Owner: task.owner || task.assignee || "-",
+        id: task.id,
+      }));
     },
   },
   methods: {
@@ -507,6 +353,14 @@ export default {
       this.$emit("viewDetail", task);
     },
 
+    handleFocusedRowChanged(rowData) {
+      if (!rowData || !rowData.data) return;
+      const originalTask = this.tasks.find(
+        (task) => task.id === rowData.data.id,
+      );
+      this.openTaskDetail(originalTask || rowData.data);
+    },
+
     clearSelection() {
       this.selectedTasks = [];
       this.$emit("taskSelection", []);
@@ -590,6 +444,15 @@ export default {
     },
   },
   watch: {
+    tasks: {
+      immediate: true,
+      handler(newTasks) {
+        const validIds = newTasks.map((task) => task.id);
+        this.selectedTasks = this.selectedTasks.filter((id) =>
+          validIds.includes(id),
+        );
+      },
+    },
     itemsPerPage() {
       if (this.currentPage > this.totalPages) {
         this.currentPage = this.totalPages;

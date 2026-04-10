@@ -1,6 +1,7 @@
 import api from "@/api";
 import { useCookies } from "vue3-cookies";
 import { getDetailEndpointCandidates } from "@/utils/detailFormPayload";
+import { buildFormData } from "@/utils/buildFormData";
 
 const { cookies } = useCookies();
 
@@ -149,24 +150,35 @@ const mapCreateDealPayload = (formData = {}) => {
     return null;
   };
 
-  const docsDescription =
-    normalizeText(formData.docs?.description || formData.docs || formData.doc)
-      .trim() || null;
+  const normalizeStringOrNull = (value) => {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  };
 
-  const docsPayload = docsDescription
+  const docsDescription =
+    normalizeStringOrNull(formData.docs?.description) ||
+    normalizeStringOrNull(formData.doc);
+
+  const docsFiles = Array.isArray(formData.docs?.files)
+    ? formData.docs.files
+    : [];
+
+  const docsPayload = docsDescription || docsFiles.length
     ? {
         description: docsDescription,
-        fileSource: normalizeText(formData.docs?.fileSource).trim() || "",
-        files: Array.isArray(formData.docs?.files)
-          ? formData.docs.files.map((file) =>
-              typeof file === "string" ? file : file?.name || "",
-            )
-          : [],
+        fileSource: normalizeStringOrNull(formData.docs?.fileSource) || "",
+        files: docsFiles,
       }
     : null;
 
   const taskPayload = extractTaskData(formData.task);
-  const taskJsonValue = taskPayload ? JSON.stringify(taskPayload) : null;
+  // SELALU konvert task ke JSON string, jangan null - backend SP akan filter kalau kosong
+  const taskJsonValue = taskPayload
+    ? JSON.stringify(taskPayload)
+    : (formData.task && Object.keys(formData.task).length > 0
+        ? JSON.stringify(formData.task)
+        : null);
 
   return {
     // Mapping utama sesuai kolom DB
@@ -602,29 +614,27 @@ export default {
 
       const promise = new Promise(async (resolve, reject) => {
         try {
-          // Tentukan choice: 'i' untuk insert, 'u' untuk update
           const choice = formData.choice || (formData.id ? "u" : "i");
           const mappedData = mapCreateDealPayload(formData);
 
-          const requestPayload = {
+          const payload = {
             ...formData,
             ...mappedData,
-            choice: choice,
+            choice,
           };
 
-          if (choice === "i") {
-            // Hindari backend salah jalur update saat create.
-            delete requestPayload.id;
-            delete requestPayload.id_deals;
-          }
+          const { choice: _choice, id, id_deals, ...payloadForForm } = payload;
 
-          if (!requestPayload.deal_name) {
-            throw new Error("Deal name wajib diisi.");
-          }
+          const requestPayload = buildFormData(
+            payloadForForm,
+            choice === "u",
+            id || id_deals || null,
+          );
 
           const response = await api.post("deals/input", requestPayload, {
             headers: {
               Authorization: "Bearer " + cookies.get("token"),
+              //"Content-Type": "multipart/form-data",
             },
           });
 
@@ -637,7 +647,6 @@ export default {
             );
           }
 
-          // Refresh daftar dengan parameter yang sama agar tampilan tidak reset
           await dispatch("fetchAllDeals", {
             page: state.pagination?.current_page || 1,
             per_page: state.pagination?.per_page || 10,

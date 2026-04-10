@@ -72,9 +72,14 @@ export function buildFormData(formData, isEditMode = false, id = null) {
     fd.append("docs[description]", formData.docs.description || "");
     fd.append("docs[fileSource]", formData.docs.fileSource || "");
 
+    // 🎉 Laravel expects docs[] for multiple file upload via $request->file('docs')
     if (Array.isArray(formData.docs.files)) {
       formData.docs.files.forEach((file) => {
-        fd.append("docs[files][]", file);
+        if (file instanceof File || file instanceof Blob) {
+          fd.append("docs[]", file, file.name || "document");
+        } else if (file) {
+          fd.append("docs[]", file);
+        }
       });
     }
   }
