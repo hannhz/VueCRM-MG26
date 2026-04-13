@@ -11,6 +11,7 @@
         :keyExpr="keyExpr"
         :focusedRowEnabled="isFocusEnabled"
         :focusedRowKey="focusedRowKey"
+        :selectedRowKeys="selectedRowKeys"
         :height="height"
         :rowAlternationEnabled="rowAlternationEnabled"
         :hoverStateEnabled="hoverStateEnabled"
@@ -22,6 +23,7 @@
         @cellPrepared="onCellPrepared"
         @rowPrepared="onRowPrepared"
         @content-ready="handlecontentready"
+        @selection-changed="(e) => $emit('selection-changed', e)"
         @onRowClick="handleFocusedRowChanged"
         @rowDblClick="handleFocusedRowChanged"
       >
@@ -519,7 +521,7 @@ export default {
     },
     columnRenderingMode: {
       type: String,
-      default: "DxScrolling",
+      default: "standard",
     },
     rowRenderingMode: {
       type: String,
@@ -694,6 +696,10 @@ export default {
     allowGrouping: {
       type: Boolean,
       default: true,
+    },
+    selectedRowKeys: {
+      type: Array,
+      default: () => [],
     },
   },
 

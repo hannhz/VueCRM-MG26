@@ -17,6 +17,7 @@ import {
   buildDetailFormPayload,
   getUpdateAction,
 } from "@/utils/detailFormPayload";
+import { DxSelection } from "devextreme-vue/data-grid";
 
 import DataGrid from "@/components/widgets/DataGrid.vue";
 
@@ -29,7 +30,8 @@ export default {
     BulkAddCompanyForm,
     DetailForm,
     DetailDataCompany,
-    DataGrid
+    DataGrid,
+    DxSelection
   },
 
   data() {
@@ -632,6 +634,10 @@ export default {
       return status ? status.name : "-";
     },
 
+    handleSelectionChanged(e) {
+      this.selectedIds = e.selectedRowKeys || [];
+    },
+
     async fetchStatuses() {
       try {
         const { cookies } = useCookies();
@@ -732,7 +738,20 @@ export default {
       /> -->
 
 
-      <DataGrid :dataSource="tableCompanies" :keyExpr=" 'id' " @focused-row-changed="handleFocusedRowChanged" :showActionColumn="false"/>
+      <DataGrid 
+        :dataSource="tableCompanies" 
+        :keyExpr="'id'" 
+        :selectedRowKeys="selectedIds"
+        :rowRenderingMode="'standard'"
+        @focused-row-changed="handleFocusedRowChanged" 
+        @selection-changed="handleSelectionChanged"
+        :showActionColumn="false"
+      >
+        <DxSelection 
+          mode="multiple" 
+          showCheckBoxesMode="always" 
+        />
+      </DataGrid>
     </div>
 
     <!-- Add Company Form -->

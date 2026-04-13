@@ -17,6 +17,7 @@ export default {
       default: () => ({
         description: "",
         fileSource: "",
+        fileUrl: "",
         files: [],
       }),
     },
@@ -66,8 +67,20 @@ export default {
       return {
         description: safeValue.description || "",
         fileSource: safeValue.fileSource || "",
+        fileUrl: safeValue.fileUrl || "",
         files: Array.isArray(safeValue.files) ? [...safeValue.files] : [],
       };
+    },
+
+    isValidUrl(url) {
+      if (!url) return true;
+      const pattern =new RegExp('^(https?:\\/\\/)?'+ // protocol
+        '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
+        '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+        '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
+        '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
+        '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
+      return !!pattern.test(url);
     },
 
     isAllowedDocFile(file) {
@@ -218,6 +231,14 @@ export default {
     docAccept() {
       return ".pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     },
+
+    selectedSourceLabel() {
+      if (!this.localDocs.fileSource) return "Select File Source";
+      const option = this.fileSourceOptions.find(
+        (opt) => opt.value === this.localDocs.fileSource,
+      );
+      return option ? option.label : "Select File Source";
+    },
   },
 
   beforeUnmount() {
@@ -316,7 +337,7 @@ export default {
             <span
               :class="localDocs.fileSource ? 'text-dark-base' : 'text-gray-400'"
             >
-              Select File Source
+              {{ selectedSourceLabel }}
             </span>
 
             <svg
@@ -360,8 +381,29 @@ export default {
               @change="handleDocFileChange"
             />
           </label>
+        </div>
 
-          <ul v-if="localDocs.files.length" class="mt-2 space-y-1">
+        <!-- URL / Drive Input -->
+        <div v-if="localDocs.fileSource === 'url' || localDocs.fileSource === 'drive'" class="mt-3">
+          <input
+            v-model="localDocs.fileUrl"
+            type="text"
+            placeholder="Masukkan URL atau Link Google Drive..."
+            class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 transition-all"
+            :class="[
+              isValidUrl(localDocs.fileUrl) && localDocs.fileUrl 
+                ? 'border-green-500 focus:ring-green-200' 
+                : localDocs.fileUrl 
+                  ? 'border-red-500 focus:ring-red-200' 
+                  : 'border-outline focus:ring-sub-text'
+            ]"
+          />
+          <p v-if="localDocs.fileUrl && !isValidUrl(localDocs.fileUrl)" class="text-[10px] text-red-500 mt-1 ml-1">
+            Format URL tidak valid (Gunakan http:// atau https://)
+          </p>
+        </div>
+
+        <ul v-if="localDocs.files.length" class="mt-2 space-y-1">
             <li
               v-for="(file, i) in localDocs.files"
               :key="i"
@@ -403,5 +445,4 @@ export default {
         </div>
       </div>
     </div>
-  </div>
 </template>

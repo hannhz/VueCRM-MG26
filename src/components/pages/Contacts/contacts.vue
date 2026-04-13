@@ -45,13 +45,16 @@
         ref="contactGrid"
         :dataSource="tableContacts" 
         :keyExpr="'id'" 
+        :selectedRowKeys="selectedIds"
         @focused-row-changed="handleFocusedRowChanged" 
         @cell-prepared="handleCellPrepared"
         @contentready="handleContentReady"
+        @selection-changed="handleSelectionChanged"
+        :rowRenderingMode="'standard'"
         :showActionColumn="false"
         :wordwrap="true"
         :columnAutoWidth="false"
-        :disablecol="['id', 'email', 'phone', 'first_name', 'last_name', 'job_title', 'id_owner', 'telephone_1', 'telephone_2', 'status', 'address', 'country', 'province', 'city', 'pos_code', 'source', 'companyassoc', 'dealsassoc', 'notes', 'created_at', 'updated_at', 'owner_name']"
+        :disablecol="['statusid','taskid','deals','contact','id', 'email', 'phone', 'first_name', 'last_name', 'job_title', 'id_owner', 'telephone_1', 'telephone_2', 'status', 'address', 'country', 'province', 'city', 'pos_code', 'source', 'companyassoc', 'dealsassoc', 'notes', 'created_at', 'updated_at', 'owner_name', 'task_name', 'desktask', 'statustask', 'assignee', 'due_date', 'task_time', 'prioritytask', 'docs', 'associated_contact', 'telephone_3', 'state', 'zip', 'company_id', 'deal_id', 'company_label', 'deal_label', 'level', 'isParent', 'keyindex', 'PageTotal']"
       >
         <DxSelection 
           mode="multiple" 
@@ -672,16 +675,6 @@ export default {
     this.fetchData();
     this.fetchAllcompany();
     this.fetchAllDeals();
-
-    // Attach selection listener to internal DxDataGrid instance
-    this.$nextTick(() => {
-      const grid = this.$refs.contactGrid;
-      if (grid && grid.getInstance) {
-        grid.getInstance().on("selectionChanged", (e) => {
-          this.handleSelectionChanged(e);
-        });
-      }
-    });
   },
 
   beforeUnmount() {

@@ -163,6 +163,7 @@ export default {
       docs: {
         description: "",
         fileSource: "",
+        fileUrl: "",
         files: [],
       },
 
@@ -392,6 +393,11 @@ export default {
       // Validasi required fields
       if (!this.formData.first_name?.trim()) {
         toast.error("First Name is required");
+        this.activeTab = "master";
+        return false;
+      }
+      if (!this.formData.last_name?.trim()) {
+        toast.error("Last Name is required");
         this.activeTab = "master";
         return false;
       }
@@ -634,7 +640,7 @@ export default {
               </div>
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2">
-                  Last Name
+                  Last Name <span class="text-red-600">*</span>
                 </label>
                 <input
                   v-model="formData.last_name"
@@ -665,7 +671,7 @@ export default {
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2">
-                  Email
+                  Email <span class="text-red-600">*</span>
                 </label>
                 <input
                   v-model="formData.email"
@@ -677,7 +683,7 @@ export default {
               </div>
               <div>
                 <label class="block text-sm font-medium text-dark-base mb-2">
-                  Status
+                  Status <span class="text-red-600">*</span>
                 </label>
                 <div class="relative">
                   <select
