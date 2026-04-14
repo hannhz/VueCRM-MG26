@@ -20,6 +20,10 @@ import UserPermission from "@/components/user/userpermission.vue";
 import UserTeam from "@/components/user/userteam.vue";
 import User from "@/components/user/user.vue";
 import SettingsPage from "@/components/Settings.vue";
+import Project from "@/components/pages/Projects/project.vue";
+import ProjectList from "@/components/pages/Projects/projectlist.vue";
+import ProjectCard from "@/components/pages/Projects/projectcard.vue";
+import ProjectCalender from "@/components/pages/Projects/projectcalender.vue";
 
 import { createRouter, createWebHistory } from "vue-router";
 import store from "@/store";
@@ -103,9 +107,31 @@ const routes = [
         ],
       },
       {
-        path: "email-broadcast",
-        name: "EmailBroadcast",
-        component: EmailBroadcast,
+        path: "project",
+        name: "Project",
+        alias: "Projects",
+        component: Project,
+        children: [
+          {
+            path: "projectlist",
+            name: "ProjectList",
+            component: ProjectList,
+          },
+          {
+            path: "projectcard",
+            name: "ProjectCard",
+            component: ProjectCard,
+          },
+          {
+            path: "projectcalender",
+            name: "ProjectCalender",
+            component: ProjectCalender,
+          },
+          {
+            path: "",
+            redirect: { name: "ProjectList" }, // Default ke list jika akses /project
+          },
+        ],
       },
       {
         path: "documents",

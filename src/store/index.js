@@ -3,6 +3,7 @@ import dealsModule from "./modules/deals"; // Sesuaikan path filenya
 import contactsModule from "./modules/contacts";
 import companiesModule from "./modules/companies";
 import tasksModule from "./modules/tasks";
+import projectsModule from "./modules/projects";
 import documentsModule from "./modules/documents";
 import usersModule from "./modules/users";
 import broadcastModule from "./modules/broadcast";
@@ -22,6 +23,7 @@ export default createStore({
     contacts: contactsModule,
     company: companiesModule,
     tasks: tasksModule,
+    project: projectsModule,
     documents: documentsModule,
     users: usersModule,
     broadcast: broadcastModule,

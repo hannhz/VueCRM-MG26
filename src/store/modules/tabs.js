@@ -128,7 +128,7 @@ export default {
       //   }
       const flmenu = layout.dbmenu2.find((i) => i.pathfile === tab.pathfile);
       dispatch("selectTabFlMenu", flmenu);
-      router.push({ path: tab.pathfile }).catch(() => {});
+      router.push({ path: tab.pathfile }).catch(() => { });
     },
 
     /** Pilih tab FLMenu */

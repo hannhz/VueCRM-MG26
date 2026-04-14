@@ -1,0 +1,481 @@
+<template>
+  <div
+    class="bg-white rounded-lg shadow-sm w-full h-147 border border-outline flex flex-col overflow-hidden"
+  >
+    <!-- Action Bar -->
+    <div class="pt-4 pr-4 pl-4">
+      <div class="flex flex-col xl:flex-row xl:items-start gap-4 w-full">
+        <!-- LEFT -->
+        <div class="flex items-center flex-wrap gap-3 flex-1 min-w-0">
+          <!-- Filter -->
+          <button
+            class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
+          >
+            <Filter :size="20" class="text-dark-base" />
+          </button>
+
+          <!-- Delete Btn -->
+          <button
+            type="button"
+            @click="handleDelete"
+            class="p-2 rounded-lg transition"
+            :class="
+              selectedProjects.length > 0
+                ? 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
+                : 'bg-gray-200 text-gray-500 hover:bg-gray-300 cursor-not-allowed'
+            "
+            title="Delete selected projects"
+          >
+            <Trash :size="20" />
+          </button>
+
+          <!-- Search -->
+          <input
+            type="text"
+            placeholder="Search by Name"
+            v-model="searchQuery"
+            class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-full sm:w-64 lg:w-72 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+          />
+
+          <!-- Search Btn -->
+          <button
+            class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition"
+          >
+            <Search :size="20" class="text-dark-base" />
+          </button>
+
+          <!-- Show -->
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-dark-base">Show</span>
+            <select
+              v-model.number="itemsPerPage"
+              class="px-3 py-2 border border-outline rounded-lg text-sm"
+            >
+              <option :value="10">10</option>
+              <option :value="25">25</option>
+              <option :value="50">50</option>
+              <option :value="100">100</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- quick add -->
+        <div class="w-full xl:w-104 shrink-0">
+          <div
+            class="flex flex-col sm:flex-row bg-white border border-slate-200 rounded-md shadow-sm overflow-hidden"
+          >
+            <!-- Input -->
+            <input
+              v-model="taskText"
+              @keyup.enter="quickAdd"
+              type="text"
+              placeholder="Enter new task here..."
+              class="w-full min-w-0 flex-1 h-10 sm:h-9 px-4 text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+            />
+
+            <!-- Button -->
+            <button
+              @click="quickAdd"
+              :disabled="isQuickAdding || !taskText.trim()"
+              class="w-full sm:w-auto h-10 sm:h-9 px-6 bg-sub-text text-white text-sm font-semibold hover:bg-gray-700 transition flex items-center justify-center shrink-0"
+              :class="{
+                'opacity-60 cursor-not-allowed':
+                  isQuickAdding || !taskText.trim(),
+              }"
+            >
+              {{ isQuickAdding ? "Saving..." : "Quick Add" }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- select sama page total -->
+    <div class="px-6 py-2 flex items-center">
+      <!-- KIRI -->
+      <label class="flex items-center gap-2 text-sm text-sub-text">
+        <input
+          type="checkbox"
+          :checked="allSelected"
+          @change="toggleSelectAll"
+          class="h-4 w-4 rounded border-gray-300 text-sub-text focus:ring-sub-text"
+        />
+        Select all filtered result
+      </label>
+
+      <!-- PUSH KANAN -->
+      <div class="ml-auto flex items-center gap-3 text-sm text-sub-text">
+        <button
+          @click="prevPage"
+          class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
+          :disabled="currentPage === 1"
+        >
+          <ChevronLeft :size="18" class="text-sub-text" />
+        </button>
+
+        <span>Page</span>
+
+        <input
+          type="number"
+          v-model="currentPage"
+          min="1"
+          class="w-12 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-sub-text"
+        />
+
+        <span>of {{ totalPages }}</span>
+
+        <button
+          @click="nextPage"
+          class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
+          :disabled="currentPage === totalPages"
+        >
+          <ChevronRight :size="18" class="text-sub-text" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="flex-1 min-h-0 overflow-auto relative">
+      <!-- Loading Overlay -->
+      <div
+        v-if="isLoading"
+        class="absolute inset-0 bg-white/60 z-20 flex items-center justify-center"
+      >
+        <div class="flex flex-col items-center gap-3">
+          <RefreshCw class="animate-spin text-blue-950" :size="32" />
+          <p class="text-sm text-sub-text font-medium">Loading projects...</p>
+        </div>
+      </div>
+
+      <!-- DataGrid List -->
+      <DataGrid
+        class="mt-0!"
+        :dataSource="tableProjects"
+        :keyExpr="'id'"
+        :showActionColumn="false"
+        @focused-row-changed="handleFocusedRowChanged"
+      />
+    </div>
+
+    <!-- Error Message -->
+    <p
+      v-if="error"
+      class="px-6 py-3 text-sm text-red-600 border-t border-gray-100"
+    >
+      {{ error }}
+    </p>
+  </div>
+</template>
+
+<script>
+import {
+  Filter,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  Trash,
+} from "lucide-vue-next";
+import { alertService } from "@/services/alertService";
+import DataGrid from "@/components/widgets/DataGrid.vue";
+
+export default {
+  name: "ProjectList",
+  components: {
+    Filter,
+    Search,
+    ChevronLeft,
+    ChevronRight,
+    RefreshCw,
+    Trash,
+    DataGrid,
+  },
+  emits: ["viewDetail", "taskSelection"],
+  data() {
+    return {
+      taskText: "",
+      isQuickAdding: false,
+      currentPage: 1,
+      itemsPerPage: 10,
+      selectedProjects: [],
+      isSyncingStage: false,
+      updatingTaskId: null,
+      openStageDropdown: null,
+      stageOptions: [
+        { value: "not_started", label: "Not Started" },
+        { value: "in_progress", label: "In Progress" },
+        { value: "waiting", label: "Waiting" },
+        { value: "completed", label: "Completed" },
+        { value: "deferred", label: "Deferred" },
+      ],
+    };
+  },
+  computed: {
+    allProjectsData() {
+      return this.$store.getters["project/filteredProjects"] || [];
+    },
+    isLoading() {
+      return this.$store.getters["project/isLoading"];
+    },
+    error() {
+      return this.$store.getters["project/error"];
+    },
+    signedInUser() {
+      return this.$store.getters["users/usersignin"] || null;
+    },
+    authUser() {
+      return this.$store.getters["auth/currentUser"] || null;
+    },
+    searchQuery: {
+      get() {
+        return this.$store.getters["project/searchQuery"] || "";
+      },
+      set(value) {
+        this.$store.dispatch("project/setSearchQuery", value);
+      },
+    },
+    projects() {
+      return this.allProjectsData;
+    },
+    quickAddOwnerLabel() {
+      return this.getLoggedInName();
+    },
+    totalProject() {
+      return this.projects.length;
+    },
+    totalPages() {
+      return Math.max(1, Math.ceil(this.totalProject / this.itemsPerPage));
+    },
+    paginatedProjects() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      return this.projects.slice(start, start + this.itemsPerPage);
+    },
+    allSelected() {
+      return (
+        this.paginatedProjects.length > 0 &&
+        this.paginatedProjects.every((project) =>
+          this.selectedProjects.includes(project.id),
+        )
+      );
+    },
+    tableProjects() {
+      return this.paginatedProjects.map((project) => ({
+        "Project Name": project.project_name || project.title || project.name || "-",
+        Stage: this.getStageLabel(project.status || project.stage),
+        "Due Date / Time": project.dueDate || project.time || "-",
+        "Created / Updated": project.created_at || project.createdAt || "-",
+        Owner: project.owner || project.assignee || "-",
+        id: project.id,
+      }));
+    },
+  },
+  methods: {
+    getLoggedInName() {
+      const user = this.signedInUser || this.authUser || {};
+      const fullName =
+        user.name ||
+        user.username ||
+        user.user_name ||
+        [user.firstname || user.first_name, user.lastname || user.last_name]
+          .filter(Boolean)
+          .join(" ") ||
+        user.email ||
+        "User";
+
+      return String(fullName).trim() || "User";
+    },
+
+    getStageLabel(stage) {
+      return (
+        this.stageOptions.find((opt) => opt.value === stage)?.label || stage
+      );
+    },
+
+    getStageColor(stage) {
+      const colors = {
+        not_started: "bg-slate-100 text-slate-700",
+        in_progress: "bg-blue-100 text-blue-700",
+        waiting: "bg-yellow-100 text-yellow-700",
+        completed: "bg-emerald-100 text-emerald-700",
+        deferred: "bg-red-100 text-red-700",
+      };
+      return colors[stage] || "bg-slate-100 text-slate-700";
+    },
+
+    async quickAdd() {
+      const taskName = this.taskText.trim();
+      if (!taskName || this.isQuickAdding) return;
+
+      this.isQuickAdding = true;
+
+      try {
+        if (!this.signedInUser) {
+          await this.$store.dispatch("users/getusersignin").catch(() => null);
+        }
+
+        await this.$store.dispatch("project/createProject", {
+          projectName,
+          owner: this.getLoggedInName(),
+          dueDate: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        });
+
+        this.taskText = "";
+      } catch (err) {
+        console.error("Quick add task failed:", err);
+      } finally {
+        this.isQuickAdding = false;
+      }
+    },
+
+    toggleSelectAll(e) {
+      this.selectedProjects = e.target.checked
+        ? this.paginatedProjects.map((t) => t.id)
+        : [];
+      this.$emit("taskSelection", this.selectedProjects);
+    },
+
+    toggleSelect(id) {
+      if (this.selectedProjects.includes(id)) {
+        this.selectedProjects = this.selectedProjects.filter((i) => i !== id);
+      } else {
+        this.selectedProjects.push(id);
+      }
+      this.$emit("taskSelection", this.selectedProjects);
+    },
+
+    toggleStageDropdown(taskId) {
+      this.openStageDropdown =
+        this.openStageDropdown === taskId ? null : taskId;
+    },
+
+    openTaskDetail(task) {
+      this.$emit("viewDetail", task);
+    },
+
+    handleFocusedRowChanged(rowData) {
+      if (!rowData || !rowData.data) return;
+      const originalTask = this.tasks.find(
+        (task) => task.id === rowData.data.id,
+      );
+      this.openTaskDetail(originalTask || rowData.data);
+    },
+
+    clearSelection() {
+      this.selectedProjects = [];
+      this.$emit("taskSelection", []);
+    },
+
+    async handleDelete() {
+      if (this.selectedProjects.length === 0) {
+        alertService.warning("Pilih minimal satu project untuk dihapus");
+        return;
+      }
+
+      const confirmDelete = await alertService.confirm(
+        "Hapus Project?",
+        `${this.selectedProjects.length} project akan dihapus secara permanen. Lanjutkan?`,
+      );
+
+      if (!confirmDelete) return;
+
+      try {
+        for (const projectId of this.selectedProjects) {
+          const projectItem = this.allProjectsData.find(
+            (project) => project.id === projectId,
+          ) || {
+            id: projectId,
+          };
+          await this.$store.dispatch("project/deleteProject", projectItem);
+        }
+        alertService.success("Project berhasil dihapus");
+        this.clearSelection();
+      } catch (error) {
+        console.error("Error deleting tasks:", error);
+        const status = error?.response?.status;
+        const backendMessage =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message;
+        alertService.error(
+          `Gagal menghapus project. ${status ? `Status: ${status}. ` : ""}${backendMessage || "Silakan coba lagi."}`,
+        );
+      }
+    },
+
+    async handleChangeStage(task, newStage) {
+      if (task.status === newStage || task.stage === newStage) {
+        this.openStageDropdown = null;
+        return;
+      }
+
+      const previousStage = task.status || task.stage;
+      task.status = newStage;
+      task.stage = newStage;
+      this.updatingTaskId = task.id;
+      this.isSyncingStage = true;
+      this.openStageDropdown = null;
+
+      try {
+        await this.$store.dispatch("project/updateProject", {
+          id: task.id,
+          formData: {
+            status: newStage,
+          },
+        });
+
+        alertService.success("Stage task berhasil diperbarui.");
+      } catch (err) {
+        task.status = previousStage;
+        task.stage = previousStage;
+        alertService.error("Gagal update stage task. Silakan coba lagi.");
+      } finally {
+        this.isSyncingStage = false;
+        this.updatingTaskId = null;
+      }
+    },
+
+    nextPage() {
+      if (this.currentPage < this.totalPages) this.currentPage++;
+    },
+
+    prevPage() {
+      if (this.currentPage > 1) this.currentPage--;
+    },
+  },
+  watch: {
+    projects: {
+      immediate: true,
+      handler(newProjects) {
+        const validIds = newProjects.map((project) => project.id);
+        this.selectedProjects = this.selectedProjects.filter((id) =>
+          validIds.includes(id),
+        );
+      },
+    },
+    itemsPerPage() {
+      if (this.currentPage > this.totalPages) {
+        this.currentPage = this.totalPages;
+      }
+    },
+    totalTask() {
+      if (this.currentPage > this.totalPages) {
+        this.currentPage = this.totalPages;
+      }
+    },
+  },
+};
+</script>
+
+<style scoped>
+.stage-dropdown-enter-active,
+.stage-dropdown-leave-active {
+  transition: all 0.18s ease;
+}
+
+.stage-dropdown-enter-from,
+.stage-dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+</style>
