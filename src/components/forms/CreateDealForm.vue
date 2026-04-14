@@ -989,7 +989,7 @@ export default {
           Master
         </button>
 
-        <button
+        <!-- <button
           type="button"
           @click="activeTab = 'detail'"
           :class="[
@@ -1000,7 +1000,7 @@ export default {
           ]"
         >
           Detail
-        </button>
+        </button> -->
       </div>
 
       <!-- Form Content (Scrollable) -->

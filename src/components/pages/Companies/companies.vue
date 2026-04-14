@@ -746,6 +746,7 @@ export default {
         @focused-row-changed="handleFocusedRowChanged" 
         @selection-changed="handleSelectionChanged"
         :showActionColumn="false"
+        :disablecol="['tasks','location','pathphoto','id', 'company_name', 'contactassoc', 'dealsassoc', 'type', 'created_at', 'updated_at', 'owner', 'notes', 'task_name', 'desktask', 'statustask', 'assignee', 'due_date', 'task_time', 'prioritytask', 'docs', 'associated_contact', 'contactAssociation', 'contacts_id', 'contact_id', 'contact', 'contact_name', 'deals_id', 'deal_id', 'deal', 'deal_name', 'contact_email', 'contact_phone', 'industry', 'website', 'address', 'city', 'state', 'zip', 'country', 'email', 'phone', 'telephone_1', 'telephone_2', 'telephone_3', 'pos_code', 'province', 'source', 'dealsAssociation','description','file_source','file_url','pathfile','owner','descdocs','pathfile','file_source']"
       >
         <DxSelection 
           mode="multiple" 

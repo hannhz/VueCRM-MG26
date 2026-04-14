@@ -54,7 +54,7 @@
         :showActionColumn="false"
         :wordwrap="true"
         :columnAutoWidth="false"
-        :disablecol="['statusid','taskid','deals','contact','id', 'email', 'phone', 'first_name', 'last_name', 'job_title', 'id_owner', 'telephone_1', 'telephone_2', 'status', 'address', 'country', 'province', 'city', 'pos_code', 'source', 'companyassoc', 'dealsassoc', 'notes', 'created_at', 'updated_at', 'owner_name', 'task_name', 'desktask', 'statustask', 'assignee', 'due_date', 'task_time', 'prioritytask', 'docs', 'associated_contact', 'telephone_3', 'state', 'zip', 'company_id', 'deal_id', 'company_label', 'deal_label', 'level', 'isParent', 'keyindex', 'PageTotal']"
+        :disablecol="['statusid','taskid','tasks','location','pathphoto','deals','contact','id', 'email', 'phone', 'first_name', 'last_name', 'job_title', 'id_owner', 'telephone_1', 'telephone_2', 'status', 'address', 'country', 'province', 'city', 'pos_code', 'source', 'companyassoc', 'dealsassoc', 'notes', 'created_at', 'updated_at', 'owner_name', 'task_name', 'desktask', 'statustask', 'assignee', 'due_date', 'task_time', 'prioritytask', 'docs', 'associated_contact', 'telephone_3', 'state', 'zip', 'company_id', 'deal_id', 'company_label', 'deal_label', 'level', 'isParent', 'keyindex', 'PageTotal', 'owner', 'descdocs', 'pathfile', 'file_source']"
       >
         <DxSelection 
           mode="multiple" 

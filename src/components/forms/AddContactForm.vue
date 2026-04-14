@@ -370,20 +370,92 @@ export default {
         }
       }
 
+      // Robust Location & Photo Parsing
+      let locationData = { address: null, latitude: null, longitude: null };
+      const rawLoc =
+        rawData.location ||
+        (Array.isArray(rawData.notes) && rawData.notes.length > 0
+          ? rawData.notes[0].location
+          : null);
+      if (rawLoc) {
+        try {
+          locationData =
+            typeof rawLoc === "string" ? JSON.parse(rawLoc) : rawLoc;
+        } catch (e) {}
+      }
+
+      let photos = [];
+      const rawPhotos =
+        rawData.pathphoto ||
+        (Array.isArray(rawData.notes) && rawData.notes.length > 0
+          ? rawData.notes[0].pathphoto
+          : null);
+      if (rawPhotos) {
+        try {
+          const parsed =
+            typeof rawPhotos === "string" ? JSON.parse(rawPhotos) : rawPhotos;
+          if (Array.isArray(parsed)) {
+            photos = parsed.map((p) => p.path || p);
+          }
+        } catch (e) {}
+      }
+
       this.noteData = {
-        body: rawData.notes || rawData.note || "",
-        gps_address: null,
-        latitude: null,
-        longitude: null,
-        photos: [],
+        body:
+          Array.isArray(rawData.notes) && rawData.notes.length > 0
+            ? rawData.notes[0].notes || rawData.notes[0].body || ""
+            : typeof rawData.notes === "string"
+              ? rawData.notes
+              : rawData.note || "",
+        gps_address: locationData.address || null,
+        latitude: locationData.latitude || null,
+        longitude: locationData.longitude || null,
+        photos: photos,
         audioBlob: null,
       };
 
+      // Populate Task
+      if (Array.isArray(rawData.tasks) && rawData.tasks.length > 0) {
+        const t = rawData.tasks[0];
+        this.task = {
+          name: t.task_name || t.name || "",
+          content: t.description || t.content || "",
+          status: t.status || "",
+          dueDate: t.due_date || "",
+          time: t.task_time || "",
+          priority: t.priority || "",
+        };
+      } else {
+        this.task = {
+          name: rawData.task_name || "",
+          content: rawData.desktask || "",
+          status: rawData.statustask || "",
+          dueDate: rawData.due_date || "",
+          time: rawData.task_time || "",
+          priority: rawData.prioritytask || "",
+        };
+      }
+
+      // Populate Docs
+      const docFiles = Array.isArray(rawData.docs) ? [...rawData.docs] : [];
+
+      // Fallback: Jika ada pathfile di top level tapi belum masuk ke array docs
+      if (
+        rawData.pathfile &&
+        !docFiles.some((d) => d.pathfile === rawData.pathfile)
+      ) {
+        docFiles.push({
+          descdocs: rawData.descdocs || "Dokumen",
+          pathfile: rawData.pathfile,
+          file_source: rawData.file_source || "local",
+        });
+      }
+
       this.docs = {
-        description:
-          rawData?.docs?.description || rawData?.docs || rawData?.doc || "",
-        fileSource: rawData?.docs?.fileSource || "",
-        files: Array.isArray(rawData?.docs?.files) ? rawData.docs.files : [],
+        description: rawData.descdocs || "",
+        fileSource: rawData.file_source || "local",
+        fileUrl: rawData.file_url || "",
+        files: docFiles,
       };
     },
     handleClose() {
@@ -606,7 +678,7 @@ export default {
           Master
         </button>
 
-        <button
+        <!-- <button
           type="button"
           @click="activeTab = 'detail'"
           :class="[
@@ -617,7 +689,7 @@ export default {
           ]"
         >
           Detail
-        </button>
+        </button> -->
       </div>
 
       <!-- Form Content (Scrollable) -->

@@ -104,11 +104,23 @@ export default {
     },
 
     getDocKind(file) {
-      const name = String(file?.name || file || "").toLowerCase();
+      if (!file) return "file";
+
+      // Prioritaskan cek pathfile karena biasanya mengandung extension asli
+      const name = String(
+        file?.pathfile || file?.name || file?.descdocs || file || "",
+      ).toLowerCase();
 
       if (name.endsWith(".pdf")) return "pdf";
       if (name.endsWith(".doc") || name.endsWith(".docx")) return "doc";
       if (name.endsWith(".xls") || name.endsWith(".xlsx")) return "sheet";
+      if (
+        name.endsWith(".png") ||
+        name.endsWith(".jpg") ||
+        name.endsWith(".jpeg") ||
+        name.endsWith(".webp")
+      )
+        return "image";
       return "file";
     },
 
@@ -117,8 +129,8 @@ export default {
         return file.split("/").pop() || file;
       }
 
-      if (file?.name) {
-        return file.name;
+      if (file?.name || file?.descdocs) {
+        return file.name || file.descdocs;
       }
 
       return "Dokumen";
@@ -166,6 +178,10 @@ export default {
         }
 
         return file._preview;
+      }
+
+      if (file?.pathfile) {
+        return file.pathfile;
       }
 
       return "";

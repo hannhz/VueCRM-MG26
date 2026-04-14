@@ -267,20 +267,31 @@ export default {
     },
 
     getPreview(file) {
-      if (!file._preview) {
-        file._preview = URL.createObjectURL(file);
+      if (!file) {
+        return "";
       }
-      return file._preview;
+
+      // Jika ini string URL langsung
+      if (typeof file === "string") {
+        return file;
+      }
+
+      // Jika ini objek hasil hydration { id, src, file }
+      if (file.src) {
+        return file.src;
+      }
+
+      // Jika ini File object dari browser
+      if (file instanceof File) {
+        if (!file._preview) {
+          file._preview = URL.createObjectURL(file);
+        }
+        return file._preview;
+      }
+
+      return "";
     },
-    removePhoto(id) {
-      //   this.photos = this.photos.filter((p) => p.id !== id);
-      //   this.emitData();
-      // const photo = this.photos.find((p) => p.id === id);
-      // if (photo?.src) URL.revokeObjectURL(photo.src);
-
-      // this.photos = this.photos.filter((p) => p.id !== id);
-      // this.emitData();
-
+    removePhoto(index) {
       const file = this.photos[index];
 
       if (file?._preview) {
