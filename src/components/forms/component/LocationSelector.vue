@@ -3,6 +3,87 @@
     <div class="grid grid-cols-2 gap-4">
       <div>
         <label class="block text-sm font-medium text-dark-base mb-2"
+          >Province</label
+        >
+        <div class="relative">
+          <v-select
+            v-model="modelValue.province"
+            :options="getprovinsi"
+            label="nm_provinsi"
+            :reduce="(opt) => opt.kd_provinsi"
+            placeholder="Select Province"
+            @update:modelValue="onChangeProvince"
+          />
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-dark-base mb-2"
+          >City</label
+        >
+        <div class="relative">
+          <v-select
+            v-model="modelValue.city"
+            :options="getkotakabupaten"
+            label="nm_kota_kabupaten"
+            :reduce="(opt) => opt.kd_kota_kabupaten"
+            placeholder="Select City"
+            @update:modelValue="onChangeCity"
+          />
+        </div>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-dark-base mb-2"
+          >Kecamatan</label
+        >
+        <div class="relative">
+          <v-select
+            v-model="modelValue.kecamatan"
+            :options="getkecamatan"
+            label="nm_kecamatan"
+            :reduce="(opt) => opt.kd_kecamatan"
+            placeholder="Select Kecamatan"
+            @update:modelValue="onChangeKecamatan"
+          />
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-dark-base mb-2"
+          >Kelurahan</label
+        >
+        <div class="relative">
+          <v-select
+            v-model="modelValue.kelurahan"
+            :options="getkelurahan"
+            label="nm_kelurahan"
+            :reduce="(opt) => opt.kd_kelurahan"
+            placeholder="Select Kelurahan"
+            @update:modelValue="onChangekelurahan"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-dark-base mb-2"
+          >Pos Code</label
+        >
+       
+        <div class="relative">
+          <v-select
+            v-model="modelValue.pos_code"
+            :options="getkodepos"
+            label="kode_pos"
+            :reduce="(opt) => opt.kode_pos"
+            placeholder="Select Kode Pos"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-dark-base mb-2"
           >Address</label
         >
         <input
@@ -14,89 +95,6 @@
           @input="emitValue({ address: $event.target.value })"
         />
       </div>
-
-      <div class="relative" ref="cityDropdownRef">
-        <label class="block text-sm font-medium text-dark-base mb-2"
-          >City</label
-        >
-        <input
-          :value="citySearch"
-          type="text"
-          placeholder="Search City"
-          :disabled="disabled"
-          class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-          @focus="openCityDropdown"
-          @input="onCityInput"
-        />
-        <ChevronDown
-          :size="16"
-          class="absolute right-3 top-9.5 text-sub-text pointer-events-none"
-        />
-
-        <div
-          v-if="isCityDropdownOpen"
-          class="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto border border-outline rounded-lg bg-white shadow-lg"
-        >
-          <button
-            v-for="city in filteredCityOptions"
-            :key="city.id"
-            type="button"
-            class="w-full text-left px-3 py-2 hover:bg-light-base text-sm"
-            @click="selectCity(city)"
-          >
-            {{ city.name }}
-          </button>
-          <div
-            v-if="filteredCityOptions.length === 0"
-            class="px-3 py-2 text-sm text-sub-text"
-          >
-            No city found
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm font-medium text-dark-base mb-2"
-          >Province</label
-        >
-        <div class="relative">
-          <select
-            :value="selectedProvinceId"
-            :disabled="disabled"
-            class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-            @change="onProvinceChange"
-          >
-            <option value="">Select Province</option>
-            <option
-              v-for="province in provinceOptions"
-              :key="province.id"
-              :value="province.id"
-            >
-              {{ province.name }}
-            </option>
-          </select>
-          <ChevronDown
-            :size="16"
-            class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-dark-base mb-2"
-          >Country</label
-        >
-        <input
-          :value="countryValue"
-          type="text"
-          placeholder="Country"
-          :disabled="disabled"
-          class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-          @input="emitValue({ country: $event.target.value })"
-        />
-      </div>
     </div>
   </div>
 </template>
@@ -105,6 +103,8 @@
 import { ChevronDown } from "lucide-vue-next";
 import provincesCsv from "idn-area-data/data/provinces.csv?raw";
 import regenciesCsv from "idn-area-data/data/regencies.csv?raw";
+import { mapActions, mapGetters } from "vuex";
+import { on } from "devextreme/events";
 
 function parseCsvRows(csvText) {
   if (!csvText || typeof csvText !== "string") return [];
@@ -159,11 +159,21 @@ export default {
       provincesData: [],
       regenciesData: [],
       citySearch: "",
+      provincesearch: "",
       isCityDropdownOpen: false,
+      isProvinceDropdownOpen: false,
     };
   },
 
   computed: {
+    ...mapGetters({
+      getprovinsi: "lokasi/getprovinsi",
+      getkotakabupaten: "lokasi/getkotakabupaten",
+      getkecamatan: "lokasi/getkecamatan",
+      getkelurahan: "lokasi/getkelurahan",
+      getkodepos: "lokasi/getkodepos",
+    }),
+
     currentValue() {
       return this.modelValue || this.value || {};
     },
@@ -239,6 +249,7 @@ export default {
     this.provincesData = parseCsvRows(provincesCsv);
     this.regenciesData = parseCsvRows(regenciesCsv);
     document.addEventListener("mousedown", this.handleClickOutside);
+    this.actprovinsi();
   },
 
   beforeUnmount() {
@@ -246,6 +257,14 @@ export default {
   },
 
   methods: {
+    ...mapActions({
+      actprovinsi: "lokasi/actprovinsi",
+      actkotakabupaten: "lokasi/actkotakabupaten",
+      actkecamatan: "lokasi/actkecamatan",
+      actkelurahan: "lokasi/actkelurahan",
+      actkodepos: "lokasi/actkodepos",
+    }),
+
     emitValue(updatedFields) {
       const nextValue = {
         ...this.currentValue,
@@ -255,20 +274,21 @@ export default {
       this.$emit("input", nextValue);
       this.$emit("update:modelValue", nextValue);
     },
-
-    onProvinceChange(event) {
-      const selectedId = String(event.target.value || "");
-      const selectedProvince = (this.provincesData || []).find(
-        (province) => String(province.code) === selectedId,
-      );
-
-      this.emitValue({
-        province: selectedProvince ? selectedProvince.name : "",
-        city: "",
-        country: "",
-      });
-
-      this.citySearch = "";
+    onChangeProvince(event) {
+      console.log("Province changed:", event);
+      this.actkotakabupaten({ id: event });
+    },
+    onChangeCity(event) {
+      console.log("City changed:", event);
+      this.actkecamatan({ id: event });
+    },
+    onChangeKecamatan(event) {
+      console.log("Kecamatan changed:", event);
+      this.actkelurahan({ id: event });
+    },
+    onChangekelurahan(event) {
+      console.log("Kelurahan changed:", event);
+      this.actkodepos({ id: event });
     },
 
     onCityInput(event) {
@@ -286,6 +306,17 @@ export default {
       this.isCityDropdownOpen = true;
     },
 
+    onCityInput(event) {
+      const nextValue = event.target.value;
+      this.citySearch = nextValue;
+      this.isCityDropdownOpen = true;
+
+      this.emitValue({
+        city: nextValue,
+        country: nextValue && nextValue.trim() ? "Indonesia" : "",
+      });
+    },
+
     selectCity(city) {
       const selectedProvince = (this.provincesData || []).find(
         (province) => String(province.code) === String(city.provinceCode),
@@ -301,6 +332,19 @@ export default {
           : this.currentValue.province || "",
         country: "Indonesia",
       });
+    },
+
+    selectprovince(province) {
+      this.provincesearch = province.nm_provinsi;
+      this.isProvinceDropdownOpen = false;
+
+      this.emitValue({
+        province: province.kd_provinsi,
+        city: "",
+        country: "Indonesia",
+      });
+
+      this.citySearch = "";
     },
 
     handleClickOutside(event) {

@@ -15,6 +15,7 @@ import teamModule from "./modules/team";
 import activityModule from "./modules/activity";
 import userpermisions from "./modules/userpermisions";
 import assoc from "./modules/assoc";
+import lokasi from "./modules/lokasi";
 
 export default createStore({
   modules: {
@@ -34,5 +35,6 @@ export default createStore({
     activity: activityModule,
     userpermisions: userpermisions,
     assoc: assoc,
+    lokasi: lokasi,
   },
 });
