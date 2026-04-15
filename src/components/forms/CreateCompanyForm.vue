@@ -11,6 +11,7 @@ import { alertService } from "@/services/alertService";
 import NotesEditor from "@/components/widgets/NotesEditor.vue";
 import TaskEditor from "@/components/widgets/TaskEditor.vue";
 import DocsEditor from "@/components/widgets/DocsEditor.vue";
+import HistoryDetail from "@/components/widgets/historydetail.vue";
 import { buildFormData } from "@/utils/buildFormData";
 
 export default {
@@ -29,6 +30,7 @@ export default {
     NotesEditor,
     TaskEditor,
     DocsEditor,
+    HistoryDetail,
   },
 
   props: {
@@ -95,6 +97,25 @@ export default {
       showAddContactQuickForm: false,
       showDetailForm: false,
       isSubmitting: false,
+
+      // History & Drawer States
+      historyitems: [],
+      isNoteDrawerOpen: false,
+      isDocDrawerOpen: false,
+      editingItemIndex: null,
+      tempNoteData: {
+        body: "",
+        gps_address: null,
+        latitude: null,
+        longitude: null,
+        photos: [],
+        audioBlob: null,
+      },
+      tempDocs: {
+        description: "",
+        fileSource: "",
+        files: [],
+      },
     };
   },
 
@@ -193,6 +214,107 @@ export default {
           files: [],
         },
       };
+
+      // ─── MAP HISTORY (Notes & Docs) ──────────────────────────────────
+      let historyItems = [];
+
+      const getBody = (item) => {
+        return item.notes || item.body || item.descdocs || item.description || item.content || "";
+      };
+
+      // Process Notes
+      let rawNotes = data.notes || data.note;
+      if (typeof rawNotes === "string" && rawNotes.startsWith("[")) {
+        try { rawNotes = JSON.parse(rawNotes); } catch (e) {}
+      }
+
+      if (Array.isArray(rawNotes)) {
+        rawNotes.forEach((n) => {
+          let location = { address: null, latitude: null, longitude: null };
+          try {
+            if (n.location) {
+              location = typeof n.location === "string" ? JSON.parse(n.location) : n.location;
+            }
+          } catch (e) {}
+
+          let photos = [];
+          try {
+            if (n.pathphoto) {
+              const parsed = typeof n.pathphoto === "string" ? JSON.parse(n.pathphoto) : n.pathphoto;
+              if (Array.isArray(parsed)) {
+                photos = parsed.map((p) => p.path || p);
+              }
+            }
+          } catch (e) {}
+
+          historyItems.push({
+            type: "note",
+            id: n.id,
+            timestamp: n.created_at || n.update_at,
+            body: getBody(n),
+            gps_address: location.address,
+            latitude: location.latitude,
+            longitude: location.longitude,
+            photos: photos,
+          });
+        });
+      } else if (rawNotes && typeof rawNotes === "string") {
+        historyItems.push({
+          type: "note",
+          body: rawNotes,
+          timestamp: data.created_at || data.updated_at,
+        });
+      }
+
+      // Process Docs
+      let rawDocs = data.docs || data.docs_list || data.files;
+      if (typeof rawDocs === "string" && rawDocs.startsWith("[")) {
+        try { rawDocs = JSON.parse(rawDocs); } catch (e) {}
+      }
+
+      if (Array.isArray(rawDocs)) {
+        rawDocs.forEach((d) => {
+          if (d.pathfile || d.descdocs || d.body || d.description) {
+            historyItems.push({
+              type: "doc",
+              id: d.id,
+              timestamp: d.created_at || d.update_at,
+              body: getBody(d),
+              fileSource: d.file_source || "local",
+              files: d.pathfile ? [{ name: d.pathfile.split("/").pop(), path: d.pathfile }] : [],
+            });
+          }
+        });
+      }
+
+      // Sort by timestamp descending
+      this.historyitems = historyItems.sort((a, b) => {
+        const dateA = new Date(a.timestamp || 0);
+        const dateB = new Date(b.timestamp || 0);
+        return dateB - dateA;
+      });
+
+      // Sync latest for backward compatibility
+      const latestNote = this.historyitems.find((h) => h.type === "note");
+      if (latestNote) {
+        this.formData.noteData = {
+          body: latestNote.body,
+          gps_address: latestNote.gps_address,
+          latitude: latestNote.latitude,
+          longitude: latestNote.longitude,
+          photos: latestNote.photos,
+          audioBlob: null,
+        };
+      }
+
+      const latestDoc = this.historyitems.find((h) => h.type === "doc");
+      if (latestDoc) {
+        this.formData.docs = {
+          description: latestDoc.body,
+          fileSource: latestDoc.fileSource,
+          files: latestDoc.files,
+        };
+      }
     },
 
     parseJSON(val, defaultVal) {
@@ -306,9 +428,108 @@ export default {
           files: [],
         },
       };
+      this.historyitems = [];
     },
 
     handleDetailSubmit() {},
+
+    // ─── HISTORY & DRAWER METHODS ──────────────────────────────────────────
+    openNoteDrawer(editData = null, index = null) {
+      if (editData) {
+        this.tempNoteData = { ...editData };
+        this.editingItemIndex = index;
+      } else {
+        this.tempNoteData = {
+          body: "",
+          gps_address: null,
+          latitude: null,
+          longitude: null,
+          photos: [],
+          audioBlob: null,
+        };
+        this.editingItemIndex = null;
+      }
+      this.isNoteDrawerOpen = true;
+    },
+    openDocDrawer(editData = null, index = null) {
+      if (editData) {
+        this.tempDocs = { ...editData };
+        this.editingItemIndex = index;
+      } else {
+        this.tempDocs = {
+          description: "",
+          fileSource: "local",
+          files: [],
+        };
+        this.editingItemIndex = null;
+      }
+      this.isDocDrawerOpen = true;
+    },
+    saveNoteFromDrawer() {
+      if (!this.tempNoteData.body && this.tempNoteData.photos.length === 0) {
+        alertService.toastWarn("Note masih kosong");
+        return;
+      }
+
+      const item = {
+        type: "note",
+        timestamp: new Date().toISOString(),
+        ...this.tempNoteData,
+      };
+
+      if (this.editingItemIndex !== null) {
+        this.historyitems[this.editingItemIndex] = item;
+      } else {
+        this.historyitems.unshift(item);
+      }
+
+      // Sync with main form state for persistence
+      const latestNote = this.historyitems.find((h) => h.type === "note");
+      if (latestNote) {
+        this.formData.noteData = { ...latestNote };
+      }
+
+      this.isNoteDrawerOpen = false;
+      alertService.toastSuccess("Catatan ditambahkan ke histori");
+    },
+    saveDocFromDrawer() {
+      if (this.tempDocs.files.length === 0 && !this.tempDocs.description) {
+        alertService.toastWarn("Dokumen masih kosong");
+        return;
+      }
+
+      const item = {
+        type: "doc",
+        timestamp: new Date().toISOString(),
+        ...this.tempDocs,
+      };
+
+      if (this.editingItemIndex !== null) {
+        this.historyitems[this.editingItemIndex] = item;
+      } else {
+        this.historyitems.unshift(item);
+      }
+
+      // Sync with main form state for persistence
+      const latestDoc = this.historyitems.find((h) => h.type === "doc");
+      if (latestDoc) {
+        this.formData.docs = { ...latestDoc };
+      }
+
+      this.isDocDrawerOpen = false;
+      alertService.toastSuccess("Dokumen ditambahkan ke histori");
+    },
+    handleHistoryEdit({ item, index }) {
+      if (item.type === "note") {
+        this.openNoteDrawer(item, index);
+      } else {
+        this.openDocDrawer(item, index);
+      }
+    },
+    handleHistoryDelete(index) {
+      this.historyitems.splice(index, 1);
+      alertService.toastInfo("Item dihapus dari histori");
+    },
   },
 };
 </script>
@@ -374,9 +595,10 @@ export default {
         </button>
       </div>
 
-      <!-- Form Content (Scrollable) - halaman utama TIDAK ikut scroll -->
+      <!-- Form Content (Scrollable) -->
       <div class="flex-1 overflow-y-auto min-h-0">
-        <form>
+        <!-- Master Tab Form -->
+        <form v-if="activeTab === 'master'" @submit.prevent id="createCompanyForm">
           <!-- master -->
           <div v-if="activeTab === 'master'" class="p-6 space-y-6">
             <!-- Company Name & Owner -->
@@ -528,28 +750,18 @@ export default {
             <!-- <ContactAssociationForm v-model="formData.contactassoc" />
             <DealAssociationForm v-model="formData.dealsassoc" /> -->
           </div>
-
-          <!-- detail -->
-          <div v-if="activeTab === 'detail'" class="p-6 space-y-6">
-            <div class="flex-1 overflow-y-auto min-h-0">
-              <div>
-                <!-- <NotesEditor v-model="formData.notes" /> -->
-
-                <NotesEditor
-                  v-model:note-data="formData.noteData"
-                  :noteable-id="null"
-                  noteable-type="App\Models\Company"
-                  title="Notes"
-                  :default-open="true"
-                />
-
-                <!-- <TaskEditor v-model="formData.task" /> -->
-
-                <DocsEditor v-model="formData.docs" />
-              </div>
-            </div>
-          </div>
         </form>
+
+        <!-- Detail Tab (History) -->
+        <div v-if="activeTab === 'detail'" class="p-6 h-full flex flex-col">
+          <HistoryDetail
+            :items="historyitems"
+            @add-note="openNoteDrawer()"
+            @add-doc="openDocDrawer()"
+            @edit="handleHistoryEdit"
+            @delete="handleHistoryDelete"
+          />
+        </div>
       </div>
 
       <!-- Footer Actions (Sticky) -->
@@ -615,6 +827,66 @@ export default {
     @back="showDetailForm = false"
     @submit="handleDetailSubmit"
   />
+
+  <!-- Note Drawer POPUP -->
+  <Transition name="slide">
+    <div
+      v-if="isNoteDrawerOpen"
+      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[60] flex flex-col"
+    >
+      <div class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10">
+        <h2 class="text-xl font-bold text-dark-base">
+          {{ editingItemIndex !== null ? "Edit Note" : "Tambah Note" }}
+        </h2>
+        <button @click="isNoteDrawerOpen = false" class="p-2 hover:bg-light-base rounded-lg transition-colors">
+          <X :size="20" class="text-sub-text" />
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-6">
+        <NotesEditor v-model:note-data="tempNoteData" />
+      </div>
+
+      <div class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3">
+        <button @click="isNoteDrawerOpen = false" class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base">
+          Cancel
+        </button>
+        <button @click="saveNoteFromDrawer" class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover">
+          Simpan Ke Histori
+        </button>
+      </div>
+    </div>
+  </Transition>
+
+  <!-- Docs Drawer POPUP -->
+  <Transition name="slide">
+    <div
+      v-if="isDocDrawerOpen"
+      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[60] flex flex-col"
+    >
+      <div class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10">
+        <h2 class="text-xl font-bold text-dark-base">
+          {{ editingItemIndex !== null ? "Edit Document" : "Tambah Document" }}
+        </h2>
+        <button @click="isDocDrawerOpen = false" class="p-2 hover:bg-light-base rounded-lg transition-colors">
+          <X :size="20" class="text-sub-text" />
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-6">
+        <DocsEditor v-model="tempDocs" />
+      </div>
+
+      <div class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3">
+        <button @click="isDocDrawerOpen = false" class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base">
+          Cancel
+        </button>
+        <button @click="saveDocFromDrawer" class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover">
+          Simpan Ke Histori
+        </button>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <style scoped>
