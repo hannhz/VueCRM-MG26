@@ -989,7 +989,7 @@ export default {
           Master
         </button>
 
-        <!-- <button
+        <button
           type="button"
           @click="activeTab = 'detail'"
           :class="[
@@ -1000,7 +1000,7 @@ export default {
           ]"
         >
           Detail
-        </button> -->
+        </button>
       </div>
 
       <!-- Form Content (Scrollable) -->
@@ -1354,11 +1354,11 @@ export default {
         <div v-if="activeTab === 'detail'" class="p-6 space-y-6">
           <div class="flex-1 overflow-y-auto min-h-0">
             <NotesSection v-model:note-data="formData.noteData" />
-            <TaskSection
+            <!-- <TaskSection
               v-model="formData.task"
               :statusOptions="statusOptions"
               :priorityOptions="priorityOptions"
-            />
+            /> -->
             <DocsSection v-model="formData.docs" />
           </div>
         </div>

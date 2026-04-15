@@ -360,7 +360,7 @@ export default {
           Master
         </button>
 
-        <!-- <button
+        <button
           type="button"
           @click="activeTab = 'detail'"
           :class="[
@@ -371,7 +371,7 @@ export default {
           ]"
         >
           Detail
-        </button> -->
+        </button>
       </div>
 
       <!-- Form Content (Scrollable) - halaman utama TIDAK ikut scroll -->
@@ -543,7 +543,7 @@ export default {
                   :default-open="true"
                 />
 
-                <TaskEditor v-model="formData.task" />
+                <!-- <TaskEditor v-model="formData.task" /> -->
 
                 <DocsEditor v-model="formData.docs" />
               </div>
