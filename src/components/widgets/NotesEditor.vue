@@ -255,8 +255,15 @@ export default {
 
           const compressedFile = await imageCompression(file, options);
 
-          // ✅ langsung simpan File
-          this.photos.push(compressedFile);
+          // ✅ Generate preview URL immediately and store consistently
+          const previewUrl = URL.createObjectURL(compressedFile);
+          
+          this.photos.push({
+            id: Date.now() + Math.random(),
+            src: previewUrl,
+            file: compressedFile
+          });
+
         } catch (error) {
           console.error("Compress error:", error);
         }
@@ -266,36 +273,31 @@ export default {
       event.target.value = "";
     },
 
-    getPreview(file) {
-      if (!file) {
-        return "";
-      }
+    getPreview(photo) {
+      if (!photo) return "";
 
-      // Jika ini string URL langsung
-      if (typeof file === "string") {
-        return file;
-      }
+      // Jika string URL (dari server)
+      if (typeof photo === "string") return photo;
 
-      // Jika ini objek hasil hydration { id, src, file }
-      if (file.src) {
-        return file.src;
-      }
+      // Jika objek { id, src, file }
+      if (photo.src) return photo.src;
 
-      // Jika ini File object dari browser
-      if (file instanceof File) {
-        if (!file._preview) {
-          file._preview = URL.createObjectURL(file);
+      // Fallback untuk File/Blob langsung (meskipun sekarang sudah di-handle di onPhotoSelected)
+      if (photo instanceof Blob) {
+        if (!photo._preview) {
+          photo._preview = URL.createObjectURL(photo);
         }
-        return file._preview;
+        return photo._preview;
       }
 
       return "";
     },
     removePhoto(index) {
-      const file = this.photos[index];
+      const photo = this.photos[index];
 
-      if (file?._preview) {
-        URL.revokeObjectURL(file._preview);
+      // ✅ Bersihkan URL object agar tidak memory leak
+      if (photo?.src && photo.src.startsWith("blob:")) {
+        URL.revokeObjectURL(photo.src);
       }
 
       this.photos.splice(index, 1);
