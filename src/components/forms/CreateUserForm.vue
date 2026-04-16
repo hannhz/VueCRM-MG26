@@ -190,6 +190,7 @@ export default {
       isSaving: false,
       errorMsg: "",
       successMsg: "",
+      canClose: false,
     };
   },
 
@@ -205,6 +206,16 @@ export default {
         this.formData = this.getUserFormDefaults(newUser);
       },
       immediate: true,
+    },
+    isOpen(val) {
+      if (val) {
+        // Prevent accidental close on double-click by adding a small delay
+        setTimeout(() => {
+          this.canClose = true;
+        }, 300);
+      } else {
+        this.canClose = false;
+      }
     },
   },
 
@@ -232,7 +243,10 @@ export default {
     },
 
     handleClose() {
-      this.$emit("close");
+      // Small guard to prevent accidental closure on very fast clicks/double-clicks
+      if (this.canClose || !this.isOpen) {
+        this.$emit("close");
+      }
     },
 
     async handleSubmit() {

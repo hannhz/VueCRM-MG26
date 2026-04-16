@@ -32,25 +32,16 @@
         <span class="hidden text-sm font-medium md:inline">Add User</span>
       </button>
 
-      <!-- Delete Button -->
-      <button
-        @click="$emit('delete-users')"
-        class="h-9 w-9 rounded-lg border border-red bg-white p-2 text-red transition hover:bg-red hover:text-white sm:h-10 sm:w-10"
-        :disabled="isLoading"
-        title="Delete selected users"
-      >
-        <Trash2 :size="18" />
-      </button>
     </div>
   </div>
 </template>
 
 <script>
-import { RefreshCcw, Trash2 } from "lucide-vue-next";
+import { RefreshCcw } from "lucide-vue-next";
 
 export default {
   name: "UsersHeader",
-  components: { RefreshCcw, Trash2 },
+  components: { RefreshCcw },
   props: {
     isLoading: { type: Boolean, default: false },
     totalUsers: { type: Number, default: 0 },

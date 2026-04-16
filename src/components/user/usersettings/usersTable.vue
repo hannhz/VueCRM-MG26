@@ -11,35 +11,18 @@
       </div>
     </div>
 
-    <div class="h-full overflow-auto relative">
-      <table class="w-full">
+    <div class="h-full overflow-auto relative rounded-b-lg">
+      <table class="w-full table-fixed border-collapse">
         <thead
-          class="sticky top-0 z-10 bg-white shadow-sm ring-1 ring-gray-200"
+          class="sticky top-0 z-10 bg-white"
         >
-          <tr class="border-b border-gray-200">
-            <th class="px-6 py-4 text-left">
-              <input
-                type="checkbox"
-                :checked="allSelected"
-                @change="$emit('toggle-select-all', $event.target.checked)"
-                class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
-              />
-            </th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-              <div class="flex items-center gap-2">
-                Name(Email)
-                <ChevronDown :size="16" class="text-gray-400" />
-              </div>
-            </th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-              <div class="flex items-center gap-2">Team</div>
-            </th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-              <div class="flex items-center gap-2">Last Active</div>
-            </th>
-            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-              <div class="flex items-center gap-2">Role</div>
-            </th>
+          <tr class="border-b border-outline shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+            <th class="w-10 px-4 py-4 text-left text-sm font-bold text-dark-base bg-white">No</th>
+            <th class="w-auto px-4 py-4 text-left text-sm font-bold text-dark-base bg-white">Name(Email)</th>
+            <th class="w-32 px-4 py-4 text-left text-sm font-bold text-dark-base bg-white">Team</th>
+            <th class="w-40 px-4 py-4 text-left text-sm font-bold text-dark-base bg-white">Last Active</th>
+            <th class="w-20 px-4 py-4 text-left text-sm font-bold text-dark-base bg-white">Role</th>
+            <th class="w-28 px-4 py-4 text-left text-sm font-bold text-dark-base bg-white text-center">Actions</th>
           </tr>
         </thead>
 
@@ -63,37 +46,49 @@
 
           <!-- Table Rows -->
           <tr
-            v-for="user in users"
+            v-for="(user, index) in users"
             :key="user.id"
-            class="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer"
-            @click="$emit('row-click', user)"
+            class="border-b border-gray-100 hover:bg-gray-50 transition"
           >
-            <td class="px-6 py-4" @click.stop>
-              <input
-                type="checkbox"
-                :checked="selectedIds.includes(user.id)"
-                @change="$emit('toggle-user-select', user.id)"
-                class="w-4 h-4 text-blue-600 rounded focus:ring-sub-text border-gray-300"
-              />
+            <td class="px-4 py-4 text-sm text-sub-text font-medium">
+              {{ (currentPage - 1) * itemsPerPage + index + 1 }}
             </td>
-            <td class="px-6 py-4 text-sm">
-              <div class="font-medium text-gray-800">
+            <td class="px-4 py-4 text-sm truncate">
+              <div class="font-medium text-gray-800 truncate">
                 {{
                   user.firstname
                     ? `${user.firstname} ${user.lastname || ""}`
                     : user.name || "Unknown User"
                 }}
               </div>
-              <div class="text-xs text-gray-400">{{ user.email }}</div>
+              <div class="text-xs text-gray-400 truncate">{{ user.email }}</div>
             </td>
-            <td class="px-6 py-4 text-sm text-dark-base">
+            <td class="px-4 py-4 text-sm text-dark-base truncate">
               {{ user.primaryteam || user.team || "-" }}
             </td>
-            <td class="px-6 py-4 text-sm text-dark-base">
+            <td class="px-4 py-4 text-sm text-dark-base truncate">
               {{ user.last_active || user.lastactv || user.updated_at || "-" }}
             </td>
-            <td class="px-6 py-4 text-sm text-dark-base font-medium">
+            <td class="px-4 py-4 text-sm text-dark-base font-medium">
               {{ user.role }}
+            </td>
+            <td class="px-4 py-4 text-sm text-center">
+              <div class="flex items-center justify-center gap-2">
+                <button
+                  @click="$emit('edit', user)"
+                  class="p-1.5 border border-outline bg-white text-sub-text hover:text-dark-base hover:bg-light-base rounded shadow-sm transition-all active:scale-95"
+                  title="Edit User"
+                >
+                  <Pencil :size="16" />
+                </button>
+                <button
+                  @click="$emit('delete', user)"
+                  class="p-1.5 border border-outline bg-white text-sub-text hover:text-red hover:bg-red/5 rounded shadow-sm transition-all active:scale-95"
+                  title="Delete User"
+                >
+                  <Trash2 :size="16" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -103,14 +98,16 @@
 </template>
 
 <script>
-import { RefreshCcw, Search, ChevronDown } from "lucide-vue-next";
+import { RefreshCcw, Search, ChevronDown, Pencil, Trash2 } from "lucide-vue-next";
 
 export default {
   name: "UsersTable",
-  components: { RefreshCcw, Search, ChevronDown },
+  components: { RefreshCcw, Search, ChevronDown, Pencil, Trash2 },
   props: {
     users: { type: Array, default: () => [] },
     isLoading: { type: Boolean, default: false },
+    currentPage: { type: Number, default: 1 },
+    itemsPerPage: { type: Number, default: 5 },
     selectedIds: { type: Array, default: () => [] },
     allSelected: { type: Boolean, default: false },
   },

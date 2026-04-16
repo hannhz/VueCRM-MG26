@@ -40,7 +40,7 @@ export default {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 gap-6 items-start lg:grid-cols-[220px_1fr]">
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr] h-full">
     <div
       class="bg-white rounded-xl shadow-sm border border-outline overflow-hidden sticky top-4"
     >
@@ -84,7 +84,7 @@ export default {
       </div>
     </div>
 
-    <div class="min-w-0">
+    <div class="min-w-0 flex flex-col h-full">
       <UserSettings v-if="activeTab === 'settings'" />
       <UserPermission v-else-if="activeTab === 'permission'" />
       <UserTeam v-else-if="activeTab === 'team'" />

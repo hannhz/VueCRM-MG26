@@ -31,11 +31,10 @@
         <UsersTable
           :users="currentUser"
           :isLoading="isLoadingTable"
-          :selectedIds="selectedIds"
-          :allSelected="isAllSelected"
-          @toggle-select-all="isAllSelected = $event"
-          @toggle-user-select="toggleUserSelect"
-          @row-click="openUserDetail"
+          :currentPage="currentPage"
+          :itemsPerPage="itemsPerPage"
+          @edit="openUserDetail"
+          @delete="handleDeleteUser"
         />
       </div>
     </div>
@@ -76,7 +75,6 @@ export default {
       showCreateUserForm: false,
       itemsPerPage: 5,
       currentPage: 1,
-      selectedIds: [],
       selectedUser: null,
       searchQuery: "",
     };
@@ -115,22 +113,6 @@ export default {
       const start = (this.currentPage - 1) * this.itemsPerPage;
       const end = start + this.itemsPerPage;
       return this.users.slice(start, end);
-    },
-
-    isAllSelected: {
-      get() {
-        return (
-          this.currentUser.length > 0 &&
-          this.currentUser.every((user) => this.selectedIds.includes(user.id))
-        );
-      },
-      set(val) {
-        if (val) {
-          this.selectedIds = this.currentUser.map((user) => user.id);
-        } else {
-          this.selectedIds = [];
-        }
-      },
     },
   },
 
@@ -174,45 +156,30 @@ export default {
       if (this.currentPage > 1) this.currentPage--;
     },
 
-    toggleUserSelect(userId) {
-      const index = this.selectedIds.indexOf(userId);
-      if (index > -1) {
-        this.selectedIds.splice(index, 1);
-      } else {
-        this.selectedIds.push(userId);
-      }
-    },
-
-    async handleDeleteUsers() {
-      if (this.selectedIds.length === 0) {
-        await alertService.toastWarning(
-          "Pilih minimal satu user untuk dihapus",
-        );
-        return;
-      }
+    async handleDeleteUser(user) {
+      if (!user?.id) return;
 
       const confirmDelete = await alertService.confirm(
-        `${this.selectedIds.length} user akan dihapus permanen. Lanjutkan?`,
+        `User "${user.firstname || user.name}" akan dihapus permanen. Lanjutkan?`,
         "Hapus User?",
+        {
+          confirmButtonText: "Ya, Hapus",
+          cancelButtonText: "Kembali",
+        },
       );
 
       if (!confirmDelete?.isConfirmed) return;
 
       try {
-        const idsToDelete = [...this.selectedIds];
-        for (const id of idsToDelete) {
-          await this.deleteUser(id);
-        }
-        this.selectedIds = [];
+        await this.deleteUser(user.id);
         await alertService.success("User berhasil dihapus");
+        this.fetchData(); // Refresh list
       } catch (error) {
-        console.error("Failed deleting users:", error);
+        console.error("Failed deleting user:", error);
         const backendMessage =
           error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          error?.message ||
-          "Silakan coba lagi.";
-        await alertService.error(`Gagal menghapus user. ${backendMessage}`);
+          "Gagal menghapus user.";
+        await alertService.error(backendMessage);
       }
     },
   },
