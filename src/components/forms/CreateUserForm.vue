@@ -179,7 +179,7 @@ export default {
         { value: "", label: "Select Role" },
         { value: "SA", label: "Super Admin" },
         { value: "AD", label: "Admin" },
-        { value: "AC", label: "Account" },
+        { value: "AC", label: "Accounting" },
         { value: "SL", label: "Sales" },
         { value: "PM", label: "Project Manager" },
         { value: "PS", label: "Pelaksana" },
@@ -191,6 +191,7 @@ export default {
       errorMsg: "",
       successMsg: "",
       canClose: false,
+      showPassword: false,
     };
   },
 
@@ -463,7 +464,7 @@ export default {
                 required
               />
             </div>
-            <div>
+            <!-- <div>
               <label class="block text-sm font-medium text-dark-base mb-2">
                 Password
               </label>
@@ -474,6 +475,24 @@ export default {
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
                 :required="!user || !user.id"
               />
+            </div> -->
+            <div class="relative w-full">
+              <label class="block text-sm font-medium text-dark-base mb-2">
+                Password <i
+                @click="showPassword = !showPassword"
+                :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"
+              ></i>
+              </label>
+              <input
+                v-model="formData.password"
+                :type="showPassword ? 'text' : 'password'"
+                placeholder="Password"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm pr-10"
+                :required="!user || !user.id"
+              />
+
+              <!-- tombol mata -->
+              
             </div>
           </div>
 
