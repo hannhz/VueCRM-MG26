@@ -177,10 +177,12 @@ export default {
 
       roleOptions: [
         { value: "", label: "Select Role" },
-        { value: "super_admin", label: "Super Admin" },
-        { value: "admin", label: "Admin" },
-        { value: "manager", label: "Manager" },
-        { value: "marketing", label: "Marketing" },
+        { value: "SA", label: "Super Admin" },
+        { value: "AD", label: "Admin" },
+        { value: "AC", label: "Account" },
+        { value: "SL", label: "Sales" },
+        { value: "PM", label: "Project Manager" },
+        { value: "PS", label: "Pelaksana" },
       ],
 
       formData: this.getUserFormDefaults(this.user),
