@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col h-full">
     <div
-      class="bg-white rounded-lg shadow-sm p-4 border border-outline flex flex-col min-h-0 flex-1"
+      class="bg-white rounded-lg shadow-sm p-4 border border-outline flex flex-col min-h-0 flex-1 gap-2"
     >
       <ContactsHeader
         :isLoading="isLoading"
@@ -54,7 +54,8 @@
         :showActionColumn="false"
         :wordwrap="true"
         :columnAutoWidth="false"
-        :disablecol="['statusid','taskid','tasks','location','pathphoto','deals','contact','id', 'email', 'phone', 'first_name', 'last_name', 'job_title', 'id_owner', 'telephone_1', 'telephone_2', 'status', 'address', 'country', 'province', 'city', 'pos_code', 'source', 'companyassoc', 'dealsassoc', 'notes', 'created_at', 'updated_at', 'owner_name', 'task_name', 'desktask', 'statustask', 'assignee', 'due_date', 'task_time', 'prioritytask', 'docs', 'associated_contact', 'telephone_3', 'state', 'zip', 'company_id', 'deal_id', 'company_label', 'deal_label', 'level', 'isParent', 'keyindex', 'PageTotal', 'owner', 'descdocs', 'pathfile', 'file_source']"
+        :height="'100%'"
+        :disablecol="['First Name', 'Last Name', 'Email', 'Address', 'Telephone', 'ID', 'statusid', 'taskid', 'tasks', 'location', 'pathphoto', 'deals', 'contact', 'id', 'email', 'phone', 'first_name', 'last_name', 'job_title', 'id_owner', 'telephone_1', 'telephone_2', 'status', 'address', 'country', 'province', 'city', 'pos_code', 'source', 'companyassoc', 'dealsassoc', 'notes', 'created_at', 'updated_at', 'owner_name', 'task_name', 'desktask', 'statustask', 'assignee', 'due_date', 'task_time', 'prioritytask', 'docs', 'associated_contact', 'telephone_3', 'state', 'zip', 'company_id', 'deal_id', 'company_label', 'deal_label', 'level', 'isParent', 'keyindex', 'PageTotal', 'owner', 'descdocs', 'pathfile', 'file_source']"
       >
         <DxSelection 
           mode="multiple" 
@@ -62,7 +63,7 @@
         />
       </DataGrid>
     </div>
-
+ 
     <!-- Add Contact Form -->
     <AddContactForm
       :isOpen="showAddContactForm"
@@ -70,7 +71,7 @@
       @close="closeAddContactForm"
       @submit="fetchData"
     />
-
+ 
     <!-- Contact Detail Form -->
     <DetailForm
       :isOpen="showDetailForm"
@@ -82,7 +83,7 @@
       @close="showDetailForm = false"
       @submit="handleDetailFormSubmit"
     />
-
+ 
     <!-- Contact Data Detail Form (for row click) -->
     <DetailDataContact
       :isOpen="showDetailDataContact"
@@ -92,7 +93,7 @@
       @back="closeDetailDataContact"
       @submit="handleDetailDataContactSubmit"
     />
-
+ 
     <!-- Bulk Add Contact Form -->
     <BulkAddContactForm
       :isOpen="showBulkAddForm"
@@ -106,23 +107,23 @@
     />
   </div>
 </template>
-
+ 
 <script>
 import { mapActions, mapGetters } from "vuex";
 import { alertService } from "@/services/alertService";
 import { useStatuses } from "@/composables/useStatuses";
-
+ 
 import { DxSelection } from "devextreme-vue/data-grid";
-
+ 
 import ContactsHeader from "./ContactsHeader.vue";
 import ContactsFilterBar from "./ContactsFilterBar.vue";
 import ContactsTable from "./ContactsTable.vue";
-
+ 
 import AddContactForm from "../../forms/AddContactForm.vue";
 import BulkAddContactForm from "../../forms/BulkAddContactForm.vue";
 import DetailForm from "../../forms/DetailFormDuplicate.vue";
 import DetailDataContact from "../../forms/DetailDataContact.vue";
-
+ 
 import {
   getAssociationCandidates,
   resolveAssociationLabels,
@@ -134,12 +135,12 @@ import {
   getDetailSaveAction,
   getUpdateAction,
 } from "@/utils/detailFormPayload";
-
+ 
 import DataGrid from "@/components/widgets/DataGrid.vue";
-
+ 
 export default {
   name: "Contacts",
-
+ 
   components: {
     ContactsHeader,
     ContactsFilterBar,
@@ -151,23 +152,23 @@ export default {
     DataGrid,
     DxSelection,
   },
-
+ 
   data() {
     return {
       // server pagination + filters
       currentPage: 1,
       itemsPerPage: 10,
       searchQuery: "",
-
+ 
       // statuses mapping
       statuses: [],
-
+ 
       // dropdowns & modals
       showAddContactForm: false,
       showBulkAddForm: false,
       showDropdown: false,
       showDownloadDropdown: false,
-
+ 
       // selection & detail
       selectedIds: [],
       selectedContact: null,
@@ -179,7 +180,7 @@ export default {
       gridInitialized: false,
     };
   },
-
+ 
   computed: {
     ...mapGetters({
       contacts: "contacts/allContacts",
@@ -189,52 +190,52 @@ export default {
       allCompanies: "company/allcompany",
       allDeals: "deals/allDeals",
     }),
-
+ 
     totalContacts() {
       return this.pagination?.total || 0;
     },
-
+ 
     totalPages() {
       return this.pagination?.last_page || 1;
     },
-
+ 
     contactsStatusText() {
       if (this.isLoading) return "Searching contacts...";
       return `${this.totalContacts.toLocaleString()} Total Contacts`;
     },
-
+ 
     contactsStatusClass() {
       if (this.isLoading) return "text-blue-600";
       return "text-sub-text";
     },
-
+ 
     downloadLabel() {
       return this.selectedIds.length
         ? `Download (${this.selectedIds.length})`
         : "Download";
     },
-
+ 
     // untuk checkbox select-all di table
     allSelected() {
       const ids = (this.contacts || []).map((c) => c.id).filter(Boolean);
       if (!ids.length) return false;
       return ids.every((id) => this.selectedIds.includes(id));
     },
-
+ 
     // View-model untuk table agar ContactsTable.vue simpel
     tableContacts() {
       const baseContacts = this.contacts || [];
-
+ 
       const companyOptions = (this.allCompanies || []).map((company) => ({
         value: company.id,
         label: company.company_name || company.name || "Unknown",
       }));
-
+ 
       const dealOptions = (this.allDeals || []).map((deal) => ({
         value: deal.id,
         label: deal.deal_name || deal.name || "Unknown",
       }));
-
+ 
       return baseContacts.map((contact) => {
         const companyCandidates = getAssociationCandidates(
           contact?.companyassoc,
@@ -244,7 +245,7 @@ export default {
           contact?.company,
           contact?.company_name,
         );
-
+ 
         const dealCandidates = getAssociationCandidates(
           contact?.dealsassoc,
           contact?.dealsAssociation,
@@ -253,7 +254,7 @@ export default {
           contact?.deal,
           contact?.deal_name,
         );
-
+ 
         const companyLabels = resolveAssociationLabels(
           companyCandidates,
           companyOptions,
@@ -262,12 +263,12 @@ export default {
           dealCandidates,
           dealOptions,
         );
-
+ 
         const companyStr = (companyLabels.length ? companyLabels : ["-"]).join(
           ", ",
         );
         const dealStr = (dealLabels.length ? dealLabels : ["-"]).join(", ");
-
+ 
         return {
           ...contact,
           id: contact.id,
@@ -278,16 +279,16 @@ export default {
           }`.trim(),
           "Contact Info": `${contact.email || "-"}\n${contact.telephone_1 || "-"}`,
           "Associated with": `${companyStr}\n${dealStr}`,
-          "Status": this.getStatusName(contact.status),
+          Status: this.getStatusName(contact.status),
           "Created/Update": this.formatDate(
             contact.updated_at || contact.created_at,
           ),
-          "Owner": contact.owner_name || contact.owner || "-",
+          Owner: contact.owner_name || contact.owner || "-",
         };
       });
     },
   },
-
+ 
   watch: {
     currentPage() {
       this.fetchData();
@@ -297,7 +298,7 @@ export default {
       this.fetchData();
     },
   },
-
+ 
   methods: {
     handleFocusedRowChanged(e) {
       const contact = e?.data;
@@ -308,7 +309,7 @@ export default {
     handleContentReady(e) {
       if (!this.gridInitialized && e.component) {
         const instance = e.component;
-        
+ 
         // Define widths
         instance.columnOption("Contact Name", "width", 250);
         instance.columnOption("Contact Info", "width", 240);
@@ -316,23 +317,31 @@ export default {
         instance.columnOption("Status", "width", 130);
         instance.columnOption("Created/Update", "width", 180);
         instance.columnOption("Owner", "width", 180);
-
+ 
         // Define robust stacked templates
-        instance.columnOption("Contact Name", "cellTemplate", (container, options) => {
-          const val = options.displayValue || "-";
-          container.innerHTML = `<div style="font-weight: bold; color: #1e293b;">${val}</div>`;
-        });
-
-        instance.columnOption("Contact Info", "cellTemplate", (container, options) => {
-          const email = options.data.email || "-";
-          const phone = options.data.phone || "-";
-          container.innerHTML = `
+        instance.columnOption(
+          "Contact Name",
+          "cellTemplate",
+          (container, options) => {
+            const val = options.displayValue || "-";
+            container.innerHTML = `<div style="font-weight: bold; color: #1e293b;">${val}</div>`;
+          },
+        );
+ 
+        instance.columnOption(
+          "Contact Info",
+          "cellTemplate",
+          (container, options) => {
+            const email = options.data.email || "-";
+            const phone = options.data.phone || "-";
+            container.innerHTML = `
             <div style="display: block; width: 100%;">
-              <div style="color: #1e293b; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${email}</div>
-              <div style="color: #64748b; font-size: 12px; margin-top: 2px; display: block;">${phone}</div>
+              <div style="color: #1e293b; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${phone}</div>
+              <div style="color: #64748b; font-size: 12px; margin-top: 2px; display: block;">${email}</div>
             </div>
           `;
-        });
+          },
+        );
 
         instance.columnOption("Associated with", "cellTemplate", (container, options) => {
           const val = options.displayValue || "-";
@@ -724,5 +733,17 @@ input[type="number"] {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* Compact row spacing */
+:deep(.dx-datagrid-rowsview .dx-row > td) {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+  vertical-align: middle !important;
+}
+
+:deep(.dx-datagrid-headers .dx-header-row > td) {
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
 }
 </style>

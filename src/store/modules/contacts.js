@@ -26,6 +26,18 @@ const getters = {
   error: (state) => state.error,
 };
 
+const normalizeContactData = (contact) => {
+  if (!contact) return contact;
+  return {
+    ...contact,
+    first_name: contact.first_name || contact["First Name"] || "",
+    last_name: contact.last_name || contact["Last Name"] || "",
+    email: contact.email || contact["Email"] || "",
+    address: contact.address || contact["Address"] || "",
+    telephone_1: contact.telephone_1 || contact["Telephone"] || "",
+  };
+};
+
 const mutations = {
   SET_VIEW_MODE(state, mode) {
     state.viewMode = mode;
@@ -33,7 +45,7 @@ const mutations = {
   SET_CONTACTS(state, payload) {
     if (payload && payload.data) {
       // Handle paginated response
-      state.contacts = payload.data;
+      state.contacts = payload.data.map(normalizeContactData);
       state.pagination = {
         total: payload.total || 0,
         current_page: payload.current_page || 1,
@@ -42,7 +54,8 @@ const mutations = {
       };
     } else {
       // Fallback for non-paginated or old format
-      state.contacts = payload || [];
+      const rawContacts = Array.isArray(payload) ? payload : [];
+      state.contacts = rawContacts.map(normalizeContactData);
     }
   },
   SET_LOADING(state, isLoading) {
@@ -156,7 +169,7 @@ const actions = {
     for (const endpoint of endpoints) {
       try {
         const response = await api.post(endpoint, detailPayload, { headers });
-        await dispatch("fetchAllContacts").catch(() => {});
+        await dispatch("fetchAllContacts").catch(() => { });
         return response.data;
       } catch (error) {
         const status = error?.response?.status;

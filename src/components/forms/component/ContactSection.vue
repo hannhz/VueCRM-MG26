@@ -28,15 +28,24 @@
           <li
             v-for="data in contacts"
             :key="data.id"
-            class="px-3 py-2 rounded-lg bg-light-base border border-outline"
+            class="px-3 py-2 rounded-lg bg-light-base border border-outline flex items-center justify-between group"
           >
-            <p class="text-sm font-medium">
-              {{ data.first_name }} {{ data.last_name }}
-            </p>
-            <p class="text-xs text-sub-text">ID: {{ data.id }}</p>
-            <p v-if="data.email" class="text-xs text-sub-text">
-              {{ data.email }}
-            </p>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium truncate">
+                {{ data.first_name }} {{ data.last_name }}
+              </p>
+              <p class="text-xs text-sub-text">ID: {{ data.id }}</p>
+              <p v-if="data.email" class="text-xs text-sub-text truncate">
+                {{ data.email }}
+              </p>
+            </div>
+            <button
+              @click="$emit('remove', data.id)"
+              class="p-1.5 text-sub-text hover:text-red hover:bg-red/5 rounded-lg border border-outline bg-white shadow-sm transition-all active:scale-95 ml-2"
+              title="Hapus Contact"
+            >
+              <Trash2 :size="16" />
+            </button>
           </li>
         </ul>
 
@@ -73,7 +82,7 @@
   </div>
 </template>
 <script>
-import { Plus, Users } from "lucide-vue-next";
+import { Plus, Users, Trash2 } from "lucide-vue-next";
 import {mapActions, mapGetters} from "vuex";
 import FormBrowseDialog from "@/components/widgets/FormBrowseDialog.vue";
 import FormBrowse from "@/components/widgets/FormBrowse.vue";
@@ -92,11 +101,12 @@ export default {
   components: {
     Plus,
     Users,
+    Trash2,
     FormBrowse,
     ContactAssociationForm,
   },
 
-  emits: ["save"],
+  emits: ["save", "remove"],
 
   data() {
     return {

@@ -18,12 +18,8 @@
           <button
             type="button"
             @click="handleDelete"
-            class="p-2 rounded-lg transition"
-            :class="
-              selectedTasks.length > 0
-                ? 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
-                : 'bg-gray-200 text-gray-500 hover:bg-gray-300 cursor-not-allowed'
-            "
+            :disabled="selectedTasks.length === 0"
+            class="h-10 w-10 rounded-lg border border-red bg-white p-2 text-red transition hover:bg-red hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-red"
             title="Delete selected tasks"
           >
             <Trash :size="20" />
@@ -152,8 +148,11 @@
         class="mt-0!"
         :dataSource="tableTasks"
         :keyExpr="'id'"
+        :showSelection="true"
+        :selectedRowKeys="selectedTasks"
         :showActionColumn="false"
         @focused-row-changed="handleFocusedRowChanged"
+        @selection-changed="handleSelectionChanged"
       />
     </div>
 
@@ -332,6 +331,11 @@ export default {
       this.selectedTasks = e.target.checked
         ? this.paginatedTasks.map((t) => t.id)
         : [];
+      this.$emit("taskSelection", this.selectedTasks);
+    },
+
+    handleSelectionChanged(event) {
+      this.selectedTasks = event?.selectedRowKeys || [];
       this.$emit("taskSelection", this.selectedTasks);
     },
 

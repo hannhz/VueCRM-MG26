@@ -35,15 +35,15 @@ const emit = defineEmits([
         <span>Select all filtered result</span>
       </label>
 
-      <!-- Delete Selected (Visible only when items are selected) -->
+      <!-- Delete Selected -->
       <button
-        v-if="selectedCount > 0"
         type="button"
         @click="emit('delete')"
-        class="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-medium transition active:scale-95"
+        :disabled="selectedCount === 0"
+        class="h-10 w-10 rounded-lg border border-red bg-white p-2 text-red transition hover:bg-red hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-red"
+        title="Delete selected deals"
       >
         <Trash :size="16" />
-        <span>Hapus ({{ selectedCount }})</span>
       </button>
 
       <!-- Items Per Page Dropdown -->

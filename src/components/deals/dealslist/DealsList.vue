@@ -3,10 +3,7 @@ import { ChevronDown } from "lucide-vue-next";
 import { alertService } from "@/services/alertService";
 import DealsListHeader from "./DealsListHeader.vue";
 import DealsListToolbar from "./DealsListToolbar.vue";
-import DealsListRow from "./DealsListRow.vue";
-import DealsEmptyState from "./DealsEmptyState.vue";
 import DataGrid from "@/components/widgets/DataGrid.vue";
-import { useDealSelection } from "@/composables/useDealSelection";
 
 export default {
   name: "DealsList",
@@ -14,8 +11,6 @@ export default {
     ChevronDown,
     DealsListHeader,
     DealsListToolbar,
-    DealsListRow,
-    DealsEmptyState,
     DataGrid,
   },
   props: {
@@ -138,6 +133,11 @@ export default {
       }
     },
 
+    // Sync selected deal IDs from DataGrid checkbox selection
+    handleSelectionChanged(event) {
+      this.selectedDeals = event?.selectedRowKeys || [];
+    },
+
     // Handle row focus/selection di DataGrid
     handleFocusedRowChanged(rowData) {
       if (rowData && rowData.data) {
@@ -182,7 +182,10 @@ export default {
     <DataGrid
       :dataSource="tableDeals"
       :keyExpr="'id'"
+      :showSelection="true"
+      :selectedRowKeys="selectedDeals"
       @focused-row-changed="handleFocusedRowChanged"
+      @selection-changed="handleSelectionChanged"
       :showActionColumn="false"
     />
   </div>

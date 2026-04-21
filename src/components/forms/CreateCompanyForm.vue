@@ -578,9 +578,40 @@ export default {
       this.historyitems.splice(index, 1);
       alertService.toastInfo("Item dihapus dari histori");
     },
+ 
+    async handleRemoveContact(contactId) {
+      const confirm = await alertService.confirm(
+        "Apakah Anda yakin ingin menghapus hubungan contact ini?",
+        "Hapus Hubungan Contact",
+        {
+          confirmButtonText: "Ya, Hapus",
+          cancelButtonText: "Kembali",
+        },
+      );
+ 
+      if (!confirm?.isConfirmed) return;
+ 
+      // Filter out ID from formData
+      this.formData.contactassoc = this.formData.contactassoc.filter(
+        (id) => String(id) !== String(contactId),
+      );
+ 
+      // Update store state for immediate UI feedback
+      const storeState = this.$store.state.company;
+      const currentCompanyById = storeState.companybyid;
+      
+      if (currentCompanyById && Array.isArray(currentCompanyById.contactassoc)) {
+        const updated = { ...currentCompanyById };
+        updated.contactassoc = updated.contactassoc.filter(
+          (c) => String(c.id) !== String(contactId),
+        );
+        this.$store.commit("company/setcompanybyid", updated);
+      }
+ 
+      alertService.toastSuccess("Hubungan contact dilepaskan");
+    },
   },
-};
-</script>
+};</script>
 
 <template>
   <!-- Overlay Background -->
@@ -821,7 +852,10 @@ export default {
 
         <!-- Contacts Tab (History) -->
         <div v-if="activeTab === 'Contacts'" class="p-6 h-full">
-          <ContactSection :contacts="companybyidcontactassociated" />
+          <ContactSection
+            :contacts="companybyidcontactassociated"
+            @remove="handleRemoveContact"
+          />
 
           <!-- <div class="flex items-center gap-3 mb-8">
             <button

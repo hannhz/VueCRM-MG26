@@ -108,6 +108,12 @@
         />
         <DxPager v-else :visible="false" />
         <DxHeaderFilter :visible="true" />
+        <DxSelection
+          v-if="showSelection"
+          :mode="selectionMode"
+          :selectAllMode="selectAllMode"
+          :showCheckBoxesMode="showCheckBoxesMode"
+        />
         <DxSearchPanel
           v-if="filterSettings.showSearchPanel"
           :visible="true"
@@ -360,6 +366,7 @@
 import {
   DxDataGrid,
   DxFilterRow,
+  DxSelection,
   DxSearchPanel,
   DxEditing,
   DxPager,
@@ -392,6 +399,7 @@ export default {
   components: {
     DxDataGrid,
     DxFilterRow,
+    DxSelection,
     DxSearchPanel,
     DxEditing,
     DxPager,
@@ -700,6 +708,22 @@ export default {
     selectedRowKeys: {
       type: Array,
       default: () => [],
+    },
+    showSelection: {
+      type: Boolean,
+      default: false,
+    },
+    selectionMode: {
+      type: String,
+      default: "multiple",
+    },
+    selectAllMode: {
+      type: String,
+      default: "allPages",
+    },
+    showCheckBoxesMode: {
+      type: String,
+      default: "always",
     },
   },
 
