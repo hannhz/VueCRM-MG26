@@ -131,9 +131,19 @@ const getters = {
   companyList: (state) => state.company,
   companysignin: (state) => state.companysignin,
   companyidsignin: (state) => state.companyidsignin,
-  companybyid: (state) => state.companybyid,
+  companybyid: (state) => {
+    return state.companybyid?.companies || [];
+  },
+  companybyidcontactassociated: (state) => {
+    return state.companybyid?.contactassoc || [];
+  },
+  companybyiddealsassociated: (state) => {
+    return state.companybyid?.dealsassoc || [];
+  },
+
   allcompany: (state) => state.company,
   allCompanys: (state) => state.companys,
+  companyid: (state) => state.companybyid.id,
   isLoading: (state) => state.isLoading,
   error: (state) => state.error,
   currentView: (state) => state.viewMode,
@@ -317,6 +327,7 @@ const actions = {
     });
 
     promise.then((data) => {
+      console.log("Data received in fetchcompanybyid action:", data);
       context.commit("setcompanybyid", data.data);
       // console.log(data.data);
     });
@@ -342,7 +353,6 @@ const actions = {
   saveCompany(context, payload) {
     const promise = new Promise(async (resolve, reject) => {
       try {
-
         let requestPayload;
 
         // 🔥 DETECT FormData
@@ -423,7 +433,7 @@ const actions = {
     const response = await api.post("company/input", requestPayload, {
       headers,
     });
-    await context.dispatch("fetchAllcompany").catch(() => { });
+    await context.dispatch("fetchAllcompany").catch(() => {});
     return response.data;
   },
 

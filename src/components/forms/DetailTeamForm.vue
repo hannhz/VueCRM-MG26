@@ -728,7 +728,6 @@ export default {
             <Users :size="16" class="text-sub-text" />
             <h3 class="text-sm font-semibold text-dark-base">Users In Team</h3>
           </div>
-
           <ul v-if="allusersteam" class="space-y-2">
             <li
               v-for="user in allusersteam"
@@ -742,7 +741,6 @@ export default {
               </p>
             </li>
           </ul>
-
           <div
             v-else
             class="text-sm text-sub-text bg-light-base border border-outline rounded-lg px-3 py-2"

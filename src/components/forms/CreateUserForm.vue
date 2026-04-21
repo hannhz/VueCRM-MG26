@@ -129,7 +129,7 @@ const handleReset = () => {
 </script> -->
 
 <script>
-import { X, ChevronDown } from "lucide-vue-next";
+import { X, ChevronDown,Eye, EyeOff, } from "lucide-vue-next";
 import { mapState, mapActions } from "vuex";
 import { alertService } from "@/services/alertService";
 
@@ -140,6 +140,7 @@ export default {
   components: {
     X,
     ChevronDown,
+    Eye, EyeOff,
   },
 
   props: {
@@ -478,21 +479,28 @@ export default {
             </div> -->
             <div class="relative w-full">
               <label class="block text-sm font-medium text-dark-base mb-2">
-                Password <i
-                @click="showPassword = !showPassword"
-                :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"
-              ></i>
+                Password
               </label>
-              <input
-                v-model="formData.password"
-                :type="showPassword ? 'text' : 'password'"
-                placeholder="Password"
-                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm pr-10"
-                :required="!user || !user.id"
-              />
+              <div class="relative">
+                <input
+                  v-model="formData.password"
+                  :type="showPassword ? 'text' : 'password'"
+                  placeholder="Password"
+                  class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm pr-10"
+                  :required="!user || !user.id"
+                />
+                <button
+                  type="button"
+                  @click="showPassword = !showPassword"
+                  class="absolute right-4 top-1/2 -translate-y-1/2 opacity-40 hover:opacity-100 transition-opacity"
+                  :disabled="isLoading"
+                >
+                  <Eye v-if="showPassword" class="w-5 h-5 text-blue-950" />
+                  <EyeOff v-else class="w-5 h-5 text-blue-950" />
+                </button>
+              </div>
 
               <!-- tombol mata -->
-              
             </div>
           </div>
 

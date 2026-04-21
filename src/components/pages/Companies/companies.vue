@@ -12,7 +12,7 @@ import BulkAddCompanyForm from "../../forms/BulkAddCompanyForm.vue";
 import DetailForm from "../../forms/DetailFormDuplicate.vue";
 // import DetailDataCompany from "../../forms/DetailDataCompany.vue";
 import DetailDataCompany from "../../forms/CreateCompanyForm.vue";
-import { alertService } from "@/services/alertService";
+import { alertService,alertServicenew } from "@/services/alertService";
 import {
   buildDetailFormPayload,
   getUpdateAction,
@@ -349,7 +349,7 @@ export default {
       try {
         const response = await this.fetchcompanybyid(companyId);
 
-        console.log("Fetched company detail:", response.data.companies[0]);
+        console.log("Fetched company detail:", response.data);
         const companyDetail =
           response?.data?.company ||
           response?.data?.data ||
@@ -363,13 +363,13 @@ export default {
         this.showDetailDataCompany = true;
       } catch (error) {
         this.selectedCompany = { ...company };
-        this.showDetailDataCompany = true;
+        this.showDetailDataCompany = false;
 
         const message =
           error?.response?.data?.message ||
           error?.response?.data?.error ||
           "Gagal mengambil detail terbaru dari server. Menampilkan data yang tersedia.";
-        alertService.warning(message);
+        alertServicenew.warning(message);
       } finally {
         this.isDetailDataSubmitting = false;
       }
@@ -534,7 +534,7 @@ export default {
 
     handleDeleteCompanies() {
       if (!this.selectedIds.length) {
-        return alertService.warning("Pilih minimal satu company untuk dihapus");
+        return alertServicenew.warning("Pilih minimal satu company untuk dihapus");
       }
 
       alertService

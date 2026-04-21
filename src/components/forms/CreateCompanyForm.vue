@@ -13,9 +13,11 @@ import TaskEditor from "@/components/widgets/TaskEditor.vue";
 import DocsEditor from "@/components/widgets/DocsEditor.vue";
 import HistoryDetail from "@/components/widgets/historydetail.vue";
 import { buildFormData } from "@/utils/buildFormData";
+import ContactSection from "./component/ContactSection.vue";
 
 export default {
   name: "CreateCompanyForm",
+  emits: ["close", "submit"],
 
   components: {
     X,
@@ -31,6 +33,7 @@ export default {
     TaskEditor,
     DocsEditor,
     HistoryDetail,
+    ContactSection,
   },
 
   props: {
@@ -97,6 +100,7 @@ export default {
       showAddContactQuickForm: false,
       showDetailForm: false,
       isSubmitting: false,
+      savedCompany: null,
 
       // History & Drawer States
       historyitems: [],
@@ -128,10 +132,15 @@ export default {
       industries: "company/industries",
       sources: "company/sources",
       types: "company/type",
+      companybyidcontactassociated: "company/companybyidcontactassociated",
+      companybyiddealsassociated: "company/companybyiddealsassociated",
     }),
 
     isEditMode() {
       return !!this.initialData;
+    },
+    hasCompanyId() {
+      return !!(this.initialData?.id || this.savedCompany?.id);
     },
   },
 
@@ -199,13 +208,22 @@ export default {
         dealsassoc: this.parseJSON(data.dealsassoc, []),
         contactassoc: this.parseJSON(data.contactassoc, []),
 
-        task: {
-          name: data.task_name || "",
-          content: data.desktask || "",
-          status: data.statustask || "",
-          dueDate: data.due_date || "",
-          time: data.task_time || "",
-          priority: data.prioritytask || "",
+        // task: {
+        //   name: data.task_name || "",
+        //   content: data.desktask || "",
+        //   status: data.statustask || "",
+        //   dueDate: data.due_date || "",
+        //   time: data.task_time || "",
+        //   priority: data.prioritytask || "",
+        // },
+
+        noteData: {
+          body: data.notes || "",
+          gps_address: data.gps_address || null,
+          latitude: data.latitude || null,
+          longitude: data.longitude || null,
+          photos: [], // For simplicity, not parsing existing photos here
+          audioBlob: null,
         },
 
         docs: {
@@ -219,13 +237,22 @@ export default {
       let historyItems = [];
 
       const getBody = (item) => {
-        return item.notes || item.body || item.descdocs || item.description || item.content || "";
+        return (
+          item.notes ||
+          item.body ||
+          item.descdocs ||
+          item.description ||
+          item.content ||
+          ""
+        );
       };
 
       // Process Notes
       let rawNotes = data.notes || data.note;
       if (typeof rawNotes === "string" && rawNotes.startsWith("[")) {
-        try { rawNotes = JSON.parse(rawNotes); } catch (e) {}
+        try {
+          rawNotes = JSON.parse(rawNotes);
+        } catch (e) {}
       }
 
       if (Array.isArray(rawNotes)) {
@@ -233,14 +260,20 @@ export default {
           let location = { address: null, latitude: null, longitude: null };
           try {
             if (n.location) {
-              location = typeof n.location === "string" ? JSON.parse(n.location) : n.location;
+              location =
+                typeof n.location === "string"
+                  ? JSON.parse(n.location)
+                  : n.location;
             }
           } catch (e) {}
 
           let photos = [];
           try {
             if (n.pathphoto) {
-              const parsed = typeof n.pathphoto === "string" ? JSON.parse(n.pathphoto) : n.pathphoto;
+              const parsed =
+                typeof n.pathphoto === "string"
+                  ? JSON.parse(n.pathphoto)
+                  : n.pathphoto;
               if (Array.isArray(parsed)) {
                 photos = parsed.map((p) => p.path || p);
               }
@@ -269,7 +302,9 @@ export default {
       // Process Docs
       let rawDocs = data.docs || data.docs_list || data.files;
       if (typeof rawDocs === "string" && rawDocs.startsWith("[")) {
-        try { rawDocs = JSON.parse(rawDocs); } catch (e) {}
+        try {
+          rawDocs = JSON.parse(rawDocs);
+        } catch (e) {}
       }
 
       if (Array.isArray(rawDocs)) {
@@ -281,7 +316,9 @@ export default {
               timestamp: d.created_at || d.update_at,
               body: getBody(d),
               fileSource: d.file_source || "local",
-              files: d.pathfile ? [{ name: d.pathfile.split("/").pop(), path: d.pathfile }] : [],
+              files: d.pathfile
+                ? [{ name: d.pathfile.split("/").pop(), path: d.pathfile }]
+                : [],
             });
           }
         });
@@ -354,10 +391,12 @@ export default {
             ? "Company berhasil diperbarui!"
             : "Company berhasil ditambahkan!";
           alertService.success(message);
-          this.resetForm();
-          this.$emit("submit", data);
+          console.log(data.param);
+          this.savedCompany = data.param;
           this.showDetailForm = false;
-          this.handleClose();
+          // this.$emit("submit", data);
+          // this.resetForm();
+          // this.handleClose();
         })
         .catch((error) => {
           alertService.error(
@@ -426,6 +465,15 @@ export default {
           description: "",
           fileSource: "",
           files: [],
+        },
+
+        noteData: {
+          body: "",
+          gps_address: null,
+          latitude: null,
+          longitude: null,
+          photos: [],
+          audioBlob: null,
         },
       };
       this.historyitems = [];
@@ -582,6 +630,33 @@ export default {
         </button>
 
         <button
+          v-if="hasCompanyId"
+          type="button"
+          @click="activeTab = 'Contacts'"
+          :class="[
+            'px-4 py-2 text-sm font-medium border-b-2 transition',
+            activeTab === 'Contacts'
+              ? 'border-dark-base text-dark-base'
+              : 'border-transparent text-sub-text hover:text-dark-base',
+          ]"
+        >
+          Contacts
+        </button>
+        <button
+          v-if="hasCompanyId"
+          type="button"
+          @click="activeTab = 'Deals'"
+          :class="[
+            'px-4 py-2 text-sm font-medium border-b-2 transition',
+            activeTab === 'Deals'
+              ? 'border-dark-base text-dark-base'
+              : 'border-transparent text-sub-text hover:text-dark-base',
+          ]"
+        >
+          Deals
+        </button>
+        <button
+          v-if="hasCompanyId"
           type="button"
           @click="activeTab = 'detail'"
           :class="[
@@ -598,7 +673,11 @@ export default {
       <!-- Form Content (Scrollable) -->
       <div class="flex-1 overflow-y-auto min-h-0">
         <!-- Master Tab Form -->
-        <form v-if="activeTab === 'master'" @submit.prevent id="createCompanyForm">
+        <form
+          v-if="activeTab === 'master'"
+          @submit.prevent
+          id="createCompanyForm"
+        >
           <!-- master -->
           <div v-if="activeTab === 'master'" class="p-6 space-y-6">
             <!-- Company Name & Owner -->
@@ -732,7 +811,6 @@ export default {
               </div>
             </div>
 
-            
             <!-- <div class="grid grid-cols-1 gap-4"></div> -->
 
             <!-- Contact Association -->
@@ -740,6 +818,97 @@ export default {
             <DealAssociationForm v-model="formData.dealsassoc" /> -->
           </div>
         </form>
+
+        <!-- Contacts Tab (History) -->
+        <div v-if="activeTab === 'Contacts'" class="p-6 h-full">
+          <ContactSection :contacts="companybyidcontactassociated" />
+
+          <!-- <div class="flex items-center gap-3 mb-8">
+            <button
+              type="button"
+              @click="$emit('add-note')"
+              class="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-outline rounded-xl text-sm font-semibold text-dark-base hover:bg-light-base hover:border-dark-base/20 transition-all duration-200 shadow-sm"
+            >
+              <Plus :size="18" class="text-dark-base" />
+              Tambah Contacts
+            </button>
+          </div>
+          <div class="border border-outline rounded-lg p-4 relative">
+            <div class="flex items-center gap-2 mb-3">
+              <Users :size="16" class="text-sub-text" />
+              <h3 class="text-sm font-semibold text-dark-base">
+                Contacts yang terkait dengan company ini
+              </h3>
+            </div>
+            <div class="flex-1 overflow-y-auto pr-1">
+              <ul v-if="companybyidcontactassociated" class="space-y-2">
+                <li
+                  v-for="data in companybyidcontactassociated"
+                  :key="data.id"
+                  class="px-3 py-2 rounded-lg bg-light-base border border-outline"
+                >
+                  <p class="text-sm font-medium text-dark-base">
+                    {{ data.first_name }} {{ data.last_name }}
+                  </p>
+                  <p class="text-xs text-sub-text">ID: {{ data.id }}</p>
+                  <p v-if="data.email" class="text-xs text-sub-text">
+                    {{ data.email }}
+                  </p>
+                </li>
+              </ul>
+              <div
+                v-else
+                class="text-sm text-sub-text bg-light-base border border-outline rounded-lg px-3 py-2"
+              >
+                Daftar Contact belum tersedia .
+              </div>
+            </div>
+          </div> -->
+        </div>
+
+        <!-- Deals Tab (History) -->
+        <div v-if="activeTab === 'Deals'" class="p-6 h-full flex flex-col">
+          <div class="flex items-center gap-3 mb-8">
+            <button
+              type="button"
+              @click="$emit('add-note')"
+              class="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-outline rounded-xl text-sm font-semibold text-dark-base hover:bg-light-base hover:border-dark-base/20 transition-all duration-200 shadow-sm"
+            >
+              <Plus :size="18" class="text-dark-base" />
+              Tambah Deals
+            </button>
+          </div>
+          <div class="border border-outline rounded-lg p-4">
+            <div class="flex items-center gap-2 mb-3">
+              <Users :size="16" class="text-sub-text" />
+              <h3 class="text-sm font-semibold text-dark-base">
+                Deals yang terkait dengan company ini
+              </h3>
+            </div>
+            <ul v-if="companybyiddealsassociated" class="space-y-2">
+              <li
+                v-for="data in companybyiddealsassociated"
+                :key="data.id"
+                class="px-3 py-2 rounded-lg bg-light-base border border-outline"
+              >
+                <p class="text-sm font-medium text-dark-base">
+                  {{ data.deal_name }}
+                </p>
+                <p class="text-xs text-sub-text">ID: {{ data.id }}</p>
+                 <p class="text-xs text-sub-text">Nilai: {{ data.amount_value }}</p>
+                <p v-if="data.pipeline" class="text-xs text-sub-text">
+                  {{ data.pipeline }}
+                </p>
+              </li>
+            </ul>
+            <div
+              v-else
+              class="text-sm text-sub-text bg-light-base border border-outline rounded-lg px-3 py-2"
+            >
+              Daftar Deals belum tersedia .
+            </div>
+          </div>
+        </div>
 
         <!-- Detail Tab (History) -->
         <div v-if="activeTab === 'detail'" class="p-6 h-full flex flex-col">
@@ -806,7 +975,7 @@ export default {
     @submit="handleContactQuickSubmit"
   /> -->
 
-  <ContactDetailForm
+  <!-- <ContactDetailForm
     :isOpen="showDetailForm"
     title="Create Company / Details"
     saveButtonText="Save Company"
@@ -815,7 +984,7 @@ export default {
     @close="showDetailForm = false"
     @back="showDetailForm = false"
     @submit="handleDetailSubmit"
-  />
+  /> -->
 
   <!-- Note Drawer POPUP -->
   <Transition name="slide">
@@ -823,11 +992,16 @@ export default {
       v-if="isNoteDrawerOpen"
       class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[60] flex flex-col"
     >
-      <div class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10">
+      <div
+        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
+      >
         <h2 class="text-xl font-bold text-dark-base">
           {{ editingItemIndex !== null ? "Edit Note" : "Tambah Note" }}
         </h2>
-        <button @click="isNoteDrawerOpen = false" class="p-2 hover:bg-light-base rounded-lg transition-colors">
+        <button
+          @click="isNoteDrawerOpen = false"
+          class="p-2 hover:bg-light-base rounded-lg transition-colors"
+        >
           <X :size="20" class="text-sub-text" />
         </button>
       </div>
@@ -836,11 +1010,19 @@ export default {
         <NotesEditor v-model:note-data="tempNoteData" />
       </div>
 
-      <div class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3">
-        <button @click="isNoteDrawerOpen = false" class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base">
+      <div
+        class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
+      >
+        <button
+          @click="isNoteDrawerOpen = false"
+          class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
+        >
           Cancel
         </button>
-        <button @click="saveNoteFromDrawer" class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover">
+        <button
+          @click="saveNoteFromDrawer"
+          class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
+        >
           Simpan Ke Histori
         </button>
       </div>
@@ -853,11 +1035,16 @@ export default {
       v-if="isDocDrawerOpen"
       class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[60] flex flex-col"
     >
-      <div class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10">
+      <div
+        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
+      >
         <h2 class="text-xl font-bold text-dark-base">
           {{ editingItemIndex !== null ? "Edit Document" : "Tambah Document" }}
         </h2>
-        <button @click="isDocDrawerOpen = false" class="p-2 hover:bg-light-base rounded-lg transition-colors">
+        <button
+          @click="isDocDrawerOpen = false"
+          class="p-2 hover:bg-light-base rounded-lg transition-colors"
+        >
           <X :size="20" class="text-sub-text" />
         </button>
       </div>
@@ -866,11 +1053,19 @@ export default {
         <DocsEditor v-model="tempDocs" />
       </div>
 
-      <div class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3">
-        <button @click="isDocDrawerOpen = false" class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base">
+      <div
+        class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
+      >
+        <button
+          @click="isDocDrawerOpen = false"
+          class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
+        >
           Cancel
         </button>
-        <button @click="saveDocFromDrawer" class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover">
+        <button
+          @click="saveDocFromDrawer"
+          class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
+        >
           Simpan Ke Histori
         </button>
       </div>

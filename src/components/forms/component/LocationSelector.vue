@@ -288,6 +288,8 @@ export default {
     },
     onChangekelurahan(event) {
       console.log("Kelurahan changed:", event);
+      let thisdtkelurahan = this.getkelurahan.filter((kelurahan) => String(kelurahan.kd_kelurahan) === String(event));
+      this.modelValue.pos_code = thisdtkelurahan[0].kode_pos;
       this.actkodepos({ id: event });
     },
 
