@@ -521,213 +521,202 @@ export default {
 
 <template>
   <div class="mb-5">
-    <!-- ── HEADER TOGGLE ── -->
-    <button
-      type="button"
-      @click="showNotes = !showNotes"
-      class="flex items-center gap-2 w-full text-left mb-3"
-    >
-      <component :is="currentIcon" :size="16" class="text-sub-text" />
-      <span
-        class="text-sm font-semibold text-dark-base flex items-center gap-2"
-      >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-        </svg>
-        {{ title }}
-      </span>
-    </button>
-
     <!-- ── EDITOR CARD ── -->
     <div
-      v-if="showNotes"
       class="border border-outline rounded-lg overflow-hidden"
     >
       <!-- ── TOOLBAR ── -->
       <div
-        class="flex items-center gap-1 px-3 py-2 border-b border-outline bg-light-base flex-wrap"
+        class="flex items-center justify-between gap-1 px-3 py-2 border-b border-outline bg-light-base flex-wrap"
       >
-        <button
-          type="button"
-          class="btn-toolbar"
-          @click="execCmd('undo')"
-          title="Undo"
-        >
-          ↩
-        </button>
-        <button
-          type="button"
-          class="btn-toolbar"
-          @click="execCmd('redo')"
-          title="Redo"
-        >
-          ↪
-        </button>
-        <span class="divider">|</span>
-
-        <select class="select-toolbar" @change="applyFormat">
-          <option value="">Formats</option>
-          <option value="h1">Heading 1</option>
-          <option value="h2">Heading 2</option>
-          <option value="h3">Heading 3</option>
-          <option value="p">Paragraph</option>
-        </select>
-        <span class="divider">|</span>
-
-        <button
-          type="button"
-          class="btn-toolbar font-bold"
-          @click="execCmd('bold')"
-          title="Bold"
-        >
-          B
-        </button>
-        <button
-          type="button"
-          class="btn-toolbar italic"
-          @click="execCmd('italic')"
-          title="Italic"
-        >
-          I
-        </button>
-        <button
-          type="button"
-          class="btn-toolbar underline"
-          @click="execCmd('underline')"
-          title="Underline"
-        >
-          U
-        </button>
-        <span class="divider">|</span>
-
-        <button
-          type="button"
-          class="btn-toolbar"
-          @click="insertLink"
-          title="Insert Link"
-        >
-          🔗
-        </button>
-        <button
-          type="button"
-          class="btn-toolbar"
-          @click="execCmd('removeFormat')"
-          title="Remove Format"
-        >
-          ✕
-        </button>
-        <span class="divider">|</span>
-
-        <!-- Alignment -->
-        <button
-          type="button"
-          class="btn-toolbar"
-          @click="execCmd('justifyLeft')"
-          title="Rata Kiri"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
+        <div class="flex items-center gap-1 flex-wrap">
+          <button
+            type="button"
+            class="btn-toolbar"
+            @click="execCmd('undo')"
+            title="Undo"
           >
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="12" x2="15" y2="12" />
-            <line x1="3" y1="18" x2="18" y2="18" />
-          </svg>
-        </button>
-        <button
-          type="button"
-          class="btn-toolbar"
-          @click="execCmd('justifyCenter')"
-          title="Tengah"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
+            ↩
+          </button>
+          <button
+            type="button"
+            class="btn-toolbar"
+            @click="execCmd('redo')"
+            title="Redo"
           >
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="6" y1="12" x2="18" y2="12" />
-            <line x1="4" y1="18" x2="20" y2="18" />
-          </svg>
-        </button>
-        <button
-          type="button"
-          class="btn-toolbar"
-          @click="execCmd('justifyRight')"
-          title="Rata Kanan"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="9" y1="12" x2="21" y2="12" />
-            <line x1="6" y1="18" x2="21" y2="18" />
-          </svg>
-        </button>
-        <span class="divider">|</span>
+            ↪
+          </button>
+          <span class="divider">|</span>
 
-        <!-- Lists -->
-        <button
-          type="button"
-          class="btn-toolbar"
-          @click="execCmd('insertUnorderedList')"
-          title="Bullet List"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
+          <select class="select-toolbar" @change="applyFormat">
+            <option value="">Formats</option>
+            <option value="h1">Heading 1</option>
+            <option value="h2">Heading 2</option>
+            <option value="h3">Heading 3</option>
+            <option value="p">Paragraph</option>
+          </select>
+          <span class="divider">|</span>
+
+          <button
+            type="button"
+            class="btn-toolbar font-bold"
+            @click="execCmd('bold')"
+            title="Bold"
           >
-            <line x1="9" y1="6" x2="20" y2="6" />
-            <line x1="9" y1="12" x2="20" y2="12" />
-            <line x1="9" y1="18" x2="20" y2="18" />
-            <circle cx="4" cy="6" r="1.5" fill="currentColor" />
-            <circle cx="4" cy="12" r="1.5" fill="currentColor" />
-            <circle cx="4" cy="18" r="1.5" fill="currentColor" />
-          </svg>
-        </button>
-        <button
-          type="button"
-          class="btn-toolbar"
-          @click="execCmd('insertOrderedList')"
-          title="Numbered List"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
+            B
+          </button>
+          <button
+            type="button"
+            class="btn-toolbar italic"
+            @click="execCmd('italic')"
+            title="Italic"
           >
-            <line x1="10" y1="6" x2="21" y2="6" />
-            <line x1="10" y1="12" x2="21" y2="12" />
-            <line x1="10" y1="18" x2="21" y2="18" />
-          </svg>
-        </button>
+            I
+          </button>
+          <button
+            type="button"
+            class="btn-toolbar underline"
+            @click="execCmd('underline')"
+            title="Underline"
+          >
+            U
+          </button>
+          <span class="divider">|</span>
+
+          <button
+            type="button"
+            class="btn-toolbar"
+            @click="insertLink"
+            title="Insert Link"
+          >
+            🔗
+          </button>
+          <button
+            type="button"
+            class="btn-toolbar"
+            @click="execCmd('removeFormat')"
+            title="Remove Format"
+          >
+            ✕
+          </button>
+          <span class="divider">|</span>
+
+          <!-- Alignment -->
+          <button
+            type="button"
+            class="btn-toolbar"
+            @click="execCmd('justifyLeft')"
+            title="Rata Kiri"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="15" y2="12" />
+              <line x1="3" y1="18" x2="18" y2="18" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="btn-toolbar"
+            @click="execCmd('justifyCenter')"
+            title="Tengah"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="6" y1="12" x2="18" y2="12" />
+              <line x1="4" y1="18" x2="20" y2="18" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="btn-toolbar"
+            @click="execCmd('justifyRight')"
+            title="Rata Kanan"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="9" y1="12" x2="21" y2="12" />
+              <line x1="6" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+          <span class="divider">|</span>
+
+          <!-- Lists -->
+          <button
+            type="button"
+            class="btn-toolbar"
+            @click="execCmd('insertUnorderedList')"
+            title="Bullet List"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="9" y1="6" x2="20" y2="6" />
+              <line x1="9" y1="12" x2="20" y2="12" />
+              <line x1="9" y1="18" x2="20" y2="18" />
+              <circle cx="4" cy="6" r="1.5" fill="currentColor" />
+              <circle cx="4" cy="12" r="1.5" fill="currentColor" />
+              <circle cx="4" cy="18" r="1.5" fill="currentColor" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="btn-toolbar"
+            @click="execCmd('insertOrderedList')"
+            title="Numbered List"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="10" y1="6" x2="21" y2="6" />
+              <line x1="10" y1="12" x2="21" y2="12" />
+              <line x1="10" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Visibility Dropdown -->
+        <div class="flex items-center gap-2">
+          <select
+            v-model="visibility"
+            @change="emitData"
+            class="select-toolbar min-w-[100px]"
+          >
+            <option :value="0">Public</option>
+            <option :value="1">Internal</option>
+            <option :value="2">Private</option>
+          </select>
+        </div>
       </div>
 
       <!-- ── CONTENTEDITABLE EDITOR ── -->
