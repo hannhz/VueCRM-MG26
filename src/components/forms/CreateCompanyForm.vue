@@ -115,6 +115,7 @@ export default {
         latitude: null,
         longitude: null,
         photos: [],
+        documents: [],
         audioBlob: null,
       },
       tempDocs: {
@@ -191,6 +192,7 @@ export default {
       saveContactAssociationCompany: "company/saveContactAssociationCompany",
       saveDealAssociationCompany: "company/saveDealAssociationCompany",
       fetchcompanybyid: "company/fetchcompanybyid",
+      saveNote: "history/saveNote",
     }),
 
     onContactassocSave(action, data) {
@@ -239,7 +241,6 @@ export default {
               "Gagal menyimpan hubungan contact",
           );
         });
-
     },
 
     setFormData(data) {
@@ -551,80 +552,81 @@ export default {
           latitude: null,
           longitude: null,
           photos: [],
+          documents: [],
           audioBlob: null,
         };
         this.editingItemIndex = null;
       }
       this.isNoteDrawerOpen = true;
     },
-    openDocDrawer(editData = null, index = null) {
-      if (editData) {
-        this.tempDocs = { ...editData };
-        this.editingItemIndex = index;
-      } else {
-        this.tempDocs = {
-          description: "",
-          fileSource: "local",
-          files: [],
-        };
-        this.editingItemIndex = null;
-      }
-      this.isDocDrawerOpen = true;
+
+    buildFormDatanote(data) {
+      const fd = new FormData();
+
+      // ─── BASIC FIELD ─────────────────────
+      fd.append("noteable_type", data.noteable_type);
+      fd.append("noteable_id", data.noteable_id);
+      fd.append("body", data.body || "");
+      fd.append("gps_address", data.gps_address || "");
+      fd.append("latitude", data.latitude || "");
+      fd.append("longitude", data.longitude || "");
+
+      // ─── PHOTOS ─────────────────────────
+      (data.photos || []).forEach((p) => {
+        if (p.file) {
+          fd.append("photos[]", p.file);
+        }
+      });
+
+      // ─── DOCUMENTS ──────────────────────
+      (data.documents || []).forEach((d) => {
+        if (d.file instanceof File) {
+          fd.append("documents[]", d.file);
+        }
+      });
+
+      return fd;
     },
+
     saveNoteFromDrawer() {
-      if (!this.tempNoteData.body && this.tempNoteData.photos.length === 0) {
-        alertService.toastWarn("Note masih kosong");
-        return;
-      }
+      // if (!this.tempNoteData.body && this.tempNoteData.photos.length === 0) {
+      //   alertService.toastWarn("Note masih kosong");
+      //   return;
+      // }
 
       const item = {
-        type: "note",
-        timestamp: new Date().toISOString(),
+        noteable_type: "CM",
+        noteable_id: this.companyid,
         ...this.tempNoteData,
       };
+      console.log("Saving note with data:", item);
+      const formData = this.buildFormDatanote(item);
+      // for (let pair of formData.entries()) {
+      //   console.log(pair[0], pair[1]);
+      // }
 
-      if (this.editingItemIndex !== null) {
-        this.historyitems[this.editingItemIndex] = item;
-      } else {
-        this.historyitems.unshift(item);
-      }
+      this.saveNote(formData);
 
-      // Sync with main form state for persistence
-      const latestNote = this.historyitems.find((h) => h.type === "note");
-      if (latestNote) {
-        this.formData.noteData = { ...latestNote };
-      }
+      // let formdata = new FormData();
+      // formdata.append("noteable_type", "CM");
+      // formdata.append("noteable_id", this.companyid);
+      // formdata.append("body", this.tempNoteData.body);
+      // formdata.append("latitude", this.tempNoteData.latitude);
+      // formdata.append("longitude", this.tempNoteData.longitude);
+      // // fd.append("noteData[body]", data.body || "");
+      // // fd.append("noteData[latitude]", data.latitude || "");
+      // // fd.append("noteData[longitude]", data.longitude || "");
+      // (this.tempNoteData.photos || []).forEach(
+      //   (p) => p.file && formdata.append("photos", p.file),
+      // );
+      // (this.tempNoteData.documents || []).forEach(
+      //   (d) => d.file && formdata.append("documents", d.file),
+      // );
+      // formdata.append(this.tempNoteData);
 
-      this.isNoteDrawerOpen = false;
-      alertService.toastSuccess("Catatan ditambahkan ke histori");
+      // this.saveNote(this.tempNoteData);
     },
-    saveDocFromDrawer() {
-      if (this.tempDocs.files.length === 0 && !this.tempDocs.description) {
-        alertService.toastWarn("Dokumen masih kosong");
-        return;
-      }
 
-      const item = {
-        type: "doc",
-        timestamp: new Date().toISOString(),
-        ...this.tempDocs,
-      };
-
-      if (this.editingItemIndex !== null) {
-        this.historyitems[this.editingItemIndex] = item;
-      } else {
-        this.historyitems.unshift(item);
-      }
-
-      // Sync with main form state for persistence
-      const latestDoc = this.historyitems.find((h) => h.type === "doc");
-      if (latestDoc) {
-        this.formData.docs = { ...latestDoc };
-      }
-
-      this.isDocDrawerOpen = false;
-      alertService.toastSuccess("Dokumen ditambahkan ke histori");
-    },
     handleHistoryEdit({ item, index }) {
       if (item.type === "note") {
         this.openNoteDrawer(item, index);
@@ -1083,49 +1085,6 @@ export default {
         </button>
         <button
           @click="saveNoteFromDrawer"
-          class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
-        >
-          Simpan Ke Histori
-        </button>
-      </div>
-    </div>
-  </Transition>
-
-  <!-- Docs Drawer POPUP -->
-  <Transition name="slide">
-    <div
-      v-if="isDocDrawerOpen"
-      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[60] flex flex-col"
-    >
-      <div
-        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
-      >
-        <h2 class="text-xl font-bold text-dark-base">
-          {{ editingItemIndex !== null ? "Edit Document" : "Tambah Document" }}
-        </h2>
-        <button
-          @click="isDocDrawerOpen = false"
-          class="p-2 hover:bg-light-base rounded-lg transition-colors"
-        >
-          <X :size="20" class="text-sub-text" />
-        </button>
-      </div>
-
-      <div class="flex-1 overflow-y-auto p-6">
-        <DocsEditor v-model="tempDocs" />
-      </div>
-
-      <div
-        class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
-      >
-        <button
-          @click="isDocDrawerOpen = false"
-          class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
-        >
-          Cancel
-        </button>
-        <button
-          @click="saveDocFromDrawer"
           class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
         >
           Simpan Ke Histori

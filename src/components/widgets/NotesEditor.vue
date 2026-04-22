@@ -24,6 +24,7 @@ export default {
         longitude: null,
         photos: [],
         audioBlob: null,
+        visibility: "0",
       }),
     },
     // Props identitas parent record (untuk dikirim ke Laravel)
@@ -55,7 +56,9 @@ export default {
       gpsAddress: null,
       coords: { lat: null, lng: null },
       photos: [], // langsung array of File
-      photoPreviews: [], // pisahkan untuk preview 
+      documents: [], // { id, name, file, url }
+      isDragging: false,
+      photoPreviews: [], // pisahkan untuk preview
       audioBlob: null, // Blob hasil rekaman
 
       // Recording state
@@ -64,7 +67,7 @@ export default {
       recInterval: null,
       mediaRecorder: null,
       audioChunks: [],
-
+      visibility: 0,
       // Audio playback preview
       audioPreviewUrl: null,
 
@@ -102,6 +105,21 @@ export default {
         typeof p === "string" ? { id: Math.random(), src: p, file: null } : p,
       );
     }
+
+    if (Array.isArray(this.noteData.documents)) {
+      this.documents = this.noteData.documents.map((d) =>
+        typeof d === "string"
+          ? { id: Math.random(), name: d.split("/").pop(), url: d, file: null }
+          : d,
+      );
+    }
+
+    if (this.noteData.visibility) {
+      this.visibility = this.noteData.visibility;
+    }
+
+    window.addEventListener("dragover", (e) => e.preventDefault());
+    window.addEventListener("drop", (e) => e.preventDefault());
   },
 
   methods: {
@@ -113,8 +131,124 @@ export default {
         latitude: this.coords.lat,
         longitude: this.coords.lng,
         photos: this.photos, // array { id, src, file }
+        documents: this.documents,
         audioBlob: this.audioBlob, // Blob | null
+        visibility: this.visibility,
       });
+    },
+
+    async handleDroppedFiles(files) {
+      for (const file of files) {
+        try {
+          // IMAGE
+          if (file.type.startsWith("image/")) {
+            const options = {
+              maxSizeMB: 1,
+              maxWidthOrHeight: 1024,
+              useWebWorker: true,
+              fileType: "image/webp",
+            };
+            const compressedBlob = await imageCompression(file, options);
+            const compressedFile = new File(
+              [compressedBlob],
+              file.name, // 🔥 ini kuncinya
+              { type: compressedBlob.type },
+            );
+            const previewUrl = URL.createObjectURL(compressedFile);
+
+            this.photos.push({
+              id: Date.now() + Math.random(),
+              src: previewUrl,
+              file: compressedFile,
+            });
+          }
+
+          // DOCUMENT
+          else {
+            if (file.size > 10 * 1024 * 1024) {
+              alert("File terlalu besar (max 10MB)");
+              continue;
+            }
+
+            const url = URL.createObjectURL(file);
+
+            this.documents.push({
+              id: Date.now() + Math.random(),
+              name: file.name,
+              file: file,
+              url: url,
+            });
+          }
+        } catch (err) {
+          console.error("Drop error:", err);
+        }
+      }
+
+      this.emitData();
+    },
+
+    onDragOver(e) {
+      e.preventDefault();
+      this.isDragging = true;
+    },
+
+    onDragLeave(e) {
+      e.preventDefault();
+      this.isDragging = false;
+    },
+
+    async onDrop(e) {
+      e.preventDefault();
+      this.isDragging = false;
+
+      const files = Array.from(e.dataTransfer.files);
+
+      if (!files.length) return;
+
+      await this.handleDroppedFiles(files);
+    },
+
+    triggerDocument() {
+      this.$refs.documentInput.click();
+    },
+
+    onDocumentSelected(event) {
+      const files = Array.from(event.target.files);
+
+      for (const file of files) {
+        try {
+          // Validasi size (optional)
+          if (file.size > 10 * 1024 * 1024) {
+            alert("File terlalu besar (max 10MB)");
+            continue;
+          }
+
+          const url = URL.createObjectURL(file);
+
+          this.documents.push({
+            id: Date.now() + Math.random(),
+            name: file.name,
+            file: file,
+            url: url,
+          });
+        } catch (err) {
+          console.error("Document error:", err);
+        }
+      }
+
+      this.emitData();
+      event.target.value = "";
+    },
+
+    removeDocument(index) {
+      const doc = this.documents[index];
+
+      if (doc?.url) {
+        URL.revokeObjectURL(doc.url); // penting biar gak memory leak
+      }
+
+      this.documents.splice(index, 1);
+      this.emitData();
     },
 
     // ─── TOOLBAR ──────────────────────────────────────────────────────────────
@@ -253,17 +387,22 @@ export default {
             fileType: "image/webp",
           };
 
-          const compressedFile = await imageCompression(file, options);
+          const compressedBlob = await imageCompression(file, options);
+
+          const compressedFile = new File(
+            [compressedBlob],
+            file.name, // 🔥 ini kuncinya
+            { type: compressedBlob.type },
+          );
 
           // ✅ Generate preview URL immediately and store consistently
           const previewUrl = URL.createObjectURL(compressedFile);
-          
+
           this.photos.push({
             id: Date.now() + Math.random(),
             src: previewUrl,
-            file: compressedFile
+            file: compressedFile,
           });
-
         } catch (error) {
           console.error("Compress error:", error);
         }
@@ -292,7 +431,7 @@ export default {
 
       return "";
     },
-    
+
     removePhoto(index) {
       const photo = this.photos[index];
 
@@ -596,8 +735,12 @@ export default {
         ref="editor"
         contenteditable="true"
         class="editor-content w-full px-4 py-3 text-sm text-sub-text"
+        :class="{ 'drag-active': isDragging }"
         data-placeholder="Tulis catatan..."
         @input="onEditorInput"
+        @dragover="onDragOver"
+        @dragleave="onDragLeave"
+        @drop="onDrop"
       ></div>
 
       <!-- ── GPS LOADING ── -->
@@ -684,6 +827,35 @@ export default {
         </div>
       </div>
 
+      <!-- ── DOCUMENT LIST ── -->
+      <div
+        v-if="documents.length"
+        class="flex flex-col gap-2 px-4 py-3 border-t border-outline"
+      >
+        <div
+          v-for="(doc, index) in documents"
+          :key="doc.id"
+          class="flex items-center gap-2 text-sm border rounded px-2 py-1"
+        >
+          📄
+          <a
+            :href="doc.url"
+            target="_blank"
+            class="flex-1 truncate text-blue-600"
+          >
+            {{ doc.name }}
+          </a>
+
+          <button
+            type="button"
+            @click="removeDocument(index)"
+            class="text-red-500 text-xs"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
       <!-- ── AUDIO PREVIEW (setelah rekaman selesai) ── -->
       <div
         v-if="audioPreviewUrl && !isRecording"
@@ -752,6 +924,22 @@ export default {
           @change="onPhotoSelected"
         />
 
+        <button type="button" class="action-btn" @click="triggerDocument">
+          📄 Tambah Dokumen
+          <span v-if="documents.length" class="badge">{{
+            documents.length
+          }}</span>
+        </button>
+
+        <input
+          ref="documentInput"
+          type="file"
+          multiple
+          class="hidden"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+          @change="onDocumentSelected"
+        />
+
         <button
           type="button"
           class="action-btn"
@@ -761,6 +949,20 @@ export default {
           <Mic :size="14" />
           {{ isRecording ? "Stop Rekaman" : "Mulai Merekam" }}
         </button>
+
+        <div class="px-4 py-2 border-t border-outline flex items-center gap-2">
+          <label class="text-sm text-gray-600">Visibility:</label>
+
+          <select
+            v-model="visibility"
+            @change="emitData"
+            class="border border-gray-300 rounded px-2 py-1 text-sm"
+          >
+            <option value="0">Public</option>
+            <option value="1">Internal</option>
+            <option value="2">Private</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>
@@ -768,6 +970,11 @@ export default {
 
 <style scoped>
 /* ── Contenteditable placeholder ── */
+.drag-active {
+  background: #eff6ff;
+  border: 2px dashed #3b82f6;
+}
+
 .editor-content {
   min-height: 120px;
   line-height: 1.6;
