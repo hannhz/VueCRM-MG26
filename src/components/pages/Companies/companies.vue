@@ -779,7 +779,8 @@ export default {
       @submit="
         (data) => {
           console.log('Company added:', data);
-          showCreateCompanyForm = false;
+          // showCreateCompanyForm = false;
+          // showDetailDataCompany = true;
           showDetailForm = false;
           fetchData(); // 🔥 Refresh data after submit
         }

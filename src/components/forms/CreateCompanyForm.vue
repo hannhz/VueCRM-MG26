@@ -434,7 +434,60 @@ export default {
     },
 
     handleClose() {
-      this.$emit("close");
+      ((this.formData = {
+        company_name: "",
+        company_owner: "",
+        owner: "",
+        description: "",
+        email: "",
+        telephone: "",
+        website: "",
+        industry: "",
+        source: "",
+        address: "",
+        country: "",
+        province: "",
+        city: "",
+        pos_code: "",
+        type: "",
+        // notes: "",
+        dealsassoc: [],
+        contactassoc: [],
+        task: {
+          name: "",
+          content: "",
+          status: "",
+          dueDate: "",
+          time: "",
+          priority: "",
+        },
+
+        docs: {
+          description: "",
+          fileSource: "",
+          files: [],
+        },
+        noteData: {
+          body: "",
+          gps_address: null,
+          latitude: null,
+          longitude: null,
+          photos: [], // [{ id, src (base64), file (File object) }]
+          audioBlob: null, // Blob audio
+        },
+      }),
+        (this.tempNoteData = {
+          idnote: null,
+          body: "",
+          gps_address: null,
+          latitude: null,
+          longitude: null,
+          photos: [],
+          documents: [],
+          audioBlob: null,
+          visibility: 0,
+        }),
+        this.$emit("close"));
     },
 
     handleSave() {
@@ -587,7 +640,10 @@ export default {
         } else if (typeof p.src === "string") {
           // Existing photo
           existing.push({
-            name: p.src.split("/").pop().replace(/^\d+_[^_]+_/, ""),
+            name: p.src
+              .split("/")
+              .pop()
+              .replace(/^\d+_[^_]+_/, ""),
             path: p.src,
             type: "photo",
           });
@@ -615,7 +671,6 @@ export default {
       return fd;
     },
 
-
     saveNoteFromDrawer() {
       // if (!this.tempNoteData.body && this.tempNoteData.photos.length === 0) {
       //   alertService.toastWarn("Note masih kosong");
@@ -634,7 +689,6 @@ export default {
       for (let pair of formData.entries()) {
         console.log(pair[0], pair[1]);
       }
-
 
       this.saveNote(formData)
         .then(() => {
@@ -707,7 +761,6 @@ export default {
             })),
           visibility: item.visibility || "0",
         };
-
 
         console.log("Editing note with data:", editData);
 
@@ -1269,5 +1322,3 @@ select:-webkit-autofill:focus {
   -webkit-text-fill-color: #1c2434 !important;
 }
 </style>
-
-
