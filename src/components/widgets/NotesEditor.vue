@@ -5,19 +5,21 @@ import {
   MapPin,
   Camera,
   Mic,
+  FileText,
 } from "lucide-vue-next";
 import imageCompression from "browser-image-compression";
 
 export default {
   name: "NotesEditor",
 
-  components: { ChevronDown, ChevronRight, MapPin, Camera, Mic },
+  components: { ChevronDown, ChevronRight, MapPin, Camera, Mic, FileText },
 
   props: {
     // v-model dari parent untuk seluruh data notes
     noteData: {
       type: Object,
       default: () => ({
+        idnote:null,
         body: "",
         gps_address: null,
         latitude: null,
@@ -98,6 +100,12 @@ export default {
         lat: this.noteData.latitude,
         lng: this.noteData.longitude,
       };
+
+      // Jika alamat masih berupa koordinat (misal: "Lat, Long"), coba terjemahkan ke alamat asli
+      const coordRegex = /^-?\d+\.\d+,\s*-?\d+\.\d+$/;
+      if (coordRegex.test(this.gpsAddress) && this.coords.lat && this.coords.lng) {
+        this.reverseGeocode(this.coords.lat, this.coords.lng);
+      }
     }
     if (Array.isArray(this.noteData.photos)) {
       // Hydrate preview foto jika dari server (URL string)
@@ -107,12 +115,18 @@ export default {
     }
 
     if (Array.isArray(this.noteData.documents)) {
-      this.documents = this.noteData.documents.map((d) =>
-        typeof d === "string"
-          ? { id: Math.random(), name: d.split("/").pop(), url: d, file: null }
-          : d,
-      );
+      this.documents = this.noteData.documents.map((d) => {
+        if (typeof d === "string") {
+          const url = d;
+          let filename = url.split("/").pop();
+          // Bersihkan prefix timestamp dan uniqid (misal: 1776844654_69e87f6e317cb_)
+          filename = filename.replace(/^\d+_[^_]+_/, "");
+          return { id: Math.random(), name: filename, url: url, file: null };
+        }
+        return d;
+      });
     }
+
 
     if (this.noteData.visibility) {
       this.visibility = this.noteData.visibility;
@@ -134,6 +148,7 @@ export default {
         documents: this.documents,
         audioBlob: this.audioBlob, // Blob | null
         visibility: this.visibility,
+        idnote: this.noteData.idnote,
       });
     },
 
@@ -270,6 +285,22 @@ export default {
     },
 
     // ─── GPS ──────────────────────────────────────────────────────────────────
+    async reverseGeocode(lat, lng) {
+      this.gpsLoading = true;
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+        );
+        const data = await res.json();
+        this.gpsAddress =
+          data.display_name ?? `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      } catch {
+        this.gpsAddress = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      } finally {
+        this.gpsLoading = false;
+        this.emitData();
+      }
+    },
     addGPS() {
       if (!navigator.geolocation) {
         alert("Browser tidak mendukung Geolocation.");
@@ -282,20 +313,7 @@ export default {
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
           };
-          // Reverse geocoding pakai Nominatim (gratis, tanpa API key)
-          try {
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`,
-            );
-            const data = await res.json();
-            this.gpsAddress =
-              data.display_name ??
-              `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
-          } catch {
-            this.gpsAddress = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
-          }
-          this.gpsLoading = false;
-          this.emitData();
+          await this.reverseGeocode(this.coords.lat, this.coords.lng);
         },
         (err) => {
           this.gpsLoading = false;
@@ -304,6 +322,7 @@ export default {
         { enableHighAccuracy: true, timeout: 10000 },
       );
     },
+
     removeGPS() {
       this.gpsAddress = null;
       this.coords = { lat: null, lng: null };
@@ -826,11 +845,11 @@ export default {
           :key="doc.id"
           class="flex items-center gap-2 text-sm border rounded px-2 py-1"
         >
-          📄
+          <FileText :size="14" class="text-blue-500 flex-shrink-0" />
           <a
             :href="doc.url"
             target="_blank"
-            class="flex-1 truncate text-blue-600"
+            class="flex-1 truncate text-blue-600 hover:underline"
           >
             {{ doc.name }}
           </a>
@@ -914,7 +933,8 @@ export default {
         />
 
         <button type="button" class="action-btn" @click="triggerDocument">
-          📄 Tambah Dokumen
+          <FileText :size="14" />
+          Tambah Dokumen
           <span v-if="documents.length" class="badge">{{
             documents.length
           }}</span>

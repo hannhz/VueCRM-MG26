@@ -51,12 +51,22 @@ export default {
       historyDisplay: "history/history",
     }),
     displayItems() {
-      // Prioritize store history if we have noteable identifiers, else fallback to items prop
-      if (this.noteableType && this.noteableId) {
-        return this.historyDisplay || [];
-      }
-      return this.items;
+      // Use mapped store history if identifiers exist, else use items prop
+      const source = (this.noteableType && this.noteableId) 
+        ? (this.historyDisplay || []) 
+        : (this.items || []);
+
+      return source.map(item => {
+        // Robust mapping for database fields
+        return {
+          ...item,
+          type: item.type || (item.parent_type === 'CM' ? 'note' : null) || 'note',
+          body: item.notes || item.body || item.content || item.description || '',
+          timestamp: item.created_at || item.timestamp || null
+        };
+      });
     },
+
   },
 
   watch: {
@@ -146,7 +156,7 @@ export default {
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="!items || items.length === 0" class="flex flex-col items-center justify-center py-20 text-center px-10">
+      <div v-else-if="!displayItems || displayItems.length === 0" class="flex flex-col items-center justify-center py-20 text-center px-10">
         <div class="w-16 h-16 bg-light-base rounded-full flex items-center justify-center mb-4">
           <MessageSquare :size="32" class="text-outline" />
         </div>
@@ -184,7 +194,7 @@ export default {
               </div>
               
               <!-- Actions -->
-              <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div class="flex items-center gap-1">
                 <button 
                   type="button"
                   @click="$emit('edit', { item, index })" 

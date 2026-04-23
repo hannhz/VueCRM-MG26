@@ -1400,7 +1400,7 @@ export default {
 /* new style */
 
 :deep(.dx-datagrid) {
-  font-family: "DM Sans", "Segoe UI", sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 14px;
   border: none !important;
   background: #fff;

@@ -110,6 +110,7 @@ export default {
       isDocDrawerOpen: false,
       editingItemIndex: null,
       tempNoteData: {
+        idnote: null,
         body: "",
         gps_address: null,
         latitude: null,
@@ -544,11 +545,13 @@ export default {
 
     // ─── HISTORY & DRAWER METHODS ──────────────────────────────────────────
     openNoteDrawer(editData = null, index = null) {
+      console.log("Opening note drawer with data:", editData);
       if (editData) {
         this.tempNoteData = { ...editData };
         this.editingItemIndex = index;
       } else {
         this.tempNoteData = {
+          idnote: null,
           body: "",
           gps_address: null,
           latitude: null,
@@ -574,6 +577,7 @@ export default {
       fd.append("longitude", data.longitude || "");
       fd.append("visibility", data.visibility ?? 0);
       fd.append("choice", data.choice || "I");
+      fd.append("idnote", data.idnote ?? null);
 
       // ─── PHOTOS ─────────────────────────
       (data.photos || []).forEach((p) => {
@@ -597,17 +601,20 @@ export default {
       //   alertService.toastWarn("Note masih kosong");
       //   return;
       // }
+      const isUpdate = !!this.tempNoteData.idnote;
 
       const item = {
         noteable_type: "CM",
         noteable_id: this.companyid,
+        // id:
         ...this.tempNoteData,
+        choice: isUpdate ? "U" : "I",
       };
-      console.log("Saving note with data:", item);
       const formData = this.buildFormDatanote(item);
-      // for (let pair of formData.entries()) {
-      //   console.log(pair[0], pair[1]);
-      // }
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+
 
       this.saveNote(formData)
         .then(() => {
@@ -621,7 +628,9 @@ export default {
         })
         .catch((err) => {
           alertService.error(
-            err.response?.data?.message || err.message || "Gagal menyimpan catatan",
+            err.response?.data?.message ||
+              err.message ||
+              "Gagal menyimpan catatan",
           );
         });
 
@@ -647,14 +656,83 @@ export default {
 
     handleHistoryEdit({ item, index }) {
       if (item.type === "note") {
-        this.openNoteDrawer(item, index);
+        let attachments = [];
+        try {
+          if (typeof item.attachment === "string" && item.attachment !== "") {
+            attachments = JSON.parse(item.attachment);
+          } else if (Array.isArray(item.attachment)) {
+            attachments = item.attachment;
+          }
+        } catch (e) {
+          console.error("Failed to parse attachments for edit", e);
+        }
+
+        const editData = {
+          idnote: item.id,
+          body: item.notes || item.body || "",
+          latitude: item.lat,
+          longitude: item.lang,
+          gps_address:
+            item.lat && item.lang ? `${item.lat}, ${item.lang}` : null,
+          photos: attachments
+            .filter((a) => a.typefile === "photo")
+            .map((a) => a.fileurl),
+          documents: attachments
+            .filter((a) => a.typefile === "document")
+            .map((a) => ({
+              id: Math.random(),
+              name: a.fileurl.split("/").pop(),
+              url: a.fileurl,
+              file: null,
+            })),
+          visibility: item.visibility || "0",
+        };
+
+        console.log("Editing note with data:", editData);
+
+        this.openNoteDrawer(editData, index);
       } else {
         this.openDocDrawer(item, index);
       }
     },
-    handleHistoryDelete(index) {
-      this.historyitems.splice(index, 1);
-      alertService.toastInfo("Item dihapus dari histori");
+
+    async handleHistoryDelete(index) {
+      // Get the item from the display list
+      const item = this.$refs.historyDetail?.displayItems[index];
+      if (!item) return;
+
+      const result = await alertService.confirm(
+        "Apakah Anda yakin ingin menghapus catatan ini?",
+        "Hapus Histori",
+        {
+          confirmButtonText: "Ya, hapus",
+          cancelButtonText: "Kembali",
+        },
+      );
+
+      if (result.isConfirmed) {
+        const formData = new FormData();
+        formData.append("choice", "D");
+        formData.append("idnote", item.id);
+        formData.append("noteable_type", "CM");
+        formData.append("noteable_id", this.companyid);
+
+        try {
+          await this.saveNote(formData);
+          alertService.success("Catatan berhasil dihapus");
+          // Refresh history list
+          this.acthistory({
+            noteable_type: "CM",
+            noteable_id: this.companyid,
+          });
+        } catch (err) {
+          alertService.error(
+            err.response?.data?.message ||
+              err.message ||
+              "Gagal menghapus catatan",
+          );
+        }
+      }
     },
 
     async handleRemoveContact(contactId) {
@@ -779,7 +857,7 @@ export default {
               : 'border-transparent text-sub-text hover:text-dark-base',
           ]"
         >
-          Detail
+          History
         </button>
       </div>
 
@@ -992,9 +1070,10 @@ export default {
           </div> -->
         </div>
 
-        <!-- Detail Tab (History) -->
+        <!-- History Tab (History) -->
         <div v-if="activeTab === 'detail'" class="p-6 h-full flex flex-col">
           <HistoryDetail
+            ref="historyDetail"
             :items="historyitems"
             :noteableType="'CM'"
             :noteableId="companyid"
@@ -1169,3 +1248,5 @@ select:-webkit-autofill:focus {
   -webkit-text-fill-color: #1c2434 !important;
 }
 </style>
+
+

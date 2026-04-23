@@ -30,3 +30,53 @@
 .ccard {
   @apply bg-white h-28 relative rounded-2xl p-6 flex items-center justify-between shadow-sm;
 }
+
+/* 🔥 Global V-Select Font Synchronization */
+.v-select,
+.v-select * {
+  font-family: "Montserrat", sans-serif !important;
+}
+
+.vs__dropdown-toggle {
+  border-radius: 0.5rem !important;
+  /* rounded-lg */
+  border-color: #e2e8f0 !important;
+  /* border-outline */
+  padding: 4px 0 !important;
+}
+
+.vs__selected {
+  font-size: 0.875rem !important;
+  /* text-sm */
+  color: #1c2434 !important;
+  /* text-dark-base */
+}
+
+.vs__search {
+  font-size: 0.875rem !important;
+  color: #1c2434 !important;
+}
+
+.vs__search::placeholder {
+  font-size: 0.875rem !important;
+  color: #94a3b8 !important;
+  /* text-sub-text placeholder */
+}
+
+.vs__dropdown-menu {
+  font-size: 0.875rem !important;
+  border-radius: 0.5rem !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.vs__dropdown-option {
+  padding: 8px 12px !important;
+  color: #1c2434 !important;
+}
+
+.vs__dropdown-option--highlight {
+  background: #eff1f6 !important;
+  /* light-base color */
+  color: #1c2434 !important;
+}

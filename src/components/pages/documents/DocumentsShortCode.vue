@@ -27,15 +27,15 @@
     </p>
     <div class="mt-8 flex flex-wrap justify-center gap-3">
       <span
-        class="px-3 py-1 bg-gray-100 rounded-md text-xs font-mono text-sub-text border border-gray-200"
+        class="px-3 py-1 bg-gray-100 rounded-md text-xs text-sub-text border border-gray-200"
         >[user_name]</span
       >
       <span
-        class="px-3 py-1 bg-gray-100 rounded-md text-xs font-mono text-sub-text border border-gray-200"
+        class="px-3 py-1 bg-gray-100 rounded-md text-xs text-sub-text border border-gray-200"
         >[company_name]</span
       >
       <span
-        class="px-3 py-1 bg-gray-100 rounded-md text-xs font-mono text-sub-text border border-gray-200"
+        class="px-3 py-1 bg-gray-100 rounded-md text-xs text-sub-text border border-gray-200"
         >[date_today]</span
       >
     </div>
