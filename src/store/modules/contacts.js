@@ -7,6 +7,8 @@ const { cookies } = useCookies();
 
 const state = {
   contacts: [],
+  sources: [],
+  status: [],
   pagination: {
     total: 0,
     current_page: 1,
@@ -24,6 +26,8 @@ const getters = {
   pagination: (state) => state.pagination,
   isLoading: (state) => state.isLoading,
   error: (state) => state.error,
+  getsources: (state) => state.sources, 
+  getstatus: (state) => state.status,
 };
 
 const normalizeContactData = (contact) => {
@@ -39,6 +43,12 @@ const normalizeContactData = (contact) => {
 };
 
 const mutations = {
+  setsources(state, mode) {
+    state.sources = mode;
+  },
+  setstatus(state, mode) {
+    state.status = mode;
+  },
   SET_VIEW_MODE(state, mode) {
     state.viewMode = mode;
   },
@@ -169,7 +179,7 @@ const actions = {
     for (const endpoint of endpoints) {
       try {
         const response = await api.post(endpoint, detailPayload, { headers });
-        await dispatch("fetchAllContacts").catch(() => { });
+        await dispatch("fetchAllContacts").catch(() => {});
         return response.data;
       } catch (error) {
         const status = error?.response?.status;
@@ -305,6 +315,69 @@ const actions = {
 
     return promise;
   },
+
+  fetchsources(context, data) {
+    context.commit("SET_LOADING", true);
+    context.commit("SET_ERROR", null);
+
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const response = await api.get(`contact/sources`, {
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
+          },
+        });
+        resolve(response.data);
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    promise
+      .then((data) => {
+        context.commit("setsources", data);
+        context.commit("SET_LOADING", false);
+      })
+      .catch((error) => {
+        context.commit("SET_ERROR", error.message);
+        context.commit("SET_LOADING", false);
+      });
+
+    return promise;
+  },
+
+  fetchstatus(context, data) {
+    context.commit("SET_LOADING", true);
+    context.commit("SET_ERROR", null);
+
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const response = await api.get(`contact/status`, {
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
+          },
+        });
+        resolve(response.data);
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    promise
+      .then((data) => {
+        context.commit("setstatus", data);
+        context.commit("SET_LOADING", false);
+      })
+      .catch((error) => {
+        context.commit("SET_ERROR", error.message);
+        context.commit("SET_LOADING", false);
+      });
+
+    return promise;
+  },
+
+
+
 };
 
 export default {

@@ -1197,6 +1197,8 @@ export default {
   <!-- Add Contact Full Form -->
   <AddContactForm
     :isOpen="showAddContactForm"
+    :companys_id="this.companyid"
+    :hideDetailTab="true"
     @close="showAddContactForm = false"
     @submit="handleContactSubmit"
   />

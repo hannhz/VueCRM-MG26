@@ -49,7 +49,7 @@
               </p>
             </div>
             <button
-              @click="$emit('remove',{contactassoc: [data.id]})"
+              @click="confirmRemove(data)"
               class="p-1.5 text-sub-text hover:text-red hover:bg-red/5 rounded-lg border border-outline bg-white shadow-sm transition-all active:scale-95 ml-2"
               title="Hapus Contact"
             >
@@ -93,9 +93,9 @@
 <script>
 import { Plus, Users, Trash2 } from "lucide-vue-next";
 import {mapActions, mapGetters} from "vuex";
-import FormBrowseDialog from "@/components/widgets/FormBrowseDialog.vue";
 import FormBrowse from "@/components/widgets/FormBrowse.vue";
 import ContactAssociationForm from "../assoc/contacts.vue";
+import { alertService } from "@/services/alertService";
 
 export default {
   name: "ContactSection",
@@ -127,11 +127,11 @@ export default {
   },
 
   computed: {
-    ...mapGetters({ "allContacts": "contacts/allContacts"}),
+    // ...mapGetters({ "allContacts": "contacts/allContacts"}),
   },
 
   methods: {
-    ...mapActions({"fetchAllContacts": "contacts/fetchAllContacts"}),
+    // ...mapActions({"fetchAllContacts": "contacts/fetchAllContacts"}),
 
     submit() {
       this.$emit("save", this.form);
@@ -145,7 +145,22 @@ export default {
     },
     async handletambahcontact() {
       this.openModal = true;
+      // this.fetchAllContacts();
 
+    },
+    confirmRemove(data) {
+      alertService.confirm(
+        "Data contact ini hanya akan dihapus dari daftar hubungan company ini, namun tetap akan tersedia di modul Contacts sebagai arsip.",
+        "Hapus Hubungan Contact?",
+        {
+          confirmButtonText: "Ya, Hapus",
+          cancelButtonText: "Kembali",
+        }
+      ).then((result) => {
+        if (result.isConfirmed) {
+          this.$emit("remove", { contactassoc: [data.id] });
+        }
+      });
     },
   },
 

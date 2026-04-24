@@ -239,6 +239,7 @@ export default {
       }
       // console.log("Toggling Companies with ID:", CompaniesId,index,newValue);
       this.Companiesassoc = newValue;
+      this.isCompaniesDropdownOpen = false;
     },
 
     isCompaniesSelected(id) {

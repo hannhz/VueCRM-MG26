@@ -56,7 +56,7 @@
           <v-select
             v-model="modelValue.kelurahan"
             :options="getkelurahan"
-            label="nm_kelurahan"
+            label="caption_kelurahan"
             :reduce="(opt) => opt.kd_kelurahan"
             placeholder="Select Kelurahan"
             @update:modelValue="onChangekelurahan"
@@ -65,8 +65,8 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-4">
-      <div>
+    <div class="grid gap-4">
+      <!-- <div>
         <label class="block text-sm font-medium text-dark-base mb-2"
           >Pos Code</label
         >
@@ -80,20 +80,29 @@
             placeholder="Select Kode Pos"
           />
         </div>
-      </div>
+      </div> -->
 
       <div>
         <label class="block text-sm font-medium text-dark-base mb-2"
           >Address</label
         >
-        <input
+        <!-- <input
           :value="currentValue.address || ''"
           type="text"
           placeholder="Address"
           :disabled="disabled"
           class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
           @input="emitValue({ address: $event.target.value })"
-        />
+        /> -->
+
+        <textarea
+          :value="currentValue.address || ''"
+          placeholder="Address"
+          :disabled="disabled"
+          rows="4"
+          class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+          @input="emitValue({ address: $event.target.value })"
+        ></textarea>
       </div>
     </div>
   </div>
@@ -288,7 +297,9 @@ export default {
     },
     onChangekelurahan(event) {
       console.log("Kelurahan changed:", event);
-      let thisdtkelurahan = this.getkelurahan.filter((kelurahan) => String(kelurahan.kd_kelurahan) === String(event));
+      let thisdtkelurahan = this.getkelurahan.filter(
+        (kelurahan) => String(kelurahan.kd_kelurahan) === String(event),
+      );
       this.modelValue.pos_code = thisdtkelurahan[0].kode_pos;
       this.actkodepos({ id: event });
     },
@@ -358,4 +369,3 @@ export default {
   },
 };
 </script>
-

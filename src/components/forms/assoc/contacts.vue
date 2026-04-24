@@ -240,6 +240,7 @@ export default {
       }
 
       this.contactassoc = newValue;
+      this.isContactDropdownOpen = false;
     },
 
     isContactSelected(id) {

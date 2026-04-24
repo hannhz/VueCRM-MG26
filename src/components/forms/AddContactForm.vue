@@ -53,6 +53,15 @@ export default {
       type: Object,
       default: () => ({}),
     },
+    companys_id:{
+      type:Number,
+      default:null,
+    },
+    hideDetailTab: {
+      type: Boolean,
+      default: false,
+    }
+
   },
 
   emits: ["close", "submit"],
@@ -69,6 +78,14 @@ export default {
     this.$store.dispatch("company/fetchAllcompany");
     this.$store.dispatch("deals/fetchAllDeals");
     this.applyDefaultOwner();
+
+    if(!this.getsources || this.getsources.length === 0) {
+      this.fetchsources({});
+    };
+
+    if(!this.getstatus || this.getstatus.length === 0) {
+      this.fetchstatus({});
+    };
 
     // Add click outside handler
     document.addEventListener("click", this.handleClickOutside);
@@ -216,6 +233,8 @@ export default {
       isLoading: "contacts/isLoading",
       allCompaniesData: "company/allcompany", // Ambil dari store
       allDealsData: "deals/allDeals", // Ambil dari store
+      getsources: "contacts/getsources",
+      getstatus: "contacts/getstatus",
     }),
     allCompanies() {
       return this.allCompaniesData || [];
@@ -281,6 +300,8 @@ export default {
   methods: {
     ...mapActions({
       saveContact: "contacts/createContact",
+      fetchsources: "contacts/fetchsources",
+      fetchstatus: "contacts/fetchstatus",
     }),
     applyDefaultOwner() {
       if (!this.formData.id_owner && this.currentUserId) {
@@ -396,13 +417,22 @@ export default {
 
       // Helper to extract body from various fields
       const getBody = (item) => {
-        return item.notes || item.body || item.descdocs || item.description || item.content || "";
+        return (
+          item.notes ||
+          item.body ||
+          item.descdocs ||
+          item.description ||
+          item.content ||
+          ""
+        );
       };
 
       // Process Notes
       let rawNotes = rawData.notes || rawData.note;
       if (typeof rawNotes === "string" && rawNotes.startsWith("[")) {
-        try { rawNotes = JSON.parse(rawNotes); } catch (e) {}
+        try {
+          rawNotes = JSON.parse(rawNotes);
+        } catch (e) {}
       }
 
       if (Array.isArray(rawNotes)) {
@@ -410,14 +440,20 @@ export default {
           let location = { address: null, latitude: null, longitude: null };
           try {
             if (n.location) {
-              location = typeof n.location === "string" ? JSON.parse(n.location) : n.location;
+              location =
+                typeof n.location === "string"
+                  ? JSON.parse(n.location)
+                  : n.location;
             }
           } catch (e) {}
 
           let photos = [];
           try {
             if (n.pathphoto) {
-              const parsed = typeof n.pathphoto === "string" ? JSON.parse(n.pathphoto) : n.pathphoto;
+              const parsed =
+                typeof n.pathphoto === "string"
+                  ? JSON.parse(n.pathphoto)
+                  : n.pathphoto;
               if (Array.isArray(parsed)) {
                 photos = parsed.map((p) => p.path || p);
               }
@@ -447,7 +483,9 @@ export default {
       // Process Docs
       let rawDocs = rawData.docs || rawData.docs_list || rawData.files;
       if (typeof rawDocs === "string" && rawDocs.startsWith("[")) {
-        try { rawDocs = JSON.parse(rawDocs); } catch (e) {}
+        try {
+          rawDocs = JSON.parse(rawDocs);
+        } catch (e) {}
       }
 
       if (Array.isArray(rawDocs)) {
@@ -459,7 +497,9 @@ export default {
               timestamp: d.created_at || d.update_at,
               body: getBody(d),
               fileSource: d.file_source || "local",
-              files: d.pathfile ? [{ name: d.pathfile.split("/").pop(), path: d.pathfile }] : [],
+              files: d.pathfile
+                ? [{ name: d.pathfile.split("/").pop(), path: d.pathfile }]
+                : [],
             });
           }
         });
@@ -514,11 +554,11 @@ export default {
         this.activeTab = "master";
         return false;
       }
-      if (!this.formData.status) {
-        toast.error("Status is required");
-        this.activeTab = "master";
-        return false;
-      }
+      // if (!this.formData.status) {
+      //   toast.error("Status is required");
+      //   this.activeTab = "master";
+      //   return false;
+      // }
       return true;
     },
     handleSaveAll() {
@@ -532,6 +572,7 @@ export default {
         const now = new Date().toISOString();
         const dataToSubmit = {
           ...this.formData,
+          company_id: this.companys_id,
           note: this.noteData?.body || "",
           notes: this.noteData?.body || "",
           noteData: this.noteData,
@@ -547,14 +588,15 @@ export default {
           created_at: now,
           updated_at: now,
         };
-        this.saveContact(dataToSubmit)
-          .then(() => {
+          this.saveContact(dataToSubmit)
+          .then((response) => {
             const msg = dataToSubmit.id
               ? "Contact berhasil diperbarui!"
               : "Contact berhasil ditambahkan!";
             toast.success(msg);
             this.handleReset();
             this.activeTab = "master";
+            this.$emit("submit", response);
             this.handleClose();
           })
           .catch((error) => {
@@ -816,6 +858,7 @@ export default {
         </button>
 
         <button
+          v-if="!hideDetailTab"
           type="button"
           @click="activeTab = 'detail'"
           :class="[
@@ -901,11 +944,11 @@ export default {
                   >
                     <option value="" disabled selected>Select Status</option>
                     <option
-                      v-for="status in statusList"
-                      :key="status.id"
-                      :value="status.id"
+                      v-for="status in getstatus"
+                      :key="status.value"
+                      :value="status.value"
                     >
-                      {{ status.name }}
+                      {{ status.label }}
                     </option>
                   </select>
                   <ChevronDown
@@ -956,8 +999,9 @@ export default {
                     v-model="formData.source"
                     class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                   >
+                    <option value="" disabled selected>Select Source</option>
                     <option
-                      v-for="option in sourceOptions"
+                      v-for="option in getsources"
                       :key="option.value"
                       :value="option.value"
                     >
@@ -1141,11 +1185,16 @@ export default {
       v-if="isNoteDrawerOpen"
       class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[60] flex flex-col"
     >
-      <div class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10">
+      <div
+        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
+      >
         <h2 class="text-xl font-bold text-dark-base">
           {{ editingItemIndex !== null ? "Edit Note" : "Tambah Note" }}
         </h2>
-        <button @click="isNoteDrawerOpen = false" class="p-2 hover:bg-light-base rounded-lg transition-colors">
+        <button
+          @click="isNoteDrawerOpen = false"
+          class="p-2 hover:bg-light-base rounded-lg transition-colors"
+        >
           <X :size="20" class="text-sub-text" />
         </button>
       </div>
@@ -1154,11 +1203,19 @@ export default {
         <NotesSection v-model:note-data="tempNoteData" />
       </div>
 
-      <div class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3">
-        <button @click="isNoteDrawerOpen = false" class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base">
+      <div
+        class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
+      >
+        <button
+          @click="isNoteDrawerOpen = false"
+          class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
+        >
           Cancel
         </button>
-        <button @click="saveNoteFromDrawer" class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover">
+        <button
+          @click="saveNoteFromDrawer"
+          class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
+        >
           Simpan Ke Histori
         </button>
       </div>
@@ -1171,11 +1228,16 @@ export default {
       v-if="isDocDrawerOpen"
       class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[60] flex flex-col"
     >
-      <div class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10">
+      <div
+        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
+      >
         <h2 class="text-xl font-bold text-dark-base">
           {{ editingItemIndex !== null ? "Edit Document" : "Tambah Document" }}
         </h2>
-        <button @click="isDocDrawerOpen = false" class="p-2 hover:bg-light-base rounded-lg transition-colors">
+        <button
+          @click="isDocDrawerOpen = false"
+          class="p-2 hover:bg-light-base rounded-lg transition-colors"
+        >
           <X :size="20" class="text-sub-text" />
         </button>
       </div>
@@ -1184,11 +1246,19 @@ export default {
         <DocsSection v-model="tempDocs" />
       </div>
 
-      <div class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3">
-        <button @click="isDocDrawerOpen = false" class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base">
+      <div
+        class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
+      >
+        <button
+          @click="isDocDrawerOpen = false"
+          class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
+        >
           Cancel
         </button>
-        <button @click="saveDocFromDrawer" class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover">
+        <button
+          @click="saveDocFromDrawer"
+          class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
+        >
           Simpan Ke Histori
         </button>
       </div>

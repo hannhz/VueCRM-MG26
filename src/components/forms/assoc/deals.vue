@@ -203,6 +203,7 @@ export default {
         newValue = this.dealsassoc.filter((id, i) => i !== index);
       }
       this.dealsassoc = newValue;
+      this.isDealDropdownOpen = false;
     },
 
     isDealSelected(id) {
