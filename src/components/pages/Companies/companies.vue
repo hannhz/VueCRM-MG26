@@ -12,7 +12,7 @@ import BulkAddCompanyForm from "../../forms/BulkAddCompanyForm.vue";
 import DetailForm from "../../forms/DetailFormDuplicate.vue";
 // import DetailDataCompany from "../../forms/DetailDataCompany.vue";
 import DetailDataCompany from "../../forms/CreateCompanyForm.vue";
-import { alertService,alertServicenew } from "@/services/alertService";
+import { alertService, alertServicenew } from "@/services/alertService";
 import {
   buildDetailFormPayload,
   getUpdateAction,
@@ -20,6 +20,79 @@ import {
 import { DxSelection } from "devextreme-vue/data-grid";
 
 import DataGrid from "@/components/widgets/DataGrid.vue";
+
+const AddressActionCell = {
+  props: {
+    data: {
+      type: Object,
+      default: () => ({}),
+    },
+    onEdit: {
+      type: Function,
+      required: true,
+    },
+    onDelete: {
+      type: Function,
+      required: true,
+    },
+  },
+  methods: {
+    handleEditClick() {
+      this.onEdit(this.data);
+    },
+    handleDeleteClick() {
+      this.onDelete(this.data);
+    },
+  },
+  template: `
+    <div class="flex items-center justify-center w-full py-0.5">
+      <div class="flex items-center gap-1.5">
+        <button
+          type="button"
+          class="inline-flex items-center justify-center w-7 h-7 rounded text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+          title="Edit"
+          @click.stop="handleEditClick"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="inline-flex items-center justify-center w-7 h-7 rounded text-red-500 hover:text-red-700 hover:bg-red-50"
+          title="Delete"
+          @click.stop="handleDeleteClick"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1v3M4 7h16"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  `,
+};
 
 export default {
   components: {
@@ -31,7 +104,8 @@ export default {
     DetailForm,
     DetailDataCompany,
     DataGrid,
-    DxSelection
+    DxSelection,
+    AddressActionCell,
   },
 
   data() {
@@ -109,7 +183,6 @@ export default {
       return sorted;
     },
 
-
     allSelected() {
       const ids = this.companies.map((c) => c.id).filter(Boolean);
       if (!ids.length) return false;
@@ -167,14 +240,35 @@ export default {
         { dataField: "Company_Owner", caption: "Company Owner", visible: true },
 
         { dataField: "Email", caption: "Email", visible: true },
-        { dataField: "Address", caption: "Address", visible: true },
+        {
+          dataField: "Address",
+          caption: "Address",
+          visible: true,
+        },
+        {
+          dataField: "__action",
+          caption: "Action",
+          visible: true,
+          width: 110,
+          alignment: "center",
+          cellTemplate: "address-action-template",
+        },
       ];
     },
 
-
-
+    companyCellTemplates() {
+      return [
+        {
+          name: "address-action-template",
+          component: AddressActionCell,
+          props: {
+            onEdit: this.handleRowEdit,
+            onDelete: this.handleRowDelete,
+          },
+        },
+      ];
+    },
   },
-
 
   mounted() {
     // this.fetchStatuses();
@@ -490,10 +584,10 @@ export default {
             this.showDetailForm = false;
             this.detailFormEntityId = null;
             return this.fetchAllcompany({
-          page: this.currentPage,
-          per_page: this.itemsPerPage,
-          search: this.searchQuery,
-        });
+              page: this.currentPage,
+              per_page: this.itemsPerPage,
+              search: this.searchQuery,
+            });
           })
           .catch((submitError) => {
             const message =
@@ -528,10 +622,10 @@ export default {
           this.detailFormEntityId = null;
           // Refresh data setelah save
           return this.fetchAllcompany({
-          page: this.currentPage,
-          per_page: this.itemsPerPage,
-          search: this.searchQuery,
-        });
+            page: this.currentPage,
+            per_page: this.itemsPerPage,
+            search: this.searchQuery,
+          });
         })
         .catch((error) => {
           const message =
@@ -549,7 +643,9 @@ export default {
 
     handleDeleteCompanies() {
       if (!this.selectedIds.length) {
-        return alertServicenew.warning("Pilih minimal satu company untuk dihapus");
+        return alertServicenew.warning(
+          "Pilih minimal satu company untuk dihapus",
+        );
       }
 
       alertService
@@ -571,6 +667,85 @@ export default {
         })
 
         .catch((error) => {
+          const status = error?.response?.status;
+          const message =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message;
+
+          alertService.error(
+            `Gagal menghapus company ${status ? `(Status ${status})` : ""}. ${
+              message || ""
+            }`,
+          );
+        });
+    },
+
+    resolveCompanyFromTemplate(templateOptions) {
+      if (!templateOptions) return null;
+
+      // DevExtreme template payload can be nested differently depending on renderer.
+      return (
+        templateOptions?.data?.data ||
+        templateOptions?.row?.data ||
+        templateOptions?.data ||
+        templateOptions
+      );
+    },
+
+    handleRowEdit(templateOptions) {
+      const company = this.resolveCompanyFromTemplate(templateOptions);
+      if (!company) return;
+      this.openCompanyDetail(company);
+    },
+
+    handleRowDelete(templateOptions) {
+      const company = this.resolveCompanyFromTemplate(templateOptions);
+      const companyId = company?.id;
+
+      if (!companyId) {
+        return alertService.error("ID company tidak ditemukan.");
+      }
+
+      const companyName =
+        company?.company_name || company?.["Company Name"] || "company ini";
+
+      alertService
+        .confirm(
+          "Hapus Company?",
+          `${companyName} akan dihapus secara permanen.`,
+        )
+        .then((confirmDelete) => {
+          if (!confirmDelete) return;
+          return this.deletecompany(companyId);
+        })
+        .then((result) => {
+          if (result === undefined) return;
+          this.selectedIds = this.selectedIds.filter((id) => id !== companyId);
+          alertService.success("Company berhasil dihapus");
+          return this.fetchData();
+        })
+        .catch(async (error) => {
+          // Backend may return 500 after delete due to response-query bug.
+          // Re-sync list first, then infer final result from actual data.
+          try {
+            await this.fetchData();
+          } catch (_syncError) {
+            // ignore sync error and continue with original error handling
+          }
+
+          const stillExists = (this.companies || []).some(
+            (item) => String(item?.id) === String(companyId),
+          );
+
+          if (!stillExists) {
+            this.selectedIds = this.selectedIds.filter(
+              (id) => id !== companyId,
+            );
+            alertService.success("Company berhasil dihapus");
+            return;
+          }
+
           const status = error?.response?.status;
           const message =
             error?.response?.data?.message ||
@@ -754,22 +929,70 @@ export default {
         @row-click="openCompanyDetail"
       /> -->
 
-
       <DataGrid
         :dataSource="tableCompanies"
         :columns="companyColumns"
+        :customCellTemplates="companyCellTemplates"
         :keyExpr="'id'"
         :selectedRowKeys="selectedIds"
         :rowRenderingMode="'standard'"
         @focused-row-changed="handleFocusedRowChanged"
         @selection-changed="handleSelectionChanged"
         :showActionColumn="false"
-        :disablecol="['tasks', 'location', 'pathphoto', 'id', 'contactassoc', 'dealsassoc', 'notes', 'task_name', 'desktask', 'statustask', 'assignee', 'due_date', 'task_time', 'prioritytask', 'docs', 'associated_contact', 'contactAssociation', 'contacts_id', 'contact_id', 'contact', 'contact_name', 'deals_id', 'deal_id', 'deal', 'deal_name', 'contact_email', 'contact_phone', 'industry', 'website', 'state', 'zip', 'country', 'phone', 'telephone_1', 'telephone_2', 'telephone_3', 'pos_code', 'source', 'dealsAssociation', 'description', 'file_source', 'file_url', 'pathfile', 'descdocs','owner','province','city','telephone','type']"
-
+        :disablecol="[
+          'tasks',
+          'location',
+          'pathphoto',
+          'id',
+          'contactassoc',
+          'dealsassoc',
+          'notes',
+          'task_name',
+          'desktask',
+          'statustask',
+          'assignee',
+          'due_date',
+          'task_time',
+          'prioritytask',
+          'docs',
+          'associated_contact',
+          'contactAssociation',
+          'contacts_id',
+          'contact_id',
+          'contact',
+          'contact_name',
+          'deals_id',
+          'deal_id',
+          'deal',
+          'deal_name',
+          'contact_email',
+          'contact_phone',
+          'industry',
+          'website',
+          'state',
+          'zip',
+          'country',
+          'phone',
+          'telephone_1',
+          'telephone_2',
+          'telephone_3',
+          'pos_code',
+          'source',
+          'dealsAssociation',
+          'description',
+          'file_source',
+          'file_url',
+          'pathfile',
+          'descdocs',
+          'owner',
+          'province',
+          'city',
+          'telephone',
+          'type',
+        ]"
       >
         <DxSelection mode="multiple" showCheckBoxesMode="always" />
       </DataGrid>
-
     </div>
 
     <!-- Add Company Form -->
@@ -836,7 +1059,6 @@ export default {
           fetchData(); // 🔥 Refresh data after submit
         }
       "
-
     />
   </div>
 </template>

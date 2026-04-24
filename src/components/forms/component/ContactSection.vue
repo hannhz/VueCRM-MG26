@@ -19,8 +19,6 @@
       </button>
     </div>
 
-    
-
     <!-- CARD -->
     <div class="border border-outline rounded-lg p-4 flex flex-col flex-1">
       <!-- HEADER -->
@@ -49,7 +47,7 @@
               </p>
             </div>
             <button
-              @click="$emit('remove',{contactassoc: [data.id]})"
+              @click="$emit('remove', { contactassoc: [data.id] })"
               class="p-1.5 text-sub-text hover:text-red hover:bg-red/5 rounded-lg border border-outline bg-white shadow-sm transition-all active:scale-95 ml-2"
               title="Hapus Contact"
             >
@@ -65,10 +63,17 @@
     </div>
 
     <!-- MODAL -->
-    <div v-if="openModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div class="bg-white rounded-xl p-6 w-[400px] shadow-xl">
-        <ContactAssociationForm v-model="form.contactassoc"/>
-        
+    <div
+      v-if="openModal"
+      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      @click="handleBackdropClick"
+    >
+      <div class="bg-white rounded-xl p-6 w-[400px] shadow-xl" @click.stop>
+        <ContactAssociationForm
+          ref="contactAssociationRef"
+          v-model="form.contactassoc"
+        />
+
         <!-- <h2 class="text-lg font-semibold mb-4">Tambah Contact</h2>
 
         <div class="space-y-3">
@@ -81,18 +86,20 @@
           <button @click="openModal = false" class="px-4 py-2 border rounded">
             Cancel
           </button>
-          <button @click="submit" class="px-4 py-2 bg-blue-600 text-white rounded">
+          <button
+            @click="submit"
+            class="px-4 py-2 bg-blue-600 text-white rounded"
+          >
             Save
           </button>
         </div>
-
       </div>
     </div>
   </div>
 </template>
 <script>
 import { Plus, Users, Trash2 } from "lucide-vue-next";
-import {mapActions, mapGetters} from "vuex";
+import { mapActions, mapGetters } from "vuex";
 import FormBrowseDialog from "@/components/widgets/FormBrowseDialog.vue";
 import FormBrowse from "@/components/widgets/FormBrowse.vue";
 import ContactAssociationForm from "../assoc/contacts.vue";
@@ -127,11 +134,20 @@ export default {
   },
 
   computed: {
-    ...mapGetters({ "allContacts": "contacts/allContacts"}),
+    ...mapGetters({ allContacts: "contacts/allContacts" }),
   },
 
   methods: {
-    ...mapActions({"fetchAllContacts": "contacts/fetchAllContacts"}),
+    ...mapActions({ fetchAllContacts: "contacts/fetchAllContacts" }),
+
+    handleBackdropClick() {
+      // Close nested layer first (quick form/dropdown), then close this modal.
+      const handledByChild =
+        this.$refs.contactAssociationRef?.closeTopLayer?.();
+      if (handledByChild) return;
+
+      this.openModal = false;
+    },
 
     submit() {
       this.$emit("save", this.form);
@@ -145,25 +161,17 @@ export default {
     },
     async handletambahcontact() {
       this.openModal = true;
-
     },
   },
-
 
   watch: {
     contacts(newVal) {
       console.log("Contacts updated:", newVal);
     },
 
-    form(e){
+    form(e) {
       console.log("Form updated:", e);
-    }
+    },
   },
-
-
-
-
-
-  
 };
 </script>

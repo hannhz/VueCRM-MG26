@@ -219,6 +219,20 @@ export default {
         this.isDealDropdownOpen = false;
       }
     },
+
+    closeTopLayer() {
+      if (this.showAddDealForm) {
+        this.showAddDealForm = false;
+        return true;
+      }
+
+      if (this.isDealDropdownOpen) {
+        this.isDealDropdownOpen = false;
+        return true;
+      }
+
+      return false;
+    },
   },
 };
 </script>

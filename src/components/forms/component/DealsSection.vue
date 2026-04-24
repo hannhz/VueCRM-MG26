@@ -19,7 +19,6 @@
       </button>
     </div>
 
-
     <!-- CARD -->
     <div class="border border-outline rounded-lg p-4 flex flex-col flex-1">
       <!-- HEADER -->
@@ -95,9 +94,13 @@
     <div
       v-if="openModal"
       class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      @click="handleBackdropClick"
     >
-      <div class="bg-white rounded-xl p-6 w-[400px] shadow-xl">
-        <dealAssociationForm v-model="form.dealassoc" />
+      <div class="bg-white rounded-xl p-6 w-[400px] shadow-xl" @click.stop>
+        <dealAssociationForm
+          ref="dealAssociationRef"
+          v-model="form.dealassoc"
+        />
 
         <!-- <h2 class="text-lg font-semibold mb-4">Tambah deal</h2>
 
@@ -164,6 +167,14 @@ export default {
 
   methods: {
     ...mapActions({ fetchAlldeals: "deals/fetchAlldeals" }),
+
+    handleBackdropClick() {
+      // Close nested layer first (add deal form/dropdown), then close this modal.
+      const handledByChild = this.$refs.dealAssociationRef?.closeTopLayer?.();
+      if (handledByChild) return;
+
+      this.openModal = false;
+    },
 
     submit() {
       this.$emit("save", this.form);

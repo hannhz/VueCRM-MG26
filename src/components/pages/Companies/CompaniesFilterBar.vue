@@ -12,7 +12,7 @@
           :value="searchQuery"
           @input="$emit('update:searchQuery', $event.target.value)"
           type="text"
-          placeholder="Search by Name"
+          placeholder="Search by Name, Email, or Address"
           class="w-full rounded-lg border border-outline bg-white py-2 pl-3 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-sub-text sm:w-64"
         />
       </div>

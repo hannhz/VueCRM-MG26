@@ -18,8 +18,6 @@ import DealsSection from "./component/DealsSection.vue";
 import AddContactForm from "./AddContactForm.vue";
 import CreateDealForm from "./CreateDealForm.vue";
 
-
-
 export default {
   name: "CreateCompanyForm",
   emits: ["close", "submit"],
@@ -43,8 +41,6 @@ export default {
     AddContactForm,
     CreateDealForm,
   },
-
-
 
   props: {
     isOpen: {
@@ -113,8 +109,6 @@ export default {
       showDetailForm: false,
       isSubmitting: false,
       savedCompany: null,
-
-
 
       // History & Drawer States
       historyitems: [],
@@ -622,7 +616,9 @@ export default {
 
     handleDetailSubmit() {},
 
-
+    closeNoteDrawer() {
+      this.isNoteDrawerOpen = false;
+    },
 
     // ─── HISTORY & DRAWER METHODS ──────────────────────────────────────────
     openNoteDrawer(editData = null, index = null) {
@@ -1122,7 +1118,6 @@ export default {
           />
         </div>
 
-
         <!-- Deals Tab (History) -->
         <div v-if="activeTab === 'Deals'" class="p-6 h-full flex flex-col">
           <DealsSection
@@ -1207,8 +1202,6 @@ export default {
     @submit="handleCreateDealSubmit"
   />
 
-
-
   <!-- <ContactDetailForm
     :isOpen="showDetailForm"
     title="Create Company / Details"
@@ -1222,43 +1215,47 @@ export default {
 
   <!-- Note Drawer POPUP -->
   <Transition name="slide">
-    <div
-      v-if="isNoteDrawerOpen"
-      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[60] flex flex-col"
-    >
-      <div
-        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
-      >
-        <h2 class="text-xl font-bold text-dark-base">
-          {{ editingItemIndex !== null ? "Edit Note" : "Tambah Note" }}
-        </h2>
-        <button
-          @click="isNoteDrawerOpen = false"
-          class="p-2 hover:bg-light-base rounded-lg transition-colors"
-        >
-          <X :size="20" class="text-sub-text" />
-        </button>
-      </div>
-
-      <div class="flex-1 overflow-y-auto p-6">
-        <NotesEditor v-model:note-data="tempNoteData" />
-      </div>
+    <div v-if="isNoteDrawerOpen" class="fixed inset-0 z-60">
+      <div class="absolute inset-0 bg-black/40" @click="closeNoteDrawer"></div>
 
       <div
-        class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
+        class="absolute top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl flex flex-col"
+        @click.stop
       >
-        <button
-          @click="isNoteDrawerOpen = false"
-          class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
+        <div
+          class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
         >
-          Cancel
-        </button>
-        <button
-          @click="saveNoteFromDrawer"
-          class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
+          <h2 class="text-xl font-bold text-dark-base">
+            {{ editingItemIndex !== null ? "Edit Note" : "Tambah Note" }}
+          </h2>
+          <button
+            @click="closeNoteDrawer"
+            class="p-2 hover:bg-light-base rounded-lg transition-colors"
+          >
+            <X :size="20" class="text-sub-text" />
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6">
+          <NotesEditor v-model:note-data="tempNoteData" />
+        </div>
+
+        <div
+          class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
         >
-          Simpan Ke Histori
-        </button>
+          <button
+            @click="closeNoteDrawer"
+            class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
+          >
+            Cancel
+          </button>
+          <button
+            @click="saveNoteFromDrawer"
+            class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
+          >
+            Simpan Ke Histori
+          </button>
+        </div>
       </div>
     </div>
   </Transition>

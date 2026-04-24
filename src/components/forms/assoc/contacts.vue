@@ -175,7 +175,7 @@ export default {
       if (!this.contactassoc.length) return [];
 
       return this.contactOptions.filter((contact) =>
-        this.contactassoc.includes(String(contact.id))
+        this.contactassoc.includes(String(contact.id)),
       );
     },
   },
@@ -255,6 +255,20 @@ export default {
         this.isContactDropdownOpen = false;
       }
     },
+
+    closeTopLayer() {
+      if (this.showAddContactQuickForm) {
+        this.showAddContactQuickForm = false;
+        return true;
+      }
+
+      if (this.isContactDropdownOpen) {
+        this.isContactDropdownOpen = false;
+        return true;
+      }
+
+      return false;
+    },
   },
 
   watch: {
@@ -286,12 +300,6 @@ export default {
   },
 };
 </script>
-
-
-
-
-
-
 
 <!-- 
 ditutup karena salah file, ini untuk referensi saja, jangan disarankan untuk dikembalikan ke codebase
