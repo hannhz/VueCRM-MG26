@@ -442,12 +442,20 @@ const actions = {
       Authorization: "Bearer " + cookies.get("token"),
     };
 
+    const normalizedId = Array.isArray(data)
+      ? data.find((id) => id !== null && id !== undefined && id !== "")
+      : data;
+
+    if (normalizedId === null || normalizedId === undefined || normalizedId === "") {
+      throw new Error("ID company tidak valid untuk delete.");
+    }
+
     try {
       const response = await api.post(
         "company/input",
         {
           choice: "d",
-          id: data,
+          id: String(normalizedId),
           company_name: "",
           company_owner: "",
           website: "",

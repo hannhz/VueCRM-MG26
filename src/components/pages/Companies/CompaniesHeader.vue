@@ -108,12 +108,12 @@
       </button>
 
       <!-- Delete -->
-      <button
+      <!--<button
         @click="$emit('delete-selected')"
         class="h-9 w-9 rounded-lg border border-red bg-white p-2 text-red transition hover:bg-red hover:text-white sm:h-10 sm:w-10"
       >
         <Trash2 :size="18" />
-      </button>
+      </button>-->
     </div>
   </div>
 </template>
