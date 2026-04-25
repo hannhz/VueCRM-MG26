@@ -74,6 +74,8 @@ export default {
         province: "",
         city: "",
         pos_code: "",
+        kecamaran: "",  
+        kelurahan: "",
         type: "",
         // notes: "",
         dealsassoc: [],
@@ -145,6 +147,11 @@ export default {
       types: "company/type",
       companybyidcontactassociated: "company/companybyidcontactassociated",
       companybyiddealsassociated: "company/companybyiddealsassociated",
+      getprovinsi: "lokasi/getprovinsi",
+      getkotakabupaten: "lokasi/getkotakabupaten",
+      getkecamatan: "lokasi/getkecamatan",
+      getkelurahan: "lokasi/getkelurahan",
+      getkodepos: "lokasi/getkodepos",
     }),
 
     isEditMode() {
@@ -160,13 +167,33 @@ export default {
   },
 
   watch: {
-    isOpen(isOpen) {
+    async isOpen(isOpen) {
       if (isOpen) {
-        this.getinduestries();
-        this.getsources();
-        this.gettype();
+        // if (!this.industries) {
+        //   this.getinduestries();
+        // }
+
+        // if (!this.sources) {
+        //   this.getsources();
+        // }
+        // if (!this.types) {
+        //   this.gettype();
+        // }
+        if (!this.industries?.length) await this.getinduestries();
+        if (!this.sources?.length) await this.getsources();
+        if (!this.types?.length) await this.gettype();
+        if (!this.getprovinsi?.length) await this.actprovinsi();
+        
+        // this.getinduestries();
+        // this.getsources();
+        // this.gettype();
+       
 
         if (this.initialData) {
+        await this.actkotakabupaten({id: this.initialData.province});
+        await this.actkecamatan({id: this.initialData.city});
+        await this.actkelurahan({id: this.initialData.kecamatan});
+
           this.setFormData(this.initialData);
         } else {
           this.resetForm();
@@ -202,6 +229,11 @@ export default {
       fetchcompanybyid: "company/fetchcompanybyid",
       saveNote: "history/saveNote",
       acthistory: "history/acthistory",
+      actprovinsi: "lokasi/actprovinsi",
+      actkotakabupaten: "lokasi/actkotakabupaten",
+      actkecamatan: "lokasi/actkecamatan",
+      actkelurahan: "lokasi/actkelurahan",
+      actkodepos: "lokasi/actkodepos",
     }),
 
     onContactassocSave(action, data) {
@@ -269,6 +301,8 @@ export default {
         province: data.province || "",
         city: data.city || "",
         pos_code: data.pos_code || "",
+        kecamatan: data.kecamatan || "",
+        kelurahan: data.kelurahan || "",
         type: data.type || "",
         notes: data.notes || "",
 
@@ -453,6 +487,8 @@ export default {
         address: "",
         country: "",
         province: "",
+        kecamatan: "",
+        kelurahan: "",
         city: "",
         pos_code: "",
         type: "",
@@ -500,10 +536,13 @@ export default {
       this.isSubmitting = true;
 
       // 🚀 Gunakan buildFormData untuk menghandle file upload (docs[], noteData[photos][], dll)
+
+
+
       const fd = buildFormData(
         this.formData,
-        this.isEditMode,
-        this.initialData?.id || null,
+        this.hasCompanyId,
+        this.companyid,
       );
 
       this.insertCompany(fd)
@@ -513,9 +552,11 @@ export default {
             : "Company berhasil ditambahkan!";
           alertService.success(message);
           console.log(data.param);
+          if (this.hasCompanyId) {
+            this.$emit("submit", data);
+          }
           this.savedCompany = data.param;
           this.showDetailForm = false;
-          this.$emit("submit", data);
           // this.resetForm();
           // this.handleClose();
         })
@@ -568,6 +609,8 @@ export default {
         country: "",
         province: "",
         city: "",
+        kecamatan: "",
+        kelurahan: "",
         pos_code: "",
         type: "",
         notes: "",

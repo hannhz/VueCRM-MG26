@@ -123,6 +123,7 @@ export default {
       detailFormEntityId: null,
       statuses: [],
       debounceTimer: null,
+      isAlertOpen: false,
     };
   },
 
@@ -274,7 +275,7 @@ export default {
     // this.fetchStatuses();
     this.fetchData();
     // this.fetchAllContacts();
-    // this.fetchAllDeals();
+    // this.fetchAllDeals();companyColumns
 
     document.addEventListener("click", this.handleClickOutside);
   },
@@ -285,6 +286,7 @@ export default {
 
   methods: {
     handleFocusedRowChanged(e) {
+      if (this.isAlertOpen) return; 
       const company = e?.data;
 
       console.log("Focused company:", company);
@@ -710,12 +712,15 @@ export default {
       const companyName =
         company?.company_name || company?.["Company Name"] || "company ini";
 
+      this.isAlertOpen = true;
+
       alertService
         .confirm(
           "Hapus Company?",
           `${companyName} akan dihapus secara permanen.`,
         )
         .then((confirmDelete) => {
+          this.isAlertOpen = false; // 🔥 reset
           if (!confirmDelete) return;
           return this.deletecompany(companyId);
         })
@@ -726,6 +731,7 @@ export default {
           return this.fetchData();
         })
         .catch(async (error) => {
+           this.isAlertOpen = false;
           // Backend may return 500 after delete due to response-query bug.
           // Re-sync list first, then infer final result from actual data.
           try {
@@ -1002,7 +1008,7 @@ export default {
       @submit="
         (data) => {
           console.log('Company added:', data);
-          // showCreateCompanyForm = false;
+          showCreateCompanyForm = false;
           // showDetailDataCompany = true;
           showDetailForm = false;
           fetchData(); // 🔥 Refresh data after submit
