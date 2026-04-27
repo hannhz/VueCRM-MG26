@@ -87,7 +87,7 @@ export const alertService = {
       },
       didOpen: setupButtonAnimations,
       ...options,
-    });
+    }).then((result) => result.isConfirmed);
   },
 
   confirmDelete(namaItem) {
@@ -118,7 +118,7 @@ export const alertService = {
       confirmButtonText: "Ya",
       cancelButtonText: "Batal",
       reverseButtons: true,
-    });
+    }).then((result) => result.isConfirmed);
   },
 
   confirmLogout() {
@@ -138,7 +138,7 @@ export const alertService = {
         cancelButton: "animated-button",
       },
       didOpen: setupButtonAnimations,
-    });
+    }).then((result) => result.isConfirmed);
   },
 
   logoutSuccess() {
@@ -297,7 +297,7 @@ export const alertService = {
   },
 
   perkiraanRefreshSuccess() {
-    return Promise.resolve({ isConfirmed: true });
+    return Promise.resolve(true);
   },
 };
 

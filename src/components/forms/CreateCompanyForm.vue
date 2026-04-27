@@ -1243,6 +1243,8 @@ export default {
 
   <CreateDealForm
     :isOpen="showCreateDealForm"
+    :companys_id="this.companyid"
+    :hideDetailTab="true"
     @close="showCreateDealForm = false"
     @submit="handleCreateDealSubmit"
   />

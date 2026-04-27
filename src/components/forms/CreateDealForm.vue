@@ -44,6 +44,19 @@ export default {
       type: Object,
       default: null,
     },
+    companys_id: {
+      type: Number,
+      default: null,
+    },
+    contact_id: {
+      type: Number,
+      default: null,
+    },
+    hideDetailTab: {
+      type: Boolean,
+      default: false,
+    },
+
     computed: {
       isEditMode() {
         return !!this.initialData;
@@ -114,6 +127,9 @@ export default {
         source: "",
         description: "",
         documents: null,
+        owner_id: null,
+        contact_id: null,
+        company_id: null,
         contactassoc: [],
         companyassoc: [],
         task: {
@@ -172,6 +188,14 @@ export default {
     ...mapGetters("users", ["usersignin"]),
     ...mapGetters("contacts", ["allContacts"]),
     ...mapGetters("company", ["allcompany"]),
+    ...mapGetters({
+      getsources: "deals/getsources",
+      getpipelines: "deals/getpipelines",
+      getpriority: "deals/getpriority",
+      getusers: "deals/getusers",
+      getcompany: "deals/getcompany",
+      getcontact: "deals/getcontact",
+    }),
     ...mapState("auth", { authUser: "user" }),
     currentUserName() {
       const signedInUser = this.usersignin || this.authUser || null;
@@ -188,19 +212,37 @@ export default {
     isEditMode() {
       return !!(this.initialData && Object.keys(this.initialData).length);
     },
+
+    hascompanycontact() {},
   },
   watch: {
+    // isOpen: {
+    //   immediate: true,
+    //   handler(isOpen) {
+    //     if (isOpen) {
+    //       if (this.initialData) {
+    //         this.setFormData(this.initialData);
+    //         this.activeTab = "master";
+    //       } else {
+    //         this.handleReset();
+    //         this.activeTab = "master";
+    //       }
+    //     }
+    //   },
+    // },
     isOpen: {
       immediate: true,
       handler(isOpen) {
         if (isOpen) {
           if (this.initialData) {
             this.setFormData(this.initialData);
-            this.activeTab = "master";
           } else {
             this.handleReset();
-            this.activeTab = "master";
+            // Pastikan prop ter-apply setelah reset
+            if (this.companys_id) this.formData.company_id = this.companys_id;
+            if (this.contact_id) this.formData.contact_id = this.contact_id;
           }
+          this.activeTab = "master";
         }
       },
     },
@@ -219,16 +261,67 @@ export default {
         }
       },
     },
+
+    companys_id: {
+      immediate: true,
+      handler(val) {
+        // Jangan override kalau sedang edit mode
+        if (!this.isEditMode && val !== undefined) {
+          this.formData.company_id = val ?? null;
+        }
+      },
+    },
+    contact_id: {
+      immediate: true,
+      handler(val) {
+        if (!this.isEditMode && val !== undefined) {
+          this.formData.contact_id = val ?? null;
+        }
+      },
+    },
   },
   mounted() {
     this.applyDefaultOwner();
     document.addEventListener("click", this.handleClickOutside);
+
+    if (!this.getsources || this.getsources.length === 0) {
+      this.fetchsources({});
+    }
+
+    if (!this.getpipelines || this.getpipelines.length === 0) {
+      this.fetchpipelines({});
+    }
+
+    if (!this.getpriority || this.getpriority.length === 0) {
+      this.fetchpriority({});
+    }
+
+    if (!this.getusers || this.getusers.length === 0) {
+      this.fetchusers({});
+    }
+
+    if (!this.getcompany || this.getcompany.length === 0) {
+      this.fetchcompany({});
+    }
+
+    if (!this.getcontact || this.getcontact.length === 0) {
+      this.fetchcontact({});
+    }
   },
   beforeDestroy() {
     document.removeEventListener("click", this.handleClickOutside);
   },
+
   methods: {
-    ...mapActions({ createDeal: "deals/createDeal" }),
+    ...mapActions({
+      createDeal: "deals/createDeal",
+      fetchsources: "deals/fetchsources",
+      fetchpipelines: "deals/fetchpipelines",
+      fetchpriority: "deals/fetchpriority",
+      fetchusers: "deals/fetchusers",
+      fetchcompany: "deals/fetchcompany",
+      fetchcontact: "deals/fetchcontact",
+    }),
 
     // Parse JSON safely untuk handle associasi dari database
     parseJSON(val, defaultVal) {
@@ -398,6 +491,9 @@ export default {
         contactassoc: this.extractIdsFromAssoc(normalizedContactsAssoc),
         task: this.resolveTaskData(dealData),
         docs: this.resolveDocsData(dealData),
+        owner_id: dealData.owner_id || null,
+        contact_id: dealData.contact_id || null,
+        company_id: dealData.company_id || null,
         noteData: {
           body: dealData.note || dealData.notes || "",
           gps_address: null,
@@ -412,13 +508,22 @@ export default {
       let historyItems = [];
 
       const getBody = (item) => {
-        return item.notes || item.body || item.descdocs || item.description || item.content || "";
+        return (
+          item.notes ||
+          item.body ||
+          item.descdocs ||
+          item.description ||
+          item.content ||
+          ""
+        );
       };
 
       // Process Notes
       let rawNotes = dealData.notes || data.notes || dealData.note || data.note;
       if (typeof rawNotes === "string" && rawNotes.startsWith("[")) {
-        try { rawNotes = JSON.parse(rawNotes); } catch (e) {}
+        try {
+          rawNotes = JSON.parse(rawNotes);
+        } catch (e) {}
       }
 
       if (Array.isArray(rawNotes)) {
@@ -426,14 +531,20 @@ export default {
           let location = { address: null, latitude: null, longitude: null };
           try {
             if (n.location) {
-              location = typeof n.location === "string" ? JSON.parse(n.location) : n.location;
+              location =
+                typeof n.location === "string"
+                  ? JSON.parse(n.location)
+                  : n.location;
             }
           } catch (e) {}
 
           let photos = [];
           try {
             if (n.pathphoto) {
-              const parsed = typeof n.pathphoto === "string" ? JSON.parse(n.pathphoto) : n.pathphoto;
+              const parsed =
+                typeof n.pathphoto === "string"
+                  ? JSON.parse(n.pathphoto)
+                  : n.pathphoto;
               if (Array.isArray(parsed)) {
                 photos = parsed.map((p) => p.path || p);
               }
@@ -455,14 +566,22 @@ export default {
         historyItems.push({
           type: "note",
           body: rawNotes,
-          timestamp: dealData.created_at || dealData.updated_at || data.created_at,
+          timestamp:
+            dealData.created_at || dealData.updated_at || data.created_at,
         });
       }
 
       // Process Docs
-      let rawDocs = dealData.docs_list || dealData.docs || data.docs || data.docs_list || data.files;
+      let rawDocs =
+        dealData.docs_list ||
+        dealData.docs ||
+        data.docs ||
+        data.docs_list ||
+        data.files;
       if (typeof rawDocs === "string" && rawDocs.startsWith("[")) {
-        try { rawDocs = JSON.parse(rawDocs); } catch (e) {}
+        try {
+          rawDocs = JSON.parse(rawDocs);
+        } catch (e) {}
       }
 
       if (Array.isArray(rawDocs)) {
@@ -474,7 +593,9 @@ export default {
               timestamp: d.created_at || d.update_at,
               body: getBody(d),
               fileSource: d.file_source || "local",
-              files: d.pathfile ? [{ name: d.pathfile.split("/").pop(), path: d.pathfile }] : [],
+              files: d.pathfile
+                ? [{ name: d.pathfile.split("/").pop(), path: d.pathfile }]
+                : [],
             });
           }
         });
@@ -754,6 +875,9 @@ export default {
           prioritytask: this.formData.task?.priority || "",
           due_date: this.formData.task?.dueDate || "",
           task_time: this.formData.task?.time || "",
+          owner_id: this.formData.owner_id,
+          contact_id: this.formData.contact_id,
+          company_id: this.formData.company_id,
         };
 
         const docsFiles = Array.isArray(this.formData.docs?.files)
@@ -788,6 +912,9 @@ export default {
           contactassoc: this.formData.contactassoc || [],
           companyassoc: this.formData.companyassoc || [],
           // SELALU kirim notes dan task (SP akan ignore kalau kosong)
+          owner_id: this.formData.owner_id || null,
+          contact_id: this.formData.contact_id || null,
+          company_id: this.formData.company_id || null,
           note: this.formData.noteData?.body || "",
           notes: this.formData.noteData?.body || "",
           noteData: { ...this.formData.noteData },
@@ -1124,6 +1251,9 @@ export default {
         source: "",
         description: "",
         documents: null,
+        owner_id: null,
+        contact_id: null,
+        company_id: null,
         contactassoc: [],
         companyassoc: [],
         task: {
@@ -1212,6 +1342,7 @@ export default {
         </button>
 
         <button
+          v-if="!hideDetailTab"
           type="button"
           @click="activeTab = 'detail'"
           :class="[
@@ -1256,8 +1387,9 @@ export default {
                   v-model="formData.pipeline"
                   class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
+                  <option value="" disabled selected>Select Pipeline</option>
                   <option
-                    v-for="opt in pipelineOptions"
+                    v-for="opt in getpipelines"
                     :key="opt.value"
                     :value="opt.value"
                   >
@@ -1325,6 +1457,55 @@ export default {
             </div>
           </div>
 
+          <div v-if="!companys_id" class="grid grid-cols-1 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Company</label
+              >
+              <div class="relative">
+                <v-select
+                  v-model="formData.company_id"
+                  :options="getcompany"
+                  label="label"
+                  :reduce="(opt) => opt.value"
+                  placeholder="Select Industry"
+                />
+              </div>
+            </div>
+          </div>
+          <div v-if="!contact_id" class="grid grid-cols-1 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Contact</label
+              >
+              <div class="relative">
+                <v-select
+                  v-model="formData.contact_id"
+                  :options="getcontact"
+                  label="label"
+                  :reduce="(opt) => opt.value"
+                  placeholder="Select Contact"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >owner</label
+              >
+              <div class="relative">
+                <v-select
+                  v-model="formData.owner_id"
+                  :options="getusers"
+                  label="label"
+                  :reduce="(opt) => opt.value"
+                  placeholder="Select Owner(PJ)"
+                />
+              </div>
+            </div>
+          </div>
+
           <!-- Priority & Source -->
           <div class="grid grid-cols-2 gap-4">
             <div>
@@ -1336,8 +1517,9 @@ export default {
                   v-model="formData.priority"
                   class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                 >
+                  <option value="" disabled selected>Select Priority</option>
                   <option
-                    v-for="opt in priorityOptions"
+                    v-for="opt in getpriority"
                     :key="opt.value"
                     :value="opt.value"
                   >
@@ -1360,8 +1542,9 @@ export default {
                     v-model="formData.source"
                     class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
                   >
+                    <option value="" disabled selected>Select Source</option>
                     <option
-                      v-for="opt in sourceOptions"
+                      v-for="opt in getsources"
                       :key="opt.value"
                       :value="opt.value"
                     >
@@ -1389,181 +1572,169 @@ export default {
             </div>
           </div>
 
-          <!-- Description & Document (Optional) - collapsible -->
-          <div class="border border-outline rounded-lg">
-            <label
-              class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-light-base transition-colors"
-            >
-              <input
-                type="checkbox"
-                v-model="showOptional"
-                class="w-4 h-4 rounded border-outline accent-dark-base cursor-pointer"
-              />
-              <span class="text-sm font-medium text-sub-text"
-                >Description &amp; Document
-                <span class="text-sub-text/60">(Opsional)</span></span
+          <!-- 
+            <div class="border border-outline rounded-lg">
+              <label
+                class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-light-base transition-colors"
               >
-            </label>
-
-            <transition name="expand">
-              <div
-                v-if="showOptional"
-                class="border-t border-outline px-4 py-4 space-y-4"
-              >
-                <!-- Description -->
-                <div>
-                  <label class="block text-sm font-medium text-dark-base mb-2"
-                    >Description</label
-                  >
-                  <textarea
-                    v-model="formData.description"
-                    placeholder="Ex Lorem ipsum dolor sit"
-                    rows="3"
-                    class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm resize-none"
-                  ></textarea>
-                </div>
-
-                <!-- Documents -->
-                <div>
-                  <label class="block text-sm font-medium text-dark-base mb-2"
-                    >Documents</label
-                  >
-
-                  <!-- Source Dropdown -->
-                  <div class="relative">
-                    <button
-                      type="button"
-                      @click="isDocDropdownOpen = !isDocDropdownOpen"
-                      class="w-full flex items-center justify-between px-3 py-2 border border-outline rounded-lg text-sm bg-white cursor-pointer"
-                      :class="
-                        selectedDocSource ? 'text-dark-base' : 'text-sub-text'
-                      "
+                <input
+                  type="checkbox"
+                  v-model="showOptional"
+                  class="w-4 h-4 rounded border-outline accent-dark-base cursor-pointer"
+                />
+                <span class="text-sm font-medium text-sub-text"
+                  >Description &amp; Document
+                  <span class="text-sub-text/60">(Opsional)</span></span
+                >
+              </label>
+  
+              <transition name="expand">
+                <div
+                  v-if="showOptional"
+                  class="border-t border-outline px-4 py-4 space-y-4"
+                >
+                  <div>
+                    <label class="block text-sm font-medium text-dark-base mb-2"
+                      >Description</label
                     >
-                      <span>{{
-                        docSourceOptions.find(
-                          (o) => o.value === selectedDocSource,
-                        )?.label || "Select File Source"
-                      }}</span>
-                      <ChevronDown
-                        :size="16"
-                        class="text-sub-text transition-transform"
-                        :class="{ 'rotate-180': isDocDropdownOpen }"
-                      />
-                    </button>
-
-                    <!-- Dropdown Menu -->
-                    <div
-                      v-if="isDocDropdownOpen"
-                      class="absolute left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-30"
-                    >
-                      <ul class="py-1">
-                        <li
-                          v-for="opt in docSourceOptions.filter(
-                            (o) => o.value !== '',
-                          )"
-                          :key="opt.value"
-                          @click="selectDocSource(opt.value)"
-                          class="px-4 py-2 text-sm hover:bg-light-base cursor-pointer"
-                          :class="
-                            selectedDocSource === opt.value
-                              ? 'text-dark-base font-medium'
-                              : 'text-sub-text'
-                          "
-                        >
-                          {{ opt.label }}
-                        </li>
-                      </ul>
-                    </div>
+                    <textarea
+                      v-model="formData.description"
+                      placeholder="Ex Lorem ipsum dolor sit"
+                      rows="3"
+                      class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm resize-none"
+                    ></textarea>
                   </div>
-
-                  <!-- Upload Area — muncul jika pilih Local File -->
-                  <transition name="expand">
-                    <div v-if="selectedDocSource === 'local'" class="mt-2">
-                      <label class="relative block cursor-pointer">
-                        <input
-                          type="file"
-                          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                          multiple
-                          class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          @change="handleFileChange"
-                        />
-                        <div
-                          class="w-full flex flex-col items-center justify-center gap-2 px-4 py-6 border-2 border-dashed border-outline rounded-lg text-sm bg-light-base hover:bg-outline/10 transition-colors"
-                        >
-                          <!-- Upload Icon -->
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="w-7 h-7 text-sub-text"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12V4m0 0L8 8m4-4l4 4"
-                            />
-                          </svg>
-                          <span
-                            v-if="!getLocalUploadFiles().length"
-                            class="text-sub-text font-medium"
-                            >Klik untuk pilih file</span
-                          >
-                          <span v-else class="text-dark-base font-medium">
-                            {{ getLocalUploadFiles().length }} file dipilih
-                          </span>
-                          <span class="text-xs text-sub-text/70"
-                            >PDF, DOC, XLS, JPG, PNG</span
-                          >
-                        </div>
-                      </label>
-
-                      <ul
-                        v-if="getLocalUploadFiles().length"
-                        class="mt-2 space-y-1"
+  
+                  <div>
+                    <label class="block text-sm font-medium text-dark-base mb-2"
+                      >Documents</label
+                    >
+                    <div class="relative">
+                      <button
+                        type="button"
+                        @click="isDocDropdownOpen = !isDocDropdownOpen"
+                        class="w-full flex items-center justify-between px-3 py-2 border border-outline rounded-lg text-sm bg-white cursor-pointer"
+                        :class="
+                          selectedDocSource ? 'text-dark-base' : 'text-sub-text'
+                        "
                       >
-                        <li
-                          v-for="(file, i) in getLocalUploadFiles()"
-                          :key="`${file.name}-${file.lastModified || i}`"
-                          class="flex items-center justify-between text-xs px-3 py-1.5 bg-light-base rounded-lg"
-                        >
-                          <div class="min-w-0">
-                            <p class="truncate text-dark-base">
-                              {{ getLocalUploadLabel(file) }}
-                            </p>
-                            <p class="text-[10px] text-sub-text">
-                              {{ formatLocalUploadSize(file) }}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            @click="removeLocalUploadFile(i)"
-                            class="ml-2 text-sub-text hover:text-red-500 shrink-0"
+                        <span>{{
+                          docSourceOptions.find(
+                            (o) => o.value === selectedDocSource,
+                          )?.label || "Select File Source"
+                        }}</span>
+                        <ChevronDown
+                          :size="16"
+                          class="text-sub-text transition-transform"
+                          :class="{ 'rotate-180': isDocDropdownOpen }"
+                        />
+                      </button>
+  
+                      <div
+                        v-if="isDocDropdownOpen"
+                        class="absolute left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-30"
+                      >
+                        <ul class="py-1">
+                          <li
+                            v-for="opt in docSourceOptions.filter(
+                              (o) => o.value !== '',
+                            )"
+                            :key="opt.value"
+                            @click="selectDocSource(opt.value)"
+                            class="px-4 py-2 text-sm hover:bg-light-base cursor-pointer"
+                            :class="
+                              selectedDocSource === opt.value
+                                ? 'text-dark-base font-medium'
+                                : 'text-sub-text'
+                            "
                           >
-                            ✕
-                          </button>
-                        </li>
-                      </ul>
+                            {{ opt.label }}
+                          </li>
+                        </ul>
+                      </div>
                     </div>
-                  </transition>
+                    <transition name="expand">
+                      <div v-if="selectedDocSource === 'local'" class="mt-2">
+                        <label class="relative block cursor-pointer">
+                          <input
+                            type="file"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                            multiple
+                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            @change="handleFileChange"
+                          />
+                          <div
+                            class="w-full flex flex-col items-center justify-center gap-2 px-4 py-6 border-2 border-dashed border-outline rounded-lg text-sm bg-light-base hover:bg-outline/10 transition-colors"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="w-7 h-7 text-sub-text"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              stroke-width="1.5"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12V4m0 0L8 8m4-4l4 4"
+                              />
+                            </svg>
+                            <span
+                              v-if="!getLocalUploadFiles().length"
+                              class="text-sub-text font-medium"
+                              >Klik untuk pilih file</span
+                            >
+                            <span v-else class="text-dark-base font-medium">
+                              {{ getLocalUploadFiles().length }} file dipilih
+                            </span>
+                            <span class="text-xs text-sub-text/70"
+                              >PDF, DOC, XLS, JPG, PNG</span
+                            >
+                          </div>
+                        </label>
+  
+                        <ul
+                          v-if="getLocalUploadFiles().length"
+                          class="mt-2 space-y-1"
+                        >
+                          <li
+                            v-for="(file, i) in getLocalUploadFiles()"
+                            :key="`${file.name}-${file.lastModified || i}`"
+                            class="flex items-center justify-between text-xs px-3 py-1.5 bg-light-base rounded-lg"
+                          >
+                            <div class="min-w-0">
+                              <p class="truncate text-dark-base">
+                                {{ getLocalUploadLabel(file) }}
+                              </p>
+                              <p class="text-[10px] text-sub-text">
+                                {{ formatLocalUploadSize(file) }}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              @click="removeLocalUploadFile(i)"
+                              class="ml-2 text-sub-text hover:text-red-500 shrink-0"
+                            >
+                              ✕
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+                    </transition>
+                  </div>
                 </div>
-              </div>
-            </transition>
-          </div>
-
-          <!-- Contact Association -->
-          <ContactAssociationForm
-            v-model="formData.contactassoc"
-            :contacts="allContacts"
-          />
-
-          <!-- Companies Association -->
-          <CompaniesAssociationForm
-            :companies="allcompany"
-            v-model="formData.companyassoc"
-          />
-          <!-- <button
+              </transition>
+            </div>
+            <ContactAssociationForm
+              v-model="formData.contactassoc"
+              :contacts="allContacts"
+            />
+            <CompaniesAssociationForm
+              :companies="allcompany"
+              v-model="formData.companyassoc"
+            />
+          <button
               type="button"
               @click="showAddCompanyForm = true"
               class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
@@ -1633,11 +1804,16 @@ export default {
       v-if="isNoteDrawerOpen"
       class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[60] flex flex-col"
     >
-      <div class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10">
+      <div
+        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
+      >
         <h2 class="text-xl font-bold text-dark-base">
           {{ editingItemIndex !== null ? "Edit Note" : "Tambah Note" }}
         </h2>
-        <button @click="isNoteDrawerOpen = false" class="p-2 hover:bg-light-base rounded-lg transition-colors">
+        <button
+          @click="isNoteDrawerOpen = false"
+          class="p-2 hover:bg-light-base rounded-lg transition-colors"
+        >
           <X :size="20" class="text-sub-text" />
         </button>
       </div>
@@ -1646,11 +1822,19 @@ export default {
         <NotesSection v-model:note-data="tempNoteData" />
       </div>
 
-      <div class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3">
-        <button @click="isNoteDrawerOpen = false" class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base">
+      <div
+        class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
+      >
+        <button
+          @click="isNoteDrawerOpen = false"
+          class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
+        >
           Cancel
         </button>
-        <button @click="saveNoteFromDrawer" class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover">
+        <button
+          @click="saveNoteFromDrawer"
+          class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
+        >
           Simpan Ke Histori
         </button>
       </div>
@@ -1663,11 +1847,16 @@ export default {
       v-if="isDocDrawerOpen"
       class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[60] flex flex-col"
     >
-      <div class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10">
+      <div
+        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
+      >
         <h2 class="text-xl font-bold text-dark-base">
           {{ editingItemIndex !== null ? "Edit Document" : "Tambah Document" }}
         </h2>
-        <button @click="isDocDrawerOpen = false" class="p-2 hover:bg-light-base rounded-lg transition-colors">
+        <button
+          @click="isDocDrawerOpen = false"
+          class="p-2 hover:bg-light-base rounded-lg transition-colors"
+        >
           <X :size="20" class="text-sub-text" />
         </button>
       </div>
@@ -1676,11 +1865,19 @@ export default {
         <DocsSection v-model="tempDocs" />
       </div>
 
-      <div class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3">
-        <button @click="isDocDrawerOpen = false" class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base">
+      <div
+        class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
+      >
+        <button
+          @click="isDocDrawerOpen = false"
+          class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
+        >
           Cancel
         </button>
-        <button @click="saveDocFromDrawer" class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover">
+        <button
+          @click="saveDocFromDrawer"
+          class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
+        >
           Simpan Ke Histori
         </button>
       </div>

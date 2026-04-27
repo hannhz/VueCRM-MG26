@@ -141,9 +141,7 @@ const mapCreateDealPayload = (formData = {}) => {
         due_date: normalizeText(
           taskCandidate.due_date || taskCandidate.dueDate,
         ),
-        task_time: normalizeText(
-          taskCandidate.task_time || taskCandidate.time,
-        ),
+        task_time: normalizeText(taskCandidate.task_time || taskCandidate.time),
       };
     }
 
@@ -164,21 +162,22 @@ const mapCreateDealPayload = (formData = {}) => {
     ? formData.docs.files
     : [];
 
-  const docsPayload = docsDescription || docsFiles.length
-    ? {
-        description: docsDescription,
-        fileSource: normalizeStringOrNull(formData.docs?.fileSource) || "",
-        files: docsFiles,
-      }
-    : null;
+  const docsPayload =
+    docsDescription || docsFiles.length
+      ? {
+          description: docsDescription,
+          fileSource: normalizeStringOrNull(formData.docs?.fileSource) || "",
+          files: docsFiles,
+        }
+      : null;
 
   const taskPayload = extractTaskData(formData.task);
   // SELALU konvert task ke JSON string, jangan null - backend SP akan filter kalau kosong
   const taskJsonValue = taskPayload
     ? JSON.stringify(taskPayload)
-    : (formData.task && Object.keys(formData.task).length > 0
-        ? JSON.stringify(formData.task)
-        : null);
+    : formData.task && Object.keys(formData.task).length > 0
+      ? JSON.stringify(formData.task)
+      : null;
 
   return {
     // Mapping utama sesuai kolom DB
@@ -197,11 +196,13 @@ const mapCreateDealPayload = (formData = {}) => {
     // Notes, Tasks, & Docs - penting: backend expect lowercase singular keys
     // Support both 'notes' dan 'note' untuk backward compatibility
     note:
-      normalizeText(formData.note || formData.notes || formData.noteData?.body)
-        .trim() || null,
+      normalizeText(
+        formData.note || formData.notes || formData.noteData?.body,
+      ).trim() || null,
     notes:
-      normalizeText(formData.note || formData.notes || formData.noteData?.body)
-        .trim() || null,
+      normalizeText(
+        formData.note || formData.notes || formData.noteData?.body,
+      ).trim() || null,
     task_json: taskJsonValue,
     task: taskPayload,
     docs: docsPayload,
@@ -285,9 +286,33 @@ export default {
     error: null,
     searchQuery: "", // Add search state
     pagination: null, // Add pagination state
+    sources: null,
+    pipelines: null,
+    priority: null,
+    users: null,
+    company:null,
+    contact:null
   }),
 
   mutations: {
+    setsources(state, sources) {
+      state.sources = sources;
+    },
+    setpipelines(state, pipelines) {
+      state.pipelines = pipelines;
+    },
+    setpriority(state, priority) {
+      state.priority = priority;
+    },
+    setusers(state, users) {
+      state.users = users;
+    },
+    setcompany(state, company) {
+      state.company = company;
+    },
+    setcontact(state, contact) {
+      state.contact = contact;
+    },
     SET_VIEW_MODE(state, mode) {
       state.viewMode = mode;
     },
@@ -778,10 +803,196 @@ export default {
         throw error;
       }
     },
+
+    fetchsources(context, data) {
+      context.commit("SET_LOADING", true);
+      context.commit("SET_ERROR", null);
+
+      const promise = new Promise(async (resolve, reject) => {
+        try {
+          const response = await api.get(`deals/sources`, {
+            headers: {
+              Authorization: "Bearer " + cookies.get("token"),
+            },
+          });
+          resolve(response.data);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      promise
+        .then((data) => {
+          context.commit("setsources", data);
+          context.commit("SET_LOADING", false);
+        })
+        .catch((error) => {
+          context.commit("SET_ERROR", error.message);
+          context.commit("SET_LOADING", false);
+        });
+
+      return promise;
+    },
+
+    fetchpipelines(context, data) {
+      context.commit("SET_LOADING", true);
+      context.commit("SET_ERROR", null);
+
+      const promise = new Promise(async (resolve, reject) => {
+        try {
+          const response = await api.get(`deals/pipelines`, {
+            headers: {
+              Authorization: "Bearer " + cookies.get("token"),
+            },
+          });
+          resolve(response.data);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      promise
+        .then((data) => {
+          context.commit("setpipelines", data);
+          context.commit("SET_LOADING", false);
+        })
+        .catch((error) => {
+          context.commit("SET_ERROR", error.message);
+          context.commit("SET_LOADING", false);
+        });
+
+      return promise;
+    },
+
+    fetchpriority(context, data) {
+      context.commit("SET_LOADING", true);
+      context.commit("SET_ERROR", null);
+
+      const promise = new Promise(async (resolve, reject) => {
+        try {
+          const response = await api.get(`deals/priority`, {
+            headers: {
+              Authorization: "Bearer " + cookies.get("token"),
+            },
+          });
+          resolve(response.data);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      promise
+        .then((data) => {
+          context.commit("setpriority", data);
+          context.commit("SET_LOADING", false);
+        })
+        .catch((error) => {
+          context.commit("SET_ERROR", error.message);
+          context.commit("SET_LOADING", false);
+        });
+
+      return promise;
+    },
+
+    fetchusers(context, data) {
+      context.commit("SET_LOADING", true);
+      context.commit("SET_ERROR", null);
+
+      const promise = new Promise(async (resolve, reject) => {
+        try {
+          const response = await api.get(`deals/users`, {
+            headers: {
+              Authorization: "Bearer " + cookies.get("token"),
+            },
+          });
+          resolve(response.data);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      promise
+        .then((data) => {
+          context.commit("setusers", data);
+          context.commit("SET_LOADING", false);
+        })
+        .catch((error) => {
+          context.commit("SET_ERROR", error.message);
+          context.commit("SET_LOADING", false);
+        });
+
+      return promise;
+    },
+
+    fetchcompany(context, data) {
+      context.commit("SET_LOADING", true);
+      context.commit("SET_ERROR", null);
+
+      const promise = new Promise(async (resolve, reject) => {
+        try {
+          const response = await api.get(`deals/company`, {
+            headers: {
+              Authorization: "Bearer " + cookies.get("token"),
+            },
+          });
+          resolve(response.data);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      promise
+        .then((data) => {
+          context.commit("setcompany", data);
+          context.commit("SET_LOADING", false);
+        })
+        .catch((error) => {
+          context.commit("SET_ERROR", error.message);
+          context.commit("SET_LOADING", false);
+        });
+
+      return promise;
+    },
+
+    fetchcontact(context, data) {
+      context.commit("SET_LOADING", true);
+      context.commit("SET_ERROR", null);
+
+      const promise = new Promise(async (resolve, reject) => {
+        try {
+          const response = await api.get(`deals/contact`, {
+            headers: {
+              Authorization: "Bearer " + cookies.get("token"),
+            },
+          });
+          resolve(response.data);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      promise
+        .then((data) => {
+          context.commit("setcontact", data);
+          context.commit("SET_LOADING", false);
+        })
+        .catch((error) => {
+          context.commit("SET_ERROR", error.message);
+          context.commit("SET_LOADING", false);
+        });
+
+      return promise;
+    },
+
   },
 
   getters: {
-    currentView: (state) => state.viewMode,
+    getsources: (state) => state.sources,
+    getpipelines: (state) => state.pipelines,
+    getpriority: (state) => state.priority,
+    getusers: (state) => state.users,
+    getcompany: (state) => state.company,
+    getcontact: (state) => state.contact,
     allDeals: (state) => state.deals,
     isLoading: (state) => state.isLoading,
     error: (state) => state.error,
