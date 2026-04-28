@@ -19,7 +19,7 @@ export default {
     noteData: {
       type: Object,
       default: () => ({
-        idnote:null,
+        idnote: null,
         body: "",
         gps_address: null,
         latitude: null,
@@ -103,7 +103,11 @@ export default {
 
       // Jika alamat masih berupa koordinat (misal: "Lat, Long"), coba terjemahkan ke alamat asli
       const coordRegex = /^-?\d+\.\d+,\s*-?\d+\.\d+$/;
-      if (coordRegex.test(this.gpsAddress) && this.coords.lat && this.coords.lng) {
+      if (
+        coordRegex.test(this.gpsAddress) &&
+        this.coords.lat &&
+        this.coords.lng
+      ) {
         this.reverseGeocode(this.coords.lat, this.coords.lng);
       }
     }
@@ -126,7 +130,6 @@ export default {
         return d;
       });
     }
-
 
     if (this.noteData.visibility) {
       this.visibility = this.noteData.visibility;
@@ -541,9 +544,7 @@ export default {
 <template>
   <div class="mb-5">
     <!-- ── EDITOR CARD ── -->
-    <div
-      class="border border-outline rounded-lg overflow-hidden"
-    >
+    <div class="border border-outline rounded-lg overflow-hidden">
       <!-- ── TOOLBAR ── -->
       <div
         class="flex items-center justify-between gap-1 px-3 py-2 border-b border-outline bg-light-base flex-wrap"
@@ -729,7 +730,7 @@ export default {
           <select
             v-model="visibility"
             @change="emitData"
-            class="select-toolbar min-w-[100px]"
+            class="select-toolbar min-w-25"
           >
             <option :value="0">Public</option>
             <option :value="1">Internal</option>
@@ -776,7 +777,7 @@ export default {
         v-else-if="gpsAddress"
         class="flex items-center gap-2 px-4 py-2 border-t border-outline text-sm"
       >
-        <MapPin :size="14" class="text-blue-500 flex-shrink-0" />
+        <MapPin :size="14" class="text-blue-500 shrink-0" />
         <span class="flex-1 text-blue-600 truncate">{{ gpsAddress }}</span>
         <button
           type="button"
@@ -845,7 +846,7 @@ export default {
           :key="doc.id"
           class="flex items-center gap-2 text-sm border rounded px-2 py-1"
         >
-          <FileText :size="14" class="text-blue-500 flex-shrink-0" />
+          <FileText :size="14" class="text-blue-500 shrink-0" />
           <a
             :href="doc.url"
             target="_blank"
@@ -869,7 +870,7 @@ export default {
         v-if="audioPreviewUrl && !isRecording"
         class="flex items-center gap-3 px-4 py-2 border-t border-outline"
       >
-        <Mic :size="14" class="text-blue-500 flex-shrink-0" />
+        <Mic :size="14" class="text-blue-500 shrink-0" />
         <audio
           :src="audioPreviewUrl"
           controls
@@ -879,7 +880,7 @@ export default {
         <button
           type="button"
           @click="removeAudio"
-          class="text-red-400 hover:text-red-600 text-xs font-bold ml-2 flex-shrink-0"
+          class="text-red-400 hover:text-red-600 text-xs font-bold ml-2 shrink-0"
           title="Hapus rekaman"
         >
           ✕

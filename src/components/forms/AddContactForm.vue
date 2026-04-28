@@ -53,15 +53,14 @@ export default {
       type: Object,
       default: () => ({}),
     },
-    companys_id:{
-      type:Number,
-      default:null,
+    companys_id: {
+      type: Number,
+      default: null,
     },
     hideDetailTab: {
       type: Boolean,
       default: false,
-    }
-
+    },
   },
 
   emits: ["close", "submit"],
@@ -79,13 +78,13 @@ export default {
     this.$store.dispatch("deals/fetchAllDeals");
     this.applyDefaultOwner();
 
-    if(!this.getsources || this.getsources.length === 0) {
+    if (!this.getsources || this.getsources.length === 0) {
       this.fetchsources({});
-    };
+    }
 
-    if(!this.getstatus || this.getstatus.length === 0) {
+    if (!this.getstatus || this.getstatus.length === 0) {
       this.fetchstatus({});
-    };
+    }
 
     // Add click outside handler
     document.addEventListener("click", this.handleClickOutside);
@@ -588,7 +587,7 @@ export default {
           created_at: now,
           updated_at: now,
         };
-          this.saveContact(dataToSubmit)
+        this.saveContact(dataToSubmit)
           .then((response) => {
             const msg = dataToSubmit.id
               ? "Contact berhasil diperbarui!"
@@ -1183,7 +1182,7 @@ export default {
   <Transition name="slide">
     <div
       v-if="isNoteDrawerOpen"
-      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[60] flex flex-col"
+      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-60 flex flex-col"
     >
       <div
         class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
@@ -1226,7 +1225,7 @@ export default {
   <Transition name="slide">
     <div
       v-if="isDocDrawerOpen"
-      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[60] flex flex-col"
+      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-60 flex flex-col"
     >
       <div
         class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"

@@ -68,7 +68,7 @@
       class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
       @click="handleBackdropClick"
     >
-      <div class="bg-white rounded-xl p-6 w-[400px] shadow-xl" @click.stop>
+      <div class="bg-white rounded-xl p-6 w-100 shadow-xl" @click.stop>
         <ContactAssociationForm
           ref="contactAssociationRef"
           v-model="form.contactassoc"
@@ -164,18 +164,20 @@ export default {
       this.openModal = true;
     },
     confirmRemove(data) {
-      alertService.confirm(
-        "Data contact ini hanya akan dihapus dari daftar hubungan company ini, namun tetap akan tersedia di modul Contacts sebagai arsip.",
-        "Hapus Hubungan Contact?",
-        {
-          confirmButtonText: "Ya, Hapus",
-          cancelButtonText: "Kembali",
-        }
-      ).then((result) => {
-        if (result.isConfirmed) {
-          this.$emit("remove", { contactassoc: [data.id] });
-        }
-      });
+      alertService
+        .confirm(
+          "Data contact ini hanya akan dihapus dari daftar hubungan company ini, namun tetap akan tersedia di modul Contacts sebagai arsip.",
+          "Hapus Hubungan Contact?",
+          {
+            confirmButtonText: "Ya, Hapus",
+            cancelButtonText: "Kembali",
+          },
+        )
+        .then((result) => {
+          if (result.isConfirmed) {
+            this.$emit("remove", { contactassoc: [data.id] });
+          }
+        });
     },
   },
 

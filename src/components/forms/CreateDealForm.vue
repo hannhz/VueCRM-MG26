@@ -7,16 +7,19 @@ import {
   Paperclip,
   Search,
   Check,
+  PackageIcon,
 } from "lucide-vue-next";
 import AddCompanyForm from "./AddCompanyForm.vue";
 import AddContactQuickForm from "./AddContactQuickForm.vue";
 import { alertService } from "@/services/alertService";
-import ContactAssociationForm from "./assoc/contacts.vue";
 import CompaniesAssociationForm from "./assoc/companies.vue";
+import DealsAssociationForm from "./assoc/deals.vue";
+import CreateProjectForm from "./CreateProjectForm.vue";
 import NotesSection from "@/components/widgets/NotesEditor.vue";
 import DocsSection from "@/components/widgets/DocsEditor.vue";
 import TaskSection from "@/components/widgets/TaskEditor.vue";
 import HistoryDetail from "@/components/widgets/historydetail.vue";
+import ContactAssociationForm from "./assoc/contacts.vue";
 
 export default {
   components: {
@@ -26,14 +29,17 @@ export default {
     Paperclip,
     Search,
     Check,
+    PackageIcon,
     AddCompanyForm,
     AddContactQuickForm,
-    ContactAssociationForm,
     CompaniesAssociationForm,
+    DealsAssociationForm,
     NotesSection,
     DocsSection,
     TaskSection,
     HistoryDetail,
+    CreateProjectForm,
+    ContactAssociationForm,
   },
   props: {
     isOpen: {
@@ -109,6 +115,11 @@ export default {
       showOptional: false,
       showAddCompanyForm: false,
       showAddContactQuickForm: false,
+      showCreateProjectForm: false,
+      showProjectModal: false,
+      projectModalForm: {
+        dealassoc: [],
+      },
       isSavingBeforeDetail: false,
       contactSearch: "",
       companySearch: "",
@@ -132,6 +143,8 @@ export default {
         company_id: null,
         contactassoc: [],
         companyassoc: [],
+        probability: null,
+  active: 1,  
         task: {
           name: "",
           content: "",
@@ -489,6 +502,8 @@ export default {
         // Ubah array of objects menjadi array of IDs
         companyassoc: this.extractIdsFromAssoc(normalizedCompaniesAssoc),
         contactassoc: this.extractIdsFromAssoc(normalizedContactsAssoc),
+        probability: dealData.probability ?? null,
+        active: (dealData.active == 1 || dealData.active === true) ? 1 : 0,
         task: this.resolveTaskData(dealData),
         docs: this.resolveDocsData(dealData),
         owner_id: dealData.owner_id || null,
@@ -842,6 +857,26 @@ export default {
       this.activeTab = "master";
       this.historyitems = [];
       this.$emit("close");
+    },
+    async handleCreateProject(formData) {
+      try {
+        const dealId =
+          this.resolveInitialDealId() ||
+          (this.initialData && this.initialData.id) ||
+          null;
+        if (dealId && !formData.deal_id) formData.deal_id = dealId;
+        await this.$store.dispatch("project/createProject", formData);
+        this.showCreateProjectForm = false;
+        await alertService.toastSuccess("Project berhasil dibuat");
+      } catch (err) {
+        console.error(err);
+        await alertService.toastError("Gagal membuat project");
+      }
+    },
+    handleProjectModalSubmit() {
+      this.showProjectModal = false;
+      this.projectModalForm.dealassoc = [];
+      alertService.toastSuccess("Project ditambahkan");
     },
     async handleSubmit() {
       // Validation
@@ -1256,6 +1291,8 @@ export default {
         company_id: null,
         contactassoc: [],
         companyassoc: [],
+        probability: null,
+    active: 1,
         task: {
           name: "",
           content: "",
@@ -1342,7 +1379,21 @@ export default {
         </button>
 
         <button
-          v-if="!hideDetailTab"
+          v-if="isEditMode && !hideDetailTab"
+          type="button"
+          @click="activeTab = 'projects'"
+          :class="[
+            'px-4 py-2 text-sm font-medium border-b-2 transition',
+            activeTab === 'projects'
+              ? 'border-dark-base text-dark-base'
+              : 'border-transparent text-sub-text hover:text-dark-base',
+          ]"
+        >
+          Projects
+        </button>
+
+        <button
+          v-if="isEditMode && !hideDetailTab"
           type="button"
           @click="activeTab = 'detail'"
           :class="[
@@ -1352,7 +1403,7 @@ export default {
               : 'border-transparent text-sub-text hover:text-dark-base',
           ]"
         >
-          Detail
+          Notes
         </button>
       </div>
 
@@ -1404,6 +1455,18 @@ export default {
             </div>
           </div>
 
+          <!-- Company & Contact -->
+          <div class="grid grid-cols-2 gap-4">
+                      <CompaniesAssociationForm
+            ref="companiesAssociationForm"
+            v-model="tempCompanyAssoc"
+          />
+          <ContactAssociationForm
+            ref="contactAssociationForm"
+            v-model="tempContactAssoc"
+          />
+          </div>
+
           <!-- Currency & Amount/Value -->
           <div class="grid grid-cols-2 gap-4">
             <div>
@@ -1442,8 +1505,8 @@ export default {
             </div>
           </div>
 
-          <!-- Expected Close Date -->
-          <div class="grid grid-cols-1 gap-4">
+          <!-- Expected Close Date & owner -->
+          <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-dark-base mb-2"
                 >Expected Close Date</label
@@ -1455,42 +1518,7 @@ export default {
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base"
               />
             </div>
-          </div>
-
-          <div v-if="!companys_id" class="grid grid-cols-1 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Company</label
-              >
-              <div class="relative">
-                <v-select
-                  v-model="formData.company_id"
-                  :options="getcompany"
-                  label="label"
-                  :reduce="(opt) => opt.value"
-                  placeholder="Select Industry"
-                />
-              </div>
-            </div>
-          </div>
-          <div v-if="!contact_id" class="grid grid-cols-1 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-dark-base mb-2"
-                >Contact</label
-              >
-              <div class="relative">
-                <v-select
-                  v-model="formData.contact_id"
-                  :options="getcontact"
-                  label="label"
-                  :reduce="(opt) => opt.value"
-                  placeholder="Select Contact"
-                />
-              </div>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 gap-4">
-            <div>
+                        <div>
               <label class="block text-sm font-medium text-dark-base mb-2"
                 >owner</label
               >
@@ -1572,178 +1600,72 @@ export default {
             </div>
           </div>
 
-          <!-- 
-            <div class="border border-outline rounded-lg">
-              <label
-                class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-light-base transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  v-model="showOptional"
-                  class="w-4 h-4 rounded border-outline accent-dark-base cursor-pointer"
-                />
-                <span class="text-sm font-medium text-sub-text"
-                  >Description &amp; Document
-                  <span class="text-sub-text/60">(Opsional)</span></span
-                >
-              </label>
-  
-              <transition name="expand">
-                <div
-                  v-if="showOptional"
-                  class="border-t border-outline px-4 py-4 space-y-4"
-                >
-                  <div>
-                    <label class="block text-sm font-medium text-dark-base mb-2"
-                      >Description</label
-                    >
-                    <textarea
-                      v-model="formData.description"
-                      placeholder="Ex Lorem ipsum dolor sit"
-                      rows="3"
-                      class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm resize-none"
-                    ></textarea>
-                  </div>
-  
-                  <div>
-                    <label class="block text-sm font-medium text-dark-base mb-2"
-                      >Documents</label
-                    >
-                    <div class="relative">
-                      <button
-                        type="button"
-                        @click="isDocDropdownOpen = !isDocDropdownOpen"
-                        class="w-full flex items-center justify-between px-3 py-2 border border-outline rounded-lg text-sm bg-white cursor-pointer"
-                        :class="
-                          selectedDocSource ? 'text-dark-base' : 'text-sub-text'
-                        "
-                      >
-                        <span>{{
-                          docSourceOptions.find(
-                            (o) => o.value === selectedDocSource,
-                          )?.label || "Select File Source"
-                        }}</span>
-                        <ChevronDown
-                          :size="16"
-                          class="text-sub-text transition-transform"
-                          :class="{ 'rotate-180': isDocDropdownOpen }"
-                        />
-                      </button>
-  
-                      <div
-                        v-if="isDocDropdownOpen"
-                        class="absolute left-0 right-0 mt-1 bg-white border border-outline rounded-lg shadow-lg z-30"
-                      >
-                        <ul class="py-1">
-                          <li
-                            v-for="opt in docSourceOptions.filter(
-                              (o) => o.value !== '',
-                            )"
-                            :key="opt.value"
-                            @click="selectDocSource(opt.value)"
-                            class="px-4 py-2 text-sm hover:bg-light-base cursor-pointer"
-                            :class="
-                              selectedDocSource === opt.value
-                                ? 'text-dark-base font-medium'
-                                : 'text-sub-text'
-                            "
-                          >
-                            {{ opt.label }}
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                    <transition name="expand">
-                      <div v-if="selectedDocSource === 'local'" class="mt-2">
-                        <label class="relative block cursor-pointer">
-                          <input
-                            type="file"
-                            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                            multiple
-                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            @change="handleFileChange"
-                          />
-                          <div
-                            class="w-full flex flex-col items-center justify-center gap-2 px-4 py-6 border-2 border-dashed border-outline rounded-lg text-sm bg-light-base hover:bg-outline/10 transition-colors"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              class="w-7 h-7 text-sub-text"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              stroke-width="1.5"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12V4m0 0L8 8m4-4l4 4"
-                              />
-                            </svg>
-                            <span
-                              v-if="!getLocalUploadFiles().length"
-                              class="text-sub-text font-medium"
-                              >Klik untuk pilih file</span
-                            >
-                            <span v-else class="text-dark-base font-medium">
-                              {{ getLocalUploadFiles().length }} file dipilih
-                            </span>
-                            <span class="text-xs text-sub-text/70"
-                              >PDF, DOC, XLS, JPG, PNG</span
-                            >
-                          </div>
-                        </label>
-  
-                        <ul
-                          v-if="getLocalUploadFiles().length"
-                          class="mt-2 space-y-1"
-                        >
-                          <li
-                            v-for="(file, i) in getLocalUploadFiles()"
-                            :key="`${file.name}-${file.lastModified || i}`"
-                            class="flex items-center justify-between text-xs px-3 py-1.5 bg-light-base rounded-lg"
-                          >
-                            <div class="min-w-0">
-                              <p class="truncate text-dark-base">
-                                {{ getLocalUploadLabel(file) }}
-                              </p>
-                              <p class="text-[10px] text-sub-text">
-                                {{ formatLocalUploadSize(file) }}
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              @click="removeLocalUploadFile(i)"
-                              class="ml-2 text-sub-text hover:text-red-500 shrink-0"
-                            >
-                              ✕
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </transition>
-                  </div>
-                </div>
-              </transition>
-            </div>
-            <ContactAssociationForm
-              v-model="formData.contactassoc"
-              :contacts="allContacts"
-            />
-            <CompaniesAssociationForm
-              :companies="allcompany"
-              v-model="formData.companyassoc"
-            />
-          <button
-              type="button"
-              @click="showAddCompanyForm = true"
-              class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
-            >
-              <Plus :size="16" />
-              Create Company
-            </button> -->
+          <!-- Probability & Active -->
+          <!-- Probability & Active -->
+<div class="grid grid-cols-2 gap-4 items-center">
+  <div>
+    <label class="block text-sm font-medium text-dark-base mb-2">
+      Probability (%)
+    </label>
+    <input
+      v-model="formData.probability"
+      type="number"
+      min="0"
+      max="100"
+      placeholder="Probability"
+      class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+    />
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-dark-base mb-2">
+      Status
+    </label>
+    <div class="relative">
+      <select
+        v-model="formData.active"
+        class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+      >
+        <option :value="1">Active</option>
+        <option :value="0">Inactive</option>
+      </select>
+      <ChevronDown
+        :size="16"
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+      />
+    </div>
+  </div>
+</div>  
         </form>
-        <!-- Detail Tab -->
+
+        <!-- Projects Tab -->
+        <div v-if="activeTab === 'projects'" class="p-6 h-full flex flex-col">
+          <div class="flex items-center gap-3 mb-4">
+            <button
+              @click="showCreateProjectForm = true"
+              class="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-outline rounded-xl text-sm font-semibold text-dark-base hover:bg-light-base hover:border-dark-base/20 transition-all duration-200 shadow-sm"
+            >
+              <Plus :size="18" />
+              Buat Project Baru
+            </button>
+          </div>
+          <div
+            class="border border-outline rounded-lg p-4 flex flex-col flex-1"
+          >
+            <div class="flex items-center gap-2 mb-3">
+              <PackageIcon :size="20" class="text-sub-text" />
+              <h3 class="text-sm font-semibold">
+                Projects yang terkait dengan deal ini
+              </h3>
+            </div>
+            <div class="flex-1 overflow-y-auto pr-1">
+              <div class="text-sm text-sub-text">
+                Daftar Project belum tersedia.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes/Detail Tab -->
         <div v-if="activeTab === 'detail'" class="p-6 h-full flex flex-col">
           <HistoryDetail
             :items="historyitems"
@@ -1798,54 +1720,70 @@ export default {
     @submit="handleDetailSubmit"
   />
 
+  <CreateProjectForm
+    :isOpen="showCreateProjectForm"
+    @close="showCreateProjectForm = false"
+    @submit="handleCreateProject"
+  />
+
   <!-- Note Drawer POPUP -->
-  <Transition name="slide">
+<!-- ======================= NOTES DRAWER DENGAN OVERLAY KHUSUS ======================= -->
+<transition name="overlay">
+  <div
+    v-if="isNoteDrawerOpen"
+    class="fixed inset-0 bg-black/50 z-55"
+    @click="isNoteDrawerOpen = false"
+  ></div>
+</transition>
+
+<transition name="slide">
+  <div
+    v-if="isNoteDrawerOpen"
+    class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-60 flex flex-col"
+    @click.stop
+  >
     <div
-      v-if="isNoteDrawerOpen"
-      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[60] flex flex-col"
+      class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
     >
-      <div
-        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
+      <h2 class="text-xl font-bold text-dark-base">
+        {{ editingItemIndex !== null ? "Edit Note" : "Tambah Note" }}
+      </h2>
+      <button
+        @click="isNoteDrawerOpen = false"
+        class="p-2 hover:bg-light-base rounded-lg transition-colors"
       >
-        <h2 class="text-xl font-bold text-dark-base">
-          {{ editingItemIndex !== null ? "Edit Note" : "Tambah Note" }}
-        </h2>
-        <button
-          @click="isNoteDrawerOpen = false"
-          class="p-2 hover:bg-light-base rounded-lg transition-colors"
-        >
-          <X :size="20" class="text-sub-text" />
-        </button>
-      </div>
-
-      <div class="flex-1 overflow-y-auto p-6">
-        <NotesSection v-model:note-data="tempNoteData" />
-      </div>
-
-      <div
-        class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
-      >
-        <button
-          @click="isNoteDrawerOpen = false"
-          class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
-        >
-          Cancel
-        </button>
-        <button
-          @click="saveNoteFromDrawer"
-          class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
-        >
-          Simpan Ke Histori
-        </button>
-      </div>
+        <X :size="20" class="text-sub-text" />
+      </button>
     </div>
-  </Transition>
+
+    <div class="flex-1 overflow-y-auto p-6">
+      <NotesSection v-model:note-data="tempNoteData" />
+    </div>
+
+    <div
+      class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
+    >
+      <button
+        @click="isNoteDrawerOpen = false"
+        class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
+      >
+        Cancel
+      </button>
+      <button
+        @click="saveNoteFromDrawer"
+        class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
+      >
+        Simpan Ke Histori
+      </button>
+    </div>
+  </div>
+</transition>
 
   <!-- Docs Drawer POPUP -->
   <Transition name="slide">
     <div
       v-if="isDocDrawerOpen"
-      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-[60] flex flex-col"
+      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-60 flex flex-col"
     >
       <div
         class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"

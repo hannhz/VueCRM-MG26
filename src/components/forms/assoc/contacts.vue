@@ -1,7 +1,7 @@
 <template>
   <div class="relative" ref="contactDropdownRef">
     <label class="block text-sm font-medium text-dark-base mb-2">
-      Tambah Contact Association
+      Contact Association
     </label>
     <div
       @click="isContactDropdownOpen = !isContactDropdownOpen"

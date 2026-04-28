@@ -96,7 +96,7 @@
       class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
       @click="handleBackdropClick"
     >
-      <div class="bg-white rounded-xl p-6 w-[400px] shadow-xl" @click.stop>
+      <div class="bg-white rounded-xl p-6 w-100 shadow-xl" @click.stop>
         <dealAssociationForm
           ref="dealAssociationRef"
           v-model="form.dealassoc"

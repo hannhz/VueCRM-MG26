@@ -1,319 +1,3 @@
-<script setup>
-import { computed, onMounted, ref, watch } from "vue";
-import { useStore } from "vuex";
-import { ArrowRight, ChevronDown, X } from "lucide-vue-next";
-import { alertService } from "@/services/alertService";
-import { useStatuses } from "@/composables/useStatuses";
-import LocationSelector from "./component/LocationSelector.vue";
-
-const props = defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false,
-  },
-  initialData: {
-    type: Object,
-    default: null,
-  },
-});
-
-const emit = defineEmits(["close", "submit"]);
-
-const store = useStore();
-const isSubmitting = ref(false);
-const { statuses, fetchStatuses } = useStatuses();
-
-const locationData = ref({
-  address: "",
-  country: "",
-  province: "",
-  city: "",
-  kecamatan: "",
-  kelurahan: "",
-  pos_code: "",
-});
-
-const formData = ref({
-  id: null,
-  project_name: "",
-  deal_id: "",
-  leader_id: "",
-  description: "",
-  location: "",
-  kd_kelurahan: "",
-  project_status: "",
-  created_at: "",
-  created_by: "",
-});
-
-const isEditMode = computed(() => !!props.initialData);
-
-const currentUser = computed(
-  () => store.getters["users/usersignin"] || store.state.auth?.user || null,
-);
-
-const currentUserLabel = computed(() => {
-  const user = currentUser.value;
-  if (!user) return "";
-
-  const fullName = [
-    user.first_name || user.firstname,
-    user.last_name || user.lastname,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-
-  return user.name || user.username || fullName || String(user.id || "");
-});
-
-const currentUserId = computed(() => {
-  const user = currentUser.value;
-  return user?.id || user?.user_id || user?.userid || "";
-});
-
-const dealOptions = computed(() => {
-  const deals = store.getters["deals/allDeals"] || [];
-
-  return [
-    { value: "", label: "Select Deal" },
-    ...deals.map((deal) => ({
-      value: deal.id ?? deal.deal_id ?? deal.id_deal ?? "",
-      label: deal.deal_name || deal.name || deal.title || "Unknown",
-    })),
-  ];
-});
-
-const leaderOptions = computed(() => {
-  const users = store.getters["users/allUsers"] || [];
-
-  return [
-    { value: "", label: "Select Leader" },
-    ...users.map((user) => ({
-      value: user.id ?? user.user_id ?? user.userid ?? "",
-      label:
-        user.name ||
-        [user.first_name || user.firstname, user.last_name || user.lastname]
-          .filter(Boolean)
-          .join(" ")
-          .trim() ||
-        user.username ||
-        "Unknown",
-    })),
-  ];
-});
-
-const projectStatusOptions = computed(() => {
-  const projectStatuses = (statuses.value || []).filter((status) => {
-    const tableCode = String(
-      status?.table_code || status?.tableCode || status?.table || "",
-    ).toUpperCase();
-    return tableCode === "PR";
-  });
-
-  const source = projectStatuses.length
-    ? projectStatuses
-    : statuses.value || [];
-
-  return [
-    { value: "", label: "Select Project Status" },
-    ...source.map((status) => ({
-      value: status.id ?? status.value ?? status.code ?? "",
-      label:
-        status.name ||
-        status.status_name ||
-        status.label ||
-        status.status ||
-        "Unknown",
-    })),
-  ];
-});
-
-const applyDefaultCreator = () => {
-  if (!formData.value.created_by && currentUserId.value) {
-    formData.value.created_by = currentUserId.value;
-  }
-
-  if (!formData.value.created_by && currentUserLabel.value) {
-    formData.value.created_by = currentUserLabel.value;
-  }
-};
-
-const setFormData = (data) => {
-  if (!data) return;
-
-  formData.value = {
-    id: data.id ?? data.project_id ?? data.id_project ?? null,
-    project_name:
-      data.project_name ||
-      data["Project Name"] ||
-      data.title ||
-      data.name ||
-      "",
-    deal_id: data.deal_id ?? data.deal ?? "",
-    leader_id: data.leader_id ?? data.assignee_id ?? "",
-    description: data.description || data.project_content || "",
-    location: data.location || "",
-    kd_kelurahan: data.kd_kelurahan || data.kelurahan || "",
-    project_status: data.project_status || data.status || data.stage || "",
-    created_at: data.created_at || new Date().toISOString(),
-    created_by:
-      data.created_by || currentUserId.value || currentUserLabel.value || "",
-  };
-
-  locationData.value = {
-    address: data.address || "",
-    country: data.country || "",
-    province: data.province || "",
-    city: data.city || "",
-    kecamatan: data.kecamatan || "",
-    kelurahan: data.kd_kelurahan || data.kelurahan || "",
-    pos_code: data.pos_code || "",
-  };
-};
-
-const resetForm = () => {
-  const now = new Date().toISOString();
-
-  formData.value = {
-    id: null,
-    project_name: "",
-    deal_id: "",
-    leader_id: currentUserId.value || "",
-    description: "",
-    location: "",
-    kd_kelurahan: "",
-    project_status: "",
-    created_at: now,
-    created_by: currentUserId.value || currentUserLabel.value || "",
-  };
-
-  locationData.value = {
-    address: "",
-    country: "",
-    province: "",
-    city: "",
-    kecamatan: "",
-    kelurahan: "",
-    pos_code: "",
-  };
-};
-
-const handleClose = () => {
-  if (!isSubmitting.value) {
-    emit("close");
-  }
-};
-
-const handleSubmit = async () => {
-  if (!formData.value.project_name.trim()) {
-    await alertService.error("Project name wajib diisi.");
-    return;
-  }
-
-  if (!formData.value.deal_id) {
-    await alertService.error("Deal wajib dipilih.");
-    return;
-  }
-
-  if (!formData.value.leader_id) {
-    await alertService.error("Leader wajib dipilih.");
-    return;
-  }
-
-  if (!formData.value.project_status) {
-    await alertService.error("Project status wajib dipilih.");
-    return;
-  }
-
-  if (isSubmitting.value) {
-    return;
-  }
-
-  isSubmitting.value = true;
-
-  try {
-    const payload = {
-      ...(formData.value.id ? { id: formData.value.id } : {}),
-      project_name: formData.value.project_name.trim(),
-      deal_id: formData.value.deal_id,
-      leader_id: formData.value.leader_id,
-      description: formData.value.description.trim(),
-      address: locationData.value.address?.trim() || "",
-      kd_kelurahan:
-        locationData.value.kelurahan || formData.value.kd_kelurahan || "",
-      location:
-        formData.value.location.trim() || JSON.stringify(locationData.value),
-      project_status: formData.value.project_status,
-      created_at: formData.value.created_at || new Date().toISOString(),
-      created_by:
-        formData.value.created_by ||
-        currentUserId.value ||
-        currentUserLabel.value ||
-        "",
-    };
-
-    emit("submit", payload);
-    resetForm();
-    emit("close");
-  } finally {
-    isSubmitting.value = false;
-  }
-};
-
-watch(
-  locationData,
-  () => {
-    formData.value.kd_kelurahan = locationData.value.kelurahan || "";
-  },
-  { deep: true },
-);
-
-watch(
-  () => props.isOpen,
-  (isOpen) => {
-    if (isOpen) {
-      Promise.allSettled([
-        store.dispatch("users/getusersignin"),
-        store.dispatch("users/fetchAllusers"),
-        store.dispatch("deals/fetchAllDeals"),
-        fetchStatuses(),
-      ]).finally(() => {
-        if (props.initialData) {
-          setFormData(props.initialData);
-        } else {
-          resetForm();
-        }
-        applyDefaultCreator();
-      });
-    }
-  },
-);
-
-watch(
-  () => props.initialData,
-  (nextValue) => {
-    if (!props.isOpen) return;
-    if (nextValue) {
-      setFormData(nextValue);
-      applyDefaultCreator();
-    } else {
-      resetForm();
-      applyDefaultCreator();
-    }
-  },
-);
-
-onMounted(() => {
-  Promise.allSettled([
-    store.dispatch("users/getusersignin"),
-    store.dispatch("users/fetchAllusers"),
-    store.dispatch("deals/fetchAllDeals"),
-    fetchStatuses(),
-  ]).finally(applyDefaultCreator);
-});
-</script>
-
 <template>
   <Transition name="overlay">
     <div
@@ -329,11 +13,11 @@ onMounted(() => {
       class="fixed right-0 top-0 z-50 flex h-screen w-full flex-col bg-white shadow-2xl sm:max-w-2xl"
       @click.stop
     >
+      <!-- Header sticky di atas -->
       <div
         class="sticky top-0 z-10 flex items-center justify-between border-b border-outline bg-white px-6 py-4 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
       >
         <div class="flex items-center gap-2">
-          <ArrowRight :size="20" class="text-dark-base" />
           <h2 class="text-xl font-bold text-dark-base">
             {{ isEditMode ? "Edit Project" : "Create Project" }}
           </h2>
@@ -347,8 +31,54 @@ onMounted(() => {
         </button>
       </div>
 
-      <div class="min-h-0 flex-1 overflow-y-auto">
-        <form @submit.prevent="handleSubmit" class="space-y-5 p-6">
+      <!-- Tabs -->
+      <div class="flex border-b border-outline bg-white px-6">
+        <button
+          type="button"
+          @click="activeTab = 'master'"
+          :class="[
+            'px-4 py-2 text-sm font-medium border-b-2 transition',
+            activeTab === 'master'
+              ? 'border-dark-base text-dark-base'
+              : 'border-transparent text-sub-text hover:text-dark-base',
+          ]"
+        >
+          Master
+        </button>
+        <button
+          type="button"
+          @click="activeTab = 'tasks'"
+          :class="[
+            'px-4 py-2 text-sm font-medium border-b-2 transition',
+            activeTab === 'tasks'
+              ? 'border-dark-base text-dark-base'
+              : 'border-transparent text-sub-text hover:text-dark-base',
+          ]"
+        >
+          Tasks
+        </button>
+        <button
+          type="button"
+          @click="activeTab = 'notes'"
+          :class="[
+            'px-4 py-2 text-sm font-medium border-b-2 transition',
+            activeTab === 'notes'
+              ? 'border-dark-base text-dark-base'
+              : 'border-transparent text-sub-text hover:text-dark-base',
+          ]"
+        >
+          Notes
+        </button>
+      </div>
+
+      <!-- Area konten yang bisa di-scroll -->
+      <div class="flex-1 overflow-y-auto">
+        <form
+          v-show="activeTab === 'master'"
+          id="projectForm"
+          @submit.prevent="handleSubmit"
+          class="space-y-5 p-6 pb-24"
+        >
           <div>
             <label class="mb-2 block text-sm font-medium text-dark-base">
               Project Name <span class="text-red-600">*</span>
@@ -390,7 +120,7 @@ onMounted(() => {
 
             <div>
               <label class="mb-2 block text-sm font-medium text-dark-base">
-                Project Manager <span class="text-red-600">*</span>
+                Leader <span class="text-red-600">*</span>
               </label>
               <div class="relative">
                 <select
@@ -433,14 +163,13 @@ onMounted(() => {
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label class="mb-2 block text-sm font-medium text-dark-base">
-                Location <span class="text-red-600">*</span>
+                Location
               </label>
               <input
                 v-model="formData.location"
                 type="text"
                 placeholder="Ex. -6.200000, 106.816666"
                 class="w-full rounded-lg border border-outline px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
-                required
               />
             </div>
 
@@ -469,28 +198,883 @@ onMounted(() => {
               </div>
             </div>
           </div>
+        </form>
 
-          <div class="flex justify-end gap-3 border-t border-outline pt-5">
+        <div
+          v-show="activeTab === 'tasks'"
+          class="p-6 pb-24 h-full flex flex-col"
+        >
+          <!-- Tambah Task Button -->
+          <div class="flex items-center gap-3 mb-6">
             <button
               type="button"
-              @click="handleClose"
-              class="rounded-lg border border-outline px-6 py-2 text-sm font-medium text-sub-text transition-colors hover:bg-light-base"
+              @click="openTaskDrawer()"
+              class="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-outline rounded-xl text-sm font-semibold text-dark-base hover:bg-light-base hover:border-dark-base/20 transition-all duration-200 shadow-sm"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              :disabled="isSubmitting"
-              class="rounded-lg bg-dark-base px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-dark-hover disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {{ isEditMode ? "Update Project" : "Save Project" }}
+              <Plus :size="18" class="text-dark-base" />
+              Tambah Task
             </button>
           </div>
-        </form>
+
+          <!-- Task History -->
+          <div
+            v-if="historyitems.filter((i) => i.type === 'task').length === 0"
+            class="flex flex-col items-center justify-center py-12 text-center"
+          >
+            <div
+              class="w-12 h-12 bg-light-base rounded-full flex items-center justify-center mb-3"
+            >
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                class="text-outline"
+              >
+                <polyline points="9 11 12 14 22 4" />
+                <path
+                  d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
+                />
+              </svg>
+            </div>
+            <h3 class="text-base font-semibold text-dark-base">
+              Belum ada task
+            </h3>
+            <p class="text-sm text-sub-text mt-1">
+              Mulai dengan membuat task baru untuk proyek ini
+            </p>
+          </div>
+          <div v-else class="space-y-3 overflow-y-auto">
+            <div
+              v-for="(item, index) in historyitems.filter(
+                (i) => i.type === 'task',
+              )"
+              :key="index"
+              class="border border-outline rounded-lg p-4 hover:shadow-sm transition-all"
+            >
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex-1">
+                  <h4 class="font-semibold text-dark-base">
+                    {{ item.name || item.body }}
+                  </h4>
+                  <p class="text-xs text-sub-text mt-1">
+                    {{
+                      item.timestamp
+                        ? new Date(item.timestamp).toLocaleString()
+                        : "Baru"
+                    }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    @click="
+                      handleHistoryEdit({
+                        item,
+                        index: historyitems.indexOf(item),
+                      })
+                    "
+                    class="p-1 hover:bg-light-base rounded text-sub-text hover:text-dark-base"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    @click="handleHistoryDelete(historyitems.indexOf(item))"
+                    class="p-1 hover:bg-light-base rounded text-sub-text hover:text-red"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <p v-if="item.content" class="text-sm text-dark-base/80 mb-2">
+                {{ item.content }}
+              </p>
+              <div class="flex gap-2 text-xs">
+                <span
+                  v-if="item.status"
+                  class="px-2 py-1 bg-light-base rounded text-dark-base"
+                  >{{ item.status }}</span
+                >
+                <span
+                  v-if="item.priority"
+                  class="px-2 py-1 bg-light-base rounded text-dark-base"
+                  >{{ item.priority }}</span
+                >
+                <span
+                  v-if="item.dueDate"
+                  class="px-2 py-1 bg-light-base rounded text-dark-base"
+                  >{{ item.dueDate }}</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-show="activeTab === 'notes'"
+          class="p-6 pb-24 h-full flex flex-col"
+        >
+          <HistoryDetail
+            :items="historyitems.filter((i) => i.type === 'note')"
+            @add-note="openNoteDrawer()"
+            @edit="handleHistoryEdit"
+            @delete="handleHistoryDelete"
+          />
+        </div>
+      </div>
+
+      <!-- Footer sticky di bawah (tidak ikut scroll) -->
+      <div
+        class="sticky bottom-0 border-t border-outline bg-white px-6 py-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+      >
+        <div class="flex justify-end gap-3">
+          <button
+            type="button"
+            @click="handleClose"
+            class="rounded-lg border border-outline px-6 py-2 text-sm font-medium text-sub-text transition-colors hover:bg-light-base"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="projectForm"
+            :disabled="isSubmitting"
+            class="rounded-lg bg-dark-base px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-dark-hover disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ isEditMode ? "Update Project" : "Save Project" }}
+          </button>
+        </div>
       </div>
     </div>
   </Transition>
+
+  <!-- ======================= NOTES DRAWER DENGAN OVERLAY KHUSUS ======================= -->
+  <transition name="overlay">
+    <div
+      v-if="isNoteDrawerOpen"
+      class="fixed inset-0 bg-black/50 z-55"
+      @click="isNoteDrawerOpen = false"
+    ></div>
+  </transition>
+
+  <transition name="slide">
+    <div
+      v-if="isNoteDrawerOpen"
+      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-60 flex flex-col"
+      @click.stop
+    >
+      <div
+        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
+      >
+        <h2 class="text-xl font-bold text-dark-base">
+          {{ editingItemIndex !== null ? "Edit Note" : "Tambah Note" }}
+        </h2>
+        <button
+          @click="isNoteDrawerOpen = false"
+          class="p-2 hover:bg-light-base rounded-lg transition-colors"
+        >
+          <X :size="20" class="text-sub-text" />
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-6">
+        <NotesSection v-model:note-data="tempNoteData" />
+      </div>
+
+      <div
+        class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
+      >
+        <button
+          @click="isNoteDrawerOpen = false"
+          class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
+        >
+          Cancel
+        </button>
+        <button
+          @click="saveNoteFromDrawer"
+          class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
+        >
+          Simpan
+        </button>
+      </div>
+    </div>
+  </transition>
+
+  <!-- ======================= TASK DRAWER DENGAN OVERLAY KHUSUS ======================= -->
+  <transition name="overlay">
+    <div
+      v-if="isTaskDrawerOpen"
+      class="fixed inset-0 bg-black/50 z-55"
+      @click="isTaskDrawerOpen = false"
+    ></div>
+  </transition>
+
+  <transition name="slide">
+    <div
+      v-if="isTaskDrawerOpen"
+      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-60 flex flex-col"
+      @click.stop
+    >
+      <div
+        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
+      >
+        <h2 class="text-xl font-bold text-dark-base">
+          {{ editingItemIndex !== null ? "Edit Task" : "Tambah Task" }}
+        </h2>
+        <button
+          @click="isTaskDrawerOpen = false"
+          class="p-2 hover:bg-light-base rounded-lg transition-colors"
+        >
+          <X :size="20" class="text-sub-text" />
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-6">
+        <TaskSection v-model="tempTaskData" />
+      </div>
+
+      <div
+        class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
+      >
+        <button
+          @click="isTaskDrawerOpen = false"
+          class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
+        >
+          Cancel
+        </button>
+        <button
+          @click="saveTaskFromDrawer"
+          class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
+        >
+          Simpan
+        </button>
+      </div>
+    </div>
+  </transition>
 </template>
+
+<script>
+import { ChevronDown, X, Plus } from "lucide-vue-next";
+import api from "@/api";
+import { useCookies } from "vue3-cookies";
+import { alertService } from "@/services/alertService";
+import LocationSelector from "./component/LocationSelector.vue";
+import NotesSection from "@/components/widgets/NotesEditor.vue";
+import TaskSection from "@/components/widgets/TaskEditor.vue";
+import HistoryDetail from "@/components/widgets/historydetail.vue";
+
+const { cookies } = useCookies();
+
+export default {
+  name: "CreateProjectForm",
+  components: {
+    LocationSelector,
+    NotesSection,
+    TaskSection,
+    HistoryDetail,
+    ChevronDown,
+    X,
+    Plus,
+  },
+  props: {
+    isOpen: {
+      type: Boolean,
+      default: false,
+    },
+    initialData: {
+      type: Object,
+      default: null,
+    },
+  },
+  data() {
+    return {
+      isSubmitting: false,
+      activeTab: "master",
+      statuses: [],
+      isNoteDrawerOpen: false,
+      isTaskDrawerOpen: false,
+      editingItemIndex: null,
+      historyitems: [],
+      tempNoteData: {
+        body: "",
+        gps_address: null,
+        latitude: null,
+        longitude: null,
+        photos: [],
+        audioBlob: null,
+      },
+      tempTaskData: {
+        name: "",
+        content: "",
+        dueDate: "",
+        time: "",
+        status: "",
+        priority: "",
+      },
+      locationData: {
+        address: "",
+        country: "",
+        province: "",
+        city: "",
+        kecamatan: "",
+        kelurahan: "",
+        pos_code: "",
+      },
+      formData: {
+        id: null,
+        project_name: "",
+        deal_id: "",
+        leader_id: "",
+        description: "",
+        location: "",
+        kd_kelurahan: "",
+        project_status: "",
+        created_at: "",
+        created_by: "",
+        task: {
+          name: "",
+          content: "",
+          dueDate: "",
+          time: "",
+          status: "",
+          priority: "",
+        },
+        noteData: {
+          body: "",
+          gps_address: null,
+          latitude: null,
+          longitude: null,
+          photos: [],
+          audioBlob: null,
+        },
+      },
+    };
+  },
+  computed: {
+    isEditMode() {
+      return !!this.initialData;
+    },
+    currentUser() {
+      return (
+        this.$store.getters["users/usersignin"] ||
+        this.$store.state.auth?.user ||
+        null
+      );
+    },
+    currentUserLabel() {
+      const user = this.currentUser;
+      if (!user) return "";
+
+      const fullName = [
+        user.first_name || user.firstname,
+        user.last_name || user.lastname,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+
+      return user.name || user.username || fullName || String(user.id || "");
+    },
+    currentUserId() {
+      const user = this.currentUser;
+      return user?.id || user?.user_id || user?.userid || "";
+    },
+    dealOptions() {
+      const deals = this.$store.getters["deals/allDeals"] || [];
+      return [
+        { value: "", label: "Select Deal" },
+        ...deals.map((deal) => ({
+          value: deal.id ?? deal.deal_id ?? deal.id_deal ?? "",
+          label: deal.deal_name || deal.name || deal.title || "Unknown",
+        })),
+      ];
+    },
+    leaderOptions() {
+      const users = this.$store.getters["users/allUsers"] || [];
+      return [
+        { value: "", label: "Select Leader" },
+        ...users.map((user) => ({
+          value: user.id ?? user.user_id ?? user.userid ?? "",
+          label:
+            user.name ||
+            [user.first_name || user.firstname, user.last_name || user.lastname]
+              .filter(Boolean)
+              .join(" ")
+              .trim() ||
+            user.username ||
+            "Unknown",
+        })),
+      ];
+    },
+    projectStatusOptions() {
+      const prStatuses = this.statuses.filter((s) => s.table_code === "PR");
+      return [
+        { value: "", label: "Select Project Status" },
+        ...prStatuses.map((s) => ({
+          value: s.id,
+          label: s.name,
+        })),
+      ];
+    },
+  },
+  watch: {
+    locationData: {
+      deep: true,
+      handler() {
+        this.formData.kd_kelurahan = this.locationData.kelurahan || "";
+      },
+    },
+    isOpen(isOpen) {
+      if (isOpen) {
+        Promise.allSettled([
+          this.$store.dispatch("users/getusersignin"),
+          this.$store.dispatch("users/fetchAllusers"),
+          this.$store.dispatch("deals/fetchAllDeals"),
+          this.fetchStatuses(),
+        ]).finally(() => {
+          if (this.initialData) {
+            this.setFormData(this.initialData);
+          } else {
+            this.resetForm();
+          }
+          this.applyDefaultCreator();
+          this.activeTab = "master";
+        });
+      }
+    },
+    initialData: {
+      immediate: false,
+      handler(nextValue) {
+        if (!this.isOpen) return;
+        if (nextValue) {
+          this.setFormData(nextValue);
+          this.applyDefaultCreator();
+        } else {
+          this.resetForm();
+          this.applyDefaultCreator();
+        }
+        this.activeTab = "master";
+      },
+    },
+  },
+  mounted() {
+    Promise.allSettled([
+      this.$store.dispatch("users/getusersignin"),
+      this.$store.dispatch("users/fetchAllusers"),
+      this.$store.dispatch("deals/fetchAllDeals"),
+      this.fetchStatuses(),
+    ]).finally(this.applyDefaultCreator);
+
+    // Escape key listener untuk nutup drawer
+    window.addEventListener("keydown", this.handleEscKey);
+  },
+  beforeDestroy() {
+    window.removeEventListener("keydown", this.handleEscKey);
+  },
+  methods: {
+    handleEscKey(e) {
+      if (e.key === "Escape") {
+        if (this.isNoteDrawerOpen) {
+          this.isNoteDrawerOpen = false;
+        } else if (this.isTaskDrawerOpen) {
+          this.isTaskDrawerOpen = false;
+        }
+      }
+    },
+    async fetchStatuses() {
+      try {
+        const response = await api.get("statuses", {
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
+          },
+        });
+        let rawData = response.data?.data || response.data;
+        if (!Array.isArray(rawData)) rawData = [];
+        this.statuses = rawData.map((item) => ({
+          id: item.id_status ?? item.id,
+          name: item.status_name ?? item.name,
+          table_code: item.table_code ?? item.tableCode,
+        }));
+        console.log(
+          "Statuses loaded, PR only:",
+          this.statuses.filter((s) => s.table_code === "PR"),
+        );
+      } catch (error) {
+        console.error("Failed to fetch statuses", error);
+        this.statuses = [];
+      }
+    },
+    applyDefaultCreator() {
+      if (!this.formData.created_by && this.currentUserId) {
+        this.formData.created_by = this.currentUserId;
+      }
+      if (!this.formData.created_by && this.currentUserLabel) {
+        this.formData.created_by = this.currentUserLabel;
+      }
+    },
+    setFormData(data) {
+      if (!data) return;
+
+      this.formData = {
+        id: data.id ?? data.project_id ?? data.id_project ?? null,
+        project_name:
+          data.project_name ||
+          data["Project Name"] ||
+          data.title ||
+          data.name ||
+          "",
+        deal_id: data.deal_id ?? data.deal ?? "",
+        leader_id: data.leader_id ?? data.assignee_id ?? "",
+        description: data.description || data.project_content || "",
+        location: data.location || "",
+        kd_kelurahan: data.kd_kelurahan || data.kelurahan || "",
+        project_status: data.project_status || data.status || data.stage || "",
+        created_at: data.created_at || new Date().toISOString(),
+        created_by:
+          data.created_by || this.currentUserId || this.currentUserLabel || "",
+        task: {
+          name: data.task_name || data.task?.name || "",
+          content: data.desktask || data.task?.content || "",
+          dueDate: data.due_date || data.task?.dueDate || "",
+          time: data.task_time || data.task?.time || "",
+          status: data.statustask || data.task?.status || "",
+          priority: data.prioritytask || data.task?.priority || "",
+        },
+        noteData: {
+          body: data.note || data.notes || data.noteData?.body || "",
+          gps_address: data.noteData?.gps_address || null,
+          latitude: data.noteData?.latitude || null,
+          longitude: data.noteData?.longitude || null,
+          photos: Array.isArray(data.noteData?.photos)
+            ? data.noteData.photos
+            : [],
+          audioBlob: data.noteData?.audioBlob || null,
+        },
+      };
+
+      // MAP HISTORY (Notes & Tasks)
+      let historyItems = [];
+
+      const getBody = (item) => {
+        return (
+          item.notes || item.body || item.description || item.content || ""
+        );
+      };
+
+      // Process Notes
+      let rawNotes = data.notes || data.note;
+      if (typeof rawNotes === "string" && rawNotes.startsWith("[")) {
+        try {
+          rawNotes = JSON.parse(rawNotes);
+        } catch (e) {}
+      }
+
+      if (Array.isArray(rawNotes)) {
+        rawNotes.forEach((n) => {
+          let location = { address: null, latitude: null, longitude: null };
+          try {
+            if (n.location) {
+              location =
+                typeof n.location === "string"
+                  ? JSON.parse(n.location)
+                  : n.location;
+            }
+          } catch (e) {}
+
+          historyItems.push({
+            type: "note",
+            id: n.id,
+            timestamp: n.created_at || n.update_at,
+            body: getBody(n),
+            gps_address: location.address,
+            latitude: location.latitude,
+            longitude: location.longitude,
+            photos: n.photos || [],
+          });
+        });
+      } else if (rawNotes && typeof rawNotes === "string") {
+        historyItems.push({
+          type: "note",
+          body: rawNotes,
+          timestamp: data.created_at || data.updated_at,
+        });
+      }
+
+      // Process Tasks
+      let rawTasks = data.tasks || data.task_list;
+      if (typeof rawTasks === "string" && rawTasks.startsWith("[")) {
+        try {
+          rawTasks = JSON.parse(rawTasks);
+        } catch (e) {}
+      }
+
+      if (Array.isArray(rawTasks)) {
+        rawTasks.forEach((t) => {
+          historyItems.push({
+            type: "task",
+            id: t.id,
+            timestamp: t.created_at || t.update_at,
+            body: t.task_name || t.name || "",
+            content: t.desktask || t.content || "",
+            status: t.statustask || t.status || "",
+            priority: t.prioritytask || t.priority || "",
+            dueDate: t.due_date || t.dueDate || "",
+            time: t.task_time || t.time || "",
+          });
+        });
+      }
+
+      this.historyitems = historyItems.sort((a, b) => {
+        const dateA = new Date(a.timestamp || 0);
+        const dateB = new Date(b.timestamp || 0);
+        return dateB - dateA;
+      });
+
+      this.locationData = {
+        address: data.address || "",
+        country: data.country || "",
+        province: data.province || "",
+        city: data.city || "",
+        kecamatan: data.kecamatan || "",
+        kelurahan: data.kd_kelurahan || data.kelurahan || "",
+        pos_code: data.pos_code || "",
+      };
+    },
+    resetForm() {
+      const now = new Date().toISOString();
+
+      this.formData = {
+        id: null,
+        project_name: "",
+        deal_id: "",
+        leader_id: this.currentUserId || "",
+        description: "",
+        location: "",
+        kd_kelurahan: "",
+        project_status: "",
+        created_at: now,
+        created_by: this.currentUserId || this.currentUserLabel || "",
+        task: {
+          name: "",
+          content: "",
+          dueDate: "",
+          time: "",
+          status: "",
+          priority: "",
+        },
+        noteData: {
+          body: "",
+          gps_address: null,
+          latitude: null,
+          longitude: null,
+          photos: [],
+          audioBlob: null,
+        },
+      };
+      this.historyitems = [];
+
+      this.locationData = {
+        address: "",
+        country: "",
+        province: "",
+        city: "",
+        kecamatan: "",
+        kelurahan: "",
+        pos_code: "",
+      };
+    },
+    handleReset() {
+      this.resetForm();
+    },
+    handleClose() {
+      if (!this.isSubmitting) {
+        this.handleReset();
+        this.activeTab = "master";
+        this.historyitems = [];
+        this.isNoteDrawerOpen = false;
+        this.isTaskDrawerOpen = false;
+        this.$emit("close");
+      }
+    },
+    openNoteDrawer(editData = null, index = null) {
+      if (editData) {
+        this.tempNoteData = { ...editData };
+        this.editingItemIndex = index;
+      } else {
+        this.tempNoteData = {
+          body: "",
+          gps_address: null,
+          latitude: null,
+          longitude: null,
+          photos: [],
+          audioBlob: null,
+        };
+        this.editingItemIndex = null;
+      }
+      this.isNoteDrawerOpen = true;
+    },
+    openTaskDrawer(editData = null, index = null) {
+      if (editData) {
+        this.tempTaskData = { ...editData };
+        this.editingItemIndex = index;
+      } else {
+        this.tempTaskData = {
+          name: "",
+          content: "",
+          dueDate: "",
+          time: "",
+          status: "",
+          priority: "",
+        };
+        this.editingItemIndex = null;
+      }
+      this.isTaskDrawerOpen = true;
+    },
+    saveNoteFromDrawer() {
+      if (!this.tempNoteData.body && this.tempNoteData.photos.length === 0) {
+        alertService.toastWarn("Catatan masih kosong");
+        return;
+      }
+
+      const item = {
+        type: "note",
+        timestamp: new Date().toISOString(),
+        ...this.tempNoteData,
+      };
+
+      if (this.editingItemIndex !== null) {
+        this.historyitems[this.editingItemIndex] = item;
+      } else {
+        this.historyitems.unshift(item);
+      }
+
+      const latestNote = this.historyitems.find((h) => h.type === "note");
+      if (latestNote) {
+        this.formData.noteData = { ...latestNote };
+      }
+
+      this.isNoteDrawerOpen = false;
+      alertService.toastSuccess("Catatan ditambahkan");
+    },
+    saveTaskFromDrawer() {
+      if (!this.tempTaskData.name && !this.tempTaskData.content) {
+        alertService.toastWarn("Task masih kosong");
+        return;
+      }
+
+      const item = {
+        type: "task",
+        timestamp: new Date().toISOString(),
+        ...this.tempTaskData,
+      };
+
+      if (this.editingItemIndex !== null) {
+        this.historyitems[this.editingItemIndex] = item;
+      } else {
+        this.historyitems.unshift(item);
+      }
+
+      const latestTask = this.historyitems.find((h) => h.type === "task");
+      if (latestTask) {
+        this.formData.task = { ...latestTask };
+      }
+
+      this.isTaskDrawerOpen = false;
+      alertService.toastSuccess("Task ditambahkan");
+    },
+    handleHistoryEdit({ item, index }) {
+      if (item.type === "note") {
+        this.openNoteDrawer(item, index);
+      } else if (item.type === "task") {
+        this.openTaskDrawer(item, index);
+      }
+    },
+    handleHistoryDelete(index) {
+      this.historyitems.splice(index, 1);
+      alertService.toastInfo("Item dihapus dari histori");
+    },
+    async handleSubmit() {
+      if (!this.formData.project_name.trim()) {
+        await alertService.error("Project name wajib diisi.");
+        return;
+      }
+      if (!this.formData.deal_id) {
+        await alertService.error("Deal wajib dipilih.");
+        return;
+      }
+      if (!this.formData.leader_id) {
+        await alertService.error("Leader wajib dipilih.");
+        return;
+      }
+      if (!this.formData.project_status) {
+        await alertService.error("Project status wajib dipilih.");
+        return;
+      }
+      if (this.isSubmitting) {
+        return;
+      }
+
+      this.isSubmitting = true;
+
+      try {
+        const payload = {
+          ...(this.formData.id ? { id: this.formData.id } : {}),
+          project_name: this.formData.project_name.trim(),
+          deal_id: this.formData.deal_id,
+          leader_id: this.formData.leader_id,
+          description: this.formData.description.trim(),
+          address: this.locationData.address?.trim() || "",
+          kd_kelurahan:
+            this.locationData.kelurahan || this.formData.kd_kelurahan || "",
+          location:
+            this.formData.location.trim() || JSON.stringify(this.locationData),
+          project_status: this.formData.project_status,
+          created_at: this.formData.created_at || new Date().toISOString(),
+          created_by:
+            this.formData.created_by ||
+            this.currentUserId ||
+            this.currentUserLabel ||
+            "",
+          task: { ...this.formData.task },
+          noteData: { ...this.formData.noteData },
+        };
+
+        this.$emit("submit", payload);
+        this.resetForm();
+        this.$emit("close");
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
+  },
+};
+</script>
 
 <style scoped>
 .slide-project-enter-active,
@@ -500,6 +1084,28 @@ onMounted(() => {
 
 .slide-project-enter-from,
 .slide-project-leave-to {
+  transform: translateX(100%);
+}
+
+/* Overlay Animation */
+.overlay-enter-active,
+.overlay-leave-active {
+  transition: opacity 0.3s ease;
+}
+.overlay-enter-from,
+.overlay-leave-to {
+  opacity: 0;
+}
+
+/* Slide Animation untuk drawer */
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.slide-enter-from {
+  transform: translateX(100%);
+}
+.slide-leave-to {
   transform: translateX(100%);
 }
 </style>

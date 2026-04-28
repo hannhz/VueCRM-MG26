@@ -1,139 +1,15 @@
-<script setup>
-import { ref, computed, watch, onMounted } from "vue";
-import { useStore } from "vuex";
-import {
-  X,
-  ChevronDown,
-  Calendar,
-  Clock,
-  ClipboardList,
-  Type,
-  Bold,
-  Italic,
-  Underline,
-  Link2,
-  Anchor,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify,
-  List,
-  ListOrdered,
-  RotateCcw,
-  RotateCw,
-} from "lucide-vue-next";
-
-const store = useStore();
-
-defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false,
-  },
-});
-
-const emit = defineEmits(["close", "submit"]);
-
-const getCurrentUserName = () => {
-  const userSignin = store.getters["users/usersignin"];
-  return (
-    userSignin?.name ||
-    userSignin?.username ||
-    userSignin?.user?.name ||
-    userSignin?.user?.username ||
-    ""
-  );
-};
-
-// Form Data
-const formData = ref({
-  task_name: "",
-  description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-  status: "",
-  assignee: getCurrentUserName(),
-  due_date: "",
-  task_time: "",
-  priority: "",
-});
-
-const statusOptions = [
-  { value: "", label: "Select Data" },
-  { value: "todo", label: "To Do" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "done", label: "Done" },
-];
-
-const assigneeOptions = computed(() => {
-  const users = store.getters["users/allUsers"] || [];
-  return [
-    { value: "", label: "Select Data" },
-    ...users.map((user) => ({
-      value: user.name || user.username || user.id,
-      label: user.name || user.username || "Unknown",
-    })),
-  ];
-});
-
-const priorityOptions = [
-  { value: "", label: "Select Data" },
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
-];
-
-const handleClose = () => emit("close");
-
-const handleSubmit = () => {
-  emit("submit", formData.value);
-  handleReset();
-  handleClose();
-};
-
-const handleReset = () => {
-  formData.value = {
-    task_name: "",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-    status: "",
-    assignee: getCurrentUserName(),
-    due_date: "",
-    task_time: "",
-    priority: "",
-  };
-};
-
-onMounted(async () => {
-  await Promise.allSettled([
-    store.dispatch("users/fetchAllusers"),
-    store.dispatch("users/getusersignin"),
-  ]);
-
-  if (!formData.value.assignee) {
-    formData.value.assignee = getCurrentUserName();
-  }
-});
-
-watch(
-  () => store.getters["users/usersignin"],
-  () => {
-    if (!formData.value.assignee) {
-      formData.value.assignee = getCurrentUserName();
-    }
-  },
-);
-</script>
-
 <template>
-  <!-- Overlay -->
-  <Transition name="overlay">
+  <!-- Overlay form utama -->
+  <transition name="overlay">
     <div
       v-if="isOpen"
       class="fixed inset-0 bg-sub-text/80 z-40 transition-all duration-300"
       @click="handleClose"
     ></div>
-  </Transition>
+  </transition>
 
-  <!-- Slide Panel -->
-  <Transition name="slide">
+  <!-- Slide Panel Utama -->
+  <transition name="slide">
     <div
       v-if="isOpen"
       class="fixed top-0 right-0 h-screen w-full sm:max-w-2xl bg-white shadow-2xl z-50 flex flex-col"
@@ -145,7 +21,9 @@ watch(
       >
         <div class="flex items-center gap-2">
           <ClipboardList :size="20" class="text-dark-base" />
-          <h2 class="text-xl font-bold text-dark-base">Tasks</h2>
+          <h2 class="text-xl font-bold text-dark-base">
+            {{ isEditMode ? "Edit Task" : "Create Task" }}
+          </h2>
         </div>
         <button
           @click="handleClose"
@@ -155,8 +33,42 @@ watch(
         </button>
       </div>
 
+      <!-- Tabs -->
+      <div class="flex border-b border-outline px-6 bg-white">
+        <button
+          type="button"
+          @click="activeTab = 'master'"
+          :class="[
+            'px-4 py-2 text-sm font-medium border-b-2 transition',
+            activeTab === 'master'
+              ? 'border-dark-base text-dark-base'
+              : 'border-transparent text-sub-text hover:text-dark-base',
+          ]"
+        >
+          Master
+        </button>
+        <button
+          type="button"
+          @click="activeTab = 'notes'"
+          :class="[
+            'px-4 py-2 text-sm font-medium border-b-2 transition',
+            activeTab === 'notes'
+              ? 'border-dark-base text-dark-base'
+              : 'border-transparent text-sub-text hover:text-dark-base',
+          ]"
+        >
+          Notes
+        </button>
+      </div>
+
+      <!-- Konten Scrollable -->
       <div class="flex-1 overflow-y-auto min-h-0">
-        <form @submit.prevent="handleSubmit" class="p-4 sm:p-6 space-y-5">
+        <!-- Tab Master: Form Task -->
+        <form
+          v-if="activeTab === 'master'"
+          @submit.prevent="handleSubmit"
+          class="p-4 sm:p-6 space-y-5"
+        >
           <!-- Name of Task -->
           <div>
             <label class="block text-sm font-medium text-dark-base mb-2"
@@ -170,11 +82,10 @@ watch(
             />
           </div>
 
-          <!-- Task Description (Rich Text Editor Mockup) -->
+          <!-- Task Description -->
           <div
             class="border border-outline rounded-lg overflow-hidden shadow-sm"
           >
-            <!-- Toolbar -->
             <div
               class="flex items-center gap-1.5 px-4 py-2 border-b border-outline bg-light-base/50 flex-wrap"
             >
@@ -272,12 +183,11 @@ watch(
                 <ListOrdered :size="16" />
               </button>
             </div>
-            <!-- Textarea -->
             <textarea
               v-model="formData.description"
               rows="6"
               class="w-full px-4 py-4 text-sm text-sub-text focus:outline-none resize-none bg-white"
-              placeholder="Lorem ipsum..."
+              placeholder="Task description..."
             ></textarea>
           </div>
 
@@ -369,6 +279,16 @@ watch(
             </div>
           </div>
         </form>
+
+        <!-- Tab Notes -->
+        <div v-if="activeTab === 'notes'" class="p-6 h-full flex flex-col">
+          <HistoryDetail
+            :items="historyitems"
+            @add-note="openNoteDrawer"
+            @edit="handleHistoryEdit"
+            @delete="handleHistoryDelete"
+          />
+        </div>
       </div>
 
       <!-- Footer Actions -->
@@ -389,6 +309,7 @@ watch(
             Cancel
           </button>
           <button
+            v-if="activeTab === 'master'"
             @click="handleSubmit"
             class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
           >
@@ -397,8 +318,357 @@ watch(
         </div>
       </div>
     </div>
-  </Transition>
+  </transition>
+
+  <!-- ======================= NOTES DRAWER DENGAN OVERLAY KHUSUS ======================= -->
+  <transition name="overlay">
+    <div
+      v-if="isNoteDrawerOpen"
+      class="fixed inset-0 bg-black/50 z-55"
+      @click="isNoteDrawerOpen = false"
+    ></div>
+  </transition>
+
+  <transition name="slide">
+    <div
+      v-if="isNoteDrawerOpen"
+      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-60 flex flex-col"
+      @click.stop
+    >
+      <div
+        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
+      >
+        <h2 class="text-xl font-bold text-dark-base">
+          {{ editingItemIndex !== null ? "Edit Catatan" : "Tambah Catatan" }}
+        </h2>
+        <button
+          @click="isNoteDrawerOpen = false"
+          class="p-2 hover:bg-light-base rounded-lg transition-colors"
+        >
+          <X :size="20" class="text-sub-text" />
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-6">
+        <NotesSection v-model:note-data="tempNoteData" />
+      </div>
+
+      <div
+        class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
+      >
+        <button
+          @click="isNoteDrawerOpen = false"
+          class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
+        >
+          Cancel
+        </button>
+        <button
+          @click="saveNoteFromDrawer"
+          class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
+        >
+          Simpan
+        </button>
+      </div>
+    </div>
+  </transition>
 </template>
+
+<script>
+import { mapGetters } from "vuex";
+import {
+  X,
+  ChevronDown,
+  Calendar,
+  Clock,
+  ClipboardList,
+  Bold,
+  Italic,
+  Underline,
+  Link2,
+  Anchor,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  List,
+  ListOrdered,
+  RotateCcw,
+  RotateCw,
+  Plus,
+} from "lucide-vue-next";
+import NotesSection from "@/components/widgets/NotesEditor.vue";
+import HistoryDetail from "@/components/widgets/historydetail.vue";
+import { alertService } from "@/services/alertService";
+
+export default {
+  name: "CreateTaskForm",
+  components: {
+    X,
+    ChevronDown,
+    Calendar,
+    Clock,
+    ClipboardList,
+    Bold,
+    Italic,
+    Underline,
+    Link2,
+    Anchor,
+    AlignLeft,
+    AlignCenter,
+    AlignRight,
+    AlignJustify,
+    List,
+    ListOrdered,
+    RotateCcw,
+    RotateCw,
+    Plus,
+    NotesSection,
+    HistoryDetail,
+  },
+  props: {
+    isOpen: {
+      type: Boolean,
+      default: false,
+    },
+    initialData: {
+      type: Object,
+      default: null,
+    },
+  },
+  data() {
+    return {
+      activeTab: "master",
+      isNoteDrawerOpen: false,
+      editingItemIndex: null,
+      historyitems: [],
+      formData: {
+        task_name: "",
+        description: "",
+        status: "",
+        assignee: "",
+        due_date: "",
+        task_time: "",
+        priority: "",
+      },
+      tempNoteData: {
+        body: "",
+        gps_address: null,
+        latitude: null,
+        longitude: null,
+        photos: [],
+        audioBlob: null,
+      },
+      statusOptions: [
+        { value: "", label: "Select Data" },
+        { value: "todo", label: "To Do" },
+        { value: "in_progress", label: "In Progress" },
+        { value: "done", label: "Done" },
+      ],
+      priorityOptions: [
+        { value: "", label: "Select Data" },
+        { value: "low", label: "Low" },
+        { value: "medium", label: "Medium" },
+        { value: "high", label: "High" },
+      ],
+    };
+  },
+  computed: {
+    ...mapGetters("users", ["usersignin", "allUsers"]),
+    isEditMode() {
+      return !!(this.initialData && Object.keys(this.initialData).length);
+    },
+    assigneeOptions() {
+      const users = this.allUsers || [];
+      return [
+        { value: "", label: "Select Data" },
+        ...users.map((user) => ({
+          value: user.name || user.username || user.id,
+          label: user.name || user.username || "Unknown",
+        })),
+      ];
+    },
+    currentUserName() {
+      const signin = this.usersignin;
+      return (
+        signin?.name ||
+        signin?.username ||
+        signin?.user?.name ||
+        signin?.user?.username ||
+        ""
+      );
+    },
+  },
+  watch: {
+    isOpen: {
+      immediate: true,
+      handler(val) {
+        if (val) {
+          if (this.initialData) {
+            this.setFormData(this.initialData);
+          } else {
+            this.handleReset();
+          }
+          this.activeTab = "master";
+        }
+      },
+    },
+    initialData: {
+      deep: true,
+      handler(newData) {
+        if (this.isOpen && newData) {
+          this.setFormData(newData);
+          this.activeTab = "master";
+        }
+      },
+    },
+  },
+  mounted() {
+    this.$store.dispatch("users/fetchAllusers");
+    this.$store.dispatch("users/getusersignin");
+    if (!this.formData.assignee && this.currentUserName) {
+      this.formData.assignee = this.currentUserName;
+    }
+    window.addEventListener("keydown", this.handleEscKey);
+  },
+  beforeDestroy() {
+    window.removeEventListener("keydown", this.handleEscKey);
+  },
+  methods: {
+    getCurrentUserName() {
+      return this.currentUserName;
+    },
+    setFormData(data) {
+      if (!data) return;
+      this.formData = {
+        task_name: data.task_name || data.name || "",
+        description: data.description || data.content || "",
+        status: data.status || "",
+        assignee: data.assignee || this.currentUserName,
+        due_date: data.due_date || "",
+        task_time: data.task_time || data.time || "",
+        priority: data.priority || "",
+      };
+      // Map history notes
+      let rawNotes = data.notes || data.note;
+      if (typeof rawNotes === "string" && rawNotes.startsWith("[")) {
+        try {
+          rawNotes = JSON.parse(rawNotes);
+        } catch (e) {}
+      }
+      const items = [];
+      if (Array.isArray(rawNotes)) {
+        rawNotes.forEach((n) => {
+          let location = { address: null, latitude: null, longitude: null };
+          try {
+            if (n.location) {
+              location =
+                typeof n.location === "string"
+                  ? JSON.parse(n.location)
+                  : n.location;
+            }
+          } catch (e) {}
+          items.push({
+            type: "note",
+            id: n.id,
+            timestamp: n.created_at || n.update_at,
+            body: n.body || n.notes || n.description || "",
+            gps_address: location.address,
+            latitude: location.latitude,
+            longitude: location.longitude,
+            photos: n.photos || [],
+          });
+        });
+      }
+      this.historyitems = items.sort(
+        (a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0),
+      );
+    },
+    handleReset() {
+      this.formData = {
+        task_name: "",
+        description: "",
+        status: "",
+        assignee: this.currentUserName,
+        due_date: "",
+        task_time: "",
+        priority: "",
+      };
+      this.historyitems = [];
+      this.tempNoteData = {
+        body: "",
+        gps_address: null,
+        latitude: null,
+        longitude: null,
+        photos: [],
+        audioBlob: null,
+      };
+      this.editingItemIndex = null;
+      this.activeTab = "master";
+    },
+    handleClose() {
+      if (this.isNoteDrawerOpen) return;
+      this.handleReset();
+      this.$emit("close");
+    },
+    handleSubmit() {
+      if (!this.formData.task_name.trim()) {
+        alertService.toastError("Nama task wajib diisi");
+        return;
+      }
+      this.$emit("submit", this.formData);
+      this.handleReset();
+      this.handleClose();
+    },
+    openNoteDrawer(editData = null, index = null) {
+      if (editData) {
+        this.tempNoteData = { ...editData };
+        this.editingItemIndex = index;
+      } else {
+        this.tempNoteData = {
+          body: "",
+          gps_address: null,
+          latitude: null,
+          longitude: null,
+          photos: [],
+          audioBlob: null,
+        };
+        this.editingItemIndex = null;
+      }
+      this.isNoteDrawerOpen = true;
+    },
+    saveNoteFromDrawer() {
+      if (!this.tempNoteData.body && this.tempNoteData.photos.length === 0) {
+        alertService.toastWarn("Catatan masih kosong");
+        return;
+      }
+      const item = {
+        type: "note",
+        timestamp: new Date().toISOString(),
+        ...this.tempNoteData,
+      };
+      if (this.editingItemIndex !== null) {
+        this.historyitems[this.editingItemIndex] = item;
+      } else {
+        this.historyitems.unshift(item);
+      }
+      this.isNoteDrawerOpen = false;
+      alertService.toastSuccess("Catatan ditambahkan ke histori");
+    },
+    handleHistoryEdit({ item, index }) {
+      this.openNoteDrawer(item, index);
+    },
+    handleHistoryDelete(index) {
+      this.historyitems.splice(index, 1);
+      alertService.toastInfo("Item dihapus dari histori");
+    },
+    handleEscKey(e) {
+      if (e.key === "Escape" && this.isNoteDrawerOpen) {
+        this.isNoteDrawerOpen = false;
+      }
+    },
+  },
+};
+</script>
 
 <style scoped>
 /* Transition Animations */
@@ -430,18 +700,14 @@ input:-webkit-autofill:active {
   transition: background-color 5000s ease-in-out 0s;
 }
 
-/* Custom rounding for a premium feel */
 .rounded-lg {
   border-radius: 0.5rem;
 }
 
-/* Appearance for select icons */
 select {
   background-image: none !important;
 }
 
-/* Date/Time input styling to hide browser icons if needed, 
-   but here we rely on the lucide icons overlayed */
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator {
   opacity: 0;
