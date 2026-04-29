@@ -127,6 +127,8 @@ export default {
       isCompanyDropdownOpen: false,
       selectedDocSource: "",
       isDocDropdownOpen: false,
+      // When true, show Projects/Notes tabs even if not in edit mode
+      forceShowDetails: false,
       formData: {
         dealName: "",
         pipeline: "",
@@ -144,7 +146,7 @@ export default {
         contactassoc: [],
         companyassoc: [],
         probability: null,
-  active: 1,  
+        active: 1,
         task: {
           name: "",
           content: "",
@@ -358,6 +360,24 @@ export default {
         .filter((item) => item !== undefined && item !== null && item !== "");
     },
 
+    getDealIdFromResponse(response) {
+      if (!response) return null;
+      const candidates = [
+        response.deal && response.deal.id,
+        response.data && response.data.id,
+        response.id,
+        response.deal_id,
+        response.id_deals,
+        response.deal_id,
+      ];
+
+      for (const c of candidates) {
+        if (c !== undefined && c !== null && c !== "") return c;
+      }
+
+      return null;
+    },
+
     normalizeAssocInput(value) {
       if (!value) return [];
       if (Array.isArray(value)) return value;
@@ -503,7 +523,7 @@ export default {
         companyassoc: this.extractIdsFromAssoc(normalizedCompaniesAssoc),
         contactassoc: this.extractIdsFromAssoc(normalizedContactsAssoc),
         probability: dealData.probability ?? null,
-        active: (dealData.active == 1 || dealData.active === true) ? 1 : 0,
+        active: dealData.active == 1 || dealData.active === true ? 1 : 0,
         task: this.resolveTaskData(dealData),
         docs: this.resolveDocsData(dealData),
         owner_id: dealData.owner_id || null,
@@ -1032,9 +1052,28 @@ export default {
         await alertService.toastSuccess(
           response?.msg || "Deal berhasil disimpan",
         );
-        this.handleReset();
-        this.$emit("submit", response);
-        this.handleClose();
+        this.$emit("saved", response);
+        // Keep the drawer open and switch to Projects tab; show Notes/Projects
+        this.forceShowDetails = true;
+        this.activeTab = "projects";
+        // Try to fetch full detail for the created deal and populate form
+        try {
+          const dealId = this.getDealIdFromResponse(response);
+          if (dealId) {
+            const detail = await this.$store.dispatch(
+              "deals/fetchDealById",
+              dealId,
+            );
+            if (detail) this.setFormData(detail);
+          } else if (
+            response &&
+            (response.deals || response.deal || response.data)
+          ) {
+            this.setFormData(response);
+          }
+        } catch (e) {
+          // ignore fetch/set errors
+        }
       } catch (error) {
         const message =
           error?.response?.data?.message ||
@@ -1260,9 +1299,26 @@ export default {
         await alertService.toastSuccess(
           response?.msg || "Deal saved successfully",
         );
-        this.handleReset();
-        this.$emit("submit", response);
-        this.handleClose();
+        this.$emit("saved", response);
+        this.forceShowDetails = true;
+        this.activeTab = "projects";
+        try {
+          const dealId = this.getDealIdFromResponse(response);
+          if (dealId) {
+            const detail = await this.$store.dispatch(
+              "deals/fetchDealById",
+              dealId,
+            );
+            if (detail) this.setFormData(detail);
+          } else if (
+            response &&
+            (response.deals || response.deal || response.data)
+          ) {
+            this.setFormData(response);
+          }
+        } catch (e) {
+          // ignore
+        }
       } catch (error) {
         const message =
           error?.response?.data?.message ||
@@ -1292,7 +1348,7 @@ export default {
         contactassoc: [],
         companyassoc: [],
         probability: null,
-    active: 1,
+        active: 1,
         task: {
           name: "",
           content: "",
@@ -1379,7 +1435,7 @@ export default {
         </button>
 
         <button
-          v-if="isEditMode && !hideDetailTab"
+          v-if="(isEditMode || forceShowDetails) && !hideDetailTab"
           type="button"
           @click="activeTab = 'projects'"
           :class="[
@@ -1393,7 +1449,7 @@ export default {
         </button>
 
         <button
-          v-if="isEditMode && !hideDetailTab"
+          v-if="(isEditMode || forceShowDetails) && !hideDetailTab"
           type="button"
           @click="activeTab = 'detail'"
           :class="[
@@ -1457,14 +1513,14 @@ export default {
 
           <!-- Company & Contact -->
           <div class="grid grid-cols-2 gap-4">
-                      <CompaniesAssociationForm
-            ref="companiesAssociationForm"
-            v-model="tempCompanyAssoc"
-          />
-          <ContactAssociationForm
-            ref="contactAssociationForm"
-            v-model="tempContactAssoc"
-          />
+            <CompaniesAssociationForm
+              ref="companiesAssociationForm"
+              v-model="tempCompanyAssoc"
+            />
+            <ContactAssociationForm
+              ref="contactAssociationForm"
+              v-model="tempContactAssoc"
+            />
           </div>
 
           <!-- Currency & Amount/Value -->
@@ -1518,7 +1574,7 @@ export default {
                 class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base"
               />
             </div>
-                        <div>
+            <div>
               <label class="block text-sm font-medium text-dark-base mb-2"
                 >owner</label
               >
@@ -1602,39 +1658,39 @@ export default {
 
           <!-- Probability & Active -->
           <!-- Probability & Active -->
-<div class="grid grid-cols-2 gap-4 items-center">
-  <div>
-    <label class="block text-sm font-medium text-dark-base mb-2">
-      Probability (%)
-    </label>
-    <input
-      v-model="formData.probability"
-      type="number"
-      min="0"
-      max="100"
-      placeholder="Probability"
-      class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-    />
-  </div>
-  <div>
-    <label class="block text-sm font-medium text-dark-base mb-2">
-      Status
-    </label>
-    <div class="relative">
-      <select
-        v-model="formData.active"
-        class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
-      >
-        <option :value="1">Active</option>
-        <option :value="0">Inactive</option>
-      </select>
-      <ChevronDown
-        :size="16"
-        class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
-      />
-    </div>
-  </div>
-</div>  
+          <div class="grid grid-cols-2 gap-4 items-center">
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2">
+                Probability (%)
+              </label>
+              <input
+                v-model="formData.probability"
+                type="number"
+                min="0"
+                max="100"
+                placeholder="Probability"
+                class="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-dark-base mb-2">
+                Status
+              </label>
+              <div class="relative">
+                <select
+                  v-model="formData.active"
+                  class="w-full px-3 py-2 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm text-dark-base bg-white appearance-none cursor-pointer"
+                >
+                  <option :value="1">Active</option>
+                  <option :value="0">Inactive</option>
+                </select>
+                <ChevronDown
+                  :size="16"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-sub-text pointer-events-none"
+                />
+              </div>
+            </div>
+          </div>
         </form>
 
         <!-- Projects Tab -->
@@ -1727,57 +1783,57 @@ export default {
   />
 
   <!-- Note Drawer POPUP -->
-<!-- ======================= NOTES DRAWER DENGAN OVERLAY KHUSUS ======================= -->
-<transition name="overlay">
-  <div
-    v-if="isNoteDrawerOpen"
-    class="fixed inset-0 bg-black/50 z-55"
-    @click="isNoteDrawerOpen = false"
-  ></div>
-</transition>
-
-<transition name="slide">
-  <div
-    v-if="isNoteDrawerOpen"
-    class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-60 flex flex-col"
-    @click.stop
-  >
+  <!-- ======================= NOTES DRAWER DENGAN OVERLAY KHUSUS ======================= -->
+  <transition name="overlay">
     <div
-      class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
-    >
-      <h2 class="text-xl font-bold text-dark-base">
-        {{ editingItemIndex !== null ? "Edit Note" : "Tambah Note" }}
-      </h2>
-      <button
-        @click="isNoteDrawerOpen = false"
-        class="p-2 hover:bg-light-base rounded-lg transition-colors"
-      >
-        <X :size="20" class="text-sub-text" />
-      </button>
-    </div>
+      v-if="isNoteDrawerOpen"
+      class="fixed inset-0 bg-black/50 z-55"
+      @click="isNoteDrawerOpen = false"
+    ></div>
+  </transition>
 
-    <div class="flex-1 overflow-y-auto p-6">
-      <NotesSection v-model:note-data="tempNoteData" />
-    </div>
-
+  <transition name="slide">
     <div
-      class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
+      v-if="isNoteDrawerOpen"
+      class="fixed top-0 right-0 h-screen w-full max-w-2xl bg-white shadow-2xl z-60 flex flex-col"
+      @click.stop
     >
-      <button
-        @click="isNoteDrawerOpen = false"
-        class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
+      <div
+        class="sticky top-0 bg-white border-b border-outline px-6 py-4 flex items-center justify-between z-10"
       >
-        Cancel
-      </button>
-      <button
-        @click="saveNoteFromDrawer"
-        class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
+        <h2 class="text-xl font-bold text-dark-base">
+          {{ editingItemIndex !== null ? "Edit Note" : "Tambah Note" }}
+        </h2>
+        <button
+          @click="isNoteDrawerOpen = false"
+          class="p-2 hover:bg-light-base rounded-lg transition-colors"
+        >
+          <X :size="20" class="text-sub-text" />
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-6">
+        <NotesSection v-model:note-data="tempNoteData" />
+      </div>
+
+      <div
+        class="bg-white px-6 py-4 border-t border-outline flex justify-end gap-3"
       >
-        Simpan Ke Histori
-      </button>
+        <button
+          @click="isNoteDrawerOpen = false"
+          class="px-6 py-2 border border-outline rounded-lg text-sm font-medium hover:bg-light-base"
+        >
+          Cancel
+        </button>
+        <button
+          @click="saveNoteFromDrawer"
+          class="px-6 py-2 bg-dark-base text-white rounded-lg text-sm font-medium hover:bg-dark-hover"
+        >
+          Simpan Ke Histori
+        </button>
+      </div>
     </div>
-  </div>
-</transition>
+  </transition>
 
   <!-- Docs Drawer POPUP -->
   <Transition name="slide">

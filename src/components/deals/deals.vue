@@ -223,7 +223,7 @@ export default {
 
     // Handle "Create Deal" form submission: close form, reset to page 1, refresh deals list
     async handleCreateDealSubmit() {
-      this.handleCloseCreateForm();
+      // Do not auto-close the create drawer; just refresh list so user can see new item
       this.currentPage = 1;
       await this.fetchData();
     },
@@ -612,7 +612,7 @@ export default {
       :initialData="selectedDeal"
       :key="selectedDeal?.id || 'create-deal-form'"
       @close="handleCloseCreateForm"
-      @submit="handleCreateDealSubmit"
+      @saved="handleCreateDealSubmit"
     />
 
     <!-- Modal: Bulk Add Multiple Deals Form -->
