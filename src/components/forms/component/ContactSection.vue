@@ -172,7 +172,7 @@ export default {
           cancelButtonText: "Kembali",
         }
       ).then((result) => {
-        if (result.isConfirmed) {
+        if (result) {
           this.$emit("remove", { contactassoc: [data.id] });
         }
       });

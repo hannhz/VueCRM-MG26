@@ -53,15 +53,18 @@ export default {
       type: Object,
       default: () => ({}),
     },
-    companys_id:{
-      type:Number,
-      default:null,
+    companys_id: {
+      type: Number,
+      default: null,
     },
     hideDetailTab: {
       type: Boolean,
       default: false,
-    }
-
+    },
+    frompage: {
+      type: String,
+      default: null,
+    },
   },
 
   emits: ["close", "submit"],
@@ -79,13 +82,13 @@ export default {
     this.$store.dispatch("deals/fetchAllDeals");
     this.applyDefaultOwner();
 
-    if(!this.getsources || this.getsources.length === 0) {
+    if (!this.getsources || this.getsources.length === 0) {
       this.fetchsources({});
-    };
+    }
 
-    if(!this.getstatus || this.getstatus.length === 0) {
+    if (!this.getstatus || this.getstatus.length === 0) {
       this.fetchstatus({});
-    };
+    }
 
     // Add click outside handler
     document.addEventListener("click", this.handleClickOutside);

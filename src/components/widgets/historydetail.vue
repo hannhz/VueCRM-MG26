@@ -54,17 +54,20 @@ export default {
     }),
     displayItems() {
       // Use mapped store history if identifiers exist, else use items prop
-      const source = (this.noteableType && this.noteableId) 
-        ? (this.historyDisplay || []) 
-        : (this.items || []);
+      const source =
+        this.noteableType && this.noteableId
+          ? this.historyDisplay || []
+          : this.items || [];
 
       return source.map((item) => {
         // Robust mapping for database fields
         return {
           ...item,
-          type: item.type || (item.parent_type === 'CM' ? 'note' : null) || 'note',
-          body: item.notes || item.body || item.content || item.description || '',
-          timestamp: item.created_at || item.timestamp || null
+          type:
+            item.type || (item.parent_type === "CM" ? "note" : null) || "note",
+          body:
+            item.notes || item.body || item.content || item.description || "",
+          timestamp: item.created_at || item.timestamp || null,
         };
       });
     },
@@ -93,11 +96,17 @@ export default {
     }),
     async fetchHistory() {
       if (!this.noteableType || !this.noteableId) {
-        console.warn("fetchHistory skipped: missing type or id", { type: this.noteableType, id: this.noteableId });
+        console.warn("fetchHistory skipped: missing type or id", {
+          type: this.noteableType,
+          id: this.noteableId,
+        });
         return;
       }
 
-      console.log("Fetching history for:", { type: this.noteableType, id: this.noteableId });
+      console.log("Fetching history for:", {
+        type: this.noteableType,
+        id: this.noteableId,
+      });
       try {
         await this.acthistory({
           noteable_type: this.noteableType,
@@ -212,16 +221,21 @@ export default {
         >
           <MessageSquare :size="32" class="text-outline" />
         </div>
-        <h3 class="text-base font-semibold text-dark-base">Belum ada histori</h3>
+        <h3 class="text-base font-semibold text-dark-base">
+          Belum ada histori
+        </h3>
         <p class="text-sm text-sub-text mt-1">
-          Mulailah dengan menambahkan catatan atau dokumen untuk melacak aktivitas.
+          Mulailah dengan menambahkan catatan atau dokumen untuk melacak
+          aktivitas.
         </p>
       </div>
 
       <!-- Timeline List -->
       <div v-else class="relative pl-12 space-y-10 pr-2 pb-10">
         <!-- Vertical Line -->
-        <div class="absolute left-[13px] top-2 bottom-6 w-[0.5px] bg-outline/60"></div>
+        <div
+          class="absolute left-[13px] top-2 bottom-6 w-[0.5px] bg-outline/60"
+        ></div>
 
         <div
           v-for="(item, index) in displayItems"
@@ -234,33 +248,41 @@ export default {
           ></div>
 
           <!-- Content Card -->
-          <div class="bg-white border border-outline rounded-xl p-6 pt-4 shadow-sm hover:shadow-md transition-all duration-300 group relative">
+          <div
+            class="bg-white border border-outline rounded-xl p-6 pt-4 shadow-sm hover:shadow-md transition-all duration-300 group relative"
+          >
             <div class="flex items-start justify-between mb-3">
               <div>
-                <p 
+                <p
                   class="text-[10px] font-bold uppercase tracking-widest mb-1.5 px-2 py-0.5 rounded inline-block"
-                  :class="item.type === 'note' ? 'bg-progress-color/10 text-progress-color' : 'bg-deffered-color/10 text-deffered-color'"
+                  :class="
+                    item.type === 'note'
+                      ? 'bg-progress-color/10 text-progress-color'
+                      : 'bg-deffered-color/10 text-deffered-color'
+                  "
                 >
-                  {{ item.type === 'note' ? 'Note' : 'Document' }}
+                  {{ item.type === "note" ? "Note" : "Document" }}
                 </p>
-                <p class="text-[12px] text-sub-text font-medium flex items-center gap-1.5">
+                <p
+                  class="text-[12px] text-sub-text font-medium flex items-center gap-1.5"
+                >
                   {{ getFormattedDate(item.timestamp || item.created_at) }}
                 </p>
               </div>
-              
+
               <!-- Actions -->
               <div class="flex items-center gap-1">
-                <button 
+                <button
                   type="button"
-                  @click="$emit('edit', { item, index })" 
+                  @click="$emit('edit', { item, index })"
                   class="p-1.5 hover:bg-light-base rounded-lg text-sub-text hover:text-dark-base transition-colors"
                   title="Edit"
                 >
                   <Pencil :size="14" />
                 </button>
-                <button 
+                <button
                   type="button"
-                  @click="$emit('delete', index)" 
+                  @click="$emit('delete', index)"
                   class="p-1.5 hover:bg-light-base rounded-lg text-sub-text hover:text-red transition-colors"
                   title="Hapus"
                 >
@@ -271,39 +293,54 @@ export default {
 
             <!-- Content Area -->
             <div class="space-y-4">
-              <h4 v-if="item.title" class="text-base font-bold text-dark-base leading-tight">
+              <h4
+                v-if="item.title"
+                class="text-base font-bold text-dark-base leading-tight"
+              >
                 {{ item.title }}
               </h4>
-              <div 
+              <div
                 class="text-[14px] text-dark-base/90 leading-relaxed prose prose-sm max-w-none break-words"
-                v-html="item.notes || item.body || item.content || item.description"
+                v-html="
+                  item.notes || item.body || item.content || item.description
+                "
               ></div>
             </div>
 
             <!-- Attachments Preview -->
-            <div v-if="item.photos && item.photos.length" class="mt-5 flex flex-wrap gap-3">
-              <div 
-                v-for="(photo, pi) in item.photos" 
-                :key="pi" 
+            <div
+              v-if="item.photos && item.photos.length"
+              class="mt-5 flex flex-wrap gap-3"
+            >
+              <div
+                v-for="(photo, pi) in item.photos"
+                :key="pi"
                 class="w-16 h-16 rounded-lg border border-outline overflow-hidden shadow-sm hover:scale-105 transition-transform duration-200 cursor-zoom-in"
               >
-                <img :src="photo.src || photo" class="w-full h-full object-cover" />
+                <img
+                  :src="photo.src || photo"
+                  class="w-full h-full object-cover"
+                />
               </div>
             </div>
 
             <!-- Docs Preview -->
             <div v-if="item.files && item.files.length" class="mt-5 space-y-2">
-               <div 
-                 v-for="(file, fi) in item.files" 
-                 :key="fi"
-                 class="flex items-center gap-3 p-3 bg-light-base rounded-xl border border-outline text-[13px] text-dark-base hover:bg-outline/20 transition-colors cursor-pointer group/file"
-               >
-                 <div class="w-8 h-8 rounded-lg bg-white/50 flex items-center justify-center group-hover/file:bg-white transition-colors">
-                   <FileText :size="16" class="text-deffered-color" />
-                 </div>
-                 <span class="flex-1 font-medium truncate">{{ file.name || 'document' }}</span>
-                 <ExternalLink :size="14" class="text-sub-text" />
-               </div>
+              <div
+                v-for="(file, fi) in item.files"
+                :key="fi"
+                class="flex items-center gap-3 p-3 bg-light-base rounded-xl border border-outline text-[13px] text-dark-base hover:bg-outline/20 transition-colors cursor-pointer group/file"
+              >
+                <div
+                  class="w-8 h-8 rounded-lg bg-white/50 flex items-center justify-center group-hover/file:bg-white transition-colors"
+                >
+                  <FileText :size="16" class="text-deffered-color" />
+                </div>
+                <span class="flex-1 font-medium truncate">{{
+                  file.name || "document"
+                }}</span>
+                <ExternalLink :size="14" class="text-sub-text" />
+              </div>
             </div>
           </div>
         </div>
