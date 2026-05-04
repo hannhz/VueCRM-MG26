@@ -118,6 +118,10 @@ export default {
       type: Array,
       default: () => [],
     },
+    initialData: {
+      type: Array,
+      default: () => [],
+    },
   },
 
   data() {
@@ -169,16 +173,45 @@ export default {
         return [];
       }
 
-      return (this.allCompanies || []).filter((company) =>
+      // 1. Ambil dari list allCompanies (hasil fetch/search)
+      const selected = (this.allCompanies || []).filter((company) =>
         this.Companiesassoc.some(
           (id) => String(id).trim() === String(company.id).trim(),
         ),
       );
+
+      // 2. Gabungkan dengan initialData (data dari parent agar tidak loading lama)
+      const foundIds = selected.map((s) => String(s.id).trim());
+      if (Array.isArray(this.initialData)) {
+        this.initialData.forEach((item) => {
+          const sid = String(item.id).trim();
+          const isSelected = this.Companiesassoc.some(
+            (cid) => String(cid).trim() === sid,
+          );
+          if (isSelected && !foundIds.includes(sid)) {
+            selected.push(item);
+            foundIds.push(sid);
+          }
+        });
+      }
+
+      // 3. Jika masih ada yang belum ketemu, beri placeholder Loading
+      if (selected.length < this.Companiesassoc.length) {
+        this.Companiesassoc.forEach((id) => {
+          const sid = String(id).trim();
+          if (!foundIds.includes(sid) && sid !== "") {
+            selected.push({ id: sid, company_name: `Loading (${sid})...` });
+          }
+        });
+      }
+
+      return selected;
     },
   },
 
   mounted() {
     document.addEventListener("click", this.handleClickOutside);
+    this.fetchCompanies();
   },
 
   destroyed() {
@@ -262,8 +295,8 @@ export default {
         this.CompaniesSearch = "";
         this.page = 1;
       }
-      if (e && (!this.allCompaniess || this.allCompaniess.length === 0)) {
-        // this.fetchCompanies();
+      if (e && (!this.allCompanies || this.allCompanies.length === 0)) {
+        this.fetchCompanies();
       }
     },
 

@@ -3,8 +3,9 @@ import { mapActions, mapGetters } from "vuex";
 import { X, Plus, ChevronDown, Loader2 } from "lucide-vue-next";
 import { toast } from "vue3-toastify";
 // import { useStatuses } from "@/composables/useStatuses";
-import AddCompanyForm from "./AddCompanyForm.vue";
-import AddDealForm from "./AddDealForm.vue";
+import { defineAsyncComponent } from "vue";
+const AddCompanyForm = defineAsyncComponent(() => import("./AddCompanyForm.vue"));
+const AddDealForm = defineAsyncComponent(() => import("./AddDealForm.vue"));
 import ContactDetailForm from "./DetailForm.vue";
 import NotesSection from "@/components/widgets/NotesEditor.vue";
 import DocsSection from "@/components/widgets/DocsEditor.vue";
@@ -652,7 +653,8 @@ export default {
           toast.error(
             error.response?.data?.message ||
               error.message ||
-              "Gagal menyimpan contact.");
+              "Gagal menyimpan contact.",
+          );
         })
         .finally(() => {
           this.isSubmitting = false;
@@ -928,7 +930,7 @@ export default {
       </div>
 
       <!-- Form Content (Scrollable) -->
-      <div class="flex-1 overflow-y-auto">
+      <div class="flex-1 overflow-y-auto form-content-mobile">
         <!-- Master Tab -->
         <form v-if="activeTab === 'master'" @submit.prevent id="addContactForm">
           <div class="p-6 space-y-6">
@@ -1195,7 +1197,7 @@ export default {
 
       <!-- Footer Actions (Sticky) -->
       <div
-        class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+        class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] footer-mobile"
       >
         <button
           type="button"
@@ -1385,5 +1387,39 @@ select:-webkit-autofill:focus {
     0 0 0 30px white inset,
     0 0 0 1px #64728b !important;
   -webkit-text-fill-color: #1c2434 !important;
+}
+
+/* Mobile Responsive - Footer Sticky/Fixed Behavior */
+@media (max-width: 768px) {
+  /* Make form content scrollable with padding for footer */
+  .form-content-mobile {
+    padding-bottom: 110px; /* Reserve space for fixed footer */
+  }
+
+  /* Make footer fixed at bottom on mobile */
+  .footer-mobile {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100vw;
+    z-index: 50;
+    border-top: 1px solid;
+    border-radius: 0;
+  }
+}
+
+/* Desktop - Keep original behavior */
+@media (min-width: 769px) {
+  .form-content-mobile {
+    padding-bottom: 0;
+  }
+
+  .footer-mobile {
+    position: static;
+    width: 100%;
+    z-index: auto;
+  }
 }
 </style>

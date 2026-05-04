@@ -1,15 +1,14 @@
 <template>
+  <div
+    v-if="showMobileBackdrop"
+    class="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-[1px] transition-opacity duration-300 md:hidden"
+    @click="closeMobileSidebar"
+  ></div>
+
   <aside
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
-    :class="[
-      'flex flex-col bg-dark-base text-slate-300 h-screen transition-all duration-300',
-      collapsed && isHovered
-        ? 'left-0 top-0 w-64 shadow-xl z-50'
-        : !collapsed
-          ? 'relative w-64'
-          : 'relative w-20',
-    ]"
+    :class="sidebarClasses"
   >
     <!-- Header -->
     <div
@@ -182,6 +181,7 @@ export default {
       // collapsed removed - now using Vuex
       isHovered: false,
       mediaQuery: null,
+      isMobileViewport: false,
       showSubmenu: [],
       showLevel2Submenu: [],
       activeMenuId: null,
@@ -206,6 +206,34 @@ export default {
 
     isExpanded() {
       return !this.collapsed || this.isHovered;
+    },
+
+    showMobileBackdrop() {
+      return this.isMobileViewport && !this.collapsed;
+    },
+
+    sidebarClasses() {
+      const baseClasses =
+        "flex flex-col bg-dark-base text-slate-300 h-screen transition-all duration-300";
+
+      if (this.isMobileViewport) {
+        return [
+          baseClasses,
+          "fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] shadow-2xl transform",
+          this.collapsed
+            ? "-translate-x-full opacity-0 pointer-events-none"
+            : "translate-x-0 opacity-100",
+        ];
+      }
+
+      return [
+        baseClasses,
+        this.collapsed
+          ? this.isHovered
+            ? "left-0 top-0 w-64 shadow-xl z-50"
+            : "relative w-20"
+          : "relative w-64",
+      ];
     },
 
     ...mapGetters({
@@ -254,10 +282,21 @@ export default {
       this.$store.dispatch("settingsfe/setSidebarCollapsed", e.matches);
     },
 
+    updateMobileViewport() {
+      this.isMobileViewport = window.innerWidth <= 767;
+    },
+
     toggleCollapsed() {
       // Toggle via Vuex
       this.$store.dispatch("settingsfe/toggleSidebar");
-      this.$emit("update:collapsed", this.collapsed);
+      this.$emit("update:collapsed", !this.collapsed);
+    },
+
+    closeMobileSidebar() {
+      if (this.isMobileViewport && !this.collapsed) {
+        this.$store.dispatch("settingsfe/setSidebarCollapsed", true);
+        this.$emit("update:collapsed", true);
+      }
     },
 
     getIconClass(iconName) {
@@ -308,6 +347,7 @@ export default {
         this.$router.push(menuItem.pathfile);
       }
       this.$emit("opentabchange", menuItem);
+      this.closeMobileSidebar();
       this.closeAllMenus();
     },
 
@@ -474,6 +514,8 @@ export default {
     },
 
     handleResize() {
+      this.updateMobileViewport();
+
       if (this.showSubmenu.length > 0 && this.activeMenuId) {
         const menuIndex = this.mainMenuItems.findIndex(
           (item) => item.L1 === this.activeMenuId,
@@ -489,11 +531,17 @@ export default {
   mounted() {
     this.mediaQuery = window.matchMedia("(max-width: 1200px)");
     // Initialize Vuex state with media query
+    this.updateMobileViewport();
     this.$store.dispatch(
       "settingsfe/setSidebarCollapsed",
       this.mediaQuery.matches,
     );
-    this.mediaQuery.addListener(this.handleMedia);
+    if (this.mediaQuery.addEventListener) {
+      this.mediaQuery.addEventListener("change", this.handleMedia);
+    } else {
+      this.mediaQuery.addListener(this.handleMedia);
+      this.updateMobileViewport();
+    }
 
     document.addEventListener("click", this.handleClickOutside);
     window.addEventListener("resize", this.handleResize);
@@ -502,11 +550,16 @@ export default {
   beforeUnmount() {
     document.removeEventListener("click", this.handleClickOutside);
     window.removeEventListener("resize", this.handleResize);
+    if (this.mediaQuery && this.mediaQuery.removeEventListener) {
+      this.mediaQuery.removeEventListener("change", this.handleMedia);
+    }
   },
 
   beforeDestroy() {
     if (this.mediaQuery) {
-      this.mediaQuery.removeListener(this.handleMedia);
+      if (this.mediaQuery.removeListener) {
+        this.mediaQuery.removeListener(this.handleMedia);
+      }
     }
   },
 };

@@ -165,10 +165,10 @@ const mapCreateDealPayload = (formData = {}) => {
   const docsPayload =
     docsDescription || docsFiles.length
       ? {
-          description: docsDescription,
-          fileSource: normalizeStringOrNull(formData.docs?.fileSource) || "",
-          files: docsFiles,
-        }
+        description: docsDescription,
+        fileSource: normalizeStringOrNull(formData.docs?.fileSource) || "",
+        files: docsFiles,
+      }
       : null;
 
   const taskPayload = extractTaskData(formData.task);
@@ -187,7 +187,8 @@ const mapCreateDealPayload = (formData = {}) => {
     amount_value: normalizedAmount,
     expected_close_date:
       formData.expectedCloseDate || formData.expected_close_date || null,
-    owner: formData.owner || null,
+    owner: formData.owner_id || formData.id_owner || formData.id_user || formData.owner || null,
+    owner_id: formData.owner_id || formData.id_owner || formData.id_user || null,
     priority: formData.priority || null,
     source: formData.source || null,
     // Associations
@@ -219,61 +220,41 @@ const mapCreateDealPayload = (formData = {}) => {
 
 const mapBoardStageToPipeline = (stage) => {
   const stageMap = {
-    prospect: "prospect",
-    qualified: "qualified",
-    offer: "offer",
-    negotiation: "negotiation",
-    closed_won: "closed_won",
-    closed_lost: "closed_lost",
-    closed_cancel: "closed_cancel",
+    new: 1,
+    qualified: 2,
+    proposal: 3,
+    negotiation: 4,
+    close_won: 5,
+    close_lost: 6,
     // Backward compatibility for old keys
-    new: "prospect",
-    advanced: "negotiation",
-    payment: "offer",
-    won: "closed_won",
-    lost: "closed_lost",
-    cancel: "closed_cancel",
-    closed_los: "closed_lost",
-    closed_can: "closed_cancel",
+    prospect: 1,
+    offer: 3,
+    closed_won: 5,
+    closed_lost: 6,
+    closed_cancel: 6,
+    won: 5,
+    lost: 6,
+    cancel: 6,
   };
 
-  return stageMap[stage] || stage || "prospect";
+  return stageMap[stage] || stage || 1;
 };
 
 const normalizeStage = (rawStage) => {
-  const stage = String(rawStage || "prospect")
+  const stage = String(rawStage || "new")
     .toLowerCase()
     .trim();
 
-  // Handle encoded format "closed:won", "closed:lost", "closed:cancel"
-  if (stage.startsWith("closed:")) {
-    const [_, status] = stage.split(":");
-    if (status === "won") return "closed_won";
-    if (status === "lost") return "closed_lost";
-    if (status === "cancel") return "closed_cancel";
-    return "closed";
-  }
+  if (stage === "1" || stage === "new" || stage === "prospect") return "new";
+  if (stage === "2" || stage.includes("qual")) return "qualified";
+  if (stage === "3" || stage.includes("prop") || stage.includes("offer") || stage.includes("payment")) return "proposal";
+  if (stage === "4" || stage.includes("negot") || stage.includes("adv")) return "negotiation";
+  if (stage === "5" || stage.includes("won") || stage.includes("close_won") || stage.includes("close won")) return "close_won";
+  if (stage === "6" || stage.includes("lost") || stage.includes("close_lost") || stage.includes("close lost") || stage.includes("closed_los")) return "close_lost";
 
-  if (stage.includes("prospect") || stage === "new") return "prospect";
-  if (stage.includes("qual")) return "qualified";
-  if (
-    stage.includes("offer") ||
-    stage.includes("proposal") ||
-    stage.includes("payment")
-  )
-    return "offer";
-  if (stage.includes("negot") || stage.includes("adv")) return "negotiation";
-  if (stage === "closed_los") return "closed_lost";
-  if (stage === "closed_can") return "closed_cancel";
-  if (stage.includes("won") || stage.includes("closed_won"))
-    return "closed_won";
-  if (stage.includes("lost") || stage.includes("closed_lost"))
-    return "closed_lost";
-  if (stage.includes("cancel") || stage.includes("closed_cancel"))
-    return "closed_cancel";
-  if (stage.includes("closed")) return "closed";
+  if (stage.includes("closed")) return "close_won";
 
-  return "prospect";
+  return "new";
 };
 
 export default {
@@ -290,8 +271,8 @@ export default {
     pipelines: null,
     priority: null,
     users: null,
-    company:null,
-    contact:null
+    company: null,
+    contact: null
   }),
 
   mutations: {
@@ -437,11 +418,11 @@ export default {
           commit(
             "SET_ERROR",
             serverMessage ||
-              (status
-                ? status === 404
-                  ? "Endpoint deals tidak ditemukan di server (404)."
-                  : `Fetch deals gagal (HTTP ${status})`
-                : error.message || "Failed to fetch deals"),
+            (status
+              ? status === 404
+                ? "Endpoint deals tidak ditemukan di server (404)."
+                : `Fetch deals gagal (HTTP ${status})`
+              : error.message || "Failed to fetch deals"),
           );
           commit("SET_LOADING", false);
         });
@@ -479,7 +460,17 @@ export default {
 
     async updateDealStage({ commit, state, dispatch }, payload) {
       const { dealId, newStage } = payload;
-      const pipelineValue = mapBoardStageToPipeline(newStage);
+
+      // Map stage name (key) back to actual ID from state.pipelines if available
+      let pipelineValue = mapBoardStageToPipeline(newStage);
+      if (state.pipelines && Array.isArray(state.pipelines)) {
+        const found = state.pipelines.find(
+          (p) =>
+            String(p.label).toLowerCase() === String(newStage).toLowerCase() ||
+            String(p.value) === String(newStage),
+        );
+        if (found) pipelineValue = found.value;
+      }
 
       // Cari deal yang akan diupdate untuk mendapatkan data lengkapnya
       const existingDeal = state.deals.find(
@@ -529,16 +520,16 @@ export default {
 
       const cAssoc = formatAssoc(
         existingDeal.contactassoc ||
-          existingDeal.dealsassoc ||
-          existingDeal.contacts_id ||
-          existingDeal.contact_id ||
-          existingDeal.id_contact,
+        existingDeal.dealsassoc ||
+        existingDeal.contacts_id ||
+        existingDeal.contact_id ||
+        existingDeal.id_contact,
       );
       const mAssoc = formatAssoc(
         existingDeal.companyassoc ||
-          existingDeal.companies_id ||
-          existingDeal.company_id ||
-          existingDeal.id_company,
+        existingDeal.companies_id ||
+        existingDeal.company_id ||
+        existingDeal.id_company,
       );
 
       const firstContactId = cAssoc ? String(cAssoc).split(",")[0] || "" : "";
@@ -549,13 +540,13 @@ export default {
         taskFromDb && typeof taskFromDb === "object"
           ? taskFromDb
           : {
-              name: existingDeal.task_name || "",
-              content: existingDeal.desktask || "",
-              status: existingDeal.statustask || "",
-              priority: existingDeal.prioritytask || "",
-              dueDate: existingDeal.due_date || "",
-              time: existingDeal.task_time || "",
-            };
+            name: existingDeal.task_name || "",
+            content: existingDeal.desktask || "",
+            status: existingDeal.statustask || "",
+            priority: existingDeal.prioritytask || "",
+            dueDate: existingDeal.due_date || "",
+            time: existingDeal.task_time || "",
+          };
 
       const hasStageTask = Object.values(stageTask).some(
         (value) => String(value || "").trim() !== "",
@@ -580,6 +571,7 @@ export default {
           existingDeal.deal_name || existingDeal.name || "Untitled Deal",
         pipeline: pipelineValue,
         stage: pipelineValue,
+        pipeline_id: pipelineValue, // Ensure ID is sent
         currency: existingDeal.currency || "IDR",
         amount_value: existingDeal.amount_value || existingDeal.amount || null,
         amount: existingDeal.amount_value || existingDeal.amount || null,
@@ -587,9 +579,21 @@ export default {
           existingDeal.expected_close_date ||
           existingDeal.expectedCloseDate ||
           null,
-        owner: existingDeal.owner || existingDeal.owner_name || null,
-        priority: existingDeal.priority || null,
-        source: existingDeal.source || null,
+        owner:
+          existingDeal.owner_id ||
+          existingDeal.id_owner ||
+          existingDeal.id_user ||
+          existingDeal.owner ||
+          null,
+        owner_id:
+          existingDeal.owner_id ||
+          existingDeal.id_owner ||
+          existingDeal.id_user ||
+          null,
+        priority: existingDeal.priority_id || existingDeal.priority || null,
+        priority_id: existingDeal.priority_id || existingDeal.priority || null,
+        source: existingDeal.source_id || existingDeal.source || null,
+        source_id: existingDeal.source_id || existingDeal.source || null,
         updated_at: now,
 
         // Backend strongly requires these association fields (Flattened)
@@ -606,8 +610,8 @@ export default {
         task: hasStageTask ? stageTask : null,
         docs: docsDescription
           ? {
-              description: String(docsDescription),
-            }
+            description: String(docsDescription),
+          }
           : null,
         doc: docsDescription || null,
       };
@@ -694,9 +698,9 @@ export default {
           commit(
             "SET_ERROR",
             serverMessage ||
-              (status
-                ? `Save deal gagal (HTTP ${status})`
-                : error?.message || "Failed to save deal"),
+            (status
+              ? `Save deal gagal (HTTP ${status})`
+              : error?.message || "Failed to save deal"),
           );
           commit("SET_LOADING", false);
         });
@@ -749,7 +753,7 @@ export default {
       for (const endpoint of endpoints) {
         try {
           const response = await api.post(endpoint, detailPayload, { headers });
-          await dispatch("fetchAllDeals").catch(() => {});
+          await dispatch("fetchAllDeals").catch(() => { });
           return response.data;
         } catch (error) {
           const status = error?.response?.status;
@@ -796,10 +800,10 @@ export default {
           { headers },
         );
         commit("DELETE_DEAL", dealId);
-        await dispatch("fetchAllDeals").catch(() => {});
+        await dispatch("fetchAllDeals").catch(() => { });
         return response.data;
       } catch (error) {
-        await dispatch("fetchAllDeals").catch(() => {});
+        await dispatch("fetchAllDeals").catch(() => { });
         throw error;
       }
     },
@@ -1106,7 +1110,13 @@ export default {
         return {
           ...deal,
           name: deal.deal_name || deal.dealName || deal.name || "Untitled Deal",
-          stage: normalizeStage(deal.pipeline || deal.stage),
+          stage: normalizeStage(
+            deal.stage ||
+            deal.pipeline ||
+            deal.pipelinenm ||
+            deal.id_pipeline ||
+            deal.pipeline_id
+          ),
           amount: amountValue,
           jumlah: amountValue,
           tertanggal: deal.expected_close_date || deal.expectedCloseDate || "-",

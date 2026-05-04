@@ -1,75 +1,160 @@
 <template>
-  <div class="flex flex-wrap items-center gap-3">
-    <div class="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
-      <button
-        class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
-      >
-        <Filter :size="20" class="text-dark-base" />
-      </button>
+  <div class="space-y-3 md:space-y-0">
+    <!-- Mobile layout -->
+    <div class="flex flex-col gap-3 md:hidden">
+      <div class="flex items-center gap-2 w-full">
+        <button
+          class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition flex-shrink-0"
+        >
+          <Filter :size="20" class="text-dark-base" />
+        </button>
 
-      <div class="relative w-full sm:w-auto">
-        <input
-          :value="searchQuery"
-          @input="$emit('update:searchQuery', $event.target.value)"
-          type="text"
-          placeholder="Search by Name"
-          class="w-full rounded-lg border border-outline bg-white py-2 pl-3 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-sub-text sm:w-64"
-        />
+        <div class="relative flex-1 min-w-0">
+          <input
+            :value="searchQuery"
+            @input="$emit('update:searchQuery', $event.target.value)"
+            type="text"
+            placeholder="Search by Name"
+            class="w-full rounded-lg border border-outline bg-white py-2 pl-3 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
+          />
+        </div>
+
+        <button
+          class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition flex-shrink-0"
+          @click="$emit('search')"
+        >
+          <Search :size="20" class="text-dark-base" />
+        </button>
       </div>
 
-      <button
-        class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition"
-        @click="$emit('search')"
+      <div
+        class="flex items-center justify-between gap-2 text-xs text-sub-text"
       >
-        <Search :size="20" class="text-dark-base" />
-      </button>
+        <div class="flex items-center gap-1 min-w-0">
+          <span class="text-dark-base whitespace-nowrap">Show</span>
+          <select
+            :value="itemsPerPage"
+            @change="$emit('update:itemsPerPage', Number($event.target.value))"
+            class="px-2 py-1 border border-outline rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-sub-text"
+          >
+            <option :value="10">10</option>
+            <option :value="25">25</option>
+            <option :value="50">50</option>
+            <option :value="100">100</option>
+          </select>
+        </div>
 
-      <div class="flex items-center gap-2">
-        <span class="text-sm text-dark-base">Show</span>
-        <select
-          :value="itemsPerPage"
-          @change="$emit('update:itemsPerPage', Number($event.target.value))"
-          class="px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
-        >
-          <option :value="10">10</option>
-          <option :value="25">25</option>
-          <option :value="50">50</option>
-          <option :value="100">100</option>
-        </select>
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <button
+            @click="$emit('prev-page')"
+            class="p-1 rounded hover:bg-gray-100 transition disabled:opacity-40 flex-shrink-0"
+            :disabled="currentPage === 1"
+            title="Previous page"
+          >
+            <ChevronLeft :size="18" />
+          </button>
+
+          <div class="flex items-center gap-1">
+            <input
+              type="number"
+              :value="currentPage"
+              min="1"
+              :max="totalPages"
+              @input="$emit('update:currentPage', Number($event.target.value))"
+              class="w-10 px-1 py-1 border border-gray-300 rounded text-center text-xs focus:outline-none focus:ring-1 focus:ring-sub-text"
+            />
+            <span class="whitespace-nowrap">/ {{ totalPages }}</span>
+          </div>
+
+          <button
+            @click="$emit('next-page')"
+            class="p-1 rounded hover:bg-gray-100 transition disabled:opacity-40 flex-shrink-0"
+            :disabled="currentPage === totalPages"
+            title="Next page"
+          >
+            <ChevronRight :size="18" />
+          </button>
+        </div>
       </div>
     </div>
 
-    <div
-      class="flex w-full items-center justify-end gap-3 text-sm text-sub-text sm:w-auto sm:ml-auto"
-    >
-      <button
-        @click="$emit('prev-page')"
-        class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
-        :disabled="currentPage === 1"
+    <!-- Desktop layout -->
+    <div class="hidden md:flex items-center justify-between gap-4 w-full">
+      <div class="flex items-center gap-3 flex-1 min-w-0">
+        <button
+          class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition flex-shrink-0"
+        >
+          <Filter :size="20" class="text-dark-base" />
+        </button>
+
+        <div class="relative flex-1 min-w-0 max-w-[256px]">
+          <input
+            :value="searchQuery"
+            @input="$emit('update:searchQuery', $event.target.value)"
+            type="text"
+            placeholder="Search by Name"
+            class="w-full rounded-lg border border-outline bg-white py-2 pl-3 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
+          />
+        </div>
+
+        <button
+          class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition flex-shrink-0"
+          @click="$emit('search')"
+        >
+          <Search :size="20" class="text-dark-base" />
+        </button>
+      </div>
+
+      <div
+        class="flex items-center gap-6 flex-shrink-0 text-sm text-sub-text whitespace-nowrap"
       >
-        <ChevronLeft :size="18" />
-      </button>
+        <div class="flex items-center gap-2">
+          <span class="text-dark-base">Show</span>
+          <select
+            :value="itemsPerPage"
+            @change="$emit('update:itemsPerPage', Number($event.target.value))"
+            class="px-3 py-2 border border-outline rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-sub-text"
+          >
+            <option :value="10">10</option>
+            <option :value="25">25</option>
+            <option :value="50">50</option>
+            <option :value="100">100</option>
+          </select>
+        </div>
 
-      <span>Page</span>
+        <div class="flex items-center gap-3">
+          <button
+            @click="$emit('prev-page')"
+            class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40 flex-shrink-0"
+            :disabled="currentPage === 1"
+            title="Previous page"
+          >
+            <ChevronLeft :size="18" />
+          </button>
 
-      <input
-        type="number"
-        :value="currentPage"
-        min="1"
-        :max="totalPages"
-        @input="$emit('update:currentPage', Number($event.target.value))"
-        class="w-12 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none"
-      />
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-dark-base">Page</span>
+            <input
+              type="number"
+              :value="currentPage"
+              min="1"
+              :max="totalPages"
+              @input="$emit('update:currentPage', Number($event.target.value))"
+              class="w-12 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-sub-text"
+            />
+            <span class="text-gray-400">of {{ totalPages }}</span>
+          </div>
 
-      <span>of {{ totalPages }}</span>
-
-      <button
-        @click="$emit('next-page')"
-        class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
-        :disabled="currentPage === totalPages"
-      >
-        <ChevronRight :size="18" />
-      </button>
+          <button
+            @click="$emit('next-page')"
+            class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40 flex-shrink-0"
+            :disabled="currentPage === totalPages"
+            title="Next page"
+          >
+            <ChevronRight :size="18" />
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>

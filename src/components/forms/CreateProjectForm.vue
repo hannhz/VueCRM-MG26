@@ -72,7 +72,7 @@
       </div>
 
       <!-- Area konten yang bisa di-scroll -->
-      <div class="flex-1 overflow-y-auto">
+      <div class="flex-1 overflow-y-auto form-content-mobile">
         <form
           v-show="activeTab === 'master'"
           id="projectForm"
@@ -351,7 +351,7 @@
 
       <!-- Footer sticky di bawah (tidak ikut scroll) -->
       <div
-        class="sticky bottom-0 border-t border-outline bg-white px-6 py-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+        class="sticky bottom-0 border-t border-outline bg-white px-6 py-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] footer-mobile"
       >
         <div class="flex justify-end gap-3">
           <button
@@ -1107,5 +1107,39 @@ export default {
 }
 .slide-leave-to {
   transform: translateX(100%);
+}
+
+/* Mobile Responsive - Footer Sticky/Fixed Behavior */
+@media (max-width: 768px) {
+  /* Make form content scrollable with padding for footer */
+  .form-content-mobile {
+    padding-bottom: 110px; /* Reserve space for fixed footer */
+  }
+
+  /* Make footer fixed at bottom on mobile */
+  .footer-mobile {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100vw;
+    z-index: 50;
+    border-top: 1px solid;
+    border-radius: 0;
+  }
+}
+
+/* Desktop - Keep original behavior */
+@media (min-width: 769px) {
+  .form-content-mobile {
+    padding-bottom: 0;
+  }
+
+  .footer-mobile {
+    position: static;
+    width: 100%;
+    z-index: auto;
+  }
 }
 </style>

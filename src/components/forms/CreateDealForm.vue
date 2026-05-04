@@ -222,6 +222,12 @@ export default {
 
       return signedInUser?.name || signedInUser?.username || fullName || "";
     },
+    currentUserId() {
+      const signedInUser = this.usersignin || this.authUser || null;
+      return (
+        signedInUser?.id || signedInUser?.id_user || signedInUser?.value || null
+      );
+    },
     isEditMode() {
       return !!(this.initialData && Object.keys(this.initialData).length);
     },
@@ -237,6 +243,50 @@ export default {
       },
     },
 
+    tempCompanyObjects() {
+      const deal = this.initialData?.deals?.[0] || this.initialData || {};
+      const res = [];
+      const id =
+        deal.company ||
+        deal.company_id ||
+        deal.id_company ||
+        deal.companies_id ||
+        deal.companyassoc;
+      const name =
+        deal.companynm ||
+        deal.company_name ||
+        deal.associated_company ||
+        deal.companies_name;
+
+      if (id && name) {
+        res.push({ id: id, company_name: name });
+      }
+      return res;
+    },
+    tempContactObjects() {
+      const deal = this.initialData?.deals?.[0] || this.initialData || {};
+      const res = [];
+      const id =
+        deal.contact ||
+        deal.contact_id ||
+        deal.id_contact ||
+        deal.contacts_id ||
+        deal.contactassoc;
+      const name =
+        deal.contactnm ||
+        deal.contact_name ||
+        deal.associated_contact ||
+        deal.contact_name;
+
+      if (id && name) {
+        res.push({
+          id: id,
+          first_name: name,
+          last_name: "",
+        });
+      }
+      return res;
+    },
     tempContactAssoc: {
       get() {
         return this.formData.contactassoc || [];
@@ -397,6 +447,7 @@ export default {
     normalizeAssocInput(value) {
       if (!value) return [];
       if (Array.isArray(value)) return value;
+      if (typeof value === "number") return [value];
       if (typeof value === "string") {
         const parsed = this.parseJSON(value, null);
         if (Array.isArray(parsed)) return parsed;
@@ -407,7 +458,9 @@ export default {
           .filter(Boolean)
           .map((item) => {
             const maybeNumber = Number(item);
-            return Number.isFinite(maybeNumber) ? maybeNumber : item;
+            return Number.isFinite(maybeNumber) && item !== ""
+              ? maybeNumber
+              : item;
           });
       }
       return [];
@@ -508,13 +561,43 @@ export default {
         companiesAssoc =
           data.companiesassoc ||
           data.companyassoc ||
+          dealData.companiesassoc ||
           dealData.companyassoc ||
+          dealData.associated_company ||
+          dealData.company ||
+          dealData.company_id ||
+          dealData.id_company ||
+          dealData.companies_id ||
           [];
-        contactsAssoc = data.contactassoc || dealData.contactassoc || [];
+        contactsAssoc =
+          data.contactsassoc ||
+          data.contactassoc ||
+          dealData.contactsassoc ||
+          dealData.contactassoc ||
+          dealData.associated_contact ||
+          dealData.contact ||
+          dealData.contact_id ||
+          dealData.id_contact ||
+          dealData.contacts_id ||
+          [];
       } else {
         // Fallback: mungkin data langsung object deal
-        companiesAssoc = data.companyassoc || data.companiesassoc || [];
-        contactsAssoc = data.contactassoc || [];
+        companiesAssoc =
+          data.companyassoc ||
+          data.companiesassoc ||
+          dealData.companyassoc ||
+          dealData.company ||
+          dealData.company_id ||
+          dealData.id_company ||
+          [];
+        contactsAssoc =
+          data.contactassoc ||
+          dealData.contactsassoc ||
+          dealData.contactassoc ||
+          dealData.contact ||
+          dealData.contact_id ||
+          dealData.id_contact ||
+          [];
       }
 
       const normalizedCompaniesAssoc = this.normalizeAssocInput(companiesAssoc);
@@ -542,9 +625,14 @@ export default {
         active: dealData.active == 1 || dealData.active === true ? 1 : 0,
         task: this.resolveTaskData(dealData),
         docs: this.resolveDocsData(dealData),
-        owner_id: dealData.owner_id || null,
-        contact_id: dealData.contact_id || null,
-        company_id: dealData.company_id || null,
+        owner_id:
+          dealData.owner_id ||
+          dealData.id_owner ||
+          dealData.id_user ||
+          dealData.user_id ||
+          null,
+        contact_id: dealData.contact_id || dealData.id_contact || null,
+        company_id: dealData.company_id || dealData.id_company || null,
         noteData: {
           body: dealData.note || dealData.notes || "",
           gps_address: null,
@@ -689,51 +777,74 @@ export default {
       this.customSource = "";
     },
 
+    findPipelineIdByLabel(label) {
+      if (!label || !this.getpipelines) return label;
+      const search = String(label).toLowerCase().trim();
+      const found = this.getpipelines.find(
+        (p) =>
+          String(p.label || "")
+            .toLowerCase()
+            .trim() === search,
+      );
+      return found ? found.value : label;
+    },
     normalizePipelineValue(value) {
-      const raw = String(value || "")
-        .toLowerCase()
-        .trim();
+      if (!value) return "";
+      // Jika sudah berupa ID (angka), jangan di-normalize jadi string
+      if (!isNaN(value) && value !== "" && value !== null) return value;
 
-      if (!raw) return "";
-      if (raw === "prospect" || raw === "new") return "prospect";
-      if (raw.includes("qual")) return "qualified";
+      const resolvedId = this.findPipelineIdByLabel(value);
+      if (!isNaN(resolvedId)) return resolvedId;
+
+      const raw = String(value).toLowerCase().trim();
+      if (raw === "prospect" || raw === "new") return 1;
+      if (raw.includes("qual")) return 2;
       if (
         raw.includes("offer") ||
         raw.includes("proposal") ||
-        raw === "payment"
+        raw === "payment" ||
+        raw.includes("prop")
       )
-        return "offer";
+        return 3;
       if (
-        raw.includes("negotia") ||
-        raw.includes("negotiatio") ||
-        raw.includes("negot")
+        raw.includes("negot") ||
+        raw.includes("adv")
       )
-        return "negotiation";
-      if (raw.includes("closed_won") || raw.includes("won"))
-        return "closed_won";
+        return 4;
+      if (raw.includes("closed_won") || raw.includes("won") || raw.includes("close_won"))
+        return 5;
       if (
         raw.includes("closed_lost") ||
         raw.includes("lost") ||
-        raw === "closed_los"
+        raw === "closed_los" ||
+        raw.includes("close_lost")
       )
-        return "closed_lost";
-      if (
-        raw.includes("closed_cancel") ||
-        raw.includes("cancel") ||
-        raw === "closed_can"
-      )
-        return "closed_cancel";
+        return 6;
+      if (raw.includes("closed")) return 5;
 
       return value;
     },
 
+    findSourceIdByLabel(label) {
+      if (!label || !this.getsources) return label;
+      const search = String(label).toLowerCase().trim();
+      const found = this.getsources.find(
+        (s) =>
+          String(s.label || "")
+            .toLowerCase()
+            .trim() === search,
+      );
+      return found ? found.value : label;
+    },
     normalizeSourceValue(value) {
-      const raw = String(value || "")
-        .toLowerCase()
-        .trim();
+      if (!value) return "";
+      // Jika sudah berupa ID (angka), jangan di-normalize jadi string
+      if (!isNaN(value) && value !== "" && value !== null) return value;
 
-      if (!raw) return "";
+      const resolvedId = this.findSourceIdByLabel(value);
+      if (!isNaN(resolvedId)) return resolvedId;
 
+      const raw = String(value).toLowerCase().trim();
       const compact = raw.replace(/[\s-]+/g, "_");
       const aliases = {
         website: "website",
@@ -976,7 +1087,11 @@ export default {
           amount: this.formData.amount,
           expectedCloseDate: this.formData.expectedCloseDate,
           expected_close_date: this.formData.expectedCloseDate,
-          owner: this.formData.owner || this.currentUserName || "",
+          owner:
+            this.formData.owner_id ||
+            this.authUser?.id ||
+            this.authUser?.id_user ||
+            "",
           priority: this.formData.priority,
           source: this.formData.source,
           description: this.formData.description,
@@ -1069,7 +1184,7 @@ export default {
           response?.msg || "Deal berhasil disimpan",
         );
         this.$emit("saved", response);
-        
+
         if (this.fromPage === "company") {
           this.handleClose();
           return;
@@ -1281,7 +1396,12 @@ export default {
 
         const submissionData = {
           ...this.formData,
-          owner: this.formData.owner || this.currentUserName || "",
+          owner:
+            this.formData.owner_id ||
+            this.currentUserId ||
+            this.formData.owner ||
+            "",
+          owner_id: this.formData.owner_id || this.currentUserId || null,
           contactassoc: (this.formData.contactassoc || []).join(","),
           companyassoc: (this.formData.companyassoc || []).join(","),
           // Include Notes, Tasks, and Docs
@@ -1290,16 +1410,6 @@ export default {
           documents: primaryDocument,
           docs: hasDocsContent ? this.formData.docs : null,
         };
-
-        console.log("🔍 DEBUG: Notes, Task, Docs Before Save");
-        console.log("  noteData:", this.formData.noteData);
-        console.log("  task:", this.formData.task);
-        console.log("  docs:", this.formData.docs);
-        console.log("📤 Submitting Deal Payload:", {
-          notes: submissionData.notes,
-          task: submissionData.task,
-          docs: submissionData.docs,
-        });
 
         const response = await this.$store.dispatch(
           "deals/createDeal",
@@ -1493,7 +1603,7 @@ export default {
       </div>
 
       <!-- Form Content (Scrollable) -->
-      <div class="flex-1 overflow-y-auto min-h-0">
+      <div class="flex-1 overflow-y-auto min-h-0 form-content-mobile">
         <form
           v-if="activeTab === 'master'"
           @submit.prevent="handleSubmit"
@@ -1545,10 +1655,12 @@ export default {
             <CompaniesAssociationForm
               ref="companiesAssociationForm"
               v-model="tempCompanyAssoc"
+              :initial-data="tempCompanyObjects"
             />
             <ContactAssociationForm
               ref="contactAssociationForm"
               v-model="tempContactAssoc"
+              :initial-data="tempContactObjects"
             />
           </div>
 
@@ -1764,7 +1876,7 @@ export default {
 
       <!-- Footer Actions (Sticky) -->
       <div
-        class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+        class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] footer-mobile"
       >
         <button
           type="button"
@@ -1977,5 +2089,18 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;
+}
+
+/* Mobile specific adjustments */
+@media (max-width: 640px) {
+  .form-content-mobile {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .footer-mobile {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    box-shadow: 0 -6px 12px rgba(0, 0, 0, 0.06);
+  }
 }
 </style>

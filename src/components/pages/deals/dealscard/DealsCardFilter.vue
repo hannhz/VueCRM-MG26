@@ -53,7 +53,124 @@ const handleSearchInput = (e) => {
 
 <template>
   <div class="p-4 border-b border-outline">
-    <div class="flex items-center gap-4 w-full">
+    <!-- Mobile layout -->
+    <div class="flex flex-col gap-3 md:hidden">
+      <div class="flex items-center gap-2 w-full">
+        <button
+          class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition shrink-0"
+        >
+          <Filter :size="20" class="text-dark-base" />
+        </button>
+
+        <input
+          :value="searchQuery"
+          @input="handleSearchInput"
+          type="text"
+          placeholder="Search by Name"
+          class="flex-1 min-w-0 pl-3 pr-4 py-2 bg-white border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+        />
+
+        <button
+          class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition shrink-0"
+        >
+          <Search :size="20" class="text-dark-base" />
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="text-xs text-dark-base whitespace-nowrap">Show</span>
+          <select
+            :value="itemsPerPage"
+            @change="emit('update:itemsPerPage', Number($event.target.value))"
+            class="px-2 py-1.5 border border-outline rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-sub-text"
+          >
+            <option v-for="n in [10, 25, 50, 100]" :key="n" :value="n">
+              {{ n }}
+            </option>
+          </select>
+        </div>
+
+        <div
+          class="flex items-center gap-2 text-xs font-medium text-slate-600 min-w-0"
+        >
+          <div class="relative">
+            <button
+              @click="emit('toggleCurrency')"
+              class="flex items-center gap-1 hover:text-dark-base transition whitespace-nowrap"
+            >
+              <span>
+                Curr:
+                <span class="text-dark-base font-bold">{{
+                  selectedCurrency
+                }}</span>
+              </span>
+              <ChevronDown
+                :size="15"
+                :class="{ 'rotate-180': isCurrencyOpen }"
+                class="transition-transform"
+              />
+            </button>
+
+            <div
+              v-if="isCurrencyOpen"
+              class="absolute right-0 mt-2 w-28 bg-white border border-outline rounded-lg shadow-lg z-20"
+            >
+              <ul class="py-1">
+                <li
+                  v-for="curr in currencies"
+                  :key="curr"
+                  @click="emit('selectCurrency', curr)"
+                  class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-dark-base font-normal"
+                >
+                  {{ curr }}
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="w-px h-4 bg-outline"></div>
+
+          <div class="relative">
+            <button
+              @click="emit('togglePipeline')"
+              class="flex items-center gap-1 hover:text-dark-base transition whitespace-nowrap"
+            >
+              <span>
+                Pipe:
+                <span class="text-dark-base font-bold">{{
+                  selectedPipeline
+                }}</span>
+              </span>
+              <ChevronDown
+                :size="15"
+                :class="{ 'rotate-180': isPipelineOpen }"
+                class="transition-transform"
+              />
+            </button>
+
+            <div
+              v-if="isPipelineOpen"
+              class="absolute right-0 mt-2 w-40 bg-white border border-outline rounded-lg shadow-lg z-20"
+            >
+              <ul class="py-1">
+                <li
+                  v-for="pipe in pipelines"
+                  :key="pipe"
+                  @click="emit('selectPipeline', pipe)"
+                  class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-dark-base font-normal"
+                >
+                  {{ pipe }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop layout unchanged -->
+    <div class="hidden md:flex items-center gap-4 w-full">
       <!-- LEFT -->
       <div class="flex items-center gap-3 flex-1 min-w-0">
         <!-- Filter -->

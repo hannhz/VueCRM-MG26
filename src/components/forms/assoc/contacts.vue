@@ -176,7 +176,7 @@ export default {
 
       return this.contactOptions.filter((contact) =>
         this.contactassoc.includes(String(contact.id)),
-      );
+          );
     },
   },
 

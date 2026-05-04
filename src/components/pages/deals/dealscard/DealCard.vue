@@ -42,9 +42,9 @@ const isDragging = ref(false);
 const isSyncingStage = ref(false);
 
 const boardMeta = [
-  { id: 1, key: "prospect", title: "Prospect" },
+  { id: 1, key: "new", title: "New" },
   { id: 2, key: "qualified", title: "Qualified" },
-  { id: 3, key: "offer", title: "Offer" },
+  { id: 3, key: "proposal", title: "Proposal" },
   { id: 4, key: "negotiation", title: "Negotiation" },
   { id: 5, key: "closed", title: "Closed" },
 ];
@@ -62,59 +62,33 @@ const searchQuery = computed({
  * LOGIC / NORMALIZATION
  */
 const normalizeStage = (rawStage) => {
-  let stage = String(rawStage || "prospect")
+  let stage = String(rawStage || "new")
     .toLowerCase()
     .trim();
 
-  // Handle encoded format "closed:won", "closed:lost", "closed:cancel"
-  if (stage.startsWith("closed:")) {
-    const [_, status] = stage.split(":");
-    if (status === "won") return "closed_won";
-    if (status === "lost") return "closed_lost";
-    if (status === "cancel") return "closed_cancel";
-    return "closed";
-  }
+  if (stage === "1" || stage === "new" || stage === "prospect") return "new";
+  if (stage === "2" || stage.includes("qual")) return "qualified";
+  if (stage === "3" || stage.includes("prop") || stage.includes("offer") || stage.includes("payment")) return "proposal";
+  if (stage === "4" || stage.includes("negot") || stage.includes("adv")) return "negotiation";
+  if (stage === "5" || stage.includes("won") || stage.includes("close_won") || stage.includes("close won")) return "close_won";
+  if (stage === "6" || stage.includes("lost") || stage.includes("close_lost") || stage.includes("close lost") || stage.includes("closed_los")) return "close_lost";
 
-  if (stage.includes("prospect") || stage === "new") return "prospect";
-  if (stage.includes("qual")) return "qualified";
-  if (
-    stage.includes("offer") ||
-    stage.includes("proposal") ||
-    stage.includes("payment")
-  )
-    return "offer";
-  if (stage.includes("negot") || stage.includes("adv")) return "negotiation";
+  // Fallback for generic "closed"
+  if (stage.includes("closed")) return "close_won"; 
 
-  // Handle short format dari database: closed_los, closed_can, closed_won
-  if (
-    stage === "closed_los" ||
-    stage.includes("lost") ||
-    stage.includes("closed_lost")
-  )
-    return "closed_lost";
-  if (
-    stage === "closed_can" ||
-    stage.includes("cancel") ||
-    stage.includes("closed_cancel")
-  )
-    return "closed_cancel";
-  if (
-    stage === "closed_won" ||
-    stage.includes("won") ||
-    stage.includes("closed_won")
-  )
-    return "closed_won";
-
-  // Jika ada "closed" tapi bukan yang spesifik, treat as generic closed
-  if (stage.includes("closed")) return "closed";
-
-  return "prospect";
+  return "new";
 };
 
 const normalizeDeal = (deal) => ({
   id: deal.id,
   name: deal.name || deal.dealName || deal.deal_name || "Untitled Deal",
-  stage: normalizeStage(deal.stage || deal.pipeline),
+  stage: normalizeStage(
+    deal.stage ||
+    deal.pipeline ||
+    deal.pipelinenm ||
+    deal.id_pipeline ||
+    deal.pipeline_id
+  ),
   jumlah: deal.jumlah || deal.amount_value || deal.amount || "-",
   tertanggal:
     deal.tertanggal ||
@@ -130,30 +104,29 @@ const normalizeDeal = (deal) => ({
 
 const rebuildBoards = (rawDeals) => {
   const grouped = {
-    prospect: [],
+    new: [],
     qualified: [],
-    offer: [],
+    proposal: [],
     negotiation: [],
     closed: [],
   };
 
   rawDeals.map(normalizeDeal).forEach((deal) => {
-    const stage = String(deal.stage || "")
-      .toLowerCase()
-      .trim();
+    const stageKey = String(deal.stage || "").toLowerCase().trim();
 
-    // Eksplisit: kalau stage mengandung "closed", masuk ke closed board
-    // Ini mencakup closed, closed_won, closed_lost, closed_cancel
-    if (stage.includes("closed")) {
+    // Grouping logic: anything related to closing goes to "closed" column
+    if (
+      stageKey === "closed" ||
+      stageKey.includes("close") ||
+      stageKey.includes("won") ||
+      stageKey.includes("lost")
+    ) {
       grouped.closed.push(deal);
-    }
-    // Otherwise check other boards by stage key
-    else if (grouped.hasOwnProperty(stage)) {
-      grouped[stage].push(deal);
-    }
-    // Default ke prospect
-    else {
-      grouped.prospect.push(deal);
+    } else if (grouped.hasOwnProperty(stageKey)) {
+      grouped[stageKey].push(deal);
+    } else {
+      // Default fallback
+      grouped.new.push(deal);
     }
   });
 
@@ -233,9 +206,9 @@ const handleBoardChange = async (event, targetBoard) => {
     if (!window.closedChoice) return;
 
     const statusMap = {
-      won: "closed_won",
-      lost: "closed_lost",
-      cancel: "closed_cancel",
+      won: "close_won",
+      lost: "close_lost",
+      cancel: "close_lost", // fallback to lost for cancel in this board
     };
     finalStage = statusMap[window.closedChoice];
     window.closedChoice = null;

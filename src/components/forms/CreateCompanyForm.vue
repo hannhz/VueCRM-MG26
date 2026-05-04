@@ -75,7 +75,7 @@ export default {
         province: "",
         city: "",
         pos_code: "",
-        kecamaran: "",  
+        kecamaran: "",
         kelurahan: "",
         type: "",
         // notes: "",
@@ -184,16 +184,15 @@ export default {
         if (!this.sources?.length) await this.getsources();
         if (!this.types?.length) await this.gettype();
         if (!this.getprovinsi?.length) await this.actprovinsi();
-        
+
         // this.getinduestries();
         // this.getsources();
         // this.gettype();
-       
 
         if (this.initialData) {
-        await this.actkotakabupaten({id: this.initialData.province});
-        await this.actkecamatan({id: this.initialData.city});
-        await this.actkelurahan({id: this.initialData.kecamatan});
+          await this.actkotakabupaten({ id: this.initialData.province });
+          await this.actkecamatan({ id: this.initialData.city });
+          await this.actkelurahan({ id: this.initialData.kecamatan });
 
           this.setFormData(this.initialData);
         } else {
@@ -237,7 +236,7 @@ export default {
       actkodepos: "lokasi/actkodepos",
     }),
 
-    ...mapMutations({setclearcompanybyid : "company/setclearcompanybyid"}),
+    ...mapMutations({ setclearcompanybyid: "company/setclearcompanybyid" }),
 
     onContactassocSave(action, data) {
       let formdata = new FormData();
@@ -532,17 +531,14 @@ export default {
           audioBlob: null,
           visibility: 0,
         }),
-        
         this.$emit("close"));
-        this.setclearcompanybyid();
+      this.setclearcompanybyid();
     },
 
     handleSave() {
       this.isSubmitting = true;
 
       // 🚀 Gunakan buildFormData untuk menghandle file upload (docs[], noteData[photos][], dll)
-
-
 
       const fd = buildFormData(
         this.formData,
@@ -556,7 +552,7 @@ export default {
             ? "Company berhasil diperbarui!"
             : "Company berhasil ditambahkan!";
           // alertService.success(message);
-           toast.success(message);
+          toast.success(message);
           console.log(data.param);
           if (this.hasCompanyId) {
             this.$emit("submit", data);
@@ -574,10 +570,11 @@ export default {
           //     error.message ||
           //     "Gagal menyimpan company.",
           // );
-           toast.error(
+          toast.error(
             error.response?.data?.message ||
               error.message ||
-              "Gagal menyimpan company.");
+              "Gagal menyimpan company.",
+          );
         })
         .finally(() => {
           this.isSubmitting = false;
@@ -660,7 +657,7 @@ export default {
         this.fetchcompanybyid(this.companyid);
       }
 
-      this.showAddContactForm = false
+      this.showAddContactForm = false;
     },
 
     handleCreateDealSubmit(response) {
@@ -1016,7 +1013,7 @@ export default {
       </div>
 
       <!-- Form Content (Scrollable) -->
-      <div class="flex-1 overflow-y-auto min-h-0">
+      <div class="flex-1 overflow-y-auto min-h-0 form-content-mobile">
         <!-- Master Tab Form -->
         <form
           v-if="activeTab === 'master'"
@@ -1201,7 +1198,7 @@ export default {
 
       <!-- Footer Actions (Sticky) -->
       <div
-        class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+        class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] footer-mobile"
       >
         <button
           type="button"
@@ -1376,5 +1373,39 @@ select:-webkit-autofill:focus {
     0 0 0 30px white inset,
     0 0 0 1px #64728b !important;
   -webkit-text-fill-color: #1c2434 !important;
+}
+
+/* Mobile Responsive - Footer Sticky/Fixed Behavior */
+@media (max-width: 768px) {
+  /* Make form content scrollable with padding for footer */
+  .form-content-mobile {
+    padding-bottom: 110px; /* Reserve space for fixed footer */
+  }
+
+  /* Make footer fixed at bottom on mobile */
+  .footer-mobile {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100vw;
+    z-index: 50;
+    border-top: 1px solid;
+    border-radius: 0;
+  }
+}
+
+/* Desktop - Keep original behavior */
+@media (min-width: 769px) {
+  .form-content-mobile {
+    padding-bottom: 0;
+  }
+
+  .footer-mobile {
+    position: static;
+    width: 100%;
+    z-index: auto;
+  }
 }
 </style>

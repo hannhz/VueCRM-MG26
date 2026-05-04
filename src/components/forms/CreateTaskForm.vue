@@ -62,7 +62,7 @@
       </div>
 
       <!-- Konten Scrollable -->
-      <div class="flex-1 overflow-y-auto min-h-0">
+      <div class="flex-1 overflow-y-auto min-h-0 form-content-mobile">
         <!-- Tab Master: Form Task -->
         <form
           v-if="activeTab === 'master'"
@@ -293,7 +293,7 @@
 
       <!-- Footer Actions -->
       <div
-        class="bg-white flex items-center justify-between p-4 sm:px-6 sm:py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+        class="bg-white flex items-center justify-between p-4 sm:px-6 sm:py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] footer-mobile"
       >
         <button
           @click="handleReset"
@@ -716,5 +716,39 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   width: 100%;
   height: 100%;
   cursor: pointer;
+}
+
+/* Mobile Responsive - Footer Sticky/Fixed Behavior */
+@media (max-width: 768px) {
+  /* Make form content scrollable with padding for footer */
+  .form-content-mobile {
+    padding-bottom: 110px; /* Reserve space for fixed footer */
+  }
+
+  /* Make footer fixed at bottom on mobile */
+  .footer-mobile {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100vw;
+    z-index: 50;
+    border-top: 1px solid;
+    border-radius: 0;
+  }
+}
+
+/* Desktop - Keep original behavior */
+@media (min-width: 769px) {
+  .form-content-mobile {
+    padding-bottom: 0;
+  }
+
+  .footer-mobile {
+    position: static;
+    width: 100%;
+    z-index: auto;
+  }
 }
 </style>

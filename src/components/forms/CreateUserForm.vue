@@ -129,7 +129,7 @@ const handleReset = () => {
 </script> -->
 
 <script>
-import { X, ChevronDown,Eye, EyeOff, } from "lucide-vue-next";
+import { X, ChevronDown, Eye, EyeOff } from "lucide-vue-next";
 import { mapState, mapActions } from "vuex";
 import { alertService } from "@/services/alertService";
 
@@ -140,7 +140,8 @@ export default {
   components: {
     X,
     ChevronDown,
-    Eye, EyeOff,
+    Eye,
+    EyeOff,
   },
 
   props: {
@@ -364,7 +365,7 @@ export default {
       </div>
 
       <!-- Form Content (Scrollable) -->
-      <div class="flex-1 overflow-y-auto relative">
+      <div class="flex-1 overflow-y-auto relative form-content-mobile">
         <!-- Loading overlay during save -->
         <div
           v-if="isSaving"
@@ -611,7 +612,7 @@ export default {
 
       <!-- Footer Actions (Sticky) -->
       <div
-        class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+        class="bg-white flex items-center justify-between px-6 py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] footer-mobile"
       >
         <div class="flex items-center gap-3">
           <button
@@ -702,5 +703,39 @@ select:-webkit-autofill:focus {
     0 0 0 30px white inset,
     0 0 0 1px #64728b !important;
   -webkit-text-fill-color: #1c2434 !important;
+}
+
+/* Mobile Responsive - Footer Sticky/Fixed Behavior */
+@media (max-width: 768px) {
+  /* Make form content scrollable with padding for footer */
+  .form-content-mobile {
+    padding-bottom: 110px; /* Reserve space for fixed footer */
+  }
+
+  /* Make footer fixed at bottom on mobile */
+  .footer-mobile {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100vw;
+    z-index: 50;
+    border-top: 1px solid;
+    border-radius: 0;
+  }
+}
+
+/* Desktop - Keep original behavior */
+@media (min-width: 769px) {
+  .form-content-mobile {
+    padding-bottom: 0;
+  }
+
+  .footer-mobile {
+    position: static;
+    width: 100%;
+    z-index: auto;
+  }
 }
 </style>

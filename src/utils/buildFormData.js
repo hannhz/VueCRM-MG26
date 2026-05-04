@@ -14,8 +14,8 @@ export function buildFormData(formData, isEditMode = false, id = null) {
       value.forEach((v) => {
         fd.append(`${key}[]`, v);
       });
-    } else {
-      fd.append(key, value ?? "");
+    } else if (value !== null && value !== undefined) {
+      fd.append(key, value);
     }
   });
 
