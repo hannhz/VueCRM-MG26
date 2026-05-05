@@ -41,16 +41,53 @@ const isPipelineOpen = ref(false);
 const isDragging = ref(false);
 const isSyncingStage = ref(false);
 
-const boardMeta = [
-  { id: 1, key: "new", title: "New" },
-  { id: 2, key: "qualified", title: "Qualified" },
-  { id: 3, key: "proposal", title: "Proposal" },
-  { id: 4, key: "negotiation", title: "Negotiation" },
-  { id: 5, key: "closed", title: "Closed" },
-];
+const storePipelines = computed(() => store.getters["deals/getpipelines"] || []);
+
+const boardMeta = computed(() => {
+  if (!storePipelines.value || storePipelines.value.length === 0) {
+    // Fallback static columns while loading
+    return [
+      { id: 1, key: "new", title: "New" },
+      { id: 2, key: "qualified", title: "Qualified" },
+      { id: 3, key: "proposal", title: "Proposal" },
+      { id: 4, key: "negotiation", title: "Negotiation" },
+      { id: 5, key: "closed", title: "Closed" },
+    ];
+  }
+
+  // Transform store pipelines to board format
+  const boards = [];
+  const closedItems = [];
+
+  storePipelines.value.forEach((p) => {
+    // Support both direct DB fields and normalized label/value
+    const name = String(p.pipeline_name || p.label || "").toLowerCase();
+    const id = p.id_pipeline || p.value || p.id;
+
+    if (name.includes("won") || name.includes("lost") || name.includes("close")) {
+      closedItems.push(p);
+    } else {
+      boards.push({
+        id: id,
+        key: String(p.pipeline_name || p.label || "").toLowerCase().trim(),
+        title: p.pipeline_name || p.label,
+      });
+    }
+  });
+
+  // Consolidate closed items into one column if they exist
+  if (closedItems.length > 0) {
+    boards.push({
+      id: "closed", // special key for consolidated column
+      key: "closed",
+      title: "Closed",
+    });
+  }
+
+  return boards;
+});
 
 const boards = ref([]);
-
 const allDeals = computed(() => store.getters["deals/uiDeals"] || []);
 
 const searchQuery = computed({
@@ -62,10 +99,28 @@ const searchQuery = computed({
  * LOGIC / NORMALIZATION
  */
 const normalizeStage = (rawStage) => {
-  let stage = String(rawStage || "new")
+  const stage = String(rawStage || "new")
     .toLowerCase()
     .trim();
 
+  // 1. Cek dynamic mapping dari store pipelines jika ada
+  const pipelines = storePipelines.value;
+  if (pipelines && pipelines.length > 0) {
+    const found = pipelines.find(p => 
+      String(p.id_pipeline || p.value || "").toLowerCase() === stage ||
+      String(p.pipeline_name || p.label || "").toLowerCase().trim() === stage
+    );
+    if (found) {
+      // Jika ini won/lost, return key khusus agar dikelompokkan ke "closed"
+      const name = String(found.pipeline_name || found.label || "").toLowerCase();
+      if (name.includes("won") || name.includes("lost") || name.includes("close")) {
+        return name.includes("won") ? "close_won" : "close_lost";
+      }
+      return name.trim();
+    }
+  }
+
+  // 2. Fallback static mapping
   if (stage === "1" || stage === "new" || stage === "prospect") return "new";
   if (stage === "2" || stage.includes("qual")) return "qualified";
   if (stage === "3" || stage.includes("prop") || stage.includes("offer") || stage.includes("payment")) return "proposal";
@@ -73,8 +128,7 @@ const normalizeStage = (rawStage) => {
   if (stage === "5" || stage.includes("won") || stage.includes("close_won") || stage.includes("close won")) return "close_won";
   if (stage === "6" || stage.includes("lost") || stage.includes("close_lost") || stage.includes("close lost") || stage.includes("closed_los")) return "close_lost";
 
-  // Fallback for generic "closed"
-  if (stage.includes("closed")) return "close_won"; 
+  if (stage.includes("closed")) return "close_won";
 
   return "new";
 };
@@ -103,36 +157,53 @@ const normalizeDeal = (deal) => ({
 });
 
 const rebuildBoards = (rawDeals) => {
-  const grouped = {
-    new: [],
-    qualified: [],
-    proposal: [],
-    negotiation: [],
-    closed: [],
-  };
+  if (isSyncingStage.value) return; // Prevent snap-back during sync
 
-  rawDeals.map(normalizeDeal).forEach((deal) => {
+  const currentMeta = boardMeta.value;
+  const grouped = {};
+  
+  currentMeta.forEach((m) => {
+    grouped[m.key] = [];
+  });
+
+  const normalized = rawDeals.map(normalizeDeal);
+  normalized.forEach((deal) => {
     const stageKey = String(deal.stage || "").toLowerCase().trim();
 
-    // Grouping logic: anything related to closing goes to "closed" column
+    // Grouping logic: anything related to closing goes to "closed" column if it exists
     if (
       stageKey === "closed" ||
       stageKey.includes("close") ||
       stageKey.includes("won") ||
       stageKey.includes("lost")
     ) {
-      grouped.closed.push(deal);
+      if (grouped.hasOwnProperty("closed")) {
+        grouped.closed.push(deal);
+      } else {
+        const closedCol = currentMeta.find(m => m.key.includes('close') || m.key.includes('won'));
+        if (closedCol) {
+          grouped[closedCol.key].push(deal);
+        } else {
+          grouped[currentMeta[0].key].push(deal);
+        }
+      }
     } else if (grouped.hasOwnProperty(stageKey)) {
       grouped[stageKey].push(deal);
     } else {
-      // Default fallback
-      grouped.new.push(deal);
+      // Log for debugging why it went to New
+      if (stageKey !== (currentMeta[0]?.key || 'new')) {
+        console.warn(`[DealCard] Deal ${deal.id} stage '${stageKey}' not found in boardMeta keys. Defaulting to first column.`);
+      }
+      const firstKey = currentMeta[0]?.key || "new";
+      if (grouped[firstKey]) {
+        grouped[firstKey].push(deal);
+      }
     }
   });
 
-  boards.value = boardMeta.map((board) => ({
-    ...board,
-    items: grouped[board.key] || [],
+  boards.value = currentMeta.map((meta) => ({
+    ...meta,
+    items: grouped[meta.key] || [],
   }));
 };
 
@@ -214,7 +285,7 @@ const handleBoardChange = async (event, targetBoard) => {
     window.closedChoice = null;
   }
 
-  // Optimistic update
+  // Optimistic update - IMMEDIATELY set locally
   movedDeal.stage = finalStage;
   isSyncingStage.value = true;
 
@@ -223,16 +294,17 @@ const handleBoardChange = async (event, targetBoard) => {
   boardChangeTimeout = setTimeout(async () => {
     try {
       console.log(
-        `[DealCard] Updating deal ${movedDeal.id} to stage: ${finalStage}`,
+        `[DealCard] Syncing deal ${movedDeal.id} to backend with stage: ${finalStage}`,
       );
       await store.dispatch("deals/updateDealStage", {
         dealId: movedDeal.id,
         newStage: finalStage,
       });
-      console.log(`[DealCard] Update successful for deal ${movedDeal.id}`);
     } catch (error) {
-      console.error("Failed to update deal stage:", error);
+      console.error("Failed to sync deal stage to backend:", error);
+      // Revert local stage on failure
       movedDeal.stage = previousStage;
+      rebuildBoards(allDeals.value);
     } finally {
       isSyncingStage.value = false;
     }
@@ -247,12 +319,17 @@ const handleViewDetail = (deal) => {
  * LIFECYCLE & WATCHERS
  */
 onMounted(async () => {
-  // Data fetched by parent
+  // Pastikan pipeline data sudah ter-fetch agar mapping board meta akurat
+  if (!store.state.deals.pipelines || store.state.deals.pipelines.length === 0) {
+    await store.dispatch("deals/fetchpipelines").catch(err => {
+      console.error("[DealCard] Failed to fetch pipelines:", err);
+    });
+  }
 });
 
 watch(
-  allDeals,
-  (deals) => {
+  [allDeals, boardMeta],
+  ([deals]) => {
     rebuildBoards(deals || []);
   },
   { immediate: true },
@@ -323,7 +400,7 @@ onBeforeUnmount(() => {
 
             <!-- Draggable Area -->
             <draggable
-              v-model="board.items"
+              :list="board.items"
               group="deals"
               item-key="id"
               class="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar min-h-25"

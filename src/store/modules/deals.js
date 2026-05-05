@@ -280,7 +280,13 @@ export default {
       state.sources = sources;
     },
     setpipelines(state, pipelines) {
-      state.pipelines = pipelines;
+      state.pipelines = Array.isArray(pipelines)
+        ? pipelines.map((p) => ({
+            ...p,
+            label: p.pipeline_name || p.name || p.label,
+            value: p.id_pipeline || p.id || p.value,
+          }))
+        : [];
     },
     setpriority(state, priority) {
       state.priority = priority;
@@ -1107,16 +1113,38 @@ export default {
         const updatedValue =
           deal.updated_at || deal.updatedAt || deal.update_at || "-";
 
+        const rawStage =
+          deal.stage ||
+          deal.pipeline ||
+          deal.pipelinenm ||
+          deal.id_pipeline ||
+          deal.pipeline_id;
+        
+        let normalizedStage = "new";
+        const stageStr = String(rawStage || "new").toLowerCase().trim();
+
+        // Dynamic check
+        if (state.pipelines && state.pipelines.length > 0) {
+          const found = state.pipelines.find(p => 
+            String(p.id_pipeline || p.value || "").toLowerCase() === stageStr ||
+            String(p.pipeline_name || p.label || "").toLowerCase().trim() === stageStr
+          );
+          if (found) {
+            const name = String(found.pipeline_name || found.label || "").toLowerCase();
+            normalizedStage = (name.includes("won") || name.includes("lost") || name.includes("close"))
+              ? (name.includes("won") ? "close_won" : "close_lost")
+              : name.trim();
+          } else {
+            normalizedStage = normalizeStage(rawStage); // Use helper for basic strings like "prospect"
+          }
+        } else {
+          normalizedStage = normalizeStage(rawStage);
+        }
+
         return {
           ...deal,
           name: deal.deal_name || deal.dealName || deal.name || "Untitled Deal",
-          stage: normalizeStage(
-            deal.stage ||
-            deal.pipeline ||
-            deal.pipelinenm ||
-            deal.id_pipeline ||
-            deal.pipeline_id
-          ),
+          stage: normalizedStage,
           amount: amountValue,
           jumlah: amountValue,
           tertanggal: deal.expected_close_date || deal.expectedCloseDate || "-",

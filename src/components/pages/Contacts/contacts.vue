@@ -56,6 +56,7 @@
         :showActionColumn="true"
         :wordwrap="true"
         :columnAutoWidth="false"
+        :columnHidingEnabled="false"
         :height="'100%'"
         :columns="contactColumns"
 
@@ -266,9 +267,27 @@ export default {
 
     contactColumns() {
       return [
-        { dataField: "Contact Name", caption: "Contact Name", visible: true },
-        { dataField: "Contact Info", caption: "Contact Info", visible: true },
-        { dataField: "statusname", caption: "Status", visible: true },
+        {
+          dataField: "Contact Name",
+          caption: "Contact Name",
+          visible: true,
+          width: 240,
+          allowHiding: false,
+        },
+        {
+          dataField: "Contact Info",
+          caption: "Contact Info",
+          visible: true,
+          width: 280,
+          allowHiding: false,
+        },
+        {
+          dataField: "Status",
+          caption: "Status",
+          visible: true,
+          width: 150,
+          allowHiding: false,
+        },
       ];
     },
 
@@ -350,6 +369,22 @@ export default {
         );
         const dealStr = (dealLabels.length ? dealLabels : ["-"]).join(", ");
 
+        const rawStatus =
+          contact.status_name ||
+          contact.name_status ||
+          contact.statusName ||
+          contact.statusname ||
+          contact.Status ||
+          contact.status ||
+          contact.statusid ||
+          contact.status_id ||
+          contact.statusId;
+
+        const resolvedStatusName =
+          typeof rawStatus === "number" || /^[0-9]+$/.test(String(rawStatus))
+            ? this.getStatusName(rawStatus)
+            : rawStatus || this.getStatusName(contact.status);
+
         return {
           ...contact,
           id: contact.id,
@@ -360,7 +395,8 @@ export default {
           }`.trim(),
           "Contact Info": `${contact.email || "-"}\n${contact.telephone_1 || "-"}`,
           "Associated with": `${companyStr}\n${dealStr}`,
-          Status: this.getStatusName(contact.status),
+          Status: resolvedStatusName,
+          statusname: resolvedStatusName,
           /*"Created/Update": this.formatDate(
             contact.updated_at || contact.created_at,
           ),
@@ -504,6 +540,25 @@ export default {
           `;
           },
         );
+
+        // Status column: show readable name as plain text (no badge)
+        const vm = this;
+        instance.columnOption("Status", "cellTemplate", (container, options) => {
+          const data = options.data || {};
+          const name =
+            data.Status ||
+            data.statusname ||
+            data.status_name ||
+            data.name_status ||
+            data.statusName ||
+            vm.getStatusName(data.status) ||
+            vm.getStatusName(data.status_id) ||
+            vm.getStatusName(data.statusid) ||
+            "-";
+
+          // Render plain text
+          container.innerText = name;
+        });
 
         this.gridInitialized = true;
       }
@@ -832,11 +887,26 @@ export default {
   mounted() {
     document.addEventListener("click", this.handleClickOutside);
 
-    // initial fetch
-    // this.fetchStatuses();
-    this.fetchData();
-    // this.fetchAllcompany();
-    // this.fetchAllDeals();
+    // Load statuses first so grid can render status names instead of ids
+    try {
+      const statusUtil = useStatuses();
+      statusUtil
+        .fetchStatuses()
+        .then((data) => {
+          this.statuses = data || [];
+        })
+        .catch((err) => {
+          console.warn("Failed to load statuses, fallback will be used:", err);
+        })
+        .finally(() => {
+          // Fetch contacts after statuses are loaded (or fallback applied)
+          this.fetchData();
+        });
+    } catch (e) {
+      // If composable fails for any reason, still fetch contacts
+      console.warn("useStatuses failed:", e);
+      this.fetchData();
+    }
   },
 
   beforeUnmount() {

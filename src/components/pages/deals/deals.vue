@@ -195,6 +195,9 @@ export default {
     // Fetch deals data with current pagination and search filters
     async fetchData() {
       try {
+        // Fetch pipelines first to ensure normalization works correctly
+        await this.$store.dispatch("deals/fetchpipelines").catch(() => {});
+        
         await this.$store.dispatch("deals/fetchAllDeals", {
           page: this.currentPage,
           per_page: this.itemsPerPage,
