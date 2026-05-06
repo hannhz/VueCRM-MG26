@@ -291,9 +291,24 @@ export default {
         console.error("Failed to create project:", err);
       }
     },
-    openProjectDetail(project) {
-      this.selectedProjectDetail = { ...project };
-      this.showProjectDetailForm = true;
+    async openProjectDetail(project) {
+      const projectId = project.id || project.project_id;
+      if (!projectId) return;
+
+      try {
+        // Fetch detailed data from backend to ensure all IDs (Leader, Deal, Status) are present
+        const detailedProject = await this.$store.dispatch(
+          "project/fetchProjectById",
+          projectId,
+        );
+        this.selectedProjectDetail = detailedProject || { ...project };
+        this.showProjectDetailForm = true;
+      } catch (error) {
+        console.error("Failed to load project details:", error);
+        // Fallback to existing data if fetch fails
+        this.selectedProjectDetail = { ...project };
+        this.showProjectDetailForm = true;
+      }
     },
     closeProjectDetail() {
       this.selectedProjectDetail = null;
@@ -320,12 +335,7 @@ export default {
       try {
         await this.$store.dispatch("project/updateProject", {
           id: projectId,
-          formData: {
-            ...payload,
-            project_name: (payload.project_name || payload.task_name).trim(),
-            description: payload.description?.trim() || "",
-            assignee: payload.assignee?.trim() || payload.owner?.trim() || "",
-          },
+          formData: payload,
         });
 
         await this.$store.dispatch("project/fetchAllProjects");

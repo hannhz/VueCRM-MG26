@@ -39,7 +39,15 @@ const normalizeProject = (project = {}, index = 0) => {
         id: project.id ?? project.project_id ?? project.id_project ?? fallbackId,
         project_name: projectName,
         description,
-        status,
+        status: status,
+        status_id: project.status_id || project.id_status || project.id_project_status || null,
+        deal_id: project.deal_id || project.id_deals || project.id_deal || null,
+        leader_id: project.leader_id || project.id_leader || project.assignee_id || project.id_user || null,
+        deal_name: project.deal_name || project.deal?.name || project.name_deal || "-",
+        leader_name: project.leader_name || project.leader?.name || project.user_name || project.name_user || project.assignee || "-",
+        status_name: project.status_name || project.status?.name || project.project_status || project.name_status || "-",
+        address: project.address || "-",
+        kd_kelurahan: project.kd_kelurahan || "-",
         assignee: assignee || "-",
         due_date: dueDate,
         project_time: projectTime,
@@ -61,53 +69,15 @@ const mapProjectPayload = (formData = {}) => {
         return String(value).trim();
     };
 
-    const projectName =
-        normalizeText(formData.project_name) ||
-        normalizeText(formData.projectName) ||
-        null;
-    const description =
-        normalizeText(formData.description) ||
-        normalizeText(formData.projectContent) ||
-        null;
-    const assignee =
-        normalizeText(formData.assignee) || normalizeText(formData.owner) || null;
-    const now = new Date().toISOString();
-    const createdAt = formData.created_at || now;
-    const updatedAt = now;
-
     return {
-        project_name: projectName,
-        name: projectName,
-        description,
-        project_content: description,
-        status: normalizeProjectStatus(
-            formData.status || formData.stage || formData.project_status,
-        ),
-        stage: normalizeProjectStatus(
-            formData.status || formData.stage || formData.project_status,
-        ),
-        project_status: normalizeText(formData.project_status) || undefined,
-        assignee,
-        owner: assignee,
-        due_date: formData.due_date || formData.dueDate || null,
-        dueDate: formData.due_date || formData.dueDate || null,
-        date: formData.due_date || formData.dueDate || null,
-        deadline: formData.due_date || formData.dueDate || null,
-        project_time: formData.project_time || formData.time || null,
-        due_time: formData.project_time || formData.time || null,
-        time: formData.project_time || formData.time || null,
-        priority: formData.priority || null,
-        deal_id: formData.deal_id ?? formData.deal ?? null,
-        leader_id: formData.leader_id ?? null,
-        address: normalizeText(formData.address) || null,
-        kd_kelurahan:
-            normalizeText(formData.kd_kelurahan) ||
-            normalizeText(formData.kelurahan) ||
-            null,
-        location: normalizeText(formData.location) || null,
-        created_by: formData.created_by ?? null,
-        created_at: createdAt,
-        updated_at: updatedAt,
+        project_name: formData.project_name || formData.projectName || "",
+        deal_id: formData.deal_id || formData.deal || null,
+        leader_id: formData.leader_id || null,
+        description: formData.description || "",
+        address: formData.address || "",
+        kd_kelurahan: formData.kd_kelurahan || formData.kelurahan || "",
+        status_id: formData.status_id || formData.status || formData.project_status || null,
+        created_by: formData.created_by || null,
     };
 };
 
@@ -120,6 +90,9 @@ export default {
         isLoading: false,
         error: null,
         searchQuery: "",
+        leaders: [],
+        deals: [],
+        statuses: [],
     }),
 
     mutations: {
@@ -150,6 +123,15 @@ export default {
         SET_SEARCH_QUERY(state, query) {
             state.searchQuery = query;
         },
+        SET_LEADERS(state, leaders) {
+            state.leaders = leaders;
+        },
+        SET_DEALS(state, deals) {
+            state.deals = deals;
+        },
+        SET_STATUSES(state, statuses) {
+            state.statuses = statuses;
+        },
     },
 
     actions: {
@@ -163,7 +145,7 @@ export default {
 
             const promise = new Promise(async (resolve, reject) => {
                 try {
-                    const response = await api.get("tasks", {
+                    const response = await api.get("project", {
                         headers: {
                             Authorization: "Bearer " + cookies.get("token"),
                         },
@@ -176,7 +158,12 @@ export default {
 
             promise
                 .then((data) => {
-                    const projectsData = data.tasks || data.data || data;
+                    // Backend returns { companies: { data: [...] } } based on latest sample
+                    const projectsData =
+                        (data.companies && data.companies.data) ||
+                        data.projects ||
+                        data.data ||
+                        data;
                     const normalizedProjects = Array.isArray(projectsData)
                         ? projectsData.map((project, index) => normalizeProject(project, index))
                         : [];
@@ -191,14 +178,91 @@ export default {
                         serverMessage ||
                         (status
                             ? status === 404
-                                ? "Endpoint projects tidak ditemukan di server (404)."
-                                : `Fetch projects gagal (HTTP ${status})`
+                                ? "Endpoint project tidak ditemukan di server (404)."
+                                : `Fetch project gagal (HTTP ${status})`
                             : error.message || "Failed to fetch projects"),
                     );
                     commit("SET_LOADING", false);
                 });
 
             return promise;
+        },
+
+        async fetchProjectById({ commit }, projectId) {
+            if (!projectId) return null;
+            commit("SET_LOADING", true);
+            try {
+                const response = await api.get(`project/fetchprojectbyid?id=${projectId}`, {
+                    headers: {
+                        Authorization: "Bearer " + cookies.get("token"),
+                    },
+                });
+                
+                // Based on sample: { project: [...], taskassoc: [...] }
+                const projectData = response.data?.project?.[0] || response.data?.data || response.data;
+                const tasksData = response.data?.taskassoc || [];
+
+                if (!projectData) {
+                    commit("SET_LOADING", false);
+                    return null;
+                }
+
+                // Merge tasks into project object for normalization
+                const combinedData = {
+                    ...projectData,
+                    tasks: tasksData
+                };
+
+                const normalized = normalizeProject(combinedData);
+                commit("SET_LOADING", false);
+                return normalized;
+            } catch (error) {
+                console.error("Fetch project by ID failed:", error);
+                commit("SET_LOADING", false);
+                throw error;
+            }
+        },
+
+        async fetchDeals({ commit }) {
+            try {
+                const response = await api.get("project/deals", {
+                    headers: { Authorization: "Bearer " + cookies.get("token") }
+                });
+                const data = response.data?.deals || response.data?.data || response.data || [];
+                commit("SET_DEALS", data);
+                return data;
+            } catch (error) {
+                console.error("Fetch project deals failed:", error);
+                return [];
+            }
+        },
+
+        async fetchLeaders({ commit }) {
+            try {
+                const response = await api.get("project/leader", {
+                    headers: { Authorization: "Bearer " + cookies.get("token") }
+                });
+                const data = response.data?.leaders || response.data?.data || response.data || [];
+                commit("SET_LEADERS", data);
+                return data;
+            } catch (error) {
+                console.error("Fetch project leaders failed:", error);
+                return [];
+            }
+        },
+
+        async fetchStatuses({ commit }) {
+            try {
+                const response = await api.get("project/status", {
+                    headers: { Authorization: "Bearer " + cookies.get("token") }
+                });
+                const data = response.data?.statuses || response.data?.data || response.data || [];
+                commit("SET_STATUSES", data);
+                return data;
+            } catch (error) {
+                console.error("Fetch project statuses failed:", error);
+                return [];
+            }
         },
 
         createprojectnew({ commit }, formData) {
@@ -329,42 +393,20 @@ export default {
                 Authorization: "Bearer " + cookies.get("token"),
             };
 
-            // Tentukan choice: 'i' untuk insert, 'u' untuk update
+            // Gunakan 'append' sesuai instruksi user untuk data baru
             const choice = formData.id ? "u" : "i";
 
             const mappedPayload = mapProjectPayload(formData);
-            const now = new Date().toISOString();
             const payload = {
                 choice: choice,
-                ...(choice === "u" ? { id: formData.id } : {}),
+                id: formData.id || null,
                 ...mappedPayload,
-                created_at:
-                    choice === "i"
-                        ? formData.created_at || mappedPayload.created_at || now
-                        : formData.created_at || undefined,
-                updated_at: now,
             };
 
-            // Keep backend compatibility with payload shape used in company delete/update flow.
-            if (choice === "u") {
-                payload.project_id = formData.id;
-                payload.id_project = formData.id;
-            }
-
             try {
-                const response = await api.post("tasks/input", payload, { headers });
+                const response = await api.post("project/input", payload, { headers });
 
-                await dispatch("fetchAllProjects").catch(() => {
-                    const createdProject =
-                        response?.data?.task || response?.data?.data || response?.data;
-                    if (createdProject) {
-                        if (choice === "i") {
-                            commit("ADD_PROJECT", normalizeProject(createdProject));
-                        } else {
-                            commit("UPDATE_PROJECT", normalizeProject(createdProject));
-                        }
-                    }
-                });
+                await dispatch("fetchAllProjects");
 
                 commit("SET_LOADING", false);
                 return response.data;
@@ -399,78 +441,8 @@ export default {
             // Merge partial update with existing project data
             const formData = {
                 id: projectId,
-                project_name:
-                    partialForm.project_name ||
-                    partialForm.projectName ||
-                    existingProject.project_name ||
-                    existingProject.title ||
-                    existingProject.name ||
-                    "",
-                description:
-                    partialForm.description ??
-                    partialForm.projectContent ??
-                    existingProject.description ??
-                    existingProject.project_content ??
-                    "",
-                status:
-                    partialForm.status ||
-                    partialForm.stage ||
-                    existingProject.status ||
-                    existingProject.stage ||
-                    "not_started",
-                assignee:
-                    partialForm.assignee ??
-                    partialForm.owner ??
-                    existingProject.assignee ??
-                    existingProject.owner ??
-                    existingProject.user_name ??
-                    "",
-                due_date:
-                    partialForm.due_date ??
-                    partialForm.dueDate ??
-                    existingProject.due_date ??
-                    existingProject.dueDate ??
-                    existingProject.date ??
-                    "",
-                project_time:
-                    partialForm.project_time ??
-                    partialForm.time ??
-                    existingProject.project_time ??
-                    existingProject.time ??
-                    "",
-                priority: partialForm.priority ?? existingProject.priority ?? "",
-                deal_id:
-                    partialForm.deal_id ??
-                    existingProject.deal_id ??
-                    existingProject.deal ??
-                    "",
-                leader_id:
-                    partialForm.leader_id ??
-                    existingProject.leader_id ??
-                    "",
-                address:
-                    partialForm.address ??
-                    existingProject.address ??
-                    "",
-                kd_kelurahan:
-                    partialForm.kd_kelurahan ??
-                    existingProject.kd_kelurahan ??
-                    existingProject.kelurahan ??
-                    "",
-                location:
-                    partialForm.location ??
-                    existingProject.location ??
-                    "",
-                project_status:
-                    partialForm.project_status ??
-                    existingProject.project_status ??
-                    existingProject.status ??
-                    existingProject.stage ??
-                    "",
-                created_by:
-                    partialForm.created_by ??
-                    existingProject.created_by ??
-                    "",
+                ...existingProject,
+                ...partialForm,
             };
 
             return dispatch("createProject", formData);
@@ -522,18 +494,16 @@ export default {
             };
 
             try {
-                const response = await api.post("tasks/input", deletePayload, {
+                const response = await api.post("project/input", deletePayload, {
                     headers,
                 });
 
-                await dispatch("fetchAllProjects").catch(() => {
-                    commit("DELETE_PROJECT", resolvedId);
-                });
+                await dispatch("fetchAllProjects");
 
                 commit("SET_LOADING", false);
                 return response?.data;
             } catch (error) {
-                await dispatch("fetchAllProjects").catch(() => {});
+                await dispatch("fetchAllProjects").catch(() => { });
                 const status = error?.response?.status;
                 const serverMessage = error?.response?.data?.message;
                 commit(

@@ -97,23 +97,14 @@
               <label class="mb-2 block text-sm font-medium text-dark-base">
                 Deal <span class="text-red-600">*</span>
               </label>
-              <div class="relative">
-                <select
+              <div class="v-select-container">
+                <v-select
                   v-model="formData.deal_id"
-                  class="w-full appearance-none rounded-lg border border-outline bg-white px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
-                  required
-                >
-                  <option
-                    v-for="option in dealOptions"
-                    :key="option.value || option.label"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="16"
-                  class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sub-text"
+                  :options="dealOptions"
+                  :reduce="option => option.value"
+                  label="label"
+                  placeholder="Select Deal"
+                  class="custom-v-select"
                 />
               </div>
             </div>
@@ -122,23 +113,14 @@
               <label class="mb-2 block text-sm font-medium text-dark-base">
                 Leader <span class="text-red-600">*</span>
               </label>
-              <div class="relative">
-                <select
+              <div class="v-select-container">
+                <v-select
                   v-model="formData.leader_id"
-                  class="w-full appearance-none rounded-lg border border-outline bg-white px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
-                  required
-                >
-                  <option
-                    v-for="option in leaderOptions"
-                    :key="option.value || option.label"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="16"
-                  class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sub-text"
+                  :options="leaderOptions"
+                  :reduce="option => option.value"
+                  label="label"
+                  placeholder="Select Leader"
+                  class="custom-v-select"
                 />
               </div>
             </div>
@@ -177,23 +159,14 @@
               <label class="mb-2 block text-sm font-medium text-dark-base">
                 Project Status <span class="text-red-600">*</span>
               </label>
-              <div class="relative">
-                <select
-                  v-model="formData.project_status"
-                  class="w-full appearance-none rounded-lg border border-outline bg-white px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
-                  required
-                >
-                  <option
-                    v-for="option in projectStatusOptions"
-                    :key="option.value || option.label"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </option>
-                </select>
-                <ChevronDown
-                  :size="16"
-                  class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sub-text"
+              <div class="v-select-container">
+                <v-select
+                  v-model="formData.status_id"
+                  :options="projectStatusOptions"
+                  :reduce="option => option.value"
+                  label="label"
+                  placeholder="Select Project Status"
+                  class="custom-v-select"
                 />
               </div>
             </div>
@@ -555,6 +528,7 @@ export default {
         location: "",
         kd_kelurahan: "",
         project_status: "",
+        status_id: "",
         created_at: "",
         created_by: "",
         task: {
@@ -606,41 +580,25 @@ export default {
       return user?.id || user?.user_id || user?.userid || "";
     },
     dealOptions() {
-      const deals = this.$store.getters["deals/allDeals"] || [];
-      return [
-        { value: "", label: "Select Deal" },
-        ...deals.map((deal) => ({
-          value: deal.id ?? deal.deal_id ?? deal.id_deal ?? "",
-          label: deal.deal_name || deal.name || deal.title || "Unknown",
-        })),
-      ];
+      const deals = this.$store.state.project.deals || [];
+      return deals.map((deal) => ({
+        value: deal.id_deals ?? deal.id ?? deal.deal_id ?? "",
+        label: deal.deal_name || deal.name || deal.title || "Unknown",
+      }));
     },
     leaderOptions() {
-      const users = this.$store.getters["users/allUsers"] || [];
-      return [
-        { value: "", label: "Select Leader" },
-        ...users.map((user) => ({
-          value: user.id ?? user.user_id ?? user.userid ?? "",
-          label:
-            user.name ||
-            [user.first_name || user.firstname, user.last_name || user.lastname]
-              .filter(Boolean)
-              .join(" ")
-              .trim() ||
-            user.username ||
-            "Unknown",
-        })),
-      ];
+      const users = this.$store.state.project.leaders || [];
+      return users.map((user) => ({
+        value: user.value ?? user.id_user ?? user.id ?? "",
+        label: user.label || "Unknown",
+      }));
     },
     projectStatusOptions() {
-      const prStatuses = this.statuses.filter((s) => s.table_code === "PR");
-      return [
-        { value: "", label: "Select Project Status" },
-        ...prStatuses.map((s) => ({
-          value: s.id,
-          label: s.name,
-        })),
-      ];
+      const statuses = this.$store.state.project.statuses || [];
+      return statuses.map((s) => ({
+        value: s.value ?? s.id_status ?? s.id ?? "",
+        label: s.label || "Unknown",
+      }));
     },
   },
   watch: {
@@ -654,9 +612,9 @@ export default {
       if (isOpen) {
         Promise.allSettled([
           this.$store.dispatch("users/getusersignin"),
-          this.$store.dispatch("users/fetchAllusers"),
-          this.$store.dispatch("deals/fetchAllDeals"),
-          this.fetchStatuses(),
+          this.$store.dispatch("project/fetchLeaders"),
+          this.$store.dispatch("project/fetchDeals"),
+          this.$store.dispatch("project/fetchStatuses"),
         ]).finally(() => {
           if (this.initialData) {
             this.setFormData(this.initialData);
@@ -749,12 +707,13 @@ export default {
           data.title ||
           data.name ||
           "",
-        deal_id: data.deal_id ?? data.deal ?? "",
-        leader_id: data.leader_id ?? data.assignee_id ?? "",
+        deal_id: data.deal_id ?? data.deal ?? data.id_deals ?? "",
+        leader_id: data.leader_id ?? data.id_leader ?? data.assignee_id ?? data.id_user ?? "",
         description: data.description || data.project_content || "",
         location: data.location || "",
         kd_kelurahan: data.kd_kelurahan || data.kelurahan || "",
         project_status: data.project_status || data.status || data.stage || "",
+        status_id: data.status_id || data.id_status || "",
         created_at: data.created_at || new Date().toISOString(),
         created_by:
           data.created_by || this.currentUserId || this.currentUserLabel || "",
@@ -777,6 +736,22 @@ export default {
           audioBlob: data.noteData?.audioBlob || null,
         },
       };
+
+      // Workaround: If leader_id is missing but leader_name exists, try to find ID from options
+      if (!this.formData.leader_id && data.leader_name) {
+        const found = this.leaderOptions.find(
+          (opt) => opt.label?.toLowerCase() === data.leader_name.toLowerCase(),
+        );
+        if (found) this.formData.leader_id = found.value;
+      }
+
+      // Workaround: If status_id is missing but status_name exists, try to find ID from options
+      if (!this.formData.status_id && data.status_name) {
+        const found = this.projectStatusOptions.find(
+          (opt) => opt.label?.toLowerCase() === data.status_name.toLowerCase(),
+        );
+        if (found) this.formData.status_id = found.value;
+      }
 
       // MAP HISTORY (Notes & Tasks)
       let historyItems = [];
@@ -873,7 +848,7 @@ export default {
         id: null,
         project_name: "",
         deal_id: "",
-        leader_id: this.currentUserId || "",
+        leader_id: "",
         description: "",
         location: "",
         kd_kelurahan: "",
@@ -1032,7 +1007,7 @@ export default {
         await alertService.error("Leader wajib dipilih.");
         return;
       }
-      if (!this.formData.project_status) {
+      if (!this.formData.status_id) {
         await alertService.error("Project status wajib dipilih.");
         return;
       }
@@ -1054,7 +1029,7 @@ export default {
             this.locationData.kelurahan || this.formData.kd_kelurahan || "",
           location:
             this.formData.location.trim() || JSON.stringify(this.locationData),
-          project_status: this.formData.project_status,
+          status_id: this.formData.status_id,
           created_at: this.formData.created_at || new Date().toISOString(),
           created_by:
             this.formData.created_by ||
@@ -1141,5 +1116,36 @@ export default {
     width: 100%;
     z-index: auto;
   }
+}
+
+/* Custom V-Select Styles */
+:deep(.custom-v-select) {
+  --vs-font-size: 0.875rem;
+  --vs-line-height: 1.25rem;
+  --vs-border-radius: 0.5rem;
+  --vs-border-color: #e2e8f0; /* border-outline color */
+  --vs-border-width: 1px;
+  --vs-dropdown-max-height: 250px;
+}
+
+:deep(.custom-v-select .vs__dropdown-toggle) {
+  padding: 2px 0 6px 0;
+  border: 1px solid #e2e8f0;
+}
+
+:deep(.custom-v-select .vs__search::placeholder) {
+  color: #94a3b8;
+}
+
+:deep(.custom-v-select .vs__actions) {
+  padding: 4px 10px 0 3px;
+}
+
+:deep(.custom-v-select .vs__selected) {
+  margin-top: 6px;
+}
+
+.v-select-container {
+  width: 100%;
 }
 </style>

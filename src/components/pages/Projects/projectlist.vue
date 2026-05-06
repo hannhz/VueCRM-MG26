@@ -262,12 +262,11 @@ export default {
     },
     tableProjects() {
       return this.paginatedProjects.map((project) => ({
-        "Project Name":
-          project.project_name || project.title || project.name || "-",
-        Stage: this.getStageLabel(project.status || project.stage),
-        "Due Date / Time": project.dueDate || project.time || "-",
-        "Created / Updated": project.created_at || project.createdAt || "-",
-        Owner: project.owner || project.assignee || "-",
+        "Project Name": project.project_name || "-",
+        Deal: project.deal_name || "-",
+        Leader: project.leader_name || "-",
+        Status: project.status_name || "-",
+        Address: project.address || "-",
         id: project.id,
       }));
     },
