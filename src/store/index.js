@@ -17,6 +17,7 @@ import userpermisions from "./modules/userpermisions";
 import assoc from "./modules/assoc";
 import lokasi from "./modules/lokasi";
 import history from "./modules/history";
+import invoiceModule from "./modules/invoice";
 
 export default createStore({
   modules: {
@@ -38,5 +39,6 @@ export default createStore({
     assoc: assoc,
     lokasi: lokasi,
     history: history,
+    invoice: invoiceModule,
   },
 });
