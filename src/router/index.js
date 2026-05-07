@@ -15,6 +15,7 @@ import Documents from "@/components/pages/documents/Documents.vue";
 import DocumentList from "@/components/pages/documents/DocumentList.vue";
 import DocumentsTemplate from "@/components/pages/documents/DocumentsTemplate.vue";
 import DocumentsShortCode from "@/components/pages/documents/DocumentsShortCode.vue";
+import Invoice from "@/components/pages/Invoice/Invoice.vue";
 import UserSetings from "@/components/user/usersettings/usersetings.vue";
 import UserPermission from "@/components/user/userpermission.vue";
 import UserTeam from "@/components/user/userteam.vue";
@@ -153,6 +154,11 @@ const routes = [
             component: DocumentsShortCode,
           },
         ],
+      },
+      {
+        path: "invoice",
+        name: "Invoice",
+        component: Invoice,
       },
       {
         path: "users",
