@@ -250,6 +250,8 @@
         :showSelection="true"
         :selectedRowKeys="selectedTasks"
         :showActionColumn="true"
+        :columns="gridColumns"
+        :customCellTemplates="gridTemplates"
         @focused-row-changed="handleFocusedRowChanged"
         @selection-changed="handleSelectionChanged"
         @edit-click="handleRowEdit"
@@ -343,12 +345,37 @@ export default {
     totalTask() {
       return this.tasks.length;
     },
-    totalPages() {
-      return Math.max(1, Math.ceil(this.totalTask / this.itemsPerPage));
-    },
     paginatedTasks() {
       const start = (this.currentPage - 1) * this.itemsPerPage;
       return this.tasks.slice(start, start + this.itemsPerPage);
+    },
+    gridTemplates() {
+      return [
+        {
+          name: "statusTemplate",
+          component: {
+            props: ["data"],
+            template: `
+              <div class="flex items-center">
+                <span class="status-badge">{{ data.data.value }}</span>
+              </div>
+            `,
+          },
+        },
+      ];
+    },
+    gridColumns() {
+      return [
+        { dataField: "Task Name", caption: "Task Name" },
+        {
+          dataField: "Status",
+          caption: "Status",
+          cellTemplate: "statusTemplate",
+        },
+        { dataField: "Due Date / Time", caption: "Due Date / Time" },
+        { dataField: "Created / Updated", caption: "Created / Updated" },
+        { dataField: "Owner", caption: "Owner" },
+      ];
     },
     allSelected() {
       return (
@@ -359,14 +386,21 @@ export default {
       );
     },
     tableTasks() {
-      return this.paginatedTasks.map((task) => ({
-        "Task Name": task.title || task.name || "-",
-        Stage: this.getStageLabel(task.status || task.stage),
-        "Due Date / Time": task.dueDate || task.time || "-",
-        "Created / Updated": task.created_at || task.createdAt || "-",
-        Owner: task.owner || task.assignee || "-",
-        id: task.id,
-      }));
+      return this.paginatedTasks.map((task) => {
+        // Gabungkan data status dari berbagai kemungkinan field BE
+        const statusValue = task.status_id || task.status || task.stage;
+        return {
+          "Task Name": task.title || task.name || "-",
+          Status: this.getStageLabel(statusValue),
+          "Due Date / Time": task.dueDate || task.time || "-",
+          "Created / Updated": task.created_at || task.createdAt || "-",
+          Owner: task.owner || task.assignee || "-",
+          id: task.id,
+        };
+      });
+    },
+    totalPages() {
+      return Math.max(1, Math.ceil(this.totalTask / this.itemsPerPage));
     },
   },
   methods: {
@@ -441,9 +475,33 @@ export default {
     },
 
     getStageLabel(stage) {
-      return (
-        this.stageOptions.find((opt) => opt.value === stage)?.label || stage
-      );
+      // 1. Cek di store (BE data statuses)
+      const storeStatuses = this.$store.getters["tasks/allStatuses"] || [];
+      if (storeStatuses.length > 0) {
+        const match = storeStatuses.find(
+          (s) =>
+            String(s.id) === String(stage) ||
+            String(s.value) === String(stage) ||
+            s.status_name === stage ||
+            s.name === stage,
+        );
+        if (match) return match.status_name || match.name || match.label;
+      }
+
+      // 2. Cek di hardcoded options
+      const hardcoded = this.stageOptions.find((opt) => opt.value === stage);
+      if (hardcoded) return hardcoded.label;
+
+      // Fallback: format string jika bukan ID
+      if (!stage || stage === "-") return "-";
+      if (typeof stage === "string" && isNaN(stage)) {
+        return stage
+          .charAt(0)
+          .toUpperCase()
+          .concat(stage.slice(1).replace(/_/g, " "));
+      }
+
+      return stage; // Kembalikan ID jika tidak ketemu mappingnya
     },
 
     getStageColor(stage) {
@@ -602,6 +660,10 @@ export default {
     prevPage() {
       if (this.currentPage > 1) this.currentPage--;
     },
+  },
+  mounted() {
+    // Pastikan data status ter-fetch agar mapping ID ke Label jalan
+    this.$store.dispatch("tasks/fetchStatuses").catch(() => {});
   },
   watch: {
     tasks: {

@@ -27,7 +27,7 @@ const normalizeTaskStatus = (statusRaw) => {
 const normalizeTask = (task = {}, index = 0) => {
   const fallbackId = `${task?.task_name || task?.title || task?.name || "task"}-${index}`;
   const status = normalizeTaskStatus(
-    task.status || task.stage || task.pipeline,
+    task.status || task.status_id || task.stage || task.pipeline,
   );
   const taskName = task.task_name || task.title || task.name || "Untitled Task";
   const description = task.description || task.task_content || "";
@@ -191,11 +191,11 @@ export default {
           commit(
             "SET_ERROR",
             serverMessage ||
-              (status
-                ? status === 404
-                  ? "Endpoint tasks tidak ditemukan di server (404)."
-                  : `Fetch tasks gagal (HTTP ${status})`
-                : error.message || "Failed to fetch tasks"),
+            (status
+              ? status === 404
+                ? "Endpoint tasks tidak ditemukan di server (404)."
+                : `Fetch tasks gagal (HTTP ${status})`
+              : error.message || "Failed to fetch tasks"),
           );
           commit("SET_LOADING", false);
         });
@@ -231,11 +231,11 @@ export default {
           commit(
             "SET_ERROR",
             serverMessage ||
-              (status
-                ? status === 404
-                  ? "Endpoint tasks tidak ditemukan di server (404)."
-                  : `Fetch tasks gagal (HTTP ${status})`
-                : error.message || "Failed to fetch tasks"),
+            (status
+              ? status === 404
+                ? "Endpoint tasks tidak ditemukan di server (404)."
+                : `Fetch tasks gagal (HTTP ${status})`
+              : error.message || "Failed to fetch tasks"),
           );
           commit("SET_LOADING", false);
         });
@@ -271,11 +271,11 @@ export default {
           commit(
             "SET_ERROR",
             serverMessage ||
-              (status
-                ? status === 404
-                  ? "Endpoint tasks tidak ditemukan di server (404)."
-                  : `Fetch tasks gagal (HTTP ${status})`
-                : error.message || "Failed to fetch tasks"),
+            (status
+              ? status === 404
+                ? "Endpoint tasks tidak ditemukan di server (404)."
+                : `Fetch tasks gagal (HTTP ${status})`
+              : error.message || "Failed to fetch tasks"),
           );
           commit("SET_LOADING", false);
         });
@@ -311,11 +311,11 @@ export default {
           commit(
             "SET_ERROR",
             serverMessage ||
-              (status
-                ? status === 404
-                  ? "Endpoint tasks tidak ditemukan di server (404)."
-                  : `Fetch tasks gagal (HTTP ${status})`
-                : error.message || "Failed to fetch tasks"),
+            (status
+              ? status === 404
+                ? "Endpoint tasks tidak ditemukan di server (404)."
+                : `Fetch tasks gagal (HTTP ${status})`
+              : error.message || "Failed to fetch tasks"),
           );
           commit("SET_LOADING", false);
         });
@@ -350,17 +350,18 @@ export default {
       try {
         const response = await api.post("tasks/input", payload, { headers });
 
-        await dispatch("fetchAllTasks").catch(() => {
-          const createdTask =
-            response?.data?.task || response?.data?.data || response?.data;
-          if (createdTask) {
-            if (choice === "i") {
-              commit("ADD_TASK", normalizeTask(createdTask));
-            } else {
-              commit("UPDATE_TASK", normalizeTask(createdTask));
-            }
-          }
-        });
+        // Optimistically update the store with the submitted data
+        const taskResult = response?.data?.input || payload;
+        const normalized = normalizeTask(taskResult);
+
+        if (choice === "i") {
+          commit("ADD_TASK", normalized);
+        } else {
+          commit("UPDATE_TASK", normalized);
+        }
+
+        // Re-fetch in background to ensure sync with BE
+        dispatch("fetchAllTasks").catch(e => console.warn("Background fetch failed", e));
 
         commit("SET_LOADING", false);
         return response.data;
@@ -371,12 +372,12 @@ export default {
         commit(
           "SET_ERROR",
           serverMessage ||
-            (status
-              ? status === 404
-                ? "Endpoint task tidak ditemukan di server (404)."
-                : `${operationType} task gagal (HTTP ${status})`
-              : error?.message ||
-                `Failed to ${operationType.toLowerCase()} task`),
+          (status
+            ? status === 404
+              ? "Endpoint task tidak ditemukan di server (404)."
+              : `${operationType} task gagal (HTTP ${status})`
+            : error?.message ||
+            `Failed to ${operationType.toLowerCase()} task`),
         );
         commit("SET_LOADING", false);
         throw error;
@@ -454,8 +455,8 @@ export default {
         taskInput && typeof taskInput === "object"
           ? taskInput
           : state.tasks.find((task) => task.id === taskInput) || {
-              id: taskInput,
-            };
+            id: taskInput,
+          };
 
       const resolvedId =
         resolvedTask?.id ?? resolvedTask?.task_id ?? resolvedTask?.id_task;
@@ -476,6 +477,11 @@ export default {
         id: resolvedId,
         task_id: resolvedId,
         id_task: resolvedId,
+        task_name: resolvedTask.task_name || resolvedTask.title || "Delete Task",
+        due_date: resolvedTask.due_date || resolvedTask.dueDate || new Date().toISOString().split('T')[0],
+        status_id: resolvedTask.status_id || resolvedTask.status || null,
+        priority: resolvedTask.priority || null,
+        progress: resolvedTask.progress || 0,
       };
 
       try {
@@ -495,11 +501,11 @@ export default {
         commit(
           "SET_ERROR",
           serverMessage ||
-            (status
-              ? status === 404
-                ? "Endpoint delete task tidak ditemukan di server (404)."
-                : `Delete task gagal (HTTP ${status})`
-              : error?.message || "Failed to delete task"),
+          (status
+            ? status === 404
+              ? "Endpoint delete task tidak ditemukan di server (404)."
+              : `Delete task gagal (HTTP ${status})`
+            : error?.message || "Failed to delete task"),
         );
         commit("SET_LOADING", false);
         throw error;
@@ -586,12 +592,12 @@ export default {
           },
         });
         let task = response.data?.task || response.data?.data || response.data;
-        
+
         // Jika backend (DB::select) mengembalikan array, ambil index pertama
         if (Array.isArray(task) && task.length > 0) {
           task = task[0];
         }
-        
+
         commit("SET_CURRENT_TASK", task);
         commit("SET_LOADING", false);
         return task;
@@ -610,11 +616,21 @@ export default {
     error: (state) => state.error,
     searchQuery: (state) => state.searchQuery,
     filteredTasks: (state) => {
+      let tasks = [...state.tasks];
+
+      // Sort by updated_at or id descending (newest first)
+      tasks.sort((a, b) => {
+        const dateA = new Date(a.updated_at || a.created_at || 0);
+        const dateB = new Date(b.updated_at || b.created_at || 0);
+        if (dateB - dateA !== 0) return dateB - dateA;
+        return String(b.id).localeCompare(String(a.id));
+      });
+
       if (!state.searchQuery.trim()) {
-        return state.tasks;
+        return tasks;
       }
       const query = state.searchQuery.toLowerCase();
-      return state.tasks.filter(
+      return tasks.filter(
         (task) =>
           task.title?.toLowerCase().includes(query) ||
           task.description?.toLowerCase().includes(query),

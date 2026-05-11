@@ -143,7 +143,8 @@
   <!-- Create / Edit Task Form -->
   <CreateTaskForm
     :isOpen="showCreateTaskForm"
-    :task="selectedTaskDetail"
+    :initialData="selectedTaskDetail"
+    fromPage="tasks"
     @close="closeCreateTaskForm"
     @submit="handleTaskSubmit"
   />
@@ -250,12 +251,6 @@ export default {
       this.showDropdown = false;
       this.selectedTaskDetail = null;
       this.showCreateTaskForm = true;
-      
-      // Proactive fetch for form options
-      this.$store.dispatch("tasks/fetchStatuses");
-      this.$store.dispatch("tasks/fetchPriorities");
-      this.$store.dispatch("tasks/fetchAssignedTo");
-      this.$store.dispatch("tasks/fetchProjects");
     },
     handleBulkAdd() {
       this.showDropdown = false;
@@ -281,54 +276,15 @@ export default {
       }
       
       this.showCreateTaskForm = true;
-
-      // Proactive fetch for other options
-      this.$store.dispatch("tasks/fetchStatuses");
-      this.$store.dispatch("tasks/fetchPriorities");
-      this.$store.dispatch("tasks/fetchAssignedTo");
-      this.$store.dispatch("tasks/fetchProjects");
     },
     closeCreateTaskForm() {
       this.selectedTaskDetail = null;
       this.showCreateTaskForm = false;
     },
-    async handleTaskSubmit(formData) {
-      const isEdit = !!(formData.id || this.selectedTaskDetail?.id);
-      const taskId = formData.id || this.selectedTaskDetail?.id;
-      
-      // Fallback ID user dari Store jika di formData belum ada
-      const currentUserId = this.$store.getters["users/useridsignin"] || this.$store.getters["users/usersignin"]?.id;
-
-      try {
-        const payload = {
-          ...formData,
-          task_name: formData.task_name.trim(),
-          description: formData.description?.trim() || "",
-          assignee: String(formData.assignee || "").trim(),
-          created_by: formData.created_by || currentUserId,
-          project_id: formData.project_id || null,
-        };
-
-        if (isEdit) {
-          await this.$store.dispatch("tasks/updateTask", {
-            id: taskId,
-            formData: payload,
-          });
-          alertService.success("Task berhasil diperbarui.");
-        } else {
-          await this.$store.dispatch("tasks/createTask", payload);
-        }
-        
-        await this.$store.dispatch("tasks/fetchAllTasks");
-        this.closeCreateTaskForm();
-      } catch (err) {
-        const backendMessage =
-          err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          err?.message ||
-          "Gagal memproses task. Silakan coba lagi.";
-        alertService.error(backendMessage);
-      }
+    async handleTaskSubmit() {
+      // Logic moved to CreateTaskForm.vue
+      // We only need to refresh the list here
+      await this.$store.dispatch("tasks/fetchAllTasks");
     },
     handleRouteChange() {
       const path = this.$route.path;

@@ -64,7 +64,7 @@
           <input
             v-model="projectSearch"
             type="text"
-            placeholder="Search by name or email"
+            placeholder="Search by project name"
             class="w-full pl-9 pr-3 py-2 bg-light-base/50 border border-outline rounded text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
             @click.stop
           />
@@ -85,7 +85,6 @@
             <span class="font-medium text-dark-base">{{
               getDisplayNameFromproject(project)
             }}</span>
-            <span class="text-xs text-sub-text">{{ project.email || "" }}</span>
           </div>
           <div
             v-if="isprojectSelected(project.id)"
@@ -157,6 +156,10 @@ export default {
       default: "multiple",
       validator: (value) => ["single", "multiple"].includes(value),
     },
+    customMessage: {
+      type: String,
+      default: "",
+    },
   },
 
   data() {
@@ -179,7 +182,8 @@ export default {
 
     projectassoc: {
       get() {
-        return this.modelValue || [];
+        if (!this.modelValue) return [];
+        return Array.isArray(this.modelValue) ? this.modelValue : [this.modelValue];
       },
       set(value) {
         this.$emit("update:modelValue", value);
@@ -205,8 +209,7 @@ export default {
           map.set(String(id), {
             ...item,
             id: String(id),
-            first_name: item.label || item.first_name,
-            last_name: item.label ? "" : item.last_name,
+            label: item.label || item.project_name || item.name || "Unknown project",
           });
         }
       });
@@ -215,13 +218,21 @@ export default {
     },
 
     filteredprojects() {
-      return this.projectOptions;
+      if (!this.projectSearch.trim()) {
+        return this.projectOptions;
+      }
+      const query = this.projectSearch.toLowerCase();
+      return this.projectOptions.filter((p) =>
+        (p.label || p.project_name || p.name || "")
+          .toLowerCase()
+          .includes(query),
+      );
     },
 
     selectedprojects() {
       if (!this.projectassoc.length) return [];
       return this.projectOptions.filter((project) =>
-        this.projectassoc.includes(String(project.id))
+        this.projectassoc.map(String).includes(String(project.id))
       );
     },
   },
@@ -268,6 +279,9 @@ export default {
     },
 
     async fetchprojects() {
+      // Jika data sudah dipasok via prop 'projects', kita tidak perlu fetch internal
+      if (this.projects && this.projects.length > 0) return;
+      
       if (!this.hasMore || this.isLoading) return;
 
       this.isLoading = true;
@@ -329,20 +343,21 @@ export default {
       } else {
         // ✅ Multiple mode: toggle seperti semula
         let newValue;
-        if (this.projectassoc.includes(projectId)) {
-          newValue = this.projectassoc.filter((id) => id !== projectId);
+        const currentAssoc = Array.isArray(this.projectassoc) ? this.projectassoc : (this.projectassoc ? [this.projectassoc] : []);
+        const exists = currentAssoc.some(id => String(id) === projectId);
+        if (exists) {
+          newValue = currentAssoc.filter((id) => String(id) !== projectId);
         } else {
-          if (this.limit && this.projectassoc.length >= Number(this.limit)) {
+          if (this.limit && currentAssoc.length >= Number(this.limit)) {
             alertService.toastInfo(
-              `Hanya diperbolehkan ${this.limit} project untuk deals`,
+              this.customMessage || `Hanya diperbolehkan ${this.limit} project`,
             );
             return;
           }
           newValue = [...this.projectassoc, projectId];
         }
         this.projectassoc = newValue;
-        this.isprojectDropdownOpen = false;
-        
+        // Don't close dropdown on multiple toggle
       }
 
 
@@ -351,12 +366,16 @@ export default {
     },
 
     isprojectSelected(id) {
-      return this.projectassoc.includes(String(id));
+      return this.projectassoc.map(String).includes(String(id));
     },
 
     getDisplayNameFromproject(project) {
-      if (project.label) return project.label;
-      return `${project.first_name || ""} ${project.last_name || ""}`.trim() || "Unknown project";
+      return (
+        project.label ||
+        project.project_name ||
+        project.name ||
+        "Unknown project"
+      );
     },
 
     handleClickOutside(e) {

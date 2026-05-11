@@ -101,13 +101,13 @@
                   {{ element.title }}
                 </p>
 
-                <!-- Stage Badge -->
+                <!-- Status Badge -->
                 <div class="mt-2">
                   <span
                     class="px-2 py-0.5 rounded-full text-[11px] font-medium capitalize"
-                    :class="getStageClass(element.stage)"
+                    :class="getStageClass(element.statusLabel)"
                   >
-                    {{ element.stage }}
+                    {{ element.statusLabel }}
                   </span>
                 </div>
 
@@ -139,7 +139,7 @@
             v-if="board.items.length === 0"
             class="mx-3 mb-3 bg-white/70 p-3 rounded border border-dashed text-sm text-gray-400"
           >
-            No tasks in this stage
+            No tasks in this status
           </div>
         </div>
       </div>
@@ -205,24 +205,43 @@ export default {
   },
   methods: {
     normalizeStatus(statusRaw) {
-      const status = String(statusRaw || "not_started")
-        .toLowerCase()
-        .replace(/\s+/g, "_");
+      // 1. Cek di store (BE data statuses)
+      const storeStatuses = this.$store.getters["tasks/allStatuses"] || [];
+      const match = storeStatuses.find(
+        (s) =>
+          String(s.id) === String(statusRaw) ||
+          String(s.value) === String(statusRaw) ||
+          String(s.status_id) === String(statusRaw) ||
+          s.status_name === statusRaw ||
+          s.name === statusRaw,
+      );
 
-      if (status.includes("progress")) return "in_progress";
-      if (status.includes("wait")) return "waiting";
-      if (status.includes("complete") || status.includes("done"))
-        return "completed";
-      if (status.includes("defer")) return "deferred";
-      return "not_started";
+      let key = "not_started";
+      const label = match?.status_name || match?.name || match?.label || statusRaw || "Not Started";
+      const statusText = String(label).toLowerCase().replace(/\s+/g, "_");
+
+      if (statusText.includes("progress")) key = "in_progress";
+      else if (statusText.includes("wait")) key = "waiting";
+      else if (statusText.includes("complete") || statusText.includes("done"))
+        key = "completed";
+      else if (statusText.includes("defer") || statusText.includes("cancel"))
+        key = "deferred";
+      else if (statusText.includes("started") || statusText.includes("todo") || statusText.includes("to_do"))
+        key = "not_started";
+
+      return { key: String(match?.id || match?.value || key), label };
     },
 
     normalizeTask(task) {
+      const statusData = this.normalizeStatus(
+        task.status_id || task.status || task.stage,
+      );
       return {
         id: task.id,
         title: task.title || task.name || task.task_name || "Untitled Task",
         description: task.description || task.task_content || "-",
-        stage: this.normalizeStatus(task.status || task.stage),
+        stage: statusData.key,
+        statusLabel: statusData.label,
         dueDate:
           task.dueDate || task.due_date || task.date || task.deadline || "-",
         time: task.time || task.task_time || task.due_time || "-",
@@ -240,35 +259,51 @@ export default {
     },
 
     rebuildBoards(rawTasks) {
-      const buckets = {
-        not_started: [],
-        in_progress: [],
-        waiting: [],
-        completed: [],
-        deferred: [],
-      };
+      const storeStatuses = this.$store.getters["tasks/allStatuses"] || [];
 
-      rawTasks
-        .map((task) => this.normalizeTask(task))
-        .forEach((task) => {
-          buckets[task.stage].push(task);
-        });
+      // Gunakan status dari BE jika tersedia, jika tidak gunakan default boardMeta
+      let currentBoardMeta = this.boardMeta;
+      if (storeStatuses.length > 0) {
+        currentBoardMeta = storeStatuses.map((s) => ({
+          id: s.id,
+          key: String(s.id || s.value || s.status_id),
+          name: s.status_name || s.name || s.label || "Unknown",
+        }));
+      }
 
-      this.boards = this.boardMeta.map((board) => ({
+      const buckets = {};
+      currentBoardMeta.forEach((board) => {
+        buckets[board.key] = [];
+      });
+
+      rawTasks.forEach((task) => {
+        const rawStatus = task.status_id || task.status || task.stage;
+        const statusData = this.normalizeStatus(rawStatus);
+        const targetKey = statusData.key;
+
+        if (targetKey && buckets[targetKey]) {
+          buckets[targetKey].push(this.normalizeTask(task));
+        } else if (currentBoardMeta[0]) {
+          // Fallback ke board pertama jika tidak cocok
+          buckets[currentBoardMeta[0].key].push(this.normalizeTask(task));
+        }
+      });
+
+      this.boards = currentBoardMeta.map((board) => ({
         ...board,
         items: buckets[board.key],
       }));
     },
 
-    getStageClass(stage) {
-      const stageClasses = {
-        not_started: "bg-slate-100 text-slate-700",
-        in_progress: "bg-blue-100 text-blue-700",
-        waiting: "bg-yellow-100 text-yellow-700",
-        completed: "bg-emerald-100 text-emerald-700",
-        deferred: "bg-red-100 text-red-700",
-      };
-      return stageClasses[stage] || "bg-slate-100 text-slate-700";
+    getStageClass(statusName) {
+      const name = String(statusName || "").toLowerCase();
+      if (name.includes("progress")) return "bg-blue-100 text-blue-700";
+      if (name.includes("wait")) return "bg-yellow-100 text-yellow-700";
+      if (name.includes("complete") || name.includes("done"))
+        return "bg-emerald-100 text-emerald-700";
+      if (name.includes("defer") || name.includes("cancel") || name.includes("reject"))
+        return "bg-red-100 text-red-700";
+      return "bg-slate-100 text-slate-700";
     },
 
     openTaskDetail(task) {
@@ -279,10 +314,24 @@ export default {
       if (!event?.added?.element) return;
 
       const movedTask = event.added.element;
-      const previousStage = movedTask.stage;
+      const previousStage = String(
+        movedTask.raw.status_id || movedTask.raw.status || movedTask.stage,
+      );
       const nextStage = targetBoard.key;
 
       if (previousStage === nextStage) return;
+
+      // Konfirmasi pemindahan
+      const confirmed = await alertService.confirm(
+        "Pindahkan Task?",
+        `Apakah Anda yakin ingin memindahkan task "${movedTask.title}" ke status "${targetBoard.name}"?`,
+      );
+
+      if (!confirmed) {
+        // Revert pemindahan lokal dengan memanggil rebuildBoards dari data store
+        this.rebuildBoards(this.allTasks);
+        return;
+      }
 
       movedTask.stage = nextStage;
       this.isSyncingStage = true;
@@ -294,17 +343,18 @@ export default {
             task_name: movedTask.title,
             description:
               movedTask.description === "-" ? "" : movedTask.description,
-            status: nextStage,
+            status_id: nextStage, // Gunakan ID status
             priority: movedTask.priority || "",
             assignee: movedTask.owner === "-" ? "" : movedTask.owner,
             due_date: movedTask.dueDate === "-" ? "" : movedTask.dueDate,
             task_time: movedTask.time === "-" ? "" : movedTask.time,
           },
         });
+        alertService.success("Status task berhasil diperbarui");
       } catch (err) {
-        movedTask.stage = previousStage;
-        await this.$store.dispatch("tasks/fetchAllTasks").catch(() => {});
-        alertService.error("Gagal pindah stage task. Coba lagi.");
+        // Revert jika gagal di API
+        this.rebuildBoards(this.allTasks);
+        alertService.error("Gagal pindah status task. Coba lagi.");
       } finally {
         this.isSyncingStage = false;
       }
@@ -334,10 +384,20 @@ export default {
     allTasks(tasks) {
       this.rebuildBoards(tasks);
     },
+    "$store.state.tasks.statuses": {
+      deep: true,
+      handler() {
+        this.rebuildBoards(this.allTasks);
+      },
+    },
   },
-  mounted() {
+  async mounted() {
+    // Pastikan status dan tasks ter-fetch
+    await Promise.all([
+      this.$store.dispatch("tasks/fetchStatuses").catch(() => {}),
+      this.$store.dispatch("tasks/fetchAllTasks").catch(() => {}),
+    ]);
     this.rebuildBoards(this.allTasks);
-    this.$store.dispatch("tasks/fetchAllTasks").catch(() => {});
   },
 };
 </script>

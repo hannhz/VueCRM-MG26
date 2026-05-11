@@ -183,7 +183,7 @@ const actions = {
           context.commit("setprojects", data.data);
         } else {
           // 🔥 kalau page berikutnya → append
-          context.commit("appendprojects", data.data);
+          context.commit("appendProjects", data.data);
         }
       })
       .catch((error) => {

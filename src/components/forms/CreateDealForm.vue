@@ -10,6 +10,8 @@ import {
   PackageIcon,
   User,
   CalendarDays,
+  Pencil,
+  Trash2,
 } from "lucide-vue-next";
 import AddCompanyForm from "./AddCompanyForm.vue";
 import AddContactQuickForm from "./AddContactQuickForm.vue";
@@ -44,6 +46,8 @@ export default {
     ContactAssociationForm,
     User,
     CalendarDays,
+    Pencil,
+    Trash2,
   },
   props: {
     isOpen: {
@@ -134,6 +138,7 @@ export default {
       // When true, show Projects/Notes tabs even if not in edit mode
       forceShowDetails: false,
       formData: {
+        id: null,
         dealName: "",
         pipeline: "",
         currency: "IDR",
@@ -216,6 +221,7 @@ export default {
       getcompany: "deals/getcompany",
       getcontact: "deals/getcontact",
     }),
+    ...mapGetters("history", ["history"]),
     ...mapState("auth", { authUser: "user" }),
     currentUserName() {
       const signedInUser = this.usersignin || this.authUser || null;
@@ -292,6 +298,26 @@ export default {
     },
     associatedProjects() {
       return this.dealProjects || [];
+    },
+    displayHistoryItems() {
+      // Prioritaskan history dari store jika ada, gabungkan dengan local historyitems untuk data baru yang belum tersimpan
+      const storeHistory = (this.history || []).map((h) => {
+        const isNote = h.notes !== undefined || h.idnote !== undefined || h.type === 'note';
+        return {
+          ...h,
+          id: h.idnote || h.id,
+          idnote: h.idnote || h.id,
+          type: h.type || (isNote ? "note" : "doc"),
+          body: h.notes || h.body || h.descdocs || h.description || h.content || "",
+          timestamp: h.created_at || h.update_at || h.timestamp,
+        };
+      });
+
+      if (storeHistory.length > 0) {
+        return storeHistory;
+      }
+
+      return this.historyitems;
     },
     ownerOptions() {
       const users = this.getusers || [];
@@ -417,6 +443,8 @@ export default {
       fetchcompany: "deals/fetchcompany",
       fetchcontact: "deals/fetchcontact",
       fetchProjectsByDeal: "deals/fetchProjectsByDeal",
+      saveNote: "history/saveNote",
+      acthistory: "history/acthistory",
     }),
     ...mapActions("project", ["fetchAllProjects"]),
 
@@ -659,6 +687,7 @@ export default {
 
       // Isi formData
       this.formData = {
+        id: dealData.id || dealData.id_deals || data.id || null,
         dealName: dealData.deal_name || dealData.dealName || "",
         pipeline: this.normalizePipelineValue(
           dealData.pipeline || dealData.stage || "",
@@ -706,6 +735,15 @@ export default {
           audioBlob: null,
         },
       };
+
+      // Fetch History if editing
+      const dealId = this.formData.id || dealData.id || dealData.id_deals || data.id;
+      if (dealId) {
+        this.acthistory({
+          noteable_type: "DL",
+          noteable_id: dealId,
+        });
+      }
 
       // ─── MAP HISTORY (Notes & Docs) ──────────────────────────────────
       let historyItems = [];
@@ -840,17 +878,65 @@ export default {
       this.selectedDocSource = this.formData.docs.fileSource || "";
       this.customSource = "";
     },
-
     findPipelineIdByLabel(label) {
       if (!label || !this.getpipelines) return label;
       const search = String(label).toLowerCase().trim();
       const found = this.getpipelines.find(
-        (p) =>
-          String(p.label || "")
-            .toLowerCase()
-            .trim() === search,
+        (p) => p.pipeline_name.toLowerCase() === search,
       );
-      return found ? found.value : label;
+      return found ? found.id : label;
+    },
+    buildFormDatanote(data) {
+      const fd = new FormData();
+      const existing = [];
+
+      fd.append("noteable_type", data.noteable_type);
+      fd.append("noteable_id", data.noteable_id);
+      fd.append("body", data.body || "");
+      fd.append("gps_address", data.gps_address || "");
+      fd.append("latitude", data.latitude || "");
+      fd.append("longitude", data.longitude || "");
+      fd.append("visibility", data.visibility ?? 0);
+      fd.append("choice", data.choice || "I");
+      fd.append("idnote", data.idnote ?? null);
+
+      (data.photos || []).forEach((p) => {
+        if (p.file) {
+          fd.append("photos[]", p.file);
+        } else if (typeof p.src === "string") {
+          existing.push({
+            type: "photo",
+            src: p.src,
+          });
+        }
+      });
+
+      (data.documents || []).forEach((d) => {
+        if (d.file instanceof File) {
+          fd.append("documents[]", d.file);
+        } else if (d.url) {
+          existing.push({
+            type: "document",
+            url: d.url,
+          });
+        }
+      });
+
+      if (existing.length > 0) {
+        fd.append("existing_attachments", JSON.stringify(existing));
+      }
+
+      return fd;
+    },
+    resolveInitialDealId() {
+      const deal = this.initialData?.deals?.[0] || this.initialData || {};
+      return (
+        this.formData?.id ||
+        deal.id ||
+        deal.id_deals ||
+        deal.deal_id ||
+        null
+      );
     },
     normalizePipelineValue(value) {
       if (!value) return "";
@@ -1102,8 +1188,25 @@ export default {
       if (s.includes("defer")) return "bg-red-100 text-red-700";
       return "bg-slate-100 text-slate-700";
     },
-    openProjectDetail(project) {
-      this.selectedProject = project;
+    async openProjectDetail(project) {
+      const projectId = project.id || project.project_id || project.id_project;
+      if (!projectId) {
+        this.selectedProject = project;
+        this.showCreateProjectForm = true;
+        return;
+      }
+
+      try {
+        // Fetch full detail before opening form to ensure all fields are populated
+        const fullDetail = await this.$store.dispatch(
+          "project/fetchProjectById",
+          projectId,
+        );
+        this.selectedProject = fullDetail || project;
+      } catch (error) {
+        console.error("Failed to fetch full project details:", error);
+        this.selectedProject = project;
+      }
       this.showCreateProjectForm = true;
     },
     openAddProject() {
@@ -1128,19 +1231,28 @@ export default {
 
         // Perkaya data dengan mencari detail lengkap di allProjects store jika tersedia
         this.dealProjects = simpleList.map((sp) => {
+          const spId = String(
+            sp.id || sp.value || sp.id_project || sp.project_id || "",
+          ).trim();
           const fullData = this.allProjects.find(
-            (p) => String(p.id) === String(sp.value),
+            (p) => String(p.id).trim() === spId,
           );
           if (fullData) return fullData;
 
           // Fallback jika detail lengkap tidak ditemukan di store
           return {
-            id: sp.value,
-            project_name: sp.label,
-            status: "not_started",
-            status_name: "-",
-            due_date: null,
-            leader_name: "-",
+            ...sp,
+            id: spId,
+            project_name:
+              sp.project_name ||
+              sp.label ||
+              sp.name ||
+              sp["Project Name"] ||
+              "-",
+            status: sp.project_status || sp.status || "not_started",
+            status_name: sp.status_name || sp.status || "-",
+            due_date: sp.due_date || sp.deadline || null,
+            leader_name: sp.leader_name || sp.leader || sp.assignee || "-",
           };
         });
       } catch (e) {
@@ -1397,7 +1509,10 @@ export default {
     // ─── HISTORY & DRAWER METHODS ──────────────────────────────────────────
     openNoteDrawer(editData = null, index = null) {
       if (editData) {
-        this.tempNoteData = { ...editData };
+        this.tempNoteData = { 
+          ...editData,
+          idnote: editData.idnote || editData.id 
+        };
         this.editingItemIndex = index;
       } else {
         this.tempNoteData = {
@@ -1427,31 +1542,57 @@ export default {
       this.isDocDrawerOpen = true;
     },
     saveNoteFromDrawer() {
-      if (!this.tempNoteData.body && this.tempNoteData.photos.length === 0) {
+      if (!this.tempNoteData.body && (this.tempNoteData.photos || []).length === 0) {
         alertService.toastWarn("Note masih kosong");
         return;
       }
 
+      const dealId = this.formData.id || (this.initialData?.id || this.initialData?.id_deals);
+      
+      if (!dealId) {
+        // Fallback for new deal (keep in local state until save)
+        const item = {
+          type: "note",
+          timestamp: new Date().toISOString(),
+          ...this.tempNoteData,
+        };
+
+        if (this.editingItemIndex !== null) {
+          this.historyitems[this.editingItemIndex] = item;
+        } else {
+          this.historyitems.unshift(item);
+        }
+        
+        this.isNoteDrawerOpen = false;
+        alertService.toastSuccess("Catatan ditambahkan ke histori lokal");
+        return;
+      }
+
+      const isUpdate = !!this.tempNoteData.idnote;
       const item = {
-        type: "note",
-        timestamp: new Date().toISOString(),
+        noteable_type: "DL",
+        noteable_id: dealId,
         ...this.tempNoteData,
+        choice: isUpdate ? "U" : "I",
       };
 
-      if (this.editingItemIndex !== null) {
-        this.historyitems[this.editingItemIndex] = item;
-      } else {
-        this.historyitems.unshift(item);
-      }
+      const formData = this.buildFormDatanote(item);
 
-      // Sync with main form state for persistence
-      const latestNote = this.historyitems.find((h) => h.type === "note");
-      if (latestNote) {
-        this.formData.noteData = { ...latestNote };
-      }
-
-      this.isNoteDrawerOpen = false;
-      alertService.toastSuccess("Catatan ditambahkan ke histori");
+      this.saveNote(formData)
+        .then(() => {
+          alertService.toastSuccess("Catatan berhasil disimpan");
+          this.isNoteDrawerOpen = false;
+          this.editingItemIndex = null;
+          this.acthistory({
+            noteable_type: "DL",
+            noteable_id: dealId,
+          });
+        })
+        .catch((err) => {
+          alertService.toastError(
+            err.response?.data?.message || err.message || "Gagal menyimpan catatan"
+          );
+        });
     },
     saveDocFromDrawer() {
       if (this.tempDocs.files.length === 0 && !this.tempDocs.description) {
@@ -1487,9 +1628,46 @@ export default {
         this.openDocDrawer(item, index);
       }
     },
-    handleHistoryDelete(index) {
+    async handleHistoryDelete(itemOrIndex) {
+      const item = typeof itemOrIndex === "object" ? itemOrIndex.item : this.displayHistoryItems[itemOrIndex];
+      const index = typeof itemOrIndex === "object" ? itemOrIndex.index : itemOrIndex;
+
+      if (!item) return;
+
+      const dealId = this.formData.id || (this.initialData?.id || this.initialData?.id_deals);
+
+      // Jika note sudah ada di DB (punya ID) dan deal ada ID nya
+      if (dealId && item.type === "note" && (item.id || item.idnote)) {
+        const isConfirmed = await alertService.confirm(
+          "Apakah yakin untuk menghapus catatan ini secara permanen?",
+          "Konfirmasi Hapus"
+        );
+
+        if (isConfirmed) {
+          try {
+            const payload = new FormData();
+            payload.append("noteable_type", "DL");
+            payload.append("noteable_id", dealId);
+            payload.append("idnote", item.idnote || item.id);
+            payload.append("choice", "D");
+
+            await this.saveNote(payload);
+            alertService.toastSuccess("Catatan berhasil dihapus");
+            this.acthistory({
+              noteable_type: "DL",
+              noteable_id: dealId,
+            });
+          } catch (error) {
+            console.error("Failed to delete note", error);
+            alertService.toastError("Gagal menghapus catatan");
+          }
+        }
+        return;
+      }
+
+      // Fallback: hapus lokal saja
       this.historyitems.splice(index, 1);
-      alertService.toastInfo("Item dihapus dari histori");
+      alertService.toastInfo("Item dihapus dari histori lokal");
     },
 
     async handleDetailSubmit(detailPayload) {
@@ -1600,6 +1778,7 @@ export default {
 
     handleReset() {
       this.formData = {
+        id: null,
         dealName: "",
         pipeline: "",
         currency: "IDR",
@@ -1651,6 +1830,30 @@ export default {
       this.isDocDropdownOpen = false;
       this.activeTab = "master";
       this.forceShowDetails = false;
+    },
+    async handleDeleteProject(project) {
+      const isConfirmed = await alertService.confirm(
+        "Apakah yakin untuk melepas project ini dari deal?",
+        "Konfirmasi Lepas Project",
+        {
+          confirmButtonText: "Ya, Lepas",
+          cancelButtonText: "Kembali",
+        },
+      );
+
+      if (isConfirmed) {
+        try {
+          await this.$store.dispatch("project/updateProject", {
+            id: project.id,
+            formData: { deal_id: "" }, // Dissociate from deal
+          });
+          await this.loadDealProjects();
+          alertService.toastSuccess("Project berhasil dilepas dari deal");
+        } catch (error) {
+          console.error("Failed to dissociate project:", error);
+          alertService.toastError("Gagal melepas project");
+        }
+      }
     },
   },
 };
@@ -1706,7 +1909,7 @@ export default {
         <button
           v-if="(isEditMode || forceShowDetails) && !hideDetailTab"
           type="button"
-          @click="activeTab = 'projects'"
+          @click="activeTab = 'projects'; loadDealProjects()"
           :class="[
             'px-4 py-2 text-sm font-medium border-b-2 transition',
             activeTab === 'projects'
@@ -2001,8 +2204,7 @@ export default {
                 <div
                   v-for="project in associatedProjects"
                   :key="project.id"
-                  class="p-3 border border-outline rounded-lg hover:bg-light-base transition-colors cursor-pointer group"
-                  @click="openProjectDetail(project)"
+                  class="p-3 border border-outline rounded-lg hover:bg-light-base transition-colors group"
                 >
                   <div class="flex justify-between items-start mb-1.5">
                     <h4
@@ -2010,14 +2212,32 @@ export default {
                     >
                       {{ project.project_name }}
                     </h4>
-                    <span
-                      :class="[
-                        'text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider',
-                        getProjectStatusClass(project.status),
-                      ]"
-                    >
-                      {{ project.status_name || project.status }}
-                    </span>
+                    <div class="flex items-center gap-2">
+                      <span
+                        :class="[
+                          'text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider',
+                          getProjectStatusClass(project.status),
+                        ]"
+                      >
+                        {{ project.status_name || project.status }}
+                      </span>
+                      <div class="flex items-center gap-1">
+                        <button
+                          @click.stop="openProjectDetail(project)"
+                          class="p-1 hover:bg-white rounded transition-colors text-sub-text hover:text-dark-base"
+                          title="Edit Project"
+                        >
+                          <Pencil :size="14" />
+                        </button>
+                        <button
+                          @click.stop="handleDeleteProject(project)"
+                          class="p-1 hover:bg-white rounded transition-colors text-sub-text hover:text-red"
+                          title="Hapus Project"
+                        >
+                          <Trash2 :size="14" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   <div class="flex items-center gap-4 text-[11px] text-sub-text">
                     <div class="flex items-center gap-1.5">
@@ -2051,7 +2271,7 @@ export default {
         <!-- Notes/Detail Tab -->
         <div v-if="activeTab === 'detail'" class="p-6 h-full flex flex-col">
           <HistoryDetail
-            :items="historyitems"
+            :items="displayHistoryItems"
             @add-note="openNoteDrawer()"
             @add-doc="openDocDrawer()"
             @edit="handleHistoryEdit"

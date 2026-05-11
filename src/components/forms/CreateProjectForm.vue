@@ -45,8 +45,8 @@
         >
           Master
         </button>
-        <!-- Tab Tasks & Notes hanya muncul jika edit mode atau sudah sukses simpan pertama kali -->
-        <template v-if="isEditMode || showTabsAfterSave">
+        <!-- Tab Tasks & Notes hanya muncul jika edit mode atau sudah sukses simpan pertama kali, dan BUKAN dibuka dari deals -->
+        <template v-if="(isEditMode || showTabsAfterSave) && fromPage !== 'deals'">
           <button
             type="button"
             @click="activeTab = 'tasks'"
@@ -80,7 +80,7 @@
           v-show="activeTab === 'master'"
           id="projectForm"
           @submit.prevent="handleSubmit"
-          class="space-y-5 p-6 pb-24"
+          class="space-y-5 p-6"
         >
           <div>
             <label class="mb-2 block text-sm font-medium text-dark-base">
@@ -178,7 +178,7 @@
 
         <div
           v-show="activeTab === 'tasks'"
-          class="p-6 pb-24 h-full flex flex-col"
+          class="p-6 h-full flex flex-col"
         >
           <!-- Tambah Task Button -->
           <div class="flex items-center gap-3 mb-6">
@@ -222,7 +222,7 @@
               Mulai dengan membuat task baru untuk proyek ini
             </p>
           </div>
-          <div v-else class="space-y-3 overflow-y-auto">
+          <div v-else class="space-y-3 overflow-y-auto pb-10">
             <div
               v-for="(item, index) in allHistory.filter(
                 (i) => i.type === 'task',
@@ -314,7 +314,7 @@
 
         <div
           v-show="activeTab === 'notes'"
-          class="p-6 pb-24 h-full flex flex-col"
+          class="p-6 h-full flex flex-col"
         >
           <HistoryDetail
             :items="allHistory.filter((i) => i.type === 'note')"
@@ -407,6 +407,7 @@
       :isOpen="showCreateTaskForm"
       :initialData="selectedTaskDetail"
       :hideProjectField="true"
+      :hideNotesTab="true"
       @close="closeCreateTaskForm"
       @submit="handleTaskSubmit"
     />
@@ -420,7 +421,7 @@ import { alertService } from "@/services/alertService";
 import LocationSelector from "./component/LocationSelector.vue";
 import NotesSection from "@/components/widgets/NotesEditor.vue";
 import HistoryDetail from "@/components/widgets/historydetail.vue";
-import { mapActions } from "vuex";
+import { mapActions, mapGetters } from "vuex";
 import CreateTaskForm from "@/components/forms/CreateTaskForm.vue";
 
 const { cookies } = useCookies();
@@ -551,6 +552,7 @@ export default {
 
       return user.name || user.username || fullName || String(user.id || "");
     },
+    ...mapGetters("tasks", ["allStatuses", "allPriorities"]),
     currentUserId() {
       const user = this.currentUser;
       return user?.id || user?.user_id || user?.userid || "";
@@ -889,12 +891,12 @@ export default {
         rawTasks.forEach((t) => {
           historyItems.push({
             type: "task",
-            id: t.id,
+            id: t.id || t.task_id || t.taskId,
             timestamp: t.created_at || t.update_at,
             body: t.task_name || t.name || "",
-            content: t.desktask || t.content || "",
-            status: t.statustask || t.status || "",
-            priority: t.prioritytask || t.priority || "",
+            content: t.desktask || t.content || t.description || "",
+            status: t.status_name || t.statustask || t.status || t.status_id || "",
+            priority: t.priority_name || t.prioritytask || t.priority || "",
             dueDate: t.due_date || t.dueDate || "",
             time: t.task_time || t.time || "",
           });
@@ -994,7 +996,10 @@ export default {
       if (task) {
         this.selectedTaskDetail = { ...task };
       } else {
-        this.selectedTaskDetail = null;
+        // Jika task baru, otomatis pasang project_id dari project ini
+        this.selectedTaskDetail = {
+          project_id: this.formData.id || this.formData.project_id || null,
+        };
       }
       this.showCreateTaskForm = true;
     },
@@ -1051,49 +1056,54 @@ export default {
       this.showCreateTaskForm = false;
       this.selectedTaskDetail = null;
     },
-    async handleTaskSubmit(taskData) {
-      try {
-        const payload = {
-          ...taskData,
-          project_id: this.formData.id,
-          choice: taskData.id ? "u" : "i",
+    async handleTaskSubmit(result) {
+      if (result && this.formData.id) {
+        // Optimistic update: Manually inject the task into history if it's new
+        const savedTask = result.input || result.param || result;
+        const isUpdate = !!(savedTask.id || savedTask.task_id);
+        
+        // Find labels from store with robust matching
+        const statusObj = this.allStatuses.find(s => 
+          String(s.value || s.id) === String(savedTask.status_id || savedTask.status)
+        );
+        const priorityObj = this.allPriorities.find(p => 
+          String(p.value || p.id) === String(savedTask.priority || savedTask.prioritytask)
+        );
+
+        const mappedData = {
+          status: statusObj ? (statusObj.label || statusObj.status_name) : "Baru",
+          priority: priorityObj ? (priorityObj.label || priorityObj.priority_name) : "Normal",
+          dueDate: savedTask.due_date,
+          name: savedTask.task_name,
+          body: savedTask.task_name,
+          timestamp: new Date().toISOString()
         };
 
-        const result = await this.$store.dispatch("tasks/createTask", payload);
-
-        if (result) {
-          alertService.toastSuccess(
-            `Task berhasil ${payload.choice === "u" ? "diupdate" : "dibuat"}`
+        if (!isUpdate) {
+          // It's a new task, push to local history immediately
+          const newTaskItem = {
+            ...savedTask,
+            ...mappedData,
+            type: "task",
+            id: savedTask.id || result.result?.[0]?.id || Date.now(),
+          };
+          this.historyitems.unshift(newTaskItem);
+        } else {
+          // It's an update, find and update local history
+          const taskId = String(savedTask.id || savedTask.task_id);
+          const index = this.historyitems.findIndex(item => 
+            item.type === "task" && String(item.id || item.id_task) === taskId
           );
-          
-          // Optimistic update: Add to local list immediately for instant feedback
-          if (!taskData.id) {
-            const newTask = {
-              type: "task",
-              id: result.id || Date.now(),
-              name: taskData.task_name,
-              body: taskData.task_name,
-              content: taskData.description,
-              timestamp: new Date().toISOString(),
-              status: "not_started",
-              priority: taskData.priority,
-              dueDate: taskData.due_date,
-            };
-            this.historyitems.unshift(newTask);
-          }
-          
-          this.closeCreateTaskForm();
-          
-          // Refresh project data from BE with a longer delay to ensure persistence
-          if (this.formData.id) {
-            setTimeout(() => {
-              this.fetchProjectHistory();
-            }, 1000);
+          if (index !== -1) {
+            this.historyitems.splice(index, 1, {
+              ...this.historyitems[index],
+              ...mappedData
+            });
           }
         }
-      } catch (error) {
-        console.error("Failed to save task from project:", error);
-        alertService.toastError("Gagal menyimpan task");
+
+        // Still refresh from BE to get official labels and IDs
+        await this.fetchProjectHistory();
       }
     },
     async fetchProjectHistory() {

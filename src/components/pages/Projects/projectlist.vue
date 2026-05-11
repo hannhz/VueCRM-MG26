@@ -543,4 +543,9 @@ export default {
   opacity: 0;
   transform: translateY(-4px);
 }
+
+/* Keep Project Name values in normal weight for list mode. */
+:deep(.dx-datagrid-rowsview .dx-row td:nth-child(1)) {
+  font-weight: 400 !important;
+}
 </style>

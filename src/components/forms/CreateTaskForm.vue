@@ -48,7 +48,7 @@
           Master
         </button>
         <button
-          v-if="hasTaskId"
+          v-if="hasTaskId && !hideNotesTab"
           type="button"
           @click="activeTab = 'notes'"
           :class="[
@@ -89,8 +89,10 @@
               <ProjectsAssociationForm
                 ref="projectsAssociationForm"
                 v-model="formData.project_id"
+                :projects="allProjects"
                 :initial-data="tempProjectObjects"
-                mode="single"
+                limit="1"
+                custom-message="Hanya diperbolehkan 1 project untuk task"
               />
             </div>
 
@@ -315,10 +317,11 @@
 
         <!-- Tab Notes -->
         <div
-          v-if="hasTaskId && activeTab === 'notes'"
-          class="p-6 h-full flex flex-col"
+          v-if="hasTaskId && activeTab === 'notes' && !hideNotesTab"
+          class="flex-1 overflow-y-auto p-6"
         >
           <HistoryDetail
+            ref="historyDetail"
             :items="historyitems"
             @add-note="openNoteDrawer"
             @edit="handleHistoryEdit"
@@ -329,7 +332,7 @@
 
       <!-- Footer Actions -->
       <div
-        class="bg-white flex items-center justify-between p-4 sm:px-6 sm:py-4 border-t border-outline shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] footer-mobile"
+        class="bg-white flex items-center justify-between p-4 sm:px-6 sm:py-4 border-t border-outline shadow-[0_-4px_6_rgba(0,0,0,0.05)] footer-mobile"
       >
         <button
           @click="handleReset"
@@ -340,16 +343,18 @@
         <div class="flex gap-3">
           <button
             @click="handleClose"
-            class="px-6 py-2 border border-outline rounded-lg text-sub-text hover:bg-light-base transition-colors text-sm font-medium"
+            class="px-6 py-2.5 border border-outline rounded-lg text-sub-text hover:bg-light-base transition-colors text-sm font-medium"
           >
             Cancel
           </button>
           <button
             v-if="activeTab === 'master'"
-            @click="handleSubmit"
-            class="px-6 py-2 bg-dark-base text-white rounded-lg hover:bg-dark-hover transition-colors text-sm font-medium"
+            type="button"
+            @click="handleSave"
+            :disabled="isSubmitting"
+            class="px-6 py-2.5 rounded-lg bg-sub-text text-sm font-semibold text-white shadow-sm transition hover:bg-dark-base active:scale-95 disabled:opacity-50"
           >
-            Save Task
+            {{ isSubmitting ? "Saving..." : isEditMode ? "Update" : "Save" }}
           </button>
         </div>
       </div>
@@ -410,7 +415,7 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
+import { mapActions, mapGetters } from "vuex";
 import {
   X,
   ChevronDown,
@@ -484,6 +489,14 @@ export default {
       type: Object,
       default: null,
     },
+    fromPage: {
+      type: String,
+      default: "",
+    },
+    hideNotesTab: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -493,6 +506,8 @@ export default {
       projectSearch: "",
       editingItemIndex: null,
       historyitems: [],
+      isSubmitting: false,
+      savedTask: null,
       formData: {
         task_name: "",
         description: "",
@@ -505,6 +520,7 @@ export default {
         project_id: null,
       },
       tempNoteData: {
+        idnote: null,
         body: "",
         gps_address: null,
         latitude: null,
@@ -523,19 +539,39 @@ export default {
       "allAssignees",
       "currentTask",
     ]),
+    ...mapGetters("history", ["history"]),
     sourceData() {
       return this.initialData || this.task || null;
     },
     isEditMode() {
-      return !!(this.sourceData && Object.keys(this.sourceData).length);
+      return !!this.taskId;
+    },
+    taskId() {
+      const data = this.initialData || this.savedTask;
+      if (!data) return null;
+      if (typeof data === "number" || typeof data === "string") return data;
+
+      return (
+        data.id ||
+        data.task_id ||
+        data.taskId ||
+        data.id_task ||
+        data.id_tasks ||
+        data.task?.id ||
+        data.data?.id ||
+        data.param?.id ||
+        data.input?.id ||
+        data.result?.[0]?.id ||
+        data.result?.id ||
+        data.task?.task_id ||
+        data.data?.task_id ||
+        data.input?.task_id ||
+        data.param?.task_id ||
+        null
+      );
     },
     hasTaskId() {
-      return !!(
-        this.sourceData?.id ||
-        this.sourceData?.task_id ||
-        this.sourceData?.taskId ||
-        this.sourceData?.task?.id
-      );
+      return !!this.taskId;
     },
     tempProjectObjects() {
       const deal = this.initialData?.deals?.[0] || this.initialData || {};
@@ -582,25 +618,6 @@ export default {
         })),
       ];
     },
-    filteredProjectOptions() {
-      const search = this.projectSearch.toLowerCase().trim();
-      if (!search) return this.projectOptions;
-      return this.projectOptions.filter((opt) =>
-        opt.label.toLowerCase().includes(search),
-      );
-    },
-    selectedProjectLabel() {
-      const selected = this.projectOptions.find(
-        (opt) => opt.value === this.formData.project_id,
-      );
-      return selected ? selected.label : "Select Project";
-    },
-    selectedStatusLabel() {
-      const selected = this.statusOptions.find(
-        (opt) => opt.value === this.formData.status_id,
-      );
-      return selected ? selected.label : "Select Status";
-    },
     assigneeOptions() {
       const users = this.allAssignees || [];
       return [
@@ -642,7 +659,6 @@ export default {
           this.$store.dispatch("tasks/fetchPriorities");
           this.$store.dispatch("tasks/fetchAssignedTo");
           this.$store.dispatch("users/getusersignin");
-
           if (this.sourceData) {
             const taskId =
               this.sourceData.id ||
@@ -658,6 +674,11 @@ export default {
               } else {
                 this.setFormData(this.sourceData);
               }
+              // Fetch history for existing task
+              this.acthistory({
+                noteable_type: "TS",
+                noteable_id: taskId,
+              });
             } else {
               this.setFormData(this.sourceData);
             }
@@ -667,6 +688,14 @@ export default {
           this.activeTab = "master";
         }
       },
+    },
+    activeTab(newTab) {
+      if (newTab === "notes" && this.taskId) {
+        this.acthistory({
+          noteable_type: "TS",
+          noteable_id: this.taskId,
+        });
+      }
     },
     initialData: {
       deep: true,
@@ -686,23 +715,57 @@ export default {
         }
       },
     },
+    history: {
+      deep: true,
+      handler(newHistory) {
+        if (Array.isArray(newHistory)) {
+          const mapped = newHistory.map((item) => {
+            let photos = [];
+            try {
+              if (item.attachment) {
+                const attachments =
+                  typeof item.attachment === "string"
+                    ? JSON.parse(item.attachment)
+                    : item.attachment;
+                if (Array.isArray(attachments)) {
+                  photos = attachments
+                    .filter((a) => a.type === "photo" || a.typefile === "photo")
+                    .map((a) => a.path || a.fileurl);
+                }
+              }
+            } catch (e) {}
+
+            return {
+              type: "note",
+              id: item.id,
+              timestamp: item.created_at || item.update_at,
+              body: item.notes || item.body || item.description || "",
+              latitude: item.lat,
+              longitude: item.lang,
+              gps_address: item.lat && item.lang ? `${item.lat}, ${item.lang}` : null,
+              photos: photos,
+              visibility: item.visibility,
+            };
+          });
+
+          this.historyitems = mapped.sort((a, b) => {
+            const dateA = new Date(a.timestamp || 0);
+            const dateB = new Date(b.timestamp || 0);
+            return dateB - dateA;
+          });
+        }
+      },
+    },
   },
   mounted() {
-    this.$store.dispatch("tasks/fetchStatuses");
-    this.$store.dispatch("tasks/fetchPriorities");
-    this.$store.dispatch("tasks/fetchAssignedTo");
-    this.$store.dispatch("tasks/fetchProjects");
-    this.$store.dispatch("users/getusersignin");
-
-    // if (!this.formData.assignee && this.usersignin?.id) {
-    //   this.formData.assignee = this.usersignin.id;
-    // }
     document.addEventListener("click", this.handleClickOutside);
   },
   beforeUnmount() {
     document.removeEventListener("click", this.handleClickOutside);
   },
   methods: {
+    ...mapActions("tasks", ["createTask", "fetchTaskById"]),
+    ...mapActions("history", ["saveNote", "acthistory"]),
     pickFirst(...values) {
       for (const value of values) {
         if (value !== undefined && value !== null && value !== "") return value;
@@ -739,21 +802,6 @@ export default {
       const parsed = new Date(rawValue);
       if (Number.isNaN(parsed.getTime())) return "";
       return `${String(parsed.getHours()).padStart(2, "0")}:${String(parsed.getMinutes()).padStart(2, "0")}`;
-    },
-    normalizeStatus(rawValue) {
-      const normalized = String(rawValue || "")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "_");
-
-      if (!normalized) return "";
-      if (normalized === "process" || normalized === "progress") {
-        return "in_progress";
-      }
-      return normalized;
-    },
-    getCurrentUserName() {
-      return this.currentUserName;
     },
     setFormData(data) {
       if (!data) return;
@@ -818,48 +866,36 @@ export default {
           taskData.prioritytask,
         ),
         progress: this.pickFirst(data.progress, taskData.progress, 0),
-        project_id: this.pickFirst(data.project_id, taskData.project_id, null),
+        project_id: (function(val) {
+          if (!val) return [];
+          return Array.isArray(val) ? val.map(String) : [String(val)];
+        })(this.pickFirst(data.project_id, taskData.project_id, null)),
       };
-      // Map history notes
+      
+      // Sync history items from data if provided
       let rawNotes = data.notes || data.note;
       if (typeof rawNotes === "string" && rawNotes.startsWith("[")) {
         try {
           rawNotes = JSON.parse(rawNotes);
         } catch (e) {}
       }
-      const items = [];
+      
       if (Array.isArray(rawNotes)) {
-        rawNotes.forEach((n) => {
-          let location = { address: null, latitude: null, longitude: null };
-          try {
-            if (n.location) {
-              location =
-                typeof n.location === "string"
-                  ? JSON.parse(n.location)
-                  : n.location;
-            }
-          } catch (e) {}
-          items.push({
-            type: "note",
-            id: n.id,
-            timestamp: n.created_at || n.update_at,
-            body: n.body || n.notes || n.description || "",
-            gps_address: location.address,
-            latitude: location.latitude,
-            longitude: location.longitude,
-            photos: n.photos || [],
-          });
-        });
+        const items = rawNotes.map(n => ({
+          type: "note",
+          id: n.id,
+          timestamp: n.created_at || n.update_at,
+          body: n.body || n.notes || n.description || "",
+          photos: n.photos || [],
+        }));
+        this.historyitems = items.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
       }
-      this.historyitems = items.sort(
-        (a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0),
-      );
     },
-    handleReset() {
+    resetForm() {
       this.formData = {
         task_name: "",
         description: "",
-        status: "",
+        status_id: "",
         assignee: this.usersignin?.id || "",
         due_date: "",
         task_time: "",
@@ -869,6 +905,7 @@ export default {
       };
       this.historyitems = [];
       this.tempNoteData = {
+        idnote: null,
         body: "",
         gps_address: null,
         latitude: null,
@@ -878,57 +915,71 @@ export default {
       };
       this.editingItemIndex = null;
       this.activeTab = "master";
+      this.savedTask = null;
     },
     handleClose() {
       if (this.isNoteDrawerOpen) return;
-      this.handleReset();
+      this.resetForm();
       this.$emit("close");
     },
-    handleSubmit() {
-      // Required fields validation
+    async handleSave() {
       if (!this.formData.task_name?.trim()) {
         alertService.toastError("Nama task wajib diisi");
-        return;
-      }
-      if (!this.formData.due_date) {
-        alertService.toastError("Due date wajib diisi");
-        return;
-      }
-      if (!this.formData.priority) {
-        alertService.toastError("Priority wajib diisi");
-        return;
-      }
-      if (
-        this.formData.progress === undefined ||
-        this.formData.progress === null ||
-        this.formData.progress === ""
-      ) {
-        alertService.toastError("Progress wajib diisi");
         return;
       }
       if (!this.formData.status_id) {
         alertService.toastError("Status wajib diisi");
         return;
       }
+      if (!this.formData.due_date) {
+        alertService.toastError("Due date wajib diisi");
+        return;
+      }
 
-      // Add created_by if not already present
-      const currentUserId =
-        this.usersignin?.id || this.$store.getters["users/useridsignin"];
+      if (this.isSubmitting) return;
+      this.isSubmitting = true;
+
+      const currentUserId = this.usersignin?.id || this.$store.getters["users/useridsignin"];
+      // Unwrap project_id array to single value for backend compatibility
+      const submissionData = { ...this.formData };
+      if (Array.isArray(submissionData.project_id)) {
+        submissionData.project_id = submissionData.project_id.length > 0 ? submissionData.project_id[0] : null;
+      }
+
       const payload = {
-        ...this.formData,
-        created_by: this.formData.created_by || currentUserId,
+        ...submissionData,
+        id: this.taskId,
+        created_by: currentUserId,
       };
 
-      this.$emit("submit", payload);
-      this.handleReset();
-      this.handleClose();
+      try {
+        const result = await this.createTask(payload);
+        const isUpdate = !!payload.id;
+
+        alertService.toastSuccess(`Task berhasil ${isUpdate ? "diperbarui" : "ditambahkan"}`);
+
+        if (this.fromPage === "tasks") {
+          // Stay open and switch to notes tab
+          this.savedTask = result;
+          this.activeTab = "notes";
+          this.$emit("submit", result);
+        } else {
+          this.$emit("submit", result);
+          this.handleClose();
+        }
+      } catch (error) {
+        alertService.toastError(error.response?.data?.message || "Gagal menyimpan task");
+      } finally {
+        this.isSubmitting = false;
+      }
     },
     openNoteDrawer(editData = null, index = null) {
       if (editData) {
-        this.tempNoteData = { ...editData };
+        this.tempNoteData = { ...editData, idnote: editData.id };
         this.editingItemIndex = index;
       } else {
         this.tempNoteData = {
+          idnote: null,
           body: "",
           gps_address: null,
           latitude: null,
@@ -940,49 +991,102 @@ export default {
       }
       this.isNoteDrawerOpen = true;
     },
+    buildFormDatanote(data) {
+      const fd = new FormData();
+      const existing = [];
+
+      fd.append("noteable_type", data.noteable_type);
+      fd.append("noteable_id", data.noteable_id);
+      fd.append("body", data.body || "");
+      fd.append("gps_address", data.gps_address || "");
+      fd.append("latitude", data.latitude || "");
+      fd.append("longitude", data.longitude || "");
+      fd.append("visibility", data.visibility ?? 0);
+      fd.append("choice", data.choice || "I");
+      fd.append("idnote", data.idnote ?? null);
+
+      (data.photos || []).forEach((p) => {
+        if (p.file) {
+          fd.append("photos[]", p.file);
+        } else if (typeof p === "string") {
+          existing.push({
+            name: p.split("/").pop(),
+            path: p,
+            type: "photo",
+          });
+        }
+      });
+
+      if (existing.length > 0) {
+        fd.append("existing_attachments", JSON.stringify(existing));
+      }
+
+      return fd;
+    },
     saveNoteFromDrawer() {
-      if (!this.tempNoteData.body && this.tempNoteData.photos.length === 0) {
+      if (!this.tempNoteData.body && (this.tempNoteData.photos || []).length === 0) {
         alertService.toastWarn("Catatan masih kosong");
         return;
       }
-      const item = {
-        type: "note",
-        timestamp: new Date().toISOString(),
+
+      const isUpdate = !!this.tempNoteData.idnote;
+      const payload = {
+        noteable_type: "TS",
+        noteable_id: this.taskId,
         ...this.tempNoteData,
+        choice: isUpdate ? "U" : "I",
       };
-      if (this.editingItemIndex !== null) {
-        this.historyitems[this.editingItemIndex] = item;
-      } else {
-        this.historyitems.unshift(item);
-      }
-      this.isNoteDrawerOpen = false;
-      alertService.toastSuccess("Catatan ditambahkan ke histori");
+
+      const formData = this.buildFormDatanote(payload);
+
+      this.saveNote(formData)
+        .then(() => {
+          alertService.toastSuccess("Catatan berhasil disimpan");
+          this.isNoteDrawerOpen = false;
+          this.acthistory({
+            noteable_type: "TS",
+            noteable_id: this.taskId,
+          });
+        })
+        .catch((err) => {
+          alertService.toastError(err.response?.data?.message || "Gagal menyimpan catatan");
+        });
     },
     handleHistoryEdit({ item, index }) {
       this.openNoteDrawer(item, index);
     },
-    handleHistoryDelete(index) {
-      this.historyitems.splice(index, 1);
-      alertService.toastInfo("Item dihapus dari histori");
-    },
-    handleEscKey(e) {
-      if (e.key === "Escape") {
-        if (this.isNoteDrawerOpen) this.isNoteDrawerOpen = false;
-        if (this.isProjectDropdownOpen) this.isProjectDropdownOpen = false;
+    async handleHistoryDelete(index) {
+      const item = this.$refs.historyDetail?.displayItems[index];
+      if (!item) return;
+
+      const result = await alertService.confirm(
+        "Apakah Anda yakin ingin menghapus catatan ini?",
+        "Hapus Histori"
+      );
+
+      if (result) {
+        const formData = new FormData();
+        formData.append("choice", "D");
+        formData.append("idnote", item.id);
+        formData.append("noteable_type", "TS");
+        formData.append("noteable_id", this.taskId);
+
+        try {
+          await this.saveNote(formData);
+          alertService.toastSuccess("Catatan berhasil dihapus");
+          this.acthistory({
+            noteable_type: "TS",
+            noteable_id: this.taskId,
+          });
+        } catch (err) {
+          alertService.toastError(err.response?.data?.message || "Gagal menghapus catatan");
+        }
       }
     },
     handleClickOutside(e) {
-      if (
-        this.$refs.projectDropdownRef &&
-        !this.$refs.projectDropdownRef.contains(e.target)
-      ) {
+      if (this.$refs.projectDropdownRef && !this.$refs.projectDropdownRef.contains(e.target)) {
         this.isProjectDropdownOpen = false;
       }
-    },
-    selectProject(opt) {
-      this.formData.project_id = opt.value;
-      this.isProjectDropdownOpen = false;
-      this.projectSearch = "";
     },
   },
 };
@@ -1008,65 +1112,29 @@ export default {
   transform: translateX(100%);
 }
 
-/* Remove Browser Autofill Blue Background */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px white inset !important;
-  -webkit-text-fill-color: #1c2434 !important;
-  transition: background-color 5000s ease-in-out 0s;
-}
-
-.rounded-lg {
-  border-radius: 0.5rem;
-}
-
-select {
-  background-image: none !important;
-}
-
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator {
-  opacity: 0;
-  position: absolute;
-  right: 0;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
-}
-
-/* Mobile Responsive - Footer Sticky/Fixed Behavior */
+/* Mobile Responsive */
 @media (max-width: 768px) {
-  /* Make form content scrollable with padding for footer */
   .form-content-mobile {
-    padding-bottom: 110px; /* Reserve space for fixed footer */
+    padding-bottom: 110px;
   }
-
-  /* Make footer fixed at bottom on mobile */
   .footer-mobile {
     position: fixed;
     bottom: 0;
     right: 0;
     left: 0;
     width: 100%;
-    max-width: 100vw;
     z-index: 50;
     border-top: 1px solid;
     border-radius: 0;
   }
 }
-
-/* Desktop - Keep original behavior */
 @media (min-width: 769px) {
   .form-content-mobile {
     padding-bottom: 0;
   }
-
   .footer-mobile {
     position: static;
     width: 100%;
-    z-index: auto;
   }
 }
 </style>
