@@ -1,8 +1,8 @@
 <template>
-  <div class="relative" ref="contactDropdownRef">
+  <div class="relative" ref="projectDropdownRef">
     <div class="flex items-center gap-1.5 mb-2">
       <label class="block text-sm font-medium text-dark-base">
-        Contact Association
+        Project Association
       </label>
       <div v-if="filterByCompany" class="relative group flex items-center">
         <Info
@@ -31,20 +31,20 @@
       @click="handledropdown"
       class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-10.5 bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
     >
-      <div v-if="contactassoc.length === 0" class="text-gray-400 text-sm">
-        {{ mode === 'single' ? 'Select a Contact' : 'Search and select Contacts' }}
+      <div v-if="projectassoc.length === 0" class="text-gray-400 text-sm">
+        {{ mode === 'single' ? 'Select a project' : 'Search and select projects' }}
       </div>
       <div
-        v-for="contact in selectedContacts"
-        :key="contact.id"
+        v-for="project in selectedprojects"
+        :key="project.id"
         class="flex items-center gap-1 bg-light-base px-2 py-1 rounded text-xs font-medium text-dark-base border border-outline"
         @click.stop
       >
-        {{ getDisplayNameFromContact(contact) }}
+        {{ getDisplayNameFromproject(project) }}
         <X
           :size="12"
           class="cursor-pointer hover:text-red"
-          @click="toggleContact(contact)"
+          @click="toggleproject(project)"
         />
       </div>
       <ChevronDown :size="16" class="ml-auto text-sub-text" />
@@ -52,7 +52,7 @@
 
     <!-- Dropdown Menu -->
     <div
-      v-if="isContactDropdownOpen"
+      v-if="isprojectDropdownOpen"
       class="absolute z-50 w-full mt-1 bg-white border border-outline rounded-lg shadow-xl flex flex-col max-h-64"
     >
       <div class="p-2 border-b border-outline">
@@ -62,7 +62,7 @@
             class="absolute left-3 top-1/2 -translate-y-1/2 text-sub-text"
           />
           <input
-            v-model="contactSearch"
+            v-model="projectSearch"
             type="text"
             placeholder="Search by name or email"
             class="w-full pl-9 pr-3 py-2 bg-light-base/50 border border-outline rounded text-sm focus:outline-none focus:ring-1 focus:ring-sub-text"
@@ -76,49 +76,49 @@
         @scroll="handleScroll"
       >
         <div
-          v-for="contact in filteredContacts"
-          :key="contact.id"
-          @click="toggleContact(contact)"
+          v-for="project in filteredprojects"
+          :key="project.id"
+          @click="toggleproject(project)"
           class="px-4 py-2 hover:bg-light-base cursor-pointer flex items-center justify-between text-sm transition"
         >
           <div class="flex flex-col">
             <span class="font-medium text-dark-base">{{
-              getDisplayNameFromContact(contact)
+              getDisplayNameFromproject(project)
             }}</span>
-            <span class="text-xs text-sub-text">{{ contact.email || "" }}</span>
+            <span class="text-xs text-sub-text">{{ project.email || "" }}</span>
           </div>
           <div
-            v-if="isContactSelected(contact.id)"
+            v-if="isprojectSelected(project.id)"
             class="w-5 h-5 bg-dark-base rounded-full flex items-center justify-center"
           >
             <Check :size="12" class="text-white" />
           </div>
         </div>
         <div
-          v-if="filteredContacts.length === 0"
+          v-if="filteredprojects.length === 0"
           class="px-4 py-6 text-center text-sm text-sub-text"
         >
-          No contacts found
+          No projects found
         </div>
       </div>
     </div>
   </div>
 
-  <AddContactQuickForm
-    :isOpen="showAddContactQuickForm"
-    @close="showAddContactQuickForm = false"
-    @submit="handleContactQuickSubmit"
-  />
+  <!-- <AddprojectQuickForm
+    :isOpen="showAddprojectQuickForm"
+    @close="showAddprojectQuickForm = false"
+    @submit="handleprojectQuickSubmit"
+  /> -->
 </template>
 
 <script>
 import { mapActions, mapGetters, mapMutations } from "vuex";
 import { X, ChevronDown, Search, Check, Plus, Info } from "lucide-vue-next";
-import AddContactQuickForm from "@/components/forms/AddContactQuickForm.vue";
+// import AddprojectQuickForm from "@/components/forms/AddprojectQuickForm.vue";
 import { alertService } from "@/services/alertService";
 
 export default {
-  name: "ContactAssociationForm",
+  name: "projectAssociationForm",
 
   components: {
     X,
@@ -127,7 +127,7 @@ export default {
     Check,
     Plus,
     Info,
-    AddContactQuickForm,
+    // AddprojectQuickForm,
   },
 
   props: {
@@ -135,7 +135,7 @@ export default {
       type: Array,
       default: () => [],
     },
-    contacts: {
+    projects: {
       type: Array,
       default: () => [],
     },
@@ -161,9 +161,9 @@ export default {
 
   data() {
     return {
-      isContactDropdownOpen: false,
-      contactSearch: "",
-      showAddContactQuickForm: false,
+      isprojectDropdownOpen: false,
+      projectSearch: "",
+      showAddprojectQuickForm: false,
       page: 1,
       debounceTimer: null,
       hasMore: true,
@@ -173,11 +173,11 @@ export default {
 
   computed: {
     ...mapGetters({
-      allContacts: "assoc/allContacts",
-      dealsContacts: "deals/getcontact",
+      allprojects: "assoc/allprojects",
+      dealsprojects: "deals/getproject",
     }),
 
-    contactassoc: {
+    projectassoc: {
       get() {
         return this.modelValue || [];
       },
@@ -186,15 +186,15 @@ export default {
       },
     },
 
-    contactOptions() {
+    projectOptions() {
       let storeData =
-        (this.filterByCompany ? this.dealsContacts : this.allContacts) || [];
+        (this.filterByCompany ? this.dealsprojects : this.allprojects) || [];
       if (storeData && storeData.data && Array.isArray(storeData.data))
         storeData = storeData.data;
 
-      // Gabungkan data awal (prop contacts) dengan data dari store
+      // Gabungkan data awal (prop projects) dengan data dari store
       const combined = [
-        ...(this.contacts || []),
+        ...(this.projects || []),
         ...(Array.isArray(storeData) ? storeData : []),
       ];
 
@@ -214,14 +214,14 @@ export default {
       return Array.from(map.values());
     },
 
-    filteredContacts() {
-      return this.contactOptions;
+    filteredprojects() {
+      return this.projectOptions;
     },
 
-    selectedContacts() {
-      if (!this.contactassoc.length) return [];
-      return this.contactOptions.filter((contact) =>
-        this.contactassoc.includes(String(contact.id))
+    selectedprojects() {
+      if (!this.projectassoc.length) return [];
+      return this.projectOptions.filter((project) =>
+        this.projectassoc.includes(String(project.id))
       );
     },
   },
@@ -229,8 +229,8 @@ export default {
   mounted() {
     document.addEventListener("click", this.handleClickOutside);
     if (this.filterByCompany) {
-      this.resetDealsContacts();
-      this.fetchContacts();
+      this.resetDealsprojects();
+      this.fetchprojects();
     }
   },
 
@@ -240,40 +240,40 @@ export default {
 
   methods: {
     ...mapActions({
-      getcontacts: "assoc/getcontacts",
-      dealsFetchContact: "deals/fetchcontact",
+      getprojects: "assoc/getprojects",
+      dealsFetchproject: "deals/fetchproject",
     }),
 
     ...mapMutations({
-      resetAssocContacts: "assoc/resetContacts",
-      resetDealsContacts: "deals/RESET_CONTACTS",
+      resetAssocprojects: "assoc/resetprojects",
+      resetDealsprojects: "deals/RESET_projectS",
     }),
 
     handledropdown() {
-      if (!this.isContactDropdownOpen) {
+      if (!this.isprojectDropdownOpen) {
         if (this.filterByCompany) {
-          this.resetDealsContacts();
+          this.resetDealsprojects();
         } else {
-          this.resetAssocContacts();
+          this.resetAssocprojects();
         }
         this.page = 1;
         this.hasMore = true;
         
         // Trigger fetch immediately when opening
         this.$nextTick(() => {
-          this.fetchContacts();
+          this.fetchprojects();
         });
       }
-      this.isContactDropdownOpen = !this.isContactDropdownOpen;
+      this.isprojectDropdownOpen = !this.isprojectDropdownOpen;
     },
 
-    async fetchContacts() {
+    async fetchprojects() {
       if (!this.hasMore || this.isLoading) return;
 
       this.isLoading = true;
       const params = {
         page: this.page,
-        search: this.contactSearch,
+        search: this.projectSearch,
       };
 
       try {
@@ -286,18 +286,18 @@ export default {
           }
 
           if (!cid) {
-            console.log("fetchContacts: No companyId available, clearing list");
-            this.resetDealsContacts();
+            console.log("fetchprojects: No companyId available, clearing list");
+            this.resetDealsprojects();
             this.isLoading = false;
             this.hasMore = false;
             return;
           }
 
           params.companyid = cid;
-          const res = await this.dealsFetchContact(params);
+          const res = await this.dealsFetchproject(params);
           this.hasMore = (res && typeof res === 'object' && res.next_page_url) ? true : false;
         } else {
-          const res = await this.getcontacts(params);
+          const res = await this.getprojects(params);
           this.hasMore = (res && typeof res === 'object' && res.next_page_url) ? true : false;
           if (this.hasMore) this.page++;
         }
@@ -313,35 +313,35 @@ export default {
       if (!el || this.isLoading || !this.hasMore) return;
       const bottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
       if (bottom) {
-        this.fetchContacts();
+        this.fetchprojects();
       }
     },
 
-    toggleContact(contact) {
-      const contactId = String(contact.id);
+    toggleproject(project) {
+      const projectId = String(project.id);
 
 
       if (this.mode === "single") {
         // ✅ Single mode: langsung replace dengan item yang dipilih, lalu tutup
-        const isSame = this.contactassoc[0] && String(this.contactassoc[0]).trim() === contactId;
-        this.contactassoc = isSame ? [] : [contactId]; // klik item sama = deselect
-        this.isContactDropdownOpen = false;
+        const isSame = this.projectassoc[0] && String(this.projectassoc[0]).trim() === projectId;
+        this.projectassoc = isSame ? [] : [projectId]; // klik item sama = deselect
+        this.isprojectDropdownOpen = false;
       } else {
         // ✅ Multiple mode: toggle seperti semula
         let newValue;
-        if (this.contactassoc.includes(contactId)) {
-          newValue = this.contactassoc.filter((id) => id !== contactId);
+        if (this.projectassoc.includes(projectId)) {
+          newValue = this.projectassoc.filter((id) => id !== projectId);
         } else {
-          if (this.limit && this.contactassoc.length >= Number(this.limit)) {
+          if (this.limit && this.projectassoc.length >= Number(this.limit)) {
             alertService.toastInfo(
-              `Hanya diperbolehkan ${this.limit} contact untuk deals`,
+              `Hanya diperbolehkan ${this.limit} project untuk deals`,
             );
             return;
           }
-          newValue = [...this.contactassoc, contactId];
+          newValue = [...this.projectassoc, projectId];
         }
-        this.contactassoc = newValue;
-        this.isContactDropdownOpen = false;
+        this.projectassoc = newValue;
+        this.isprojectDropdownOpen = false;
         
       }
 
@@ -350,48 +350,48 @@ export default {
 
     },
 
-    isContactSelected(id) {
-      return this.contactassoc.includes(String(id));
+    isprojectSelected(id) {
+      return this.projectassoc.includes(String(id));
     },
 
-    getDisplayNameFromContact(contact) {
-      if (contact.label) return contact.label;
-      return `${contact.first_name || ""} ${contact.last_name || ""}`.trim() || "Unknown Contact";
+    getDisplayNameFromproject(project) {
+      if (project.label) return project.label;
+      return `${project.first_name || ""} ${project.last_name || ""}`.trim() || "Unknown project";
     },
 
     handleClickOutside(e) {
-      if (!this.$refs.contactDropdownRef?.contains(e.target)) {
-        this.isContactDropdownOpen = false;
+      if (!this.$refs.projectDropdownRef?.contains(e.target)) {
+        this.isprojectDropdownOpen = false;
       }
     },
 
-    handleContactQuickSubmit(e) {
-      console.log("New contact created", e);
+    handleprojectQuickSubmit(e) {
+      console.log("New project created", e);
     }
   },
 
   watch: {
-    isContactDropdownOpen(val) {
+    isprojectDropdownOpen(val) {
       if (!val) {
-        this.contactSearch = "";
+        this.projectSearch = "";
         this.page = 1;
         this.hasMore = true;
-      } else if (this.contactOptions.length === 0) {
-        this.fetchContacts();
+      } else if (this.projectOptions.length === 0) {
+        this.fetchprojects();
       }
     },
 
-    contactSearch() {
+    projectSearch() {
       clearTimeout(this.debounceTimer);
       this.debounceTimer = setTimeout(() => {
         this.page = 1;
         this.hasMore = true;
         if (this.filterByCompany) {
-          this.resetDealsContacts();
+          this.resetDealsprojects();
         } else {
-          this.resetAssocContacts();
+          this.resetAssocprojects();
         }
-        this.fetchContacts();
+        this.fetchprojects();
       }, 300);
     },
 
@@ -405,13 +405,13 @@ export default {
           // Hanya reset jika ID perusahaan benar-benar berubah (bukan inisialisasi pertama)
           if (oldId && newId != oldId) {
             console.log("Company changed, resetting list");
-            this.contactassoc = [];
+            this.projectassoc = [];
           }
 
-          this.resetDealsContacts();
+          this.resetDealsprojects();
           this.page = 1;
           this.hasMore = true;
-          this.fetchContacts();
+          this.fetchprojects();
         }
       },
     },

@@ -8,6 +8,7 @@ const state = {
   companys: [],
   contacts: [],
   deals: [],
+  projects: [],
 };
 
 const getters = {
@@ -21,6 +22,7 @@ const getters = {
   prevpagecontacts: (state) => state.contacts.prev_page_url,
 
   allDeals: (state) => state.deals,
+  allprojects: (state) => state.projects,
 };
 
 const mutations = {
@@ -30,6 +32,12 @@ const mutations = {
   setcontacts(state, payload) {
     state.contacts = payload;
   },
+  setprojects(state, payload) {
+    state.projects = payload;
+  },
+  setdeals(state, payload) {
+    state.deals = payload;
+  },
 
   appendContacts(state, payload) {
     state.contacts = [...state.contacts, ...payload];
@@ -38,14 +46,21 @@ const mutations = {
   appendcompanys(state, payload) {
     state.companys = [...state.companys, ...payload];
   },
+  appendProjects(state, payload) {
+    state.projects = [...state.projects, ...payload];
+  },
 
-  setdeals(state, payload) {
-    state.deals = payload;
+  appendDeals(state, payload) {
+    state.deals = [...state.deals, ...payload];
   },
 
   resetContacts(state) {
     state.contacts = [];
   },
+
+  resetprojects(state) {
+    state.projects = [];
+  }
 };
 
 const actions = {
@@ -115,7 +130,7 @@ const actions = {
     return promise;
   },
 
-  getdeals(context) {
+  getdeals(context,params = {}) {
     const promise = new Promise(async (resolve, reject) => {
       try {
         let network = await api.get("assoc/deals", {
@@ -131,7 +146,45 @@ const actions = {
 
     promise
       .then((data) => {
-        context.commit("setdeals", data);
+        if (!params.page || params.page === 1) {
+          context.commit("setdeals", data.data);
+        } else {
+          // 🔥 kalau page berikutnya → append
+          context.commit("appendDeals", data.data);
+        }
+        // context.commit("setdeals", data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+
+    return promise;
+  },
+
+  getprojects(context, params = {}) {
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        let network = await api.getbydata("assoc/project", params, {
+          headers: {
+            Authorization: "Bearer " + cookies.get("token"),
+          },
+        });
+        resolve(network.data);
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    promise
+      .then((data) => {
+        console.log("Data received in getprojects action:", data);
+        // context.commit("setprojects", data);
+        if (!params.page || params.page === 1) {
+          context.commit("setprojects", data.data);
+        } else {
+          // 🔥 kalau page berikutnya → append
+          context.commit("appendprojects", data.data);
+        }
       })
       .catch((error) => {
         console.error("Error:", error);

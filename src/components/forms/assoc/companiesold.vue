@@ -7,12 +7,9 @@
       @click="isCompaniesDropdownOpen = !isCompaniesDropdownOpen"
       class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-10.5 bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
     >
-      <!-- Placeholder -->
       <div v-if="Companiesassoc.length === 0" class="text-gray-400 text-sm">
-        {{ mode === 'single' ? 'Select a Company' : 'Search and select Companies' }}
+        Search and select Companiess
       </div>
-
-      <!-- Selected Tags -->
       <div
         v-for="Companies in selectedCompanies"
         :key="Companies.id"
@@ -26,7 +23,6 @@
           @click="toggleCompanies(Companies)"
         />
       </div>
-
       <ChevronDown :size="16" class="ml-auto text-sub-text" />
     </div>
 
@@ -37,7 +33,10 @@
     >
       <div class="p-2 border-b border-outline">
         <div class="relative">
-          <Search :size="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-sub-text" />
+          <Search
+            :size="14"
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-sub-text"
+          />
           <input
             v-model="CompaniesSearch"
             type="text"
@@ -47,7 +46,6 @@
           />
         </div>
       </div>
-
       <div
         ref="scrollContainer"
         class="flex-1 overflow-y-auto py-1"
@@ -60,11 +58,11 @@
           class="px-4 py-2 hover:bg-light-base cursor-pointer flex items-center justify-between text-sm transition"
         >
           <div class="flex flex-col">
-            <span class="font-medium text-dark-base">{{ Companies.company_name || "" }}</span>
+            <span class="font-medium text-dark-base">
+              {{ Companies.company_name || "" }}
+            </span>
             <span class="text-xs text-sub-text">{{ Companies.email }}</span>
           </div>
-
-          <!-- Checkmark: di single mode, tampilkan hanya jika item ini yang terpilih -->
           <div
             v-if="isCompaniesSelected(Companies.id)"
             class="w-5 h-5 bg-dark-base rounded-full flex items-center justify-center"
@@ -72,26 +70,48 @@
             <Check :size="12" class="text-white" />
           </div>
         </div>
-
         <div
           v-if="filteredCompanies.length === 0"
           class="px-4 py-6 text-center text-sm text-sub-text"
         >
-          No Companies found
+          No Companiess found
         </div>
       </div>
     </div>
   </div>
+
+  <!-- <button
+    type="button"
+    @click="showAddCompaniesQuickForm = true"
+    class="mt-2 text-sm text-sub-text hover:text-dark-base font-medium flex items-center gap-1"
+  >
+    <Plus :size="14" />
+    Create Companies
+  </button> -->
+
+  <!-- <AddCompaniesQuickForm
+    :isOpen="showAddCompaniesQuickForm"
+    @close="showAddCompaniesQuickForm = false"
+    @submit="handleCompaniesQuickSubmit"
+  /> -->
 </template>
 
 <script>
 import { mapActions, mapGetters } from "vuex";
 import { X, ChevronDown, Search, Check, Plus } from "lucide-vue-next";
+// import AddCompaniesQuickForm from "@/components/forms/AddCompaniesQuickForm.vue";
 
 export default {
   name: "CompanyAssociationForm",
 
-  components: { X, ChevronDown, Search, Check, Plus },
+  components: {
+    X,
+    ChevronDown,
+    Search,
+    Check,
+    Plus,
+    // AddCompaniesQuickForm,
+  },
 
   props: {
     modelValue: {
@@ -101,12 +121,6 @@ export default {
     initialData: {
       type: Array,
       default: () => [],
-    },
-    // ✅ Prop baru: 'single' atau 'multiple' (default: 'multiple')
-    mode: {
-      type: String,
-      default: "multiple",
-      validator: (value) => ["single", "multiple"].includes(value),
     },
   },
 
@@ -137,27 +151,42 @@ export default {
 
     filteredCompanies() {
       if (!this.CompaniesSearch) return this.allCompanies || [];
+
       return this.allCompanies;
+
+      // return (this.allCompaniess || []).filter((c) => {
+      //   const name = `${c.first_name || ""} ${c.last_name || ""}`
+      //     .toLowerCase()
+      //     .trim();
+      //   const email = (c.email || "").toLowerCase();
+      //   const search = this.CompaniesSearch.toLowerCase();
+
+      //   return name.includes(search) || email.includes(search);
+      // });
     },
 
     selectedCompanies() {
-      if (!Array.isArray(this.Companiesassoc) || this.Companiesassoc.length === 0) {
+      if (
+        !Array.isArray(this.Companiesassoc) ||
+        this.Companiesassoc.length === 0
+      ) {
         return [];
       }
 
+      // 1. Ambil dari list allCompanies (hasil fetch/search)
       const selected = (this.allCompanies || []).filter((company) =>
         this.Companiesassoc.some(
-          (id) => String(id).trim() === String(company.id).trim()
-        )
+          (id) => String(id).trim() === String(company.id).trim(),
+        ),
       );
 
+      // 2. Gabungkan dengan initialData (data dari parent agar tidak loading lama)
       const foundIds = selected.map((s) => String(s.id).trim());
-
       if (Array.isArray(this.initialData)) {
         this.initialData.forEach((item) => {
           const sid = String(item.id).trim();
           const isSelected = this.Companiesassoc.some(
-            (cid) => String(cid).trim() === sid
+            (cid) => String(cid).trim() === sid,
           );
           if (isSelected && !foundIds.includes(sid)) {
             selected.push(item);
@@ -166,6 +195,7 @@ export default {
         });
       }
 
+      // 3. Jika masih ada yang belum ketemu, beri placeholder Loading
       if (selected.length < this.Companiesassoc.length) {
         this.Companiesassoc.forEach((id) => {
           const sid = String(id).trim();
@@ -200,42 +230,55 @@ export default {
       });
 
       this.hasMore = res.next_page_url !== null;
-      if (this.hasMore) this.page++;
+      if (this.hasMore) {
+        this.page++;
+      }
+
+      // console.log("Fetched Companiess:", this.hasMore);
+      // console.log("Fetched Companiess:", res);
+      // console.log("page:", this.page);
+    },
+
+    handleCompaniesQuickSubmit(e) {
+      console.log("New Companies created", e);
     },
 
     handleScroll() {
       const el = this.$refs.scrollContainer;
+
       if (!el) return;
+
       const bottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
-      if (bottom) this.fetchCompanies();
+      if (bottom) {
+        this.fetchCompanies();
+      }
     },
 
     toggleCompanies(Companies) {
       const CompaniesId = String(Companies.id).trim();
+      // console.log("Toggling Companiesassoc :", this.Companiesassoc);
 
-      if (this.mode === "single") {
-        // ✅ Single mode: langsung replace dengan item yang dipilih, lalu tutup
-        const isSame = this.Companiesassoc[0] && String(this.Companiesassoc[0]).trim() === CompaniesId;
-        this.Companiesassoc = isSame ? [] : [CompaniesId]; // klik item sama = deselect
-        this.isCompaniesDropdownOpen = false;
+      const index = this.Companiesassoc.findIndex(
+        (id) => String(id).trim() === CompaniesId,
+      );
+
+      // console.log("Toggling Companies with ID:", CompaniesId,index);
+
+      let newValue;
+      if (index === -1) {
+        newValue = [...this.Companiesassoc, CompaniesId];
       } else {
-        // ✅ Multiple mode: toggle seperti semula
-        const index = this.Companiesassoc.findIndex(
-          (id) => String(id).trim() === CompaniesId
-        );
-        if (index === -1) {
-          this.Companiesassoc = [...this.Companiesassoc, CompaniesId];
-        } else {
-          this.Companiesassoc = this.Companiesassoc.filter((_, i) => i !== index);
-        }
-        this.isCompaniesDropdownOpen = false;
+        newValue = this.Companiesassoc.filter((id, i) => i !== index);
       }
+      // console.log("Toggling Companies with ID:", CompaniesId,index,newValue);
+      this.Companiesassoc = newValue;
+      this.isCompaniesDropdownOpen = false;
     },
 
     isCompaniesSelected(id) {
       const CompaniesId = String(id).trim();
       return this.Companiesassoc.some(
-        (cid) => String(cid).trim() === CompaniesId
+        (cid) => String(cid).trim() === CompaniesId,
       );
     },
 
@@ -244,29 +287,32 @@ export default {
         this.isCompaniesDropdownOpen = false;
       }
     },
-
-    handleCompaniesQuickSubmit(e) {
-      console.log("New Companies created", e);
-    },
   },
 
   watch: {
-    isCompaniesDropdownOpen(val) {
-      if (!val) {
+    isCompaniesDropdownOpen(e) {
+      if (e == false) {
         this.CompaniesSearch = "";
         this.page = 1;
       }
-      if (val && (!this.allCompanies || this.allCompanies.length === 0)) {
+      if (e && (!this.allCompanies || this.allCompanies.length === 0)) {
         this.fetchCompanies();
       }
     },
 
-    CompaniesSearch() {
+    CompaniesSearch(e) {
       clearTimeout(this.debounceTimer);
       this.debounceTimer = setTimeout(() => {
-        this.page = 1;
+        this.page = 1; // reset page
         this.fetchCompanies();
       }, 300);
+    },
+
+    allCompanies(e) {
+      console.log("allCompanies", e);
+    },
+    selectedCompanies(e) {
+      console.log("selectedCompanies", e);
     },
   },
 };

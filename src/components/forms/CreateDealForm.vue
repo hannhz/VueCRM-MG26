@@ -1786,6 +1786,7 @@ export default {
               ref="companiesAssociationForm"
               v-model="tempCompanyAssoc"
               :initial-data="tempCompanyObjects"
+              mode="single"
             />
 
             <ContactAssociationForm
@@ -1795,6 +1796,7 @@ export default {
               :company-id="tempCompanyAssoc"
               :filter-by-company="true"
               limit="1"
+              mode="single"
             />
           </div>
 

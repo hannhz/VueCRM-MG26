@@ -517,6 +517,7 @@ export default {
             Authorization: "Bearer " + cookies.get("token"),
           },
         });
+        console.log("Projects API response:", response.data);
         const data = response.data?.projects || response.data?.data || response.data || [];
         commit("SET_PROJECTS", data);
         return data;

@@ -8,7 +8,7 @@
       class="w-full px-3 py-2 border border-outline rounded-lg flex flex-wrap gap-2 items-center cursor-pointer min-h-10.5 bg-white transition focus-within:ring-1 focus-within:ring-sub-text"
     >
       <div v-if="dealsassoc.length === 0" class="text-gray-400 text-sm">
-        Search and select deals
+        {{ mode === 'single' ? 'Select a Deal' : 'Search and select Deals' }}
       </div>
       <div
         v-for="deal in selectedDeals"
@@ -116,6 +116,13 @@ export default {
       type: Array,
       default: () => [],
     },
+    // ✅ Prop baru: 'single' atau 'multiple' (default: 'multiple')
+    mode: {
+      type: String,
+      default: "multiple",
+      validator: (value) => ["single", "multiple"].includes(value),
+    },
+  
   },
 
   data() {
@@ -192,18 +199,32 @@ export default {
 
     toggleDeal(deal) {
       const dealId = String(deal.id).trim();
-      const index = this.dealsassoc.findIndex(
-        (id) => String(id).trim() === dealId,
-      );
 
-      let newValue;
-      if (index === -1) {
-        newValue = [...this.dealsassoc, dealId];
+      if (this.mode === "single") {
+        // ✅ Single mode: langsung replace dengan item yang dipilih, lalu tutup
+        const isSame = this.dealsassoc[0] && String(this.dealsassoc[0]).trim() === dealId;
+        this.dealsassoc = isSame ? [] : [dealId]; // klik item sama = deselect
+        this.isDealDropdownOpen = false;
       } else {
-        newValue = this.dealsassoc.filter((id, i) => i !== index);
+        const index = this.dealsassoc.findIndex(
+          (id) => String(id).trim() === dealId,
+        );
+  
+        let newValue;
+        if (index === -1) {
+          newValue = [...this.dealsassoc, dealId];
+        } else {
+          newValue = this.dealsassoc.filter((id, i) => i !== index);
+        }
+        this.dealsassoc = newValue;
+        this.isDealDropdownOpen = false;
+        
       }
-      this.dealsassoc = newValue;
-      this.isDealDropdownOpen = false;
+
+
+
+
+
     },
 
     isDealSelected(id) {

@@ -85,58 +85,17 @@
 
           <!-- Project Association & Assignee To -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
-            <!-- Project Association with Search -->
             <div v-if="!hideProjectField" class="relative" ref="projectDropdownRef">
-              <label class="block text-sm font-medium text-dark-base mb-2">Project Association</label>
-              <div
-                @click="toggleProjectDropdown"
-                class="w-full px-4 py-3 pr-10 border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm bg-white cursor-pointer flex items-center justify-between text-dark-base"
-              >
-                <span>{{ selectedProjectLabel }}</span>
-                <ChevronDown :size="18" class="text-sub-text" />
-              </div>
-
-              <!-- Dropdown Menu -->
-              <div
-                v-if="isProjectDropdownOpen"
-                class="absolute z-50 w-full mt-1 bg-white border border-outline rounded-lg shadow-xl"
-              >
-                <div class="p-2 border-b border-outline">
-                  <div class="relative">
-                    <Search
-                      :size="14"
-                      class="absolute left-2.5 top-1/2 -translate-y-1/2 text-sub-text"
-                    />
-                    <input
-                      v-model="projectSearch"
-                      type="text"
-                      placeholder="Search project..."
-                      class="w-full pl-8 pr-3 py-1.5 text-xs border border-outline rounded focus:outline-none focus:border-sub-text"
-                      @click.stop
-                    />
-                  </div>
-                </div>
-                <div class="max-h-48 overflow-y-auto">
-                  <div
-                    v-for="opt in filteredProjectOptions"
-                    :key="opt.value"
-                    @click="selectProject(opt)"
-                    class="px-3 py-2 text-sm hover:bg-light-base cursor-pointer"
-                    :class="{ 'bg-light-base font-medium': formData.project_id === opt.value }"
-                  >
-                    {{ opt.label }}
-                  </div>
-                  <div
-                    v-if="filteredProjectOptions.length === 0"
-                    class="px-3 py-4 text-xs text-center text-sub-text"
-                  >
-                    No projects found
-                  </div>
-                </div>
-              </div>
+              <ProjectsAssociationForm
+                ref="projectsAssociationForm"
+                v-model="formData.project_id"
+                :initial-data="tempProjectObjects"
+                mode="single"
+              />
             </div>
 
-            <!-- Assignee To -->
+
+             <!-- Assignee To -->
             <div :class="{ 'sm:col-span-2': hideProjectField }">
               <label class="block text-sm font-medium text-dark-base mb-2">Assignee To</label>
               <div class="relative">
@@ -316,7 +275,9 @@
           <!-- Priority & Progress -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">Priority <span class="text-red-600">*</span></label>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Priority <span class="text-red-600">*</span></label
+              >
               <div class="relative">
                 <select
                   v-model="formData.priority"
@@ -337,7 +298,9 @@
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-dark-base mb-2">Progress (%) <span class="text-red-600">*</span></label>
+              <label class="block text-sm font-medium text-dark-base mb-2"
+                >Progress (%) <span class="text-red-600">*</span></label
+              >
               <input
                 v-model="formData.progress"
                 type="number"
@@ -473,6 +436,7 @@ import {
 } from "lucide-vue-next";
 import NotesSection from "@/components/widgets/NotesEditor.vue";
 import HistoryDetail from "@/components/widgets/historydetail.vue";
+import ProjectsAssociationForm from "@/components/forms/assoc/projects.vue";
 import { alertService } from "@/services/alertService";
 
 export default {
@@ -501,6 +465,7 @@ export default {
     Check,
     NotesSection,
     HistoryDetail,
+    ProjectsAssociationForm,
   },
   props: {
     isOpen: {
@@ -551,7 +516,13 @@ export default {
   },
   computed: {
     ...mapGetters("users", ["usersignin"]),
-    ...mapGetters("tasks", ["allProjects", "allStatuses", "allPriorities", "allAssignees", "currentTask"]),
+    ...mapGetters("tasks", [
+      "allProjects",
+      "allStatuses",
+      "allPriorities",
+      "allAssignees",
+      "currentTask",
+    ]),
     sourceData() {
       return this.initialData || this.task || null;
     },
@@ -565,6 +536,31 @@ export default {
         this.sourceData?.taskId ||
         this.sourceData?.task?.id
       );
+    },
+    tempProjectObjects() {
+      const deal = this.initialData?.deals?.[0] || this.initialData || {};
+      const rawAssoc =
+        this.initialData?.companyassoc ||
+        this.initialData?.companiesassoc ||
+        deal.companyassoc ||
+        deal.companiesassoc;
+
+      if (rawAssoc) {
+        return this.normalizeAssocObjects(rawAssoc, "company");
+      }
+
+      // Fallback untuk single company (backward compatibility)
+      const id =
+        deal.company_id || deal.id_company || deal.companies_id || deal.company;
+      const name =
+        deal.companynm ||
+        deal.company_name ||
+        deal.associated_company ||
+        deal.companies_name;
+      if (id && name && !Array.isArray(id))
+        return [{ id: String(id), company_name: name }];
+
+      return [];
     },
     statusOptions() {
       const statuses = this.allStatuses || [];
@@ -589,16 +585,20 @@ export default {
     filteredProjectOptions() {
       const search = this.projectSearch.toLowerCase().trim();
       if (!search) return this.projectOptions;
-      return this.projectOptions.filter(opt => 
-        opt.label.toLowerCase().includes(search)
+      return this.projectOptions.filter((opt) =>
+        opt.label.toLowerCase().includes(search),
       );
     },
     selectedProjectLabel() {
-      const selected = this.projectOptions.find(opt => opt.value === this.formData.project_id);
+      const selected = this.projectOptions.find(
+        (opt) => opt.value === this.formData.project_id,
+      );
       return selected ? selected.label : "Select Project";
     },
     selectedStatusLabel() {
-      const selected = this.statusOptions.find(opt => opt.value === this.formData.status_id);
+      const selected = this.statusOptions.find(
+        (opt) => opt.value === this.formData.status_id,
+      );
       return selected ? selected.label : "Select Status";
     },
     assigneeOptions() {
@@ -644,9 +644,15 @@ export default {
           this.$store.dispatch("users/getusersignin");
 
           if (this.sourceData) {
-            const taskId = this.sourceData.id || this.sourceData.task_id || this.sourceData.taskId;
+            const taskId =
+              this.sourceData.id ||
+              this.sourceData.task_id ||
+              this.sourceData.taskId;
             if (taskId) {
-              const fullTask = await this.$store.dispatch("tasks/fetchTaskById", taskId);
+              const fullTask = await this.$store.dispatch(
+                "tasks/fetchTaskById",
+                taskId,
+              );
               if (fullTask) {
                 this.setFormData(fullTask);
               } else {
@@ -687,10 +693,10 @@ export default {
     this.$store.dispatch("tasks/fetchAssignedTo");
     this.$store.dispatch("tasks/fetchProjects");
     this.$store.dispatch("users/getusersignin");
-    
-    if (!this.formData.assignee && this.usersignin?.id) {
-      this.formData.assignee = this.usersignin.id;
-    }
+
+    // if (!this.formData.assignee && this.usersignin?.id) {
+    //   this.formData.assignee = this.usersignin.id;
+    // }
     document.addEventListener("click", this.handleClickOutside);
   },
   beforeUnmount() {
@@ -892,7 +898,11 @@ export default {
         alertService.toastError("Priority wajib diisi");
         return;
       }
-      if (this.formData.progress === undefined || this.formData.progress === null || this.formData.progress === "") {
+      if (
+        this.formData.progress === undefined ||
+        this.formData.progress === null ||
+        this.formData.progress === ""
+      ) {
         alertService.toastError("Progress wajib diisi");
         return;
       }
@@ -902,7 +912,8 @@ export default {
       }
 
       // Add created_by if not already present
-      const currentUserId = this.usersignin?.id || this.$store.getters["users/useridsignin"];
+      const currentUserId =
+        this.usersignin?.id || this.$store.getters["users/useridsignin"];
       const payload = {
         ...this.formData,
         created_by: this.formData.created_by || currentUserId,
@@ -961,7 +972,10 @@ export default {
       }
     },
     handleClickOutside(e) {
-      if (this.$refs.projectDropdownRef && !this.$refs.projectDropdownRef.contains(e.target)) {
+      if (
+        this.$refs.projectDropdownRef &&
+        !this.$refs.projectDropdownRef.contains(e.target)
+      ) {
         this.isProjectDropdownOpen = false;
       }
     },
