@@ -920,12 +920,12 @@ export default {
 
       this.locationData = {
         address: data.address || "",
-        country: data.country || "",
-        province: data.province || "",
-        city: data.city || "",
-        kecamatan: data.kecamatan || "",
-        kelurahan: data.kd_kelurahan || data.kelurahan || "",
-        pos_code: data.pos_code || "",
+        country: data.country || "Indonesia",
+        province: data.nm_provinsi || data.province || "",
+        city: data.nm_kota_kabupaten || data.city || "",
+        kecamatan: data.nm_kecamatan || data.kecamatan || "",
+        kelurahan: data.nm_kelurahan || data.kd_kelurahan || data.kelurahan || "",
+        pos_code: data.kode_pos || data.pos_code || "",
       };
     },
     resetForm() {
