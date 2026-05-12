@@ -1,95 +1,3 @@
-<script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { useStore } from "vuex";
-
-const store = useStore();
-
-const showFilterMenu = ref(false);
-const filterMenuRef = ref(null);
-const selectedRange = ref("daily");
-
-const rangeOptions = [
-  { value: "daily", label: "Daily", days: 1 },
-  { value: "weekly", label: "Weekly", days: 7 },
-  { value: "monthly", label: "Monthly", days: 30 },
-  { value: "yearly", label: "A Year", days: 365 },
-];
-
-const selectedRangeLabel = computed(() => {
-  return (
-    rangeOptions.find((opt) => opt.value === selectedRange.value)?.label ||
-    "Daily"
-  );
-});
-
-const allActivities = computed(
-  () => store.getters["activity/recentActivities"] || [],
-);
-
-const formatDate = (dateStr) => {
-  const dt = new Date(dateStr);
-  if (Number.isNaN(dt.getTime())) return "-";
-
-  const datePart = dt.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-
-  const timePart = dt.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-
-  return `${datePart} - ${timePart}`;
-};
-
-const filteredActivities = computed(() => {
-  const selected = rangeOptions.find(
-    (opt) => opt.value === selectedRange.value,
-  );
-  const days = selected?.days || 1;
-  const now = Date.now();
-  const cutoff = now - days * 24 * 60 * 60 * 1000;
-
-  return allActivities.value
-    .filter((item) => {
-      const ts = new Date(item.date).getTime();
-      return Number.isFinite(ts) && ts >= cutoff;
-    })
-    .map((item) => ({
-      ...item,
-      displayDate: formatDate(item.date),
-    }));
-});
-
-const toggleFilterMenu = () => {
-  showFilterMenu.value = !showFilterMenu.value;
-};
-
-const selectRange = (value) => {
-  selectedRange.value = value;
-  showFilterMenu.value = false;
-};
-
-const handleClickOutside = (event) => {
-  if (!showFilterMenu.value) return;
-  if (filterMenuRef.value && !filterMenuRef.value.contains(event.target)) {
-    showFilterMenu.value = false;
-  }
-};
-
-onMounted(() => {
-  store.dispatch("activity/initializeActivities");
-  document.addEventListener("click", handleClickOutside);
-});
-
-onBeforeUnmount(() => {
-  document.removeEventListener("click", handleClickOutside);
-});
-</script>
-
 <template>
   <div class="bg-white rounded-2xl shadow-sm border border-outline p-6 h-full">
     <!-- Header -->
@@ -134,9 +42,9 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- Table Header -->
+    <!-- Table Header (Desktop only) -->
     <div
-      class="grid grid-cols-1 md:grid-cols-3 text-sm text-slate-500 font-medium border-b border-outline pb-3"
+      class="hidden md:grid grid-cols-3 text-sm text-slate-500 font-medium border-b border-outline pb-3"
     >
       <span>Date</span>
       <span>Action</span>
@@ -145,34 +53,161 @@ onBeforeUnmount(() => {
 
     <!-- Activity List -->
     <div class="mt-2 max-h-64 overflow-y-auto pr-2">
-      <div
-        v-for="(item, index) in filteredActivities"
-        :key="item.id || index"
-        :class="[
-          'grid grid-cols-1 md:grid-cols-3 py-3 text-sm',
-          index % 2 === 1 ? 'bg-slate-100/60 rounded-sm' : '',
-        ]"
-      >
-        <span class="text-dark-base font-medium">
-          {{ item.displayDate }}
-        </span>
-
-        <span class="text-dark-base font-medium">
-          {{ item.action }}
-        </span>
-
-        <span class="text-dark-base">
-          <span class="font-bold">"{{ item.user }}"</span>
-          {{ item.note }}
-        </span>
+      <div v-if="isLoading" class="py-8 text-center text-sm text-sub-text">
+        Loading activities...
       </div>
 
-      <div
-        v-if="filteredActivities.length === 0"
-        class="py-8 text-center text-sm text-sub-text"
-      >
-        Belum ada aktivitas pada periode ini.
-      </div>
+      <template v-else>
+        <div
+          v-for="(item, index) in filteredActivities"
+          :key="item.id || index"
+          :class="[
+            'py-3 text-sm',
+            index % 2 === 1 ? 'bg-slate-100/60 rounded-sm' : '',
+          ]"
+        >
+          <!-- Tampilan Mobile (Stack / Card) -->
+          <div class="md:hidden space-y-1 px-2">
+            <div>
+              <span class="font-semibold text-slate-500">Date:</span>
+              <span class="text-dark-base ml-1">{{ item.displayDate }}</span>
+            </div>
+            <div>
+              <span class="font-semibold text-slate-500">Action:</span>
+              <span class="text-dark-base ml-1">{{ item.action }}</span>
+            </div>
+            <div>
+              <span class="font-semibold text-slate-500">Note:</span>
+              <span class="text-dark-base ml-1">
+                <span class="font-bold">"{{ item.user }}"</span> {{ item.note }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Tampilan Desktop (Grid 3 kolom) -->
+          <div class="hidden md:grid md:grid-cols-3">
+            <span class="text-dark-base font-medium">{{
+              item.displayDate
+            }}</span>
+            <span class="text-dark-base font-medium">{{ item.action }}</span>
+            <span class="text-dark-base">
+              <span class="font-bold">"{{ item.user }}"</span> {{ item.note }}
+            </span>
+          </div>
+        </div>
+
+        <div
+          v-if="filteredActivities.length === 0"
+          class="py-8 text-center text-sm text-sub-text"
+        >
+          Belum ada aktivitas pada periode ini.
+        </div>
+      </template>
     </div>
   </div>
 </template>
+
+<script>
+export default {
+  name: "SystemActivity",
+  props: {
+    activities: {
+      type: Array,
+      default: () => [],
+    },
+    isLoading: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  data() {
+    return {
+      showFilterMenu: false,
+      selectedRange: "daily",
+      rangeOptions: [
+        { value: "daily", label: "Daily", days: 1 },
+        { value: "weekly", label: "Weekly", days: 7 },
+        { value: "monthly", label: "Monthly", days: 30 },
+        { value: "yearly", label: "A Year", days: 365 },
+      ],
+    };
+  },
+  computed: {
+    selectedRangeLabel() {
+      const found = this.rangeOptions.find(
+        (opt) => opt.value === this.selectedRange,
+      );
+      return found ? found.label : "Daily";
+    },
+    filteredActivities() {
+      const selected = this.rangeOptions.find(
+        (opt) => opt.value === this.selectedRange,
+      );
+      const days = selected?.days || 1;
+      const now = Date.now();
+      const cutoff = now - days * 24 * 60 * 60 * 1000;
+
+      return this.activities
+        .filter((item) => {
+          const ts = new Date(
+            item.date || item.created_at || item.createdAt,
+          ).getTime();
+          return Number.isFinite(ts) && ts >= cutoff;
+        })
+        .map((item) => ({
+          ...item,
+          date: item.date || item.created_at || item.createdAt,
+          action:
+            item.action || item.entity_name || item.entity || "Updated Data",
+          user: item.user || item.user_id || item.userId || "System",
+          note: item.note || item.details || "-",
+          displayDate: this.formatDate(
+            item.date || item.created_at || item.createdAt,
+          ),
+        }));
+    },
+  },
+  methods: {
+    formatDate(dateStr) {
+      const dt = new Date(dateStr);
+      if (Number.isNaN(dt.getTime())) return "-";
+
+      const datePart = dt.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+
+      const timePart = dt.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+
+      return `${datePart} - ${timePart}`;
+    },
+    toggleFilterMenu() {
+      this.showFilterMenu = !this.showFilterMenu;
+    },
+    selectRange(value) {
+      this.selectedRange = value;
+      this.showFilterMenu = false;
+    },
+    handleClickOutside(event) {
+      if (!this.showFilterMenu) return;
+      if (
+        this.$refs.filterMenuRef &&
+        !this.$refs.filterMenuRef.contains(event.target)
+      ) {
+        this.showFilterMenu = false;
+      }
+    },
+  },
+  mounted() {
+    document.addEventListener("click", this.handleClickOutside);
+  },
+  beforeDestroy() {
+    document.removeEventListener("click", this.handleClickOutside);
+  },
+};
+</script>

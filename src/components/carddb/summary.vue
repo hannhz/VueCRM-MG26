@@ -1,62 +1,15 @@
-<script setup>
-import { computed, onMounted } from "vue";
-import { useStore } from "vuex";
-import { Users, Building2, Briefcase, ClipboardClock } from "lucide-vue-next";
-
-const store = useStore();
-
-const contactsTotal = computed(
-  () => store.getters["contacts/allContacts"]?.length || 0,
-);
-const companiesTotal = computed(
-  () => store.getters["company/allcompany"]?.length || 0,
-);
-const dealsTotal = computed(() => store.getters["deals/allDeals"]?.length || 0);
-const tasksTotal = computed(() => store.getters["tasks/allTasks"]?.length || 0);
-const isSummaryLoading = computed(
-  () =>
-    store.getters["contacts/isLoading"] ||
-    store.getters["company/isLoading"] ||
-    store.getters["deals/isLoading"] ||
-    store.getters["tasks/isLoading"],
-);
-
-const formatCount = (value) => {
-  return Intl.NumberFormat("en", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value || 0);
-};
-
-const displayCount = (value) => {
-  return isSummaryLoading.value ? "..." : formatCount(value);
-};
-
-/* onMounted(async () => {
-  await Promise.allSettled([
-    store.dispatch("contacts/fetchAllContacts"),
-    store.dispatch("company/fetchAllcompany"),
-    store.dispatch("deals/fetchAllDeals"),
-    store.dispatch("tasks/fetchAllTasks"),
-  ]);
-}); */
-</script>
-
 <template>
   <div class="rounded-lg min-h-28 grid grid-cols-2 lg:grid-cols-4 gap-0.5 mb-5">
+    <!-- Contacts Summary Card -->
     <div class="ccard">
-      <!-- Left Side -->
       <div class="flex items-center gap-5">
-        <!-- Icon Box -->
         <div class="w-16 h-16 rounded-xl flex items-center justify-center">
           <Users :size="45" class="text-dark-base" />
         </div>
-
-        <!-- Text -->
         <div>
           <div class="flex items-left gap-4">
             <h2 class="text-3xl font-bold text-dark-base">
-              {{ displayCount(contactsTotal) }}
+              {{ displayContacts }}
             </h2>
           </div>
           <p class="text-sub-text text-sm mt-1">Total Contacts</p>
@@ -64,20 +17,16 @@ const displayCount = (value) => {
       </div>
     </div>
 
-    <!-- companies Summary Card -->
+    <!-- Companies Summary Card -->
     <div class="ccard">
-      <!-- Left Side -->
       <div class="flex items-center gap-5">
-        <!-- Icon Box -->
         <div class="w-16 h-16 rounded-xl flex items-center justify-center">
           <Building2 :size="45" class="text-dark-base" />
         </div>
-
-        <!-- Text -->
         <div>
           <div class="flex items-left gap-4">
             <h2 class="text-3xl font-bold text-dark-base">
-              {{ displayCount(companiesTotal) }}
+              {{ displayCompanies }}
             </h2>
           </div>
           <p class="text-sub-text text-sm mt-1">Total Companies</p>
@@ -85,20 +34,16 @@ const displayCount = (value) => {
       </div>
     </div>
 
-    <!-- deals Summary Card -->
+    <!-- Deals Summary Card -->
     <div class="ccard">
-      <!-- Left Side -->
       <div class="flex items-center gap-5">
-        <!-- Icon Box -->
         <div class="w-16 h-16 rounded-xl flex items-center justify-center">
           <Briefcase :size="45" class="text-dark-base" />
         </div>
-
-        <!-- Text -->
         <div>
           <div class="flex items-left gap-4">
             <h2 class="text-3xl font-bold text-dark-base">
-              {{ displayCount(dealsTotal) }}
+              {{ displayDeals }}
             </h2>
           </div>
           <p class="text-sub-text text-sm mt-1">Total Deals</p>
@@ -106,20 +51,16 @@ const displayCount = (value) => {
       </div>
     </div>
 
-    <!-- task Summary Card -->
+    <!-- Tasks Summary Card -->
     <div class="ccard">
-      <!-- Left Side -->
       <div class="flex items-center gap-5">
-        <!-- Icon Box -->
         <div class="w-16 h-16 rounded-xl flex items-center justify-center">
           <ClipboardClock :size="45" class="text-dark-base" />
         </div>
-
-        <!-- Text -->
         <div>
           <div class="flex items-left gap-4">
             <h2 class="text-3xl font-bold text-dark-base">
-              {{ displayCount(tasksTotal) }}
+              {{ displayTasks }}
             </h2>
           </div>
           <p class="text-sub-text text-sm mt-1">Total Tasks</p>
@@ -128,3 +69,65 @@ const displayCount = (value) => {
     </div>
   </div>
 </template>
+
+<script>
+import { Users, Building2, Briefcase, ClipboardClock } from "lucide-vue-next";
+
+export default {
+  name: "SummaryCards",
+  components: {
+    Users,
+    Building2,
+    Briefcase,
+    ClipboardClock,
+  },
+  props: {
+    contactsTotal: {
+      type: Number,
+      default: 0,
+    },
+    companiesTotal: {
+      type: Number,
+      default: 0,
+    },
+    dealsTotal: {
+      type: Number,
+      default: 0,
+    },
+    tasksTotal: {
+      type: Number,
+      default: 0,
+    },
+    isLoading: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  computed: {
+    displayContacts() {
+      if (this.isLoading) return "...";
+      return this.formatCount(this.contactsTotal);
+    },
+    displayCompanies() {
+      if (this.isLoading) return "...";
+      return this.formatCount(this.companiesTotal);
+    },
+    displayDeals() {
+      if (this.isLoading) return "...";
+      return this.formatCount(this.dealsTotal);
+    },
+    displayTasks() {
+      if (this.isLoading) return "...";
+      return this.formatCount(this.tasksTotal);
+    },
+  },
+  methods: {
+    formatCount(value) {
+      return Intl.NumberFormat("en", {
+        notation: "compact",
+        maximumFractionDigits: 1,
+      }).format(value || 0);
+    },
+  },
+};
+</script>
