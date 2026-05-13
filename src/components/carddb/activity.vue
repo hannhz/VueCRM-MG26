@@ -308,11 +308,207 @@ export default {
         return `${baseSentence}.`;
       }
 
+      // If it looks like a JSON string, try to parse it for richer details
+      if (
+        (rawDetail.startsWith("{") && rawDetail.endsWith("}")) ||
+        (rawDetail.startsWith("[") && rawDetail.endsWith("]"))
+      ) {
+        try {
+          const details = JSON.parse(rawDetail);
+          const readableDetail = this.formatDetails(details, actionLabel);
+          if (readableDetail) {
+            return `${baseSentence}: ${readableDetail}.`;
+          }
+        } catch (e) {
+          // Fallback to raw string if parsing fails or isn't our expected format
+        }
+      }
+
       if (/^(?:-\s*)?(?:GET|POST|PUT|PATCH|DELETE)\s+/i.test(rawDetail)) {
         return `${baseSentence}.`;
       }
 
       return `${baseSentence}: ${rawDetail}.`;
+    },
+    formatFieldName(field) {
+      if (!field) return "";
+      // Handle special mappings
+      const fieldMap = {
+        companyassoc: "Company",
+        contactassoc: "Contact",
+        company_id: "Company",
+        contact_id: "Contact",
+        owner_id: "Owner",
+        assigned_id: "Assignee",
+        status_id: "Status",
+        pipeline: "Stage/Pipeline",
+        amount_value: "Amount",
+        expected_close_date: "Expected Close",
+        kd_kelurahan: "Kelurahan",
+      };
+
+      if (fieldMap[field]) return fieldMap[field];
+
+      return field
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+    },
+    shouldIgnoreField(field) {
+      if (!field) return true;
+      const ignored = [
+        "id",
+        "choice",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "user_id",
+        "entity_id",
+        "id_deals",
+        "id_status",
+        "id_leader",
+        "id_project",
+        "id_task",
+        "parent_type",
+        "parent_id",
+        "visibility",
+        "attachment",
+        "lat",
+        "lang",
+        "latitude",
+        "longitude",
+      ];
+      return ignored.includes(field.toLowerCase());
+    },
+    resolveValueLabel(field, value) {
+      if (value === null || value === undefined || value === "") return "-";
+
+      const val = String(value);
+      const f = field.toLowerCase();
+
+      if (f.includes("status")) {
+        const statusMap = {
+          1: "Open",
+          2: "In Progress",
+          3: "Pending",
+          4: "Closed",
+          5: "Cancelled",
+          14: "Started",
+          20: "New",
+          23: "Done",
+        };
+        return statusMap[val] || val;
+      }
+
+      if (f.includes("priority")) {
+        const priorityMap = {
+          1: "Low",
+          2: "Medium",
+          3: "High",
+        };
+        return priorityMap[val] || val;
+      }
+
+      if (f.includes("pipeline") || f.includes("stage")) {
+        const pipelineMap = {
+          1: "Qualification",
+          2: "Proposal",
+          4: "Negotiation",
+          5: "Closed Won",
+        };
+        return pipelineMap[val] || val;
+      }
+
+      return val;
+    },
+    formatDetails(details = {}, actionLabel = "") {
+      const before = Array.isArray(details.before)
+        ? details.before[0]
+        : details.before;
+      const after = details.after;
+
+      if (actionLabel === "Update" && before && after) {
+        const changes = [];
+        // Loop through 'after' state to find what changed from 'before'
+        Object.keys(after).forEach((key) => {
+          if (this.shouldIgnoreField(key)) return;
+
+          const valAfter = after[key];
+          // Try to find matching value in 'before' (handling potential key naming variations)
+          const beforeKeys = [
+            key,
+            key.replace("_id", "assoc"),
+            key.replace("assoc", "_id"),
+          ];
+          let valBefore = undefined;
+          for (const bKey of beforeKeys) {
+            if (before[bKey] !== undefined) {
+              valBefore = before[bKey];
+              break;
+            }
+          }
+
+          if (valBefore === undefined) return; // Field not in before state, skip comparison
+
+          // Check for significant equality (handle nulls and strings/numbers)
+          if (String(valBefore ?? "") !== String(valAfter ?? "")) {
+            const labelBefore = this.resolveValueLabel(key, valBefore);
+            const labelAfter = this.resolveValueLabel(key, valAfter);
+
+            changes.push(
+              `${this.formatFieldName(key)} dari ${labelBefore} ke ${labelAfter}`,
+            );
+          }
+        });
+        return changes.length > 0
+          ? `Merubah ${changes.join(", ")}`
+          : "Update informasi record";
+      }
+
+      if (actionLabel === "Input" && after) {
+        // Find the first available name/title field to keep it short
+        const priorityFields = [
+          "deal_name",
+          "company_name",
+          "contact_name",
+          "task_name",
+          "project_name",
+          "name",
+          "title",
+          "first_name",
+        ];
+        let identifier = null;
+        for (const f of priorityFields) {
+          if (after[f]) {
+            identifier = after[f];
+            if (f === "first_name" && after.last_name) {
+              identifier += ` ${after.last_name}`;
+            }
+            break;
+          }
+        }
+
+        return identifier ? `Nama: ${identifier}` : "Data baru ditambahkan";
+      }
+
+      if (actionLabel === "Delete" && before) {
+        const identification =
+          before.deal_name ||
+          before.company_name ||
+          before.contact_name ||
+          before.task_name ||
+          before.project_name ||
+          before.name ||
+          before.title ||
+          (before.first_name
+            ? `${before.first_name} ${before.last_name || ""}`
+            : "");
+        return identification ? `Data: ${identification}` : "Record dihapus";
+      }
+
+      return null;
     },
     formatDate(dateStr) {
       const dt = new Date(dateStr);

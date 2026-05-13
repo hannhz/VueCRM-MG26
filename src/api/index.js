@@ -154,10 +154,25 @@ const httpDelete = (url, config = {}) => {
   });
 };
 
+const httpPatch = (url, data = {}, config = {}) => {
+  return Api.request({
+    method: "patch",
+    url: "api" + devPath + url,
+    data,
+    ...config,
+    headers: {
+      Authorization: "Bearer " + cookies.get("token"),
+      "Content-Type": "application/json",
+      ...(config.headers || {}),
+    },
+  });
+};
+
 const api = {
   get: httpGet,
   getbydata: httpGetbydata,
   post: httpPost,
+  patch: httpPatch,
   delete: httpDelete,
 };
 
