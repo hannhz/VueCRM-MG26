@@ -61,10 +61,10 @@ export default {
 
       return source.map((item) => {
         // Robust mapping for database fields
+        const isNote = item.notes !== undefined || item.body !== undefined || item.content !== undefined;
         return {
           ...item,
-          type:
-            item.type || (item.parent_type === "CM" ? "note" : null) || "note",
+          type: item.type || (isNote ? "note" : "doc"),
           body:
             item.notes || item.body || item.content || item.description || "",
           timestamp: item.created_at || item.timestamp || null,
@@ -151,8 +151,8 @@ export default {
       const isUpdate = !!this.tempNoteData.idnote;
 
       const item = {
-        noteable_type: "CM",
-        noteable_id: this.companyid,
+        noteable_type: this.noteableType || "CM",
+        noteable_id: this.noteableId,
         // id:
         ...this.tempNoteData,
         choice: isUpdate ? "U" : "I",
@@ -168,8 +168,8 @@ export default {
           this.isNoteDrawerOpen = false;
           // Refresh history list
           this.acthistory({
-            noteable_type: "CM",
-            noteable_id: this.companyid,
+            noteable_type: this.noteableType || "CM",
+            noteable_id: this.noteableId,
           });
         })
         .catch((err) => {

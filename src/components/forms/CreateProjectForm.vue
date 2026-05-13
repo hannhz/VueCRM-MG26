@@ -317,6 +317,8 @@
           class="p-6 h-full flex flex-col"
         >
           <HistoryDetail
+            noteable-type="PR"
+            :noteable-id="formData.id"
             :items="allHistory.filter((i) => i.type === 'note')"
             @add-note="openNoteDrawer()"
             @edit="handleHistoryEdit"

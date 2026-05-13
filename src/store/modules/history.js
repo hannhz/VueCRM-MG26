@@ -37,11 +37,12 @@ const actions = {
     promise
       .then((data) => {
         console.log("Data received in acthistory action:", data);
-        // context.commit("setHistory", data);
-        context.commit("setHistory", data);
+        const historyData = data.data || data.history || data;
+        context.commit("setHistory", Array.isArray(historyData) ? historyData : []);
       })
       .catch((error) => {
-        console.error("Error:", error);
+        console.error("Error in acthistory action:", error);
+        context.commit("setHistory", []);
       });
 
     return promise;
