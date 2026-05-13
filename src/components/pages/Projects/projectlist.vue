@@ -2,54 +2,36 @@
   <div
     class="bg-white rounded-lg shadow-sm w-full h-147 border border-outline flex flex-col overflow-hidden"
   >
-    <!-- Action Bar -->
-    <div class="pt-4 pr-4 pl-4">
-      <div class="flex flex-col xl:flex-row xl:items-start gap-4 w-full">
-        <!-- LEFT -->
-        <div class="flex items-center flex-wrap gap-3 flex-1 min-w-0">
-          <!-- Filter -->
+    <!-- Mobile UI -->
+    <div class="px-4 pt-4 pb-3 md:hidden">
+      <div class="space-y-3">
+        <div class="flex items-center gap-2 w-full">
           <button
-            class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
+            class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition shrink-0"
           >
             <Filter :size="20" class="text-dark-base" />
           </button>
 
-          <!-- Delete Btn -->
-          <button
-            type="button"
-            @click="handleDelete"
-            class="p-2 rounded-lg transition"
-            :class="
-              selectedProjects.length > 0
-                ? 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
-                : 'bg-gray-200 text-gray-500 hover:bg-gray-300 cursor-not-allowed'
-            "
-            title="Delete selected projects"
-          >
-            <Trash :size="20" />
-          </button>
-
-          <!-- Search -->
           <input
             type="text"
             placeholder="Search by Name"
             v-model="searchQuery"
-            class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-full sm:w-64 lg:w-72 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+            class="min-w-0 flex-1 pl-3 pr-4 py-2 bg-white border border-outline rounded-lg focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
           />
 
-          <!-- Search Btn -->
           <button
-            class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition"
+            class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition shrink-0"
           >
             <Search :size="20" class="text-dark-base" />
           </button>
+        </div>
 
-          <!-- Show -->
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-dark-base">Show</span>
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="text-sm text-dark-base whitespace-nowrap">Show</span>
             <select
               v-model.number="itemsPerPage"
-              class="px-3 py-2 border border-outline rounded-lg text-sm"
+              class="px-2 py-1.5 border border-outline rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-sub-text"
             >
               <option :value="10">10</option>
               <option :value="25">25</option>
@@ -57,27 +39,53 @@
               <option :value="100">100</option>
             </select>
           </div>
+
+          <div class="flex items-center gap-2 text-sm text-sub-text">
+            <button
+              @click="prevPage"
+              class="p-1.5 rounded hover:bg-gray-100 transition disabled:opacity-40"
+              :disabled="currentPage === 1"
+            >
+              <ChevronLeft :size="18" class="text-sub-text" />
+            </button>
+
+            <div class="flex items-center gap-1">
+              <span class="whitespace-nowrap">Page</span>
+              <input
+                type="number"
+                v-model="currentPage"
+                min="1"
+                class="w-11 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-sub-text"
+              />
+              <span class="whitespace-nowrap">of {{ totalPages }}</span>
+            </div>
+
+            <button
+              @click="nextPage"
+              class="p-1.5 rounded hover:bg-gray-100 transition disabled:opacity-40"
+              :disabled="currentPage === totalPages"
+            >
+              <ChevronRight :size="18" class="text-sub-text" />
+            </button>
+          </div>
         </div>
 
-        <!-- quick add -->
-        <div class="w-full xl:w-104 shrink-0">
+        <div class="w-full">
           <div
             class="flex flex-col sm:flex-row bg-white border border-slate-200 rounded-md shadow-sm overflow-hidden"
           >
-            <!-- Input -->
             <input
               v-model="taskText"
               @keyup.enter="quickAdd"
               type="text"
-              placeholder="Enter new task here..."
-              class="w-full min-w-0 flex-1 h-10 sm:h-9 px-4 text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+              placeholder="Enter new project here..."
+              class="w-full min-w-0 flex-1 px-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
             />
 
-            <!-- Button -->
             <button
               @click="quickAdd"
               :disabled="isQuickAdding || !taskText.trim()"
-              class="w-full sm:w-auto h-10 sm:h-9 px-6 bg-sub-text text-white text-sm font-semibold hover:bg-gray-700 transition flex items-center justify-center shrink-0"
+              class="w-full sm:w-auto px-4 py-2 bg-sub-text text-white text-sm font-semibold hover:bg-gray-700 transition flex items-center justify-center shrink-0"
               :class="{
                 'opacity-60 cursor-not-allowed':
                   isQuickAdding || !taskText.trim(),
@@ -90,47 +98,138 @@
       </div>
     </div>
 
-    <!-- select sama page total -->
-    <div class="px-6 py-2 flex items-center">
-      <!-- KIRI -->
-      <label class="flex items-center gap-2 text-sm text-sub-text">
-        <input
-          type="checkbox"
-          :checked="allSelected"
-          @change="toggleSelectAll"
-          class="h-4 w-4 rounded border-gray-300 text-sub-text focus:ring-sub-text"
-        />
-        Select all filtered result
-      </label>
+    <!-- Desktop UI -->
+    <div class="hidden md:block">
+      <!-- Action Bar -->
+      <div class="pt-4 pr-4 pl-4">
+        <div class="flex flex-col xl:flex-row xl:items-start gap-4 w-full">
+          <!-- LEFT -->
+          <div class="flex items-center flex-wrap gap-3 flex-1 min-w-0">
+            <!-- Filter -->
+            <button
+              class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition"
+            >
+              <Filter :size="20" class="text-dark-base" />
+            </button>
 
-      <!-- PUSH KANAN -->
-      <div class="ml-auto flex items-center gap-3 text-sm text-sub-text">
-        <button
-          @click="prevPage"
-          class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
-          :disabled="currentPage === 1"
-        >
-          <ChevronLeft :size="18" class="text-sub-text" />
-        </button>
+            <!-- Delete Btn -->
+            <button
+              type="button"
+              @click="handleDelete"
+              class="p-2 rounded-lg transition"
+              :class="
+                selectedProjects.length > 0
+                  ? 'bg-red-500 hover:bg-red-600 text-white cursor-pointer'
+                  : 'bg-gray-200 text-gray-500 hover:bg-gray-300 cursor-not-allowed'
+              "
+              title="Delete selected projects"
+            >
+              <Trash :size="20" />
+            </button>
 
-        <span>Page</span>
+            <!-- Search -->
+            <input
+              type="text"
+              placeholder="Search by Name"
+              v-model="searchQuery"
+              class="pl-3 pr-4 py-2 bg-white border border-outline rounded-lg w-full sm:w-64 lg:w-72 focus:outline-none focus:ring-1 focus:ring-sub-text text-sm"
+            />
 
-        <input
-          type="number"
-          v-model="currentPage"
-          min="1"
-          class="w-12 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-sub-text"
-        />
+            <!-- Search Btn -->
+            <button
+              class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition"
+            >
+              <Search :size="20" class="text-dark-base" />
+            </button>
 
-        <span>of {{ totalPages }}</span>
+            <!-- Show -->
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-dark-base">Show</span>
+              <select
+                v-model.number="itemsPerPage"
+                class="px-3 py-2 border border-outline rounded-lg text-sm"
+              >
+                <option :value="10">10</option>
+                <option :value="25">25</option>
+                <option :value="50">50</option>
+                <option :value="100">100</option>
+              </select>
+            </div>
+          </div>
 
-        <button
-          @click="nextPage"
-          class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
-          :disabled="currentPage === totalPages"
-        >
-          <ChevronRight :size="18" class="text-sub-text" />
-        </button>
+          <!-- quick add -->
+          <div class="w-full xl:w-104 shrink-0">
+            <div
+              class="flex flex-col sm:flex-row bg-white border border-slate-200 rounded-md shadow-sm overflow-hidden"
+            >
+              <!-- Input -->
+              <input
+                v-model="taskText"
+                @keyup.enter="quickAdd"
+                type="text"
+                placeholder="Enter new task here..."
+                class="w-full min-w-0 flex-1 h-10 sm:h-9 px-4 text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+              />
+
+              <!-- Button -->
+              <button
+                @click="quickAdd"
+                :disabled="isQuickAdding || !taskText.trim()"
+                class="w-full sm:w-auto h-10 sm:h-9 px-6 bg-sub-text text-white text-sm font-semibold hover:bg-gray-700 transition flex items-center justify-center shrink-0"
+                :class="{
+                  'opacity-60 cursor-not-allowed':
+                    isQuickAdding || !taskText.trim(),
+                }"
+              >
+                {{ isQuickAdding ? "Saving..." : "Quick Add" }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- select sama page total -->
+      <div class="px-6 py-2 flex items-center">
+        <!-- KIRI -->
+        <label class="flex items-center gap-2 text-sm text-sub-text">
+          <input
+            type="checkbox"
+            :checked="allSelected"
+            @change="toggleSelectAll"
+            class="h-4 w-4 rounded border-gray-300 text-sub-text focus:ring-sub-text"
+          />
+          Select all filtered result
+        </label>
+
+        <!-- PUSH KANAN -->
+        <div class="ml-auto flex items-center gap-3 text-sm text-sub-text">
+          <button
+            @click="prevPage"
+            class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
+            :disabled="currentPage === 1"
+          >
+            <ChevronLeft :size="18" class="text-sub-text" />
+          </button>
+
+          <span>Page</span>
+
+          <input
+            type="number"
+            v-model="currentPage"
+            min="1"
+            class="w-12 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-sub-text"
+          />
+
+          <span>of {{ totalPages }}</span>
+
+          <button
+            @click="nextPage"
+            class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40"
+            :disabled="currentPage === totalPages"
+          >
+            <ChevronRight :size="18" class="text-sub-text" />
+          </button>
+        </div>
       </div>
     </div>
 

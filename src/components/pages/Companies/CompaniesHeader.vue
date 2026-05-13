@@ -1,14 +1,85 @@
 <template>
-  <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+  <div
+    class="mb-4 flex items-center justify-between gap-3 md:flex-row md:items-start md:justify-between"
+  >
     <div class="flex min-w-0 items-baseline gap-3">
       <h1 class="text-2xl font-bold text-dark-base">Companies</h1>
-      <span class="text-sm" :class="companiesStatusClass">
+      <span class="hidden text-sm md:inline" :class="companiesStatusClass">
         {{ companiesStatusText }}
       </span>
     </div>
 
+    <div class="relative md:hidden" ref="mobileActionsRef">
+      <button
+        type="button"
+        @click="toggleMobileActions"
+        class="flex h-10 w-10 items-center justify-center rounded-lg border border-outline bg-white text-sub-text transition hover:bg-sub-text hover:text-white"
+        aria-label="Open actions menu"
+      >
+        <ChevronDown
+          :size="16"
+          class="transition-transform duration-200"
+          :class="{ 'rotate-180': showMobileActions }"
+        />
+      </button>
+
+      <div
+        v-show="showMobileActions"
+        class="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-lg border border-outline bg-white shadow-lg"
+      >
+        <button
+          @click="runMobileAction('refresh')"
+          :disabled="isLoading"
+          class="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-dark-base hover:bg-gray-100 disabled:opacity-50"
+        >
+          <RefreshCw :size="16" :class="{ 'animate-spin': isLoading }" />
+          <span>Refresh</span>
+        </button>
+
+        <button
+          @click="runMobileAction('open-add-single')"
+          class="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-dark-base hover:bg-gray-100"
+        >
+          <FilePlus :size="16" />
+          <span>Single Company</span>
+        </button>
+
+        <button
+          @click="runMobileAction('open-bulk-add')"
+          class="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-dark-base hover:bg-gray-100"
+        >
+          <FolderPlus :size="16" />
+          <span>Bulk Company</span>
+        </button>
+
+        <button
+          @click="runMobileAction('download')"
+          class="flex w-full items-center gap-2 border-t border-gray-50 px-4 py-3 text-left text-sm text-dark-base hover:bg-gray-100"
+        >
+          <FileDown :size="16" />
+          <span>{{ downloadLabel }}</span>
+        </button>
+
+        <button
+          @click="runMobileAction('download-all')"
+          class="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-dark-base hover:bg-gray-100"
+        >
+          <FolderDown :size="16" />
+          <span>Download All</span>
+        </button>
+
+        <button
+          @click="runMobileAction('bulk-edit')"
+          class="flex w-full items-center gap-2 border-t border-gray-50 px-4 py-3 text-left text-sm text-dark-base hover:bg-gray-100"
+        >
+          <Edit :size="16" />
+          <span>Bulk Edit</span>
+        </button>
+      </div>
+    </div>
+
     <div
-      class="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2"
+      class="hidden w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2 md:flex"
     >
       <button
         @click="$emit('refresh')"
@@ -161,6 +232,36 @@ export default {
     "download-all",
     "download",
     "delete-selected",
+    "bulk-edit",
   ],
+  data() {
+    return {
+      showMobileActions: false,
+    };
+  },
+  methods: {
+    toggleMobileActions() {
+      this.showMobileActions = !this.showMobileActions;
+    },
+    runMobileAction(action) {
+      this.showMobileActions = false;
+      this.$emit(action);
+    },
+    handleClickOutside(event) {
+      if (!this.showMobileActions) return;
+      if (
+        this.$refs.mobileActionsRef &&
+        !this.$refs.mobileActionsRef.contains(event.target)
+      ) {
+        this.showMobileActions = false;
+      }
+    },
+  },
+  mounted() {
+    document.addEventListener("click", this.handleClickOutside);
+  },
+  beforeUnmount() {
+    document.removeEventListener("click", this.handleClickOutside);
+  },
 };
 </script>

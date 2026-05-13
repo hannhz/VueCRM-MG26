@@ -1,5 +1,5 @@
 <script>
-import { mapState, mapGetters, mapActions,mapMutations } from "vuex";
+import { mapState, mapGetters, mapActions, mapMutations } from "vuex";
 import { useCookies } from "vue3-cookies";
 import api from "@/api";
 
@@ -202,7 +202,7 @@ export default {
     ]),
     ...mapActions("contacts", ["fetchAllContacts"]),
     ...mapActions("deals", ["fetchAllDeals"]),
-     ...mapMutations({
+    ...mapMutations({
       setclearcompanybyid: "company/setclearcompanybyid",
     }),
 

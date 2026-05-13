@@ -1,15 +1,115 @@
 <template>
-  <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+  <div
+    class="mb-4 flex items-center justify-between gap-3 sm:flex-wrap sm:items-start"
+  >
     <div class="flex min-w-0 items-baseline gap-3">
       <h1 class="text-2xl font-bold text-dark-base">Projects</h1>
-      <span class="text-sm" :class="projectsStatusClass">{{
-        projectsStatusText
-      }}</span>
+      <span class="hidden text-sm sm:inline" :class="projectsStatusClass">
+        {{ projectsStatusText }}</span
+      >
+    </div>
+
+    <!-- Mobile Action Button -->
+    <div class="ml-auto flex items-center justify-end gap-2 sm:hidden">
+      <div class="flex items-center gap-2">
+        <button
+          @click="setMode('list')"
+          :class="getModeButtonClass('list')"
+          title="List View"
+        >
+          <List :size="18" :stroke-width="3" />
+        </button>
+
+        <button
+          @click="setMode('calendar')"
+          :class="getModeButtonClass('calendar')"
+          title="Calendar View"
+        >
+          <CalendarDays :size="18" :stroke-width="2" />
+        </button>
+
+        <button
+          @click="setMode('grid')"
+          :class="getModeButtonClass('grid')"
+          title="Kanban View"
+        >
+          <LayoutGrid :size="18" :stroke-width="2" />
+        </button>
+      </div>
+
+      <div class="relative inline-block" ref="mobileActionsRef">
+        <button
+          type="button"
+          @click="toggleMobileActions"
+          class="flex h-10 w-10 items-center justify-center rounded-lg border border-outline bg-white text-sub-text transition hover:bg-sub-text hover:text-white"
+          aria-label="Open project actions"
+        >
+          <ChevronDown
+            :size="16"
+            class="transition-transform duration-200"
+            :class="{ 'rotate-180': showMobileActions }"
+          />
+        </button>
+
+        <div
+          v-show="showMobileActions"
+          class="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-lg border border-outline bg-white shadow-lg"
+        >
+          <button
+            @click="runMobileAction('refresh')"
+            :disabled="isLoading"
+            class="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-dark-base hover:bg-gray-100 disabled:opacity-50"
+          >
+            <RefreshCw :size="16" :class="{ 'animate-spin': isLoading }" />
+            <span>Refresh</span>
+          </button>
+
+          <button
+            @click="runMobileAction('toggle-add')"
+            class="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-dark-base hover:bg-gray-100"
+          >
+            <FilePlus :size="16" />
+            <span>Single Project</span>
+          </button>
+
+          <button
+            @click="runMobileAction('bulk-add')"
+            class="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-dark-base hover:bg-gray-100"
+          >
+            <FolderPlus :size="16" />
+            <span>Bulk Project</span>
+          </button>
+
+          <button
+            @click="runMobileAction('download-all')"
+            class="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-dark-base hover:bg-gray-100"
+          >
+            <FolderDown :size="16" />
+            <span>Download All</span>
+          </button>
+
+          <button
+            @click="runMobileAction('download')"
+            class="flex w-full items-center gap-2 border-t border-gray-50 px-4 py-3 text-left text-sm text-dark-base hover:bg-gray-100"
+          >
+            <FileDown :size="16" />
+            <span>Download</span>
+          </button>
+
+          <button
+            @click="runMobileAction('bulk-edit')"
+            class="flex w-full items-center gap-2 border-t border-gray-50 px-4 py-3 text-left text-sm text-dark-base hover:bg-gray-100"
+          >
+            <Edit :size="16" />
+            <span>Bulk Edit</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Action Button -->
     <div
-      class="ml-auto flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2"
+      class="ml-auto hidden w-full flex-wrap items-center justify-end gap-1 sm:flex sm:w-auto sm:gap-2"
     >
       <!-- Refresh Button -->
       <button
@@ -205,6 +305,7 @@ export default {
     return {
       showDropdown: false,
       showDownloadDropdown: false,
+      showMobileActions: false,
       showCreateProjectForm: false,
       showProjectDetailForm: false,
       selectedProjectDetail: null,
@@ -268,6 +369,41 @@ export default {
     },
     fetchData() {
       return this.$store.dispatch("project/fetchAllProjects");
+    },
+    toggleMobileActions() {
+      this.showMobileActions = !this.showMobileActions;
+    },
+    runMobileAction(action) {
+      this.showMobileActions = false;
+
+      if (action === "refresh") {
+        this.fetchData();
+        return;
+      }
+
+      if (action === "toggle-add") {
+        this.openCreateProjectForm();
+        return;
+      }
+
+      if (action === "bulk-add") {
+        this.handleBulkAdd();
+        return;
+      }
+
+      if (action === "download-all") {
+        this.downloadAll();
+        return;
+      }
+
+      if (action === "download") {
+        this.handleDownload();
+        return;
+      }
+
+      if (action === "bulk-edit") {
+        console.log("Bulk Edit Project");
+      }
     },
     openCreateProjectForm() {
       this.showDropdown = false;

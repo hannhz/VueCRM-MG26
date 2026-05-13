@@ -4,7 +4,7 @@
     <div class="flex flex-col gap-3 md:hidden">
       <div class="flex items-center gap-2 w-full">
         <button
-          class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition flex-shrink-0"
+          class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition shrink-0"
         >
           <Filter :size="20" class="text-dark-base" />
         </button>
@@ -20,7 +20,7 @@
         </div>
 
         <button
-          class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition flex-shrink-0"
+          class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition shrink-0"
           @click="$emit('search')"
         >
           <Search :size="20" class="text-dark-base" />
@@ -44,10 +44,10 @@
           </select>
         </div>
 
-        <div class="flex items-center gap-1 flex-shrink-0">
+        <div class="flex items-center gap-1 shrink-0">
           <button
             @click="$emit('prev-page')"
-            class="p-1 rounded hover:bg-gray-100 transition disabled:opacity-40 flex-shrink-0"
+            class="p-1 rounded hover:bg-gray-100 transition disabled:opacity-40 shrink-0"
             :disabled="currentPage === 1"
             title="Previous page"
           >
@@ -69,7 +69,7 @@
 
           <button
             @click="$emit('next-page')"
-            class="p-1 rounded hover:bg-gray-100 transition disabled:opacity-40 flex-shrink-0"
+            class="p-1 rounded hover:bg-gray-100 transition disabled:opacity-40 shrink-0"
             :disabled="currentPage === totalPages"
             title="Next page"
           >
@@ -83,12 +83,12 @@
     <div class="hidden md:flex items-center gap-4 w-full">
       <div class="flex items-center gap-3 flex-1 min-w-0">
         <button
-          class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition flex-shrink-0"
+          class="p-2 border border-outline rounded-lg hover:bg-outline/30 transition shrink-0"
         >
           <Filter :size="20" class="text-dark-base" />
         </button>
 
-        <div class="relative flex-1 min-w-0 max-w-[260px]">
+        <div class="relative flex-1 min-w-0 max-w-65">
           <input
             :value="searchQuery"
             @input="$emit('update:searchQuery', $event.target.value)"
@@ -99,14 +99,14 @@
         </div>
 
         <button
-          class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition flex-shrink-0"
+          class="p-2 bg-outline hover:bg-outline/30 rounded-lg transition shrink-0"
           @click="$emit('search')"
         >
           <Search :size="20" class="text-dark-base" />
         </button>
       </div>
 
-      <div class="flex items-center gap-6 flex-shrink-0 text-sm text-sub-text">
+      <div class="flex items-center gap-6 shrink-0 text-sm text-sub-text">
         <div class="flex items-center gap-2 whitespace-nowrap">
           <span class="text-dark-base">Show</span>
           <select
@@ -124,7 +124,7 @@
         <div class="flex items-center gap-3 whitespace-nowrap">
           <button
             @click="$emit('prev-page')"
-            class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40 flex-shrink-0"
+            class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40 shrink-0"
             :disabled="currentPage === 1"
             title="Previous page"
           >
@@ -147,7 +147,7 @@
 
           <button
             @click="$emit('next-page')"
-            class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40 flex-shrink-0"
+            class="p-2 rounded hover:bg-gray-100 transition disabled:opacity-40 shrink-0"
             :disabled="currentPage === totalPages"
             title="Next page"
           >
